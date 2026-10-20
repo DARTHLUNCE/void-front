@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "client",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "pnpm@9.15.0", "--filter", "@void-front/client", "dev"],
+      "port": 5173
+    }
+  ]
+}
