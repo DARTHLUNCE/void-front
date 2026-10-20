@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import { createWorld, DT, encodeSnapshot, matchInfo, step, type World } from '@void-front/shared';
+import { createWorld, DT, encodeSnapshot, matchInfo, step, type BotDifficulty, type World } from '@void-front/shared';
 import { HUMAN_SLOT, type FromWorker, type InputFrame, type ToWorker } from './protocol';
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -15,8 +15,9 @@ function post(msg: FromWorker, transfer: Transferable[] = []): void {
   self.postMessage(msg, transfer);
 }
 
-function start(seed: number, fleet: number): void {
-  world = createWorld({ seed, fleetSize: fleet, humanSlots: [HUMAN_SLOT] });
+/** Difficulty sets the enemy fleet's skill; your allies always fly at Normal. */
+function start(seed: number, fleet: number, difficulty: BotDifficulty): void {
+  world = createWorld({ seed, fleetSize: fleet, humanSlots: [HUMAN_SLOT], botSkill: ['normal', difficulty] });
   post({ type: 'info', info: matchInfo(world, HUMAN_SLOT) });
   last = performance.now();
   acc = 0;
@@ -68,7 +69,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
   const msg = e.data;
   switch (msg.type) {
     case 'start':
-      start(msg.seed, msg.fleet);
+      start(msg.seed, msg.fleet, msg.difficulty);
       break;
     case 'input':
       latest = msg.input;

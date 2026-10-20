@@ -1,4 +1,4 @@
-import { BOT_NAMES, PILOT } from '../content/bots';
+import { BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
 import { getClass } from '../content/classes/index';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import { MATCH } from '../content/match';
@@ -46,8 +46,13 @@ export interface BotBrain {
   jobUntil: number;
   farmer: boolean;
   statWeights: Float64Array;
+  skill: BotSkill;
   aimError: number;
   aimOffset: number;
+  /** When the current ship target was picked (reaction delay). */
+  targetSince: number;
+  /** Offset into the burst cycle so bots don't all pause together. */
+  burstPhase: number;
   nextThink: number;
   retreating: boolean;
   /** Ship slot being fought, or -1. */
@@ -260,6 +265,8 @@ export interface WorldOptions {
   map?: MapDef;
   classId?: ClassId;
   timeLimit?: number;
+  /** Bot skill per team; defaults to the SPEC spread ('hard') for both. */
+  botSkill?: [BotDifficulty, BotDifficulty];
 }
 
 export class World {
@@ -321,7 +328,7 @@ export class World {
       const ship = new Ship(slot, team, classId, shipRng);
       ship.isBot = !humans.has(slot);
       ship.name = ship.isBot ? `${BOT_NAMES[(teamSlot * 7 + team * 23) % BOT_NAMES.length]}-${teamSlot + 1}` : 'You';
-      if (ship.isBot) ship.bot = makeBrain(shipRng);
+      if (ship.isBot) ship.bot = makeBrain(shipRng, BOT_SKILL[opts.botSkill?.[team] ?? 'hard']);
       this.ships.push(ship);
     }
 
@@ -373,7 +380,7 @@ function mirrorIndex(map: MapDef): Int32Array {
   return out;
 }
 
-function makeBrain(rng: Rng): BotBrain {
+function makeBrain(rng: Rng, skill: BotSkill): BotBrain {
   const statWeights = new Float64Array(STAT_POINTS.length);
   for (let i = 0; i < statWeights.length; i++) statWeights[i] = 0.25 + rng.next();
   return {
@@ -382,9 +389,12 @@ function makeBrain(rng: Rng): BotBrain {
     jobUntil: 0,
     farmer: false,
     statWeights,
-    aimError: rng.range(PILOT.aimErrorMin, PILOT.aimErrorMax),
+    skill,
+    aimError: rng.range(skill.aimErrorMin, skill.aimErrorMax),
     aimOffset: 0,
-    nextThink: rng.range(0, PILOT.thinkMax),
+    targetSince: 0,
+    burstPhase: rng.next() * skill.burstCycle,
+    nextThink: rng.range(0, skill.thinkMax),
     retreating: false,
     targetShip: -1,
     targetStructure: -1,

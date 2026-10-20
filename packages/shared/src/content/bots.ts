@@ -23,11 +23,33 @@ export const DIRECTOR = {
   sideWeight: { own: 0.9, middle: 1.25, enemy: 0.65 },
 } as const;
 
+export type BotDifficulty = 'easy' | 'normal' | 'hard';
+
+/** How well a bot flies and shoots. Skill never changes damage, hull or speed. */
+export interface BotSkill {
+  /** Seconds between decisions. */
+  thinkMin: number;
+  thinkMax: number;
+  /** Per-bot aim error is rolled in this range (radians), then re-jittered each decision. */
+  aimErrorMin: number;
+  aimErrorMax: number;
+  /** 1 = leads moving targets perfectly, 0 = shoots where the target is now. */
+  leadAccuracy: number;
+  /** Seconds after picking a new target before opening fire. */
+  reaction: number;
+  /** Fraction of each burst cycle spent firing (1 = never lets go of the trigger). */
+  fireDuty: number;
+  burstCycle: number;
+}
+
+/** 'hard' is the SPEC's skill spread (aim error 0.03–0.12 rad) and what the harness runs. */
+export const BOT_SKILL: Record<BotDifficulty, BotSkill> = {
+  easy: { thinkMin: 0.55, thinkMax: 0.85, aimErrorMin: 0.14, aimErrorMax: 0.28, leadAccuracy: 0.35, reaction: 0.8, fireDuty: 0.5, burstCycle: 1.4 },
+  normal: { thinkMin: 0.4, thinkMax: 0.6, aimErrorMin: 0.08, aimErrorMax: 0.18, leadAccuracy: 0.7, reaction: 0.4, fireDuty: 0.75, burstCycle: 1.2 },
+  hard: { thinkMin: 0.3, thinkMax: 0.45, aimErrorMin: 0.03, aimErrorMax: 0.12, leadAccuracy: 1, reaction: 0.1, fireDuty: 1, burstCycle: 1 },
+};
+
 export const PILOT = {
-  thinkMin: 0.3,
-  thinkMax: 0.45,
-  aimErrorMin: 0.03,
-  aimErrorMax: 0.12,
   engageRadius: 800,
   assaultEngageRadius: 700,
   cruiseClearRadius: 2_000,

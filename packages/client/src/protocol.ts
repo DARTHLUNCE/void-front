@@ -1,4 +1,4 @@
-import type { MatchInfo } from '@void-front/shared';
+import type { BotDifficulty, MatchInfo } from '@void-front/shared';
 
 /** Offline worker protocol. Phase 4 swaps the worker for a WebSocket with the same shapes. */
 export interface InputFrame {
@@ -13,7 +13,7 @@ export interface InputFrame {
 }
 
 export type ToWorker =
-  | { type: 'start'; seed: number; fleet: number }
+  | { type: 'start'; seed: number; fleet: number; difficulty: BotDifficulty }
   | { type: 'input'; input: InputFrame }
   | { type: 'stat'; index: number }
   | { type: 'stop' };

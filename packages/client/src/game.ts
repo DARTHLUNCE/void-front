@@ -1,4 +1,4 @@
-import { H, SHIP, SHIP_FLAG, type MatchInfo } from '@void-front/shared';
+import { H, SHIP, SHIP_FLAG, type BotDifficulty, type MatchInfo } from '@void-front/shared';
 import { Hud } from './hud/hud';
 import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
@@ -8,6 +8,7 @@ import { Snap } from './snap';
 export interface GameOptions {
   fleet: number;
   scheme: ControlScheme;
+  difficulty: BotDifficulty;
 }
 
 /** Offline game: the sim runs in a Web Worker; this side renders, runs the HUD and sends input. */
@@ -45,7 +46,7 @@ export class Game {
   private restart(): void {
     this.prev = this.curr = null;
     // Client-side seed choice is fine: the sim itself only ever sees the number.
-    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet });
+    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty });
   }
 
   private onMessage(msg: FromWorker): void {

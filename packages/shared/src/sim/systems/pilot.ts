@@ -23,8 +23,9 @@ const ctx: ThinkCtx = { targetDist: 0 };
 /** Decision pass (every 0.3–0.45 s per bot): pick target, destination, cruise and ability use. */
 export function think(w: World, s: Ship): void {
   const b = s.bot!;
-  b.nextThink = w.time + s.rng.range(PILOT.thinkMin, PILOT.thinkMax);
+  b.nextThink = w.time + s.rng.range(b.skill.thinkMin, b.skill.thinkMax);
   b.aimOffset = s.rng.range(-b.aimError, b.aimError);
+  const prevTarget = b.targetShip;
 
   const hp = s.hull / s.maxHull;
   if (b.retreating) {
@@ -58,6 +59,7 @@ export function think(w: World, s: Ship): void {
   // Assaulters only fight what's on top of them until they reach the target.
   const engage = b.job === Job.Assault ? PILOT.assaultEngageRadius : PILOT.engageRadius;
   b.targetShip = nearest && nd2 <= engage * engage ? nearest.slot : -1;
+  if (b.targetShip !== prevTarget) b.targetSince = w.time;
   b.targetStructure = -1;
 
   const enemyMs = w.enemyOf(s.team).mothership;
@@ -205,7 +207,7 @@ export function steer(w: World, s: Ship): void {
       mx = radial * ux - uy * b.strafe * 0.8;
       my = radial * uy + ux * b.strafe * 0.8;
     }
-    inp.fire = d - surface <= range * 1.02;
+    inp.fire = d - surface <= range * 1.02 && triggerReady(w, b);
     inp.cursorX = tx;
     inp.cursorY = ty;
   } else {
@@ -239,13 +241,22 @@ export function steer(w: World, s: Ship): void {
   if (inp.fire) inp.cruise = false;
 }
 
+/** Skill gates on the trigger: wait out the reaction time on a new target, then fire in bursts. */
+function triggerReady(w: World, b: BotBrain): boolean {
+  const k = b.skill;
+  if (b.targetShip >= 0 && w.time - b.targetSince < k.reaction) return false;
+  if (k.fireDuty >= 1) return true;
+  return ((w.time + b.burstPhase) % k.burstCycle) < k.fireDuty * k.burstCycle;
+}
+
 /** Pass 3 (after all movement): aim at the target with lead and this bot's aim error. */
 export function botAim(w: World, s: Ship): void {
   const b = s.bot!;
   const inp = s.input;
   if (b.targetShip >= 0) {
     const t = w.ships[b.targetShip];
-    inp.aim = leadAngle(s.x, s.y, t.x, t.y, t.vx, t.vy, s.cls.gun.projectileSpeed) + b.aimOffset;
+    const lead = b.skill.leadAccuracy;
+    inp.aim = leadAngle(s.x, s.y, t.x, t.y, t.vx * lead, t.vy * lead, s.cls.gun.projectileSpeed) + b.aimOffset;
   } else if (b.targetStructure >= 0) {
     const st = w.structures[b.targetStructure];
     inp.aim = Math.atan2(st.y - s.y, st.x - s.x) + b.aimOffset * 0.5;

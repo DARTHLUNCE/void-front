@@ -1,10 +1,11 @@
 import { Application, Container, Graphics, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
 import { EventType, H, KESSLER_REACH, MOTHERSHIP, SHIP, SHIP_FLAG, SNAP, type MatchInfo } from '@void-front/shared';
+import { HULL_BY_ID, type HullArt } from '../art/hulls';
+import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
 import { makeTextures, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
-const TEAM_COLORS_DIM = [0x1d4a7a, 0x7a3a1d] as const;
 const VIEW_W = 2200;
 const VIEW_H = 1250;
 const LABEL_RANGE = 1200;
@@ -17,8 +18,7 @@ class SpritePool {
   used = 0;
   constructor(
     private readonly layer: Container,
-    private readonly texture: Texture,
-    private readonly anchorX = 0.5,
+    private readonly texture: Texture | ArtTexture,
     private readonly blend: 'normal' | 'add' = 'normal',
   ) {}
 
@@ -26,14 +26,23 @@ class SpritePool {
     this.used = 0;
   }
 
-  next(): Sprite {
+  /** Next free sprite, optionally switched to another baked art texture (and its anchor). */
+  next(art: Texture | ArtTexture = this.texture): Sprite {
     let s = this.sprites[this.used];
     if (!s) {
-      s = new Sprite(this.texture);
-      s.anchor.set(this.anchorX, 0.5);
+      s = new Sprite();
       s.blendMode = this.blend;
       this.layer.addChild(s);
       this.sprites.push(s);
+    }
+    if ('anchorX' in art) {
+      if (s.texture !== art.texture) {
+        s.texture = art.texture;
+        s.anchor.set(art.anchorX, art.anchorY);
+      }
+    } else if (s.texture !== art) {
+      s.texture = art;
+      s.anchor.set(0.5);
     }
     s.visible = true;
     this.used++;
@@ -70,6 +79,7 @@ export class Renderer {
   private readonly staticLayer = new Graphics();
   private readonly staticLabels = new Container();
   private readonly structureLayer = new Graphics();
+  private readonly motherships: Sprite[] = [];
   private readonly crystalLayer = new Container();
   private readonly glowLayer = new Container();
   private readonly shotLayer = new Container();
@@ -83,6 +93,7 @@ export class Renderer {
   private glows!: SpritePool;
   private ships!: SpritePool;
   private sparks!: SpritePool;
+  private flares!: SpritePool;
   private readonly labels: (Text | undefined)[] = [];
   private readonly labelText: string[] = [];
   private readonly particles: Particle[] = [];
@@ -96,13 +107,24 @@ export class Renderer {
     this.tex = makeTextures(this.app.renderer);
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
     this.app.stage.addChild(this.stars, this.world);
-    this.world.addChild(this.staticLayer, this.staticLabels, this.structureLayer, this.crystalLayer, this.glowLayer, this.shotLayer, this.shipLayer, this.fxLayer, this.barLayer, this.labelLayer);
+    const shipyard = new Container();
+    KESSLER_REACH.motherships.forEach((pos, team) => {
+      const art = this.tex.mothership[team];
+      const ms = new Sprite(art.texture);
+      ms.anchor.set(art.anchorX, art.anchorY);
+      ms.position.set(pos.x, pos.y);
+      ms.rotation = team === 0 ? 0 : Math.PI; // each mothership faces the enemy
+      shipyard.addChild(ms);
+      this.motherships.push(ms);
+    });
+    this.world.addChild(this.staticLayer, this.staticLabels, this.structureLayer, shipyard, this.crystalLayer, this.glowLayer, this.shotLayer, this.shipLayer, this.fxLayer, this.barLayer, this.labelLayer);
     this.crystals = new SpritePool(this.crystalLayer, this.tex.crystal);
     this.crystalsBig = new SpritePool(this.crystalLayer, this.tex.crystalBig);
-    this.shots = new SpritePool(this.shotLayer, this.tex.bullet, 0.5, 'add');
-    this.glows = new SpritePool(this.glowLayer, this.tex.glow, 0.5, 'add');
-    this.ships = new SpritePool(this.shipLayer, this.tex.ship, 0.4);
-    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 0.5, 'add');
+    this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add');
+    this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
+    this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
+    this.ships = new SpritePool(this.shipLayer, this.tex.hulls.interceptor[0]);
+    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
     this.drawStatic();
   }
 
@@ -143,24 +165,14 @@ export class Renderer {
     const hulls = [b[H.ms0Hull] / b[H.ms0Max], b[H.ms1Hull] / b[H.ms1Max]];
     KESSLER_REACH.motherships.forEach((pos, team) => {
       const color = TEAM_COLORS[team];
-      const r = MOTHERSHIP.radius;
-      const sign = team === 0 ? 1 : -1;
       const alive = hulls[team] > 0;
-      g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.04 }).stroke({ width: 3, color, alpha: 0.15 });
-      const hex: number[] = [];
-      for (let i = 0; i < 6; i++) {
-        const a = (Math.PI / 3) * i + Math.PI / 6;
-        hex.push(pos.x + Math.cos(a) * r, pos.y + Math.sin(a) * r);
-      }
-      g.poly(hex).fill({ color: alive ? TEAM_COLORS_DIM[team] : 0x222222, alpha: 0.9 }).stroke({ width: 8, color: alive ? color : 0x555555 });
-      g.circle(pos.x, pos.y, r * 0.45).fill({ color, alpha: alive ? 0.7 : 0.1 });
-      for (const off of MOTHERSHIP.turrets.offsets) {
-        g.circle(pos.x + sign * off.x, pos.y + sign * off.y, 26).fill({ color: 0x0b1020 }).stroke({ width: 5, color });
-      }
+      this.motherships[team].tint = alive ? 0xffffff : 0x3a3a3a;
+      if (alive) g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
       // Hull bar
       const w = 520;
-      g.rect(pos.x - w / 2, pos.y - r - 70, w, 18).fill({ color: 0x000000, alpha: 0.6 });
-      g.rect(pos.x - w / 2, pos.y - r - 70, w * Math.max(0, hulls[team]), 18).fill({ color });
+      const top = pos.y - MOTHERSHIP.radius - 90;
+      g.rect(pos.x - w / 2, top, w, 18).fill({ color: 0x000000, alpha: 0.6 });
+      g.rect(pos.x - w / 2, top, w * Math.max(0, hulls[team]), 18).fill({ color });
     });
   }
 
@@ -215,9 +227,10 @@ export class Renderer {
       if (!inView(x, y)) continue;
       const big = b[k + 2] > 0;
       const s = big ? this.crystalsBig.next() : this.crystals.next();
-      s.position.set(x, y);
-      s.rotation = now * 0.001 + i;
-      s.tint = big ? 0xffd166 : 0x7df9ff;
+      // Shards stay upright and bob gently; the phase comes from position so it's stable per crystal.
+      const phase = (x + y) * 0.01;
+      s.position.set(x, y + Math.sin(now * 0.003 + phase) * 2.5);
+      s.rotation = Math.sin(now * 0.0015 + phase) * 0.12;
     }
     this.crystals.end();
     this.crystalsBig.end();
@@ -228,18 +241,18 @@ export class Renderer {
       const x = b[k] - b[k + 2] * back;
       const y = b[k + 1] - b[k + 3] * back;
       if (!inView(x, y)) continue;
-      const s = this.shots.next();
+      const team = b[k + 4];
+      const structureShot = b[k + 5] < 0;
+      const s = this.shots.next(structureShot ? this.tex.shell[team] : this.tex.bolt[team]);
       s.position.set(x, y);
       s.rotation = Math.atan2(b[k + 3], b[k + 2]);
-      const structureShot = b[k + 5] < 0;
-      s.scale.set(structureShot ? 1.6 : 1, structureShot ? 1.4 : 1);
-      s.tint = b[k + 4] === 0 ? 0x9fd4ff : 0xffb38a;
     }
     this.shots.end();
 
     // Ships, glows, bars, labels
     this.ships.begin();
     this.glows.begin();
+    this.flares.begin();
     const bars = this.barLayer;
     bars.clear();
     const shipCount = b[H.shipCount];
@@ -268,14 +281,30 @@ export class Renderer {
       const dashing = (flags & SHIP_FLAG.dashing) !== 0;
       const cruisingShip = (flags & SHIP_FLAG.cruising) !== 0;
       glow.tint = dashing ? 0xffffff : color;
-      glow.alpha = dashing ? 0.9 : isMe ? 0.75 : 0.5;
-      glow.scale.set(cruisingShip ? 1.4 : dashing ? 1.1 : 0.75, dashing || cruisingShip ? 0.6 : 0.75);
+      glow.alpha = dashing ? 0.8 : isMe ? 0.45 : 0.3;
+      glow.scale.set(cruisingShip ? 1.3 : dashing ? 1.1 : 0.7, dashing || cruisingShip ? 0.55 : 0.7);
       glow.rotation = Math.atan2(b[k + SHIP.vy], b[k + SHIP.vx]);
 
-      const s = this.ships.next();
+      const art = this.hullFor(slot);
+      const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
+      const s = this.ships.next(this.tex.hulls[art.id][team]);
       s.position.set(x, y);
-      s.rotation = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
-      s.tint = isMe ? 0xffffff : color;
+      s.rotation = rot;
+      if (isMe) bars.circle(x, y, 34).stroke({ width: 2, color: 0xffffff, alpha: 0.35 });
+
+      // Engine flares at the hull's exhaust points, stretched by speed.
+      const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
+      const thrust = Math.min(1, speed / 320) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
+      const cos = Math.cos(rot);
+      const sin = Math.sin(rot);
+      for (const e of art.engines) {
+        const f = this.flares.next();
+        f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
+        f.rotation = rot;
+        f.tint = team === 0 ? 0x7df9ff : 0xffc061;
+        f.alpha = 0.55 + 0.35 * thrust;
+        f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
+      }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : 1;
       s.scale.set(isMe ? 1.15 : 1);
 
@@ -311,6 +340,7 @@ export class Renderer {
     }
     this.ships.end();
     this.glows.end();
+    this.flares.end();
 
     // New events this tick → particles
     if (b[H.tick] !== this.seenTick) {
@@ -361,6 +391,11 @@ export class Renderer {
       s.scale.set(p.size);
     }
     this.sparks.end();
+  }
+
+  /** Phase 0 snapshots don't carry class or picks yet, so everyone flies the base Interceptor. */
+  private hullFor(_slot: number): HullArt {
+    return HULL_BY_ID.interceptor;
   }
 
   /** Screen position of a world point (for mouse steering). */

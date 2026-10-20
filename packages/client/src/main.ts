@@ -1,5 +1,6 @@
 import './style.css';
 import { Game } from './game';
+import type { BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
 
 const menu = document.getElementById('menu')!;
@@ -33,6 +34,13 @@ menu.innerHTML = `
         <option value="100">100 v 100</option>
       </select>
     </label>
+    <label>Enemy difficulty
+      <select id="difficulty">
+        <option value="easy">Easy · slow reactions, loose aim</option>
+        <option value="normal">Normal</option>
+        <option value="hard">Hard · full spec skill</option>
+      </select>
+    </label>
     <label>Controls
       <select id="scheme">
         <option value="mouse">Mouse steering (classic)</option>
@@ -50,15 +58,18 @@ menu.innerHTML = `
 
 const fleetSel = document.getElementById('fleet') as HTMLSelectElement;
 const schemeSel = document.getElementById('scheme') as HTMLSelectElement;
+const difficultySel = document.getElementById('difficulty') as HTMLSelectElement;
 fleetSel.value = saved('vf.fleet', '60');
 schemeSel.value = saved('vf.scheme', 'mouse');
+difficultySel.value = saved('vf.difficulty', 'normal');
 
 document.getElementById('play')!.addEventListener('click', async () => {
   save('vf.fleet', fleetSel.value);
   save('vf.scheme', schemeSel.value);
+  save('vf.difficulty', difficultySel.value);
   menu.classList.add('hidden');
   hud.classList.remove('hidden');
-  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme });
+  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   await game.start(stage, hud);
 });

@@ -1,11 +1,20 @@
 import { Graphics, Texture, type Renderer } from 'pixi.js';
+import { HULLS } from '../art/hulls';
+import { bakeArt, type ArtTexture } from '../art/pixiArt';
+import { BOLT_ART, CRYSTAL_ART, CRYSTAL_PALETTES, MOTHERSHIP_ART, SHELL_ART } from '../art/props';
+import { PALETTES } from '../art/shapes';
+
+type PerTeam<T> = [T, T];
 
 export interface Textures {
-  ship: Texture;
+  /** hull id → [Cobalt, Ember] */
+  hulls: Record<string, PerTeam<ArtTexture>>;
+  mothership: PerTeam<ArtTexture>;
+  bolt: PerTeam<ArtTexture>;
+  shell: PerTeam<ArtTexture>;
+  crystal: ArtTexture;
+  crystalBig: ArtTexture;
   glow: Texture;
-  bullet: Texture;
-  crystal: Texture;
-  crystalBig: Texture;
   particle: Texture;
   stars: Texture;
 }
@@ -37,22 +46,20 @@ function starTexture(size: number): Texture {
 }
 
 export function makeTextures(renderer: Renderer): Textures {
-  // Interceptor: a swept arrowhead pointing +x. White so sprites can be tinted per team.
-  const ship = new Graphics()
-    .poly([24, 0, -14, -15, -7, -4, -16, 0, -7, 4, -14, 15])
-    .fill({ color: 0xffffff })
-    .poly([12, 0, -3, -4, -3, 4])
-    .fill({ color: 0x0b1020, alpha: 0.55 });
-  const bullet = new Graphics().roundRect(-7, -2, 14, 4, 2).fill({ color: 0xffffff });
-  const crystal = new Graphics().poly([0, -9, 7, 0, 0, 9, -7, 0]).fill({ color: 0xffffff });
-  const crystalBig = new Graphics().poly([0, -14, 11, 0, 0, 14, -11, 0]).fill({ color: 0xffffff }).poly([0, -6, 5, 0, 0, 6, -5, 0]).fill({ color: 0x0b1020, alpha: 0.35 });
+  const both = (shapes: Parameters<typeof bakeArt>[1], resolution?: number): PerTeam<ArtTexture> => [
+    bakeArt(renderer, shapes, PALETTES[0], resolution),
+    bakeArt(renderer, shapes, PALETTES[1], resolution),
+  ];
+  const hulls: Record<string, PerTeam<ArtTexture>> = {};
+  for (const h of HULLS) hulls[h.id] = both(h.shapes);
   const particle = new Graphics().circle(0, 0, 3).fill({ color: 0xffffff });
-
   return {
-    ship: renderer.generateTexture({ target: ship, resolution: 2 }),
-    bullet: renderer.generateTexture({ target: bullet, resolution: 2 }),
-    crystal: renderer.generateTexture({ target: crystal, resolution: 2 }),
-    crystalBig: renderer.generateTexture({ target: crystalBig, resolution: 2 }),
+    hulls,
+    mothership: both(MOTHERSHIP_ART, 1.5),
+    bolt: both(BOLT_ART),
+    shell: both(SHELL_ART),
+    crystal: bakeArt(renderer, CRYSTAL_ART[0], CRYSTAL_PALETTES[0]),
+    crystalBig: bakeArt(renderer, CRYSTAL_ART[1], CRYSTAL_PALETTES[1]),
     particle: renderer.generateTexture({ target: particle, resolution: 2 }),
     glow: radialTexture(128, [
       [0, 'rgba(255,255,255,0.9)'],

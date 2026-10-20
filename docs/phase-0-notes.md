@@ -34,6 +34,17 @@ Status at end of Phase 0 (Oct 20, 2026). Harness report: `reports/latest.md` (30
 - **Team-relative point order** (`World.pointMirror`): bots walk capture points in mirrored order so both
   teams make mirrored choices; the fairness test found the asymmetry.
 
+## After Phase 0 review
+
+- **Bot difficulty.** `BOT_SKILL` in `content/bots.ts` defines Easy / Normal / Hard (think rate, aim
+  error, lead accuracy, reaction delay, burst fire). Skill never changes damage, hull or speed. The menu's
+  difficulty sets the enemy fleet; allies fly at Normal. Hard is the SPEC spread and the harness default.
+  Headless 10-minute matches: Normal gets 0.36× Hard's kills, Easy 0.08×.
+- **Art.** `packages/client/src/art` holds renderer-agnostic vector art for all 18 hulls, the mothership,
+  crystals and projectiles. The game bakes it into per-team textures; `pnpm tech-tree` renders the same
+  art to SVG in `docs/tech-tree.html` (tier copy in `packages/client/scripts/techTreeData.ts` until
+  Phase 1 adds real NodeDefs).
+
 ## Findings
 
 - Mothership is unreachable in Phase 0: 30/30 matches hit the 35-min limit with ≥ 99.5% hull. Waves
