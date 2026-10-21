@@ -1,12 +1,15 @@
 :root {
   --cobalt: #4aa8ff;
   --ember: #ff7a3d;
-  --ink: #e6ecff;
-  --dim: #8a96bd;
-  --panel: rgba(8, 12, 26, 0.72);
-  --edge: rgba(110, 130, 200, 0.28);
+  --ink: #e6eeff;
+  --dim: #8a99bf;
+  --panel: rgba(7, 11, 22, 0.86);
+  --panel-2: rgba(13, 20, 38, 0.92);
+  --edge: rgba(105, 138, 210, 0.36);
   --good: #5cff9d;
   --xp: #b48cff;
+  --amber: #ffd166;
+  --mono: 'Share Tech Mono', ui-monospace, Consolas, monospace;
   font-family: 'Rajdhani', system-ui, sans-serif;
   color: var(--ink);
 }
@@ -37,12 +40,14 @@ body {
 
 kbd {
   display: inline-block;
-  min-width: 1.5em;
-  padding: 0 0.35em;
-  border: 1px solid var(--edge);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.06);
-  font: 600 0.8em/1.5 'Rajdhani', sans-serif;
+  min-width: 1.55em;
+  padding: 0 0.38em;
+  border: 1px solid rgba(130, 165, 235, 0.42);
+  border-bottom-width: 2px;
+  border-radius: 2px;
+  background: rgba(16, 26, 48, 0.85);
+  font: 600 0.78em/1.5 var(--mono);
+  color: #cfe0ff;
   text-align: center;
 }
 
@@ -53,18 +58,22 @@ button {
 }
 
 button.primary {
-  padding: 0.6em 2.2em;
+  padding: 0.65em 2.4em;
   border: 1px solid var(--cobalt);
-  border-radius: 6px;
-  background: linear-gradient(180deg, rgba(74, 168, 255, 0.35), rgba(74, 168, 255, 0.12));
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 14px, rgba(74, 168, 255, 0.06) 14px 15px),
+    linear-gradient(180deg, rgba(53, 110, 196, 0.55), rgba(20, 44, 88, 0.85));
   font-size: 1.2rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  box-shadow: inset 0 0 14px rgba(92, 230, 255, 0.22);
 }
 
 button.primary:hover {
-  background: rgba(74, 168, 255, 0.45);
+  background: linear-gradient(180deg, rgba(74, 168, 255, 0.65), rgba(32, 68, 128, 0.9));
+  border-color: #8cf4ff;
 }
 
 /* Menu */
@@ -74,17 +83,34 @@ button.primary:hover {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: radial-gradient(ellipse at 30% 40%, rgba(74, 168, 255, 0.12), transparent 60%), radial-gradient(ellipse at 75% 60%, rgba(255, 122, 61, 0.1), transparent 55%), #04060c;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 39px, rgba(74, 168, 255, 0.03) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(74, 168, 255, 0.03) 39px 40px),
+    radial-gradient(ellipse at 30% 40%, rgba(53, 110, 196, 0.16), transparent 60%),
+    radial-gradient(ellipse at 75% 60%, rgba(200, 84, 36, 0.14), transparent 55%),
+    #04060c;
 }
 
 #menu .card {
-  width: min(460px, 100%);
+  width: min(480px, 100%);
   display: grid;
   gap: 14px;
   padding: 28px;
   border: 1px solid var(--edge);
-  border-radius: 12px;
-  background: var(--panel);
+  border-top: 2px solid var(--cobalt);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    var(--panel);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+}
+
+#menu .sys-tag {
+  font: 600 0.72rem/1 var(--mono);
+  letter-spacing: 0.18em;
+  color: var(--cobalt);
+  border-bottom: 1px solid rgba(74, 168, 255, 0.22);
+  padding-bottom: 6px;
 }
 
 #menu h1 {
@@ -271,13 +297,17 @@ button.primary:hover {
 .pilot {
   left: 12px;
   bottom: 12px;
-  width: 300px;
+  width: 312px;
   display: grid;
   gap: 6px;
-  padding: 10px;
+  padding: 11px 12px;
   border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: var(--panel);
+  border-left: 3px solid var(--cobalt);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    var(--panel);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
 .lvrow {
@@ -292,9 +322,10 @@ button.primary:hover {
   display: grid;
   place-items: center;
   border: 2px solid var(--xp);
-  border-radius: 50%;
-  font-size: 1.4rem;
-  font-weight: 700;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
+  background: rgba(180, 140, 255, 0.12);
+  font: 700 1.25rem/1 var(--mono);
+  color: #e8dcff;
 }
 
 .bars {
@@ -306,9 +337,18 @@ button.primary:hover {
 .bar {
   position: relative;
   height: 14px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(120, 150, 220, 0.28);
+  border-radius: 2px;
+  background: rgba(4, 7, 15, 0.85);
   overflow: hidden;
+}
+
+.bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 11px, rgba(4, 7, 15, 0.45) 11px 12px);
+  pointer-events: none;
 }
 
 .bar i {
@@ -319,10 +359,10 @@ button.primary:hover {
 
 .bar span {
   position: relative;
+  z-index: 1;
   padding-left: 6px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 14px;
+  font: 600 0.72rem/14px var(--mono);
+  text-shadow: 0 1px 2px #000;
 }
 
 .bar.xp i {
@@ -690,32 +730,49 @@ button.primary:hover {
   color: #ff5c6c;
 }
 
-/* Tier pop-up */
+/* Tier pop-up: industrial module schematic cards */
 .tierpop {
   right: 12px;
   bottom: 34px;
-  width: 300px;
+  width: 336px;
   display: grid;
   gap: 8px;
   padding: 12px;
   border: 1px solid #b48cff;
-  border-radius: 10px;
-  background: var(--panel);
-  box-shadow: 0 0 24px rgba(180, 140, 255, 0.25);
+  border-top: 2px solid #d4bfff;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(180, 140, 255, 0.025) 3px 4px),
+    var(--panel);
+  box-shadow: 0 0 28px rgba(180, 140, 255, 0.28);
   pointer-events: auto;
   animation: popin 0.25s ease-out;
+}
+
+.tierpop .tier-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(180, 140, 255, 0.28);
+  padding-bottom: 4px;
 }
 
 .tierpop h3 {
   margin: 0;
   color: var(--xp);
-  letter-spacing: 0.1em;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.tierpop .tcode {
+  font: 600 0.72rem/1 var(--mono);
+  color: var(--dim);
 }
 
 .tierpop .hint {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: var(--dim);
 }
 
@@ -723,21 +780,72 @@ button.primary:hover {
   display: grid;
   grid-template-columns: 26px 1fr auto;
   column-gap: 8px;
+  row-gap: 3px;
   align-items: center;
-  padding: 8px;
+  padding: 9px 10px;
   border: 1px solid var(--edge);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid rgba(180, 140, 255, 0.6);
+  border-radius: 3px;
+  background: rgba(14, 22, 42, 0.72);
   text-align: left;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .tierpop .opt:hover {
   border-color: var(--xp);
+  background: rgba(32, 26, 62, 0.82);
 }
 
-.tierpop .opt small {
-  color: var(--xp);
-  font-size: 0.72rem;
+.tierpop .opt-top {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.tierpop .ncode {
+  text-decoration: none;
+  font: 600 0.68rem/1 var(--mono);
+  color: var(--dim);
+}
+
+.tierpop .badge {
+  padding: 2px 6px;
+  border-radius: 2px;
+  border: 1px solid rgba(180, 140, 255, 0.45);
+  background: rgba(180, 140, 255, 0.12);
+  color: #d9c2ff;
+  font: 600 0.65rem/1 var(--mono);
+  letter-spacing: 0.06em;
+}
+
+.tierpop .badge.hull {
+  border-color: rgba(92, 230, 255, 0.55);
+  background: rgba(92, 230, 255, 0.14);
+  color: #8cf4ff;
+}
+
+.tierpop .badge.ult {
+  border-color: rgba(255, 209, 102, 0.6);
+  background: rgba(255, 209, 102, 0.14);
+  color: #ffd166;
+}
+
+.tierpop .opt-hull {
+  grid-column: 2 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 4px;
+  border: 1px dashed rgba(92, 230, 255, 0.25);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 9px, rgba(92, 230, 255, 0.04) 9px 10px),
+    rgba(4, 8, 18, 0.65);
+}
+
+.tierpop .opt-hull svg {
+  height: 36px;
+  max-width: 100%;
 }
 
 .tierpop .opt em {
@@ -822,9 +930,19 @@ button.primary:hover {
   align-content: start;
   padding: 12px;
   border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: var(--panel);
+  border-top: 2px solid rgba(74, 168, 255, 0.55);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.01) 3px 4px),
+    var(--panel);
   text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cls .cls-code {
+  font: 600 0.68rem/1 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--dim);
 }
 
 .cls:hover {
@@ -1067,19 +1185,25 @@ button.primary:hover {
   justify-items: start;
 }
 
-/* Picker: hull silhouette scaled by class size, team cap counter */
+/* Picker: industrial hull blueprint schematic scaled by class size, team cap counter */
 .cls .hullpic {
   display: flex;
   align-items: center;
-  height: 46px;
+  justify-content: center;
+  height: 54px;
+  padding: 4px 8px;
+  border: 1px solid rgba(90, 125, 195, 0.22);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(74, 168, 255, 0.04) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(74, 168, 255, 0.04) 11px 12px),
+    rgba(4, 7, 15, 0.72);
 }
 
 .cls .hullpic svg {
-  height: calc(46px * var(--k));
-  min-height: 14px;
+  height: calc(48px * var(--k));
+  min-height: 18px;
   max-width: 100%;
-  fill: var(--cobalt);
-  opacity: 0.85;
+  filter: drop-shadow(0 0 6px rgba(92, 230, 255, 0.22));
 }
 
 .cls .cap {

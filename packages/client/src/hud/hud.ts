@@ -457,7 +457,7 @@ export class Hud {
     this.$.cruise.classList.toggle('on', spool >= 1);
     this.$.cruise.classList.toggle('spool', spool > 0 && spool < 1);
 
-    // Tier pop-up: which key picks which option.
+    // Tier pop-up: industrial module schematic cards with keybindings and hull SVG preview at Tier 3.
     if (this.tierReady(snap)) {
       const t = b[s + SELF.tiersOwned];
       const key = `pop:${cls.id}:${t}`;
@@ -465,13 +465,23 @@ export class Hud {
         this.cache.set('tierPop', key);
         const tier = cls.tiers[t];
         const hullTier = t + 1 === ECONOMY.hullTier;
+        const kindLabel = hullTier ? 'CHASSIS RETROFIT' : t === 4 ? 'ULTIMATE SYSTEM' : t === 0 ? 'ORDNANCE MOD' : t === 1 ? 'DEFENSE / THRUST' : 'TACTICAL CORE';
         this.$.tierPop.innerHTML = `
-          <h3>Tier ${t + 1} ready</h3>
-          <p class="hint">Press <kbd>1</kbd> or <kbd>2</kbd> (or click) to choose.${hullTier ? ' <b>New hull:</b> your stat upgrades reset and their costs start over.' : ''}</p>
+          <div class="tier-head"><h3>TIER ${t + 1} // ${kindLabel}</h3><span class="tcode">SYS-0${t + 1}</span></div>
+          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>Hull Retrofit:</b> swaps ship chassis and resets shard stat upgrades.' : ''}</p>
           ${tier.options
-            .map(
-              (o, i) => `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><b>${o.name}</b>${o.hullModel ? '<small>hull change</small>' : o.ultimate ? '<small>ultimate · T</small>' : o.extraAbility ? '<small>extra ability · G</small>' : ''}<em>${o.description}</em></button>`,
-            )
+            .map((o, i) => {
+              const code = `T${t + 1}-${i === 0 ? 'A' : 'B'}`;
+              const badge = o.hullModel
+                ? '<small class="badge hull">CHASSIS SWAP</small>'
+                : o.ultimate
+                  ? '<small class="badge ult">ULTIMATE · T</small>'
+                  : o.extraAbility
+                    ? '<small class="badge aux">AUXILIARY · G</small>'
+                    : '<small class="badge mod">PASSIVE MOD</small>';
+              const preview = o.hullModel && HULL_BY_ID[o.hullModel] ? `<span class="opt-hull">${hullSvg(HULL_BY_ID[o.hullModel].shapes)}</span>` : '';
+              return `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><span class="opt-top"><b>${o.name}</b><u class="ncode">${code}</u></span>${badge}${preview}<em>${o.description}</em></button>`;
+            })
             .join('')}`;
       }
     } else {
@@ -625,21 +635,39 @@ export class Hud {
     const b = snap.buf;
     const colors = ['#4aa8ff', '#ff7a3d'];
     c.clearRect(0, 0, W, Hh);
-    c.fillStyle = 'rgba(6,10,22,0.85)';
+    c.fillStyle = 'rgba(5, 8, 18, 0.9)';
     c.fillRect(0, 0, W, Hh);
-    c.strokeStyle = 'rgba(80,100,160,0.5)';
+    // Industrial tactical radar grid & DMZ centerline
+    c.strokeStyle = 'rgba(65, 95, 155, 0.22)';
+    c.lineWidth = 1;
+    for (let gx = 1; gx < 4; gx++) {
+      c.beginPath();
+      c.moveTo((W * gx) / 4, 0);
+      c.lineTo((W * gx) / 4, Hh);
+      c.stroke();
+    }
+    c.beginPath();
+    c.moveTo(0, Hh / 2);
+    c.lineTo(W, Hh / 2);
+    c.stroke();
+    c.strokeStyle = 'rgba(95, 135, 210, 0.55)';
     c.strokeRect(0.5, 0.5, W - 1, Hh - 1);
     for (let i = 0, k = snap.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const p = map.points[i];
       const owner = b[k + 1];
-      c.fillStyle = b[k + POINT.locked] > 0 ? 'rgba(255,92,108,0.3)' : owner < 0 ? 'rgba(108,122,168,0.35)' : owner === 0 ? 'rgba(74,168,255,0.4)' : 'rgba(255,122,61,0.4)';
+      const px = p.pos.x * sx;
+      const py = p.pos.y * sy;
+      const r = Math.max(4, 480 * sx);
+      c.fillStyle = b[k + POINT.locked] > 0 ? 'rgba(255,92,108,0.35)' : owner < 0 ? 'rgba(108,122,168,0.38)' : owner === 0 ? 'rgba(74,168,255,0.48)' : 'rgba(255,122,61,0.48)';
       c.beginPath();
-      c.arc(p.pos.x * sx, p.pos.y * sy, Math.max(3, 450 * sx), 0, Math.PI * 2);
+      c.moveTo(px, py - r);
+      c.lineTo(px + r, py);
+      c.lineTo(px, py + r);
+      c.lineTo(px - r, py);
+      c.closePath();
       c.fill();
-      if (b[k + 2]) {
-        c.strokeStyle = '#fff';
-        c.stroke();
-      }
+      c.strokeStyle = b[k + 2] ? '#ffffff' : owner === 0 ? '#4aa8ff' : owner === 1 ? '#ff7a3d' : 'rgba(140,160,210,0.6)';
+      c.stroke();
     }
     map.motherships.forEach((m, team) => {
       c.fillStyle = colors[team];
@@ -719,24 +747,38 @@ function myTeamHeld(snap: Snap): number {
 function classCard(cls: ShipClass, i: number): string {
   const art = HULL_BY_ID[cls.hullModel];
   const preview = art ? `<span class="hullpic" style="--k:${(cls.radius / 48).toFixed(2)}">${hullSvg(art.shapes)}</span>` : '';
-  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd>${preview}<b>${cls.name}</b><small>${cls.role}</small>
+  const code = `CLS-0${i + 1}`;
+  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd><span class="cls-code">${code}</span>${preview}<b>${cls.name}</b><small>${cls.role}</small>
     <em>${cls.summary}</em>
-    <span class="kv"><span>Hull <b>${cls.hull}</b></span><span>Speed <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>Respawn <b>×${cls.respawnMul}</b></span></span>
-    <span class="sig">RMB · ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
+    <span class="kv"><span>HULL <b>${cls.hull}</b></span><span>SPD <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>RSP <b>×${cls.respawnMul}</b></span></span>
+    <span class="sig">RMB // ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
 }
 
-/** Tiny team-neutral silhouette for the picker card, scaled by hull size. */
+const SVG_FILL: Record<string, string> = {
+  hull: '#3b78d4',
+  dark: '#162848',
+  metal: '#5c6b84',
+  trim: '#c4d2e6',
+  accent: '#62e8ff',
+  cockpit: '#94f6ff',
+  engine: '#7df9ff',
+  void: '#050811',
+};
+
+/** Multi-layer industrial blueprint SVG for the picker card & tier-3 upgrade node card. */
 function hullSvg(shapes: Shape[]): string {
   const b = bounds(shapes);
   const parts = shapes
-    .filter((s) => s.t === 'poly' || s.t === 'circle')
-    .map((s) =>
-      s.t === 'poly'
-        ? `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}"/>`
-        : s.t === 'circle'
-          ? `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}"/>`
-          : '',
-    )
+    .map((s) => {
+      const fill = 'fill' in s && s.fill ? SVG_FILL[s.fill] ?? '#3b78d4' : 'none';
+      const stroke = 'stroke' in s && s.stroke ? SVG_FILL[s.stroke] ?? '#050811' : s.t === 'poly' && s.fill === 'hull' ? '#050811' : 'none';
+      const sw = 'w' in s && s.w ? s.w : s.t === 'poly' && s.fill === 'hull' ? 1 : 0;
+      if (s.t === 'poly') return `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      if (s.t === 'circle') return `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      if (s.t === 'ellipse') return `<ellipse cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" rx="${s.rx.toFixed(1)}" ry="${s.ry.toFixed(1)}" fill="${fill}"/>`;
+      if (s.t === 'line') return `<polyline points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="none" stroke="${SVG_FILL[s.stroke] ?? '#62e8ff'}" stroke-width="${s.w}"/>`;
+      return '';
+    })
     .join('');
-  return `<svg viewBox="${b.x0.toFixed(0)} ${b.y0.toFixed(0)} ${(b.x1 - b.x0).toFixed(0)} ${(b.y1 - b.y0).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
+  return `<svg viewBox="${(b.x0 - 2).toFixed(0)} ${(b.y0 - 2).toFixed(0)} ${(b.x1 - b.x0 + 4).toFixed(0)} ${(b.y1 - b.y0 + 4).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
 }

@@ -44,6 +44,7 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 | Pick a tier (XP) when the pop-up shows | 1 / 2 | 1 / 2 |
 | Auto-fire | X | F |
 | Scoreboard / map | Tab / M | Tab / M |
+| Camera zoom | Mouse wheel | Mouse wheel |
 | Lighting on/off | L | L |
 
 You fly for Cobalt (blue). Win by destroying the Ember Titan (mothership) on the far right of the map.

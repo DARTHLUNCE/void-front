@@ -1,5 +1,7 @@
 import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import {
+  CLASS_ORDER,
+  CLASSES,
   COMMAND_BY_ID,
   DEPLOY_KINDS,
   DEPLOYABLES,
@@ -30,8 +32,19 @@ import { Lighting, litGeometry } from './lighting';
 import { makeTextures, type LitArt, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
+/** Pilot camera: at least this much of the world across, more for long-range hulls (see viewWidthFor). */
 const VIEW_W = 1650;
-const VIEW_H = 937.5;
+const VIEW_ASPECT = 937.5 / 1650;
+/** Long guns need to see their targets: frame ~1.9× the gun's reach plus margin, up to this. */
+const VIEW_W_MAX = 3000;
+
+/** World units the pilot camera shows across for a hull class (index into CLASS_ORDER). */
+export function viewWidthFor(classIndex: number): number {
+  const cls = CLASSES[CLASS_ORDER[classIndex]];
+  if (!cls) return VIEW_W;
+  const reach = cls.gun.projectileSpeed * cls.gun.life;
+  return Math.min(VIEW_W_MAX, Math.max(VIEW_W, reach * 1.9 + 300));
+}
 const LABEL_RANGE = 1200;
 const PARTICLE_CAP = 2000;
 const TICK_MS = 1000 / 30;
@@ -207,6 +220,8 @@ export class Renderer {
   private seenTick = -1;
   private lastFrame = 0;
   private readonly exhaustGimbals: number[] = [];
+  /** Pilot's mouse-wheel zoom on top of the class framing (>1 = closer). */
+  pilotZoom = 1;
   /** Commander mode: free war-map camera instead of following a ship. */
   commander = false;
   private cmdZoom = 0;
@@ -329,24 +344,52 @@ export class Renderer {
     this.labelText.length = 0;
   }
 
-  /** Map bounds, a coarse grid and the capture point names. */
+  /** Map bounds, an industrial tactical sector grid, and the capture node telemetry plaques. */
   private drawStatic(): void {
     const map = KESSLER_REACH;
     const g = this.staticLayer;
     g.clear();
-    for (let x = 0; x <= map.width; x += 1000) g.moveTo(x, 0).lineTo(x, map.height);
-    for (let y = 0; y <= map.height; y += 1000) g.moveTo(0, y).lineTo(map.width, y);
-    g.stroke({ width: 2, color: 0x1a2440, alpha: 0.35 });
-    g.rect(0, 0, map.width, map.height).stroke({ width: 8, color: 0x31406a, alpha: 0.8 });
-    g.moveTo(map.width / 2, 0).lineTo(map.width / 2, map.height).stroke({ width: 4, color: 0x31406a, alpha: 0.35 });
-    for (const p of map.points) {
-      const what = p.resource ?? `+${Math.round(p.buff.value * 100)}% XP`;
-      const t = new Text({ text: `${p.name.toUpperCase()}\n${what}`, style: { fontFamily: 'Rajdhani, sans-serif', fontSize: 28, fontWeight: '600', fill: 0xffffff, align: 'center', letterSpacing: 2 } });
-      t.alpha = 0.55;
-      t.anchor.set(0.5);
-      t.position.set(p.pos.x, p.pos.y + 175);
-      this.staticLabels.addChild(t);
+    // Minor 1,000 u grid lines
+    for (let x = 0; x <= map.width; x += 1000) if (x % 2000 !== 0) g.moveTo(x, 0).lineTo(x, map.height);
+    for (let y = 0; y <= map.height; y += 1000) if (y % 2000 !== 0) g.moveTo(0, y).lineTo(map.width, y);
+    g.stroke({ width: 1.5, color: 0x16223c, alpha: 0.28 });
+    // Major 2,000 u sector lines & intersection crosshairs
+    for (let x = 0; x <= map.width; x += 2000) g.moveTo(x, 0).lineTo(x, map.height);
+    for (let y = 0; y <= map.height; y += 2000) g.moveTo(0, y).lineTo(map.width, y);
+    g.stroke({ width: 2.5, color: 0x22345a, alpha: 0.42 });
+    for (let x = 2000; x < map.width; x += 2000) {
+      for (let y = 2000; y < map.height; y += 2000) {
+        g.moveTo(x - 28, y).lineTo(x + 28, y).moveTo(x, y - 28).lineTo(x, y + 28);
+      }
     }
+    g.stroke({ width: 3, color: 0x3a5488, alpha: 0.5 });
+    // Outer industrial boundary frame & centerline DMZ axis
+    g.rect(0, 0, map.width, map.height).stroke({ width: 10, color: 0x354a7c, alpha: 0.85 });
+    g.rect(24, 24, map.width - 48, map.height - 48).stroke({ width: 2, color: 0x4aa8ff, alpha: 0.25 });
+    for (let y = 0; y < map.height; y += 400) {
+      g.moveTo(map.width / 2, y + 60).lineTo(map.width / 2, Math.min(map.height, y + 280));
+    }
+    g.stroke({ width: 4, color: 0x3d5488, alpha: 0.4 });
+    // Industrial node designation plaques
+    map.points.forEach((p, idx) => {
+      const code = `N-0${idx + 1}`;
+      const what = p.resource ? `+${p.income} ${p.resource.toUpperCase()}/MIN` : `+${Math.round(p.buff.value * 100)}% XP OUTPUT`;
+      const t = new Text({
+        text: `[ ${code} // ${p.name.toUpperCase()} ]\n${what}`,
+        style: {
+          fontFamily: '"Share Tech Mono", Rajdhani, monospace',
+          fontSize: 25,
+          fontWeight: '600',
+          fill: 0xd8e4ff,
+          align: 'center',
+          letterSpacing: 2.5,
+        },
+      });
+      t.alpha = 0.62;
+      t.anchor.set(0.5);
+      t.position.set(p.pos.x, p.pos.y + 184);
+      this.staticLabels.addChild(t);
+    });
   }
 
   private drawStructures(snap: Snap, now: number): void {
@@ -360,17 +403,39 @@ export class Renderer {
       this.motherships[team].tint = alive ? 0xffffff : 0x3a3a3a;
       this.msOccluders[team].visible = alive;
       if (alive) this.mothershipLights(pos.x, pos.y, team, now);
-      if (alive) g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
-      // Shield bubble while any of its FOBs stands
+      if (alive) {
+        g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.18 });
+        // Technical perimeter cardinal ticks on heal zone
+        for (let i = 0; i < 8; i++) {
+          const a = (i * Math.PI) / 4;
+          const r0 = MOTHERSHIP.healRadius - 18;
+          const r1 = MOTHERSHIP.healRadius + 8;
+          g.moveTo(pos.x + Math.cos(a) * r0, pos.y + Math.sin(a) * r0)
+            .lineTo(pos.x + Math.cos(a) * r1, pos.y + Math.sin(a) * r1)
+            .stroke({ width: 3, color, alpha: 0.28 });
+        }
+      }
+      // Industrial Aegis hard-light shield while any of its FOBs stands
       if (alive && b[snap.o.structures + team * SNAP.structure + STRUCT.shielded] === 1) {
         const r = MOTHERSHIP.radius + 110;
-        g.circle(pos.x, pos.y, r).fill({ color, alpha: 0.06 }).stroke({ width: 6, color, alpha: 0.35 + 0.15 * Math.sin(now * 0.003 + team) });
+        const pulse = 0.38 + 0.16 * Math.sin(now * 0.003 + team);
+        g.circle(pos.x, pos.y, r).fill({ color, alpha: 0.055 }).stroke({ width: 6, color, alpha: pulse });
+        const hexPts: number[] = [];
+        for (let s = 0; s < 8; s++) {
+          const a = (s * Math.PI) / 4 + now * 0.00025 * (team === 0 ? 1 : -1);
+          hexPts.push(pos.x + Math.cos(a) * (r - 14), pos.y + Math.sin(a) * (r - 14));
+        }
+        g.poly(hexPts).stroke({ width: 2.5, color, alpha: pulse * 0.65 });
       }
-      // Hull bar
+      // Segmented industrial Titan hull bar
       const w = 520;
-      const top = pos.y - MOTHERSHIP.radius - 90;
-      g.rect(pos.x - w / 2, top, w, 18).fill({ color: 0x000000, alpha: 0.6 });
-      g.rect(pos.x - w / 2, top, w * Math.max(0, hulls[team]), 18).fill({ color });
+      const top = pos.y - MOTHERSHIP.radius - 92;
+      const x0 = pos.x - w / 2;
+      g.rect(x0 - 4, top - 4, w + 8, 26).fill({ color: 0x050811, alpha: 0.82 }).stroke({ width: 2, color: 0x3a4c78, alpha: 0.7 });
+      g.rect(x0, top, w * Math.max(0, hulls[team]), 18).fill({ color });
+      for (let s = 1; s < 10; s++) {
+        g.moveTo(x0 + (w * s) / 10, top).lineTo(x0 + (w * s) / 10, top + 18).stroke({ width: 2, color: 0x050811, alpha: 0.75 });
+      }
     });
     KESSLER_REACH.fobs.forEach((f, i) => {
       const k = snap.o.structures + (2 + i) * SNAP.structure;
@@ -379,15 +444,19 @@ export class Renderer {
       this.fobMeshes[i].tint = alive ? 0xffffff : 0x3a3a3a;
       this.fobOccluders[i].visible = alive;
       if (!alive) return;
-      g.circle(f.pos.x, f.pos.y, FOB.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
+      g.circle(f.pos.x, f.pos.y, FOB.healRadius).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.16 });
       const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + i);
       this.light(f.pos.x, f.pos.y, 22 * pulse, TEAM_ACCENT[f.team]);
       for (const y of [-110, 110]) this.light(f.pos.x, f.pos.y + y, 7, TEAM_ACCENT[f.team]);
       const frac = b[k + STRUCT.hull] / b[k + STRUCT.maxHull];
       const w = 300;
-      const top = f.pos.y - FOB.radius - 70;
-      g.rect(f.pos.x - w / 2, top, w, 14).fill({ color: 0x000000, alpha: 0.6 });
-      g.rect(f.pos.x - w / 2, top, w * Math.max(0, frac), 14).fill({ color });
+      const top = f.pos.y - FOB.radius - 72;
+      const x0 = f.pos.x - w / 2;
+      g.rect(x0 - 3, top - 3, w + 6, 20).fill({ color: 0x050811, alpha: 0.82 }).stroke({ width: 2, color: 0x3a4c78, alpha: 0.65 });
+      g.rect(x0, top, w * Math.max(0, frac), 14).fill({ color });
+      for (let s = 1; s < 6; s++) {
+        g.moveTo(x0 + (w * s) / 6, top).lineTo(x0 + (w * s) / 6, top + 14).stroke({ width: 2, color: 0x050811, alpha: 0.75 });
+      }
     });
   }
 
@@ -416,7 +485,8 @@ export class Renderer {
     const meAlive = (meFlags & SHIP_FLAG.alive) !== 0;
     const sw = this.app.screen.width;
     const sh = this.app.screen.height;
-    const baseZoom = Math.min(sw / VIEW_W, sh / VIEW_H);
+    const viewW = viewWidthFor(b[me + SHIP.classIndex]);
+    const baseZoom = Math.min(sw / viewW, sh / (viewW * VIEW_ASPECT)) * this.pilotZoom;
     const map = KESSLER_REACH;
     if (this.commander) {
       const fit = Math.min(sw / map.width, sh / map.height) * 0.95;
@@ -558,7 +628,20 @@ export class Renderer {
       const s = this.hullPool(art.id, team).next();
       s.position.set(x, y);
       s.rotation = rot;
-      if (isMe) bars.circle(x, y, 34).stroke({ width: 2, color: 0xffffff, alpha: 0.35 });
+      if (isMe) {
+        // 4-bracket industrial HUD targeting reticle around the player's ship
+        const br = 36;
+        const bl = 11;
+        for (const sx of [-1, 1]) {
+          for (const sy of [-1, 1]) {
+            bars
+              .moveTo(x + sx * (br - bl), y + sy * br)
+              .lineTo(x + sx * br, y + sy * br)
+              .lineTo(x + sx * br, y + sy * (br - bl));
+          }
+        }
+        bars.stroke({ width: 2, color: 0x8cf4ff, alpha: 0.55 });
+      }
 
       // Engine flares at the hull's exhaust points, stretched by speed.
       const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
@@ -593,11 +676,17 @@ export class Renderer {
       if (cloaked) glow.alpha *= 0.3;
       this.statusFx(bars, x, y, status, now);
 
-      // Hull bar for anyone damaged, plus us always.
+      // Segmented industrial hull bar for anyone damaged, plus us always.
       const hull = b[k + SHIP.hull] / b[k + SHIP.maxHull];
       if (hull < 0.999 || isMe) {
-        bars.rect(x - 22, y + 28, 44, 5).fill({ color: 0x000000, alpha: 0.6 });
-        bars.rect(x - 22, y + 28, 44 * Math.max(0, hull), 5).fill({ color: hull > 0.3 ? (team === selfTeam ? 0x5cff9d : 0xff5c6c) : 0xff3b3b });
+        const bw = 46;
+        const bx = x - bw / 2;
+        const by = y + 28;
+        bars.rect(bx - 1, by - 1, bw + 2, 7).fill({ color: 0x050811, alpha: 0.78 });
+        bars.rect(bx, by, bw * Math.max(0, hull), 5).fill({ color: hull > 0.3 ? (team === selfTeam ? 0x5cff9d : 0xff5c6c) : 0xff3b3b });
+        for (let seg = 1; seg < 4; seg++) {
+          bars.moveTo(bx + (bw * seg) / 4, by).lineTo(bx + (bw * seg) / 4, by + 5).stroke({ width: 1, color: 0x050811, alpha: 0.7 });
+        }
       }
 
       // Names only within 1,200 u, and not while zoomed out for cruise.
@@ -689,8 +778,8 @@ export class Renderer {
     const halfH = this.app.screen.height / 2 / z;
     const near = (x: number, y: number, r: number) => Math.abs(x - this.camera.x) < halfW + r && Math.abs(y - this.camera.y) < halfH + r;
 
-    // Nodes: the asteroid in its holder's colors, the capture ring, the meter arc while neutral,
-    // hull while held, and the lockout countdown after one is destroyed.
+    // Nodes: industrial orbital capture perimeter, degree ticks, targeting brackets, inner scanner
+    // ring, meter arc while neutral, segmented armor bar while held, and quarantine lockout arc.
     for (let i = 0, k = curr.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const p = KESSLER_REACH.points[i].pos;
       const meshes = this.nodeMeshes[i];
@@ -698,35 +787,68 @@ export class Renderer {
       const locked = b[k + POINT.locked];
       for (let st = 0; st < 3; st++) meshes[st].visible = st === owner + 1;
       meshes[0].tint = locked > 0 ? 0x5a5a5a : 0xffffff;
-      if (!near(p.x, p.y, POINTS.radius + 60)) continue;
+      if (!near(p.x, p.y, POINTS.radius + 70)) continue;
       const meter = b[k + POINT.meter];
       const contested = b[k + POINT.contested] === 1;
-      const color = owner < 0 ? 0x8a96bd : TEAM_COLORS[owner];
+      const color = locked > 0 ? 0xff5c6c : owner < 0 ? 0x7b88b0 : TEAM_COLORS[owner];
+      const baseAlpha = contested ? 0.55 + 0.4 * Math.sin(now * 0.012) : 0.42;
+      // Outer capture zone perimeter
       g.circle(p.x, p.y, POINTS.radius)
-        .fill({ color, alpha: owner < 0 ? 0.025 : 0.06 })
-        .stroke({ width: Math.max(3, 2 * px), color, alpha: contested ? 0.55 + 0.4 * Math.sin(now * 0.012) : 0.45 });
-      if (b[k + POINT.hot] > 0) g.circle(p.x, p.y, POINTS.radius + 34).stroke({ width: Math.max(4, 3 * px), color: 0xffd166, alpha: 0.45 + 0.3 * Math.sin(now * 0.004) });
-      const r = POINTS.radius - 20;
+        .fill({ color, alpha: owner < 0 ? 0.02 : 0.05 })
+        .stroke({ width: Math.max(3, 2 * px), color, alpha: baseAlpha });
+      // 8 radial telemetry degree ticks around the capture perimeter
+      for (let t = 0; t < 8; t++) {
+        const ang = (t * Math.PI) / 4;
+        const r0 = POINTS.radius - 16;
+        const r1 = POINTS.radius + (t % 2 === 0 ? 10 : 4);
+        g.moveTo(p.x + Math.cos(ang) * r0, p.y + Math.sin(ang) * r0)
+          .lineTo(p.x + Math.cos(ang) * r1, p.y + Math.sin(ang) * r1)
+          .stroke({ width: Math.max(2.5, 1.5 * px), color, alpha: baseAlpha * 0.9 });
+      }
+      // Inner industrial collar around the asteroid installation
+      const innerR = NODE.radius + 22;
+      g.circle(p.x, p.y, innerR).stroke({ width: Math.max(2, 1.2 * px), color, alpha: 0.28 });
+      if (owner >= 0 || contested) {
+        const scanA = now * (contested ? 0.004 : 0.0012) + i;
+        g.moveTo(p.x + Math.cos(scanA) * innerR, p.y + Math.sin(scanA) * innerR)
+          .arc(p.x, p.y, innerR, scanA, scanA + 1.1)
+          .stroke({ width: Math.max(4, 2.2 * px), color: contested ? 0xffd166 : color, alpha: 0.65 });
+      }
+      if (b[k + POINT.hot] > 0) {
+        g.circle(p.x, p.y, POINTS.radius + 34).stroke({
+          width: Math.max(4, 3 * px),
+          color: 0xffd166,
+          alpha: 0.45 + 0.3 * Math.sin(now * 0.004),
+        });
+      }
+      const r = POINTS.radius - 22;
       const start = -Math.PI / 2;
       if (owner < 0 && locked > 0) {
-        // Lockout: a red arc running down to zero.
+        // Lockout quarantine: a crimson hazard arc running down to zero.
         const sweep = (locked / NODE.lockout) * Math.PI * 2;
         g.moveTo(p.x + Math.cos(start) * r, p.y + Math.sin(start) * r)
           .arc(p.x, p.y, r, start, start + sweep)
-          .stroke({ width: Math.max(10, 4 * px), color: 0xff5c6c, alpha: 0.75 });
+          .stroke({ width: Math.max(11, 4.5 * px), color: 0xff5c6c, alpha: 0.8 });
       } else if (owner < 0 && Math.abs(meter) > 0.5) {
         const sweep = (meter / 100) * Math.PI * 2;
+        const capColor = TEAM_COLORS[meter > 0 ? 0 : 1];
         g.moveTo(p.x + Math.cos(start) * r, p.y + Math.sin(start) * r)
           .arc(p.x, p.y, r, start, start + sweep, sweep < 0)
-          .stroke({ width: Math.max(10, 4 * px), color: TEAM_COLORS[meter > 0 ? 0 : 1], alpha: 0.85 });
+          .stroke({ width: Math.max(11, 4.5 * px), color: capColor, alpha: 0.88 });
       } else if (owner >= 0) {
         const hull = b[k + POINT.hull];
         if (hull < 0.999) {
-          g.rect(p.x - 90, p.y + 128, 180, 10).fill({ color: 0x000000, alpha: 0.6 });
-          g.rect(p.x - 90, p.y + 128, 180 * Math.max(0, hull), 10).fill({ color: owner === selfTeam ? 0x5cff9d : 0xff5c6c });
+          const bw = 186;
+          const bx = p.x - bw / 2;
+          const by = p.y + 130;
+          g.rect(bx - 3, by - 3, bw + 6, 16).fill({ color: 0x050811, alpha: 0.82 }).stroke({ width: 2, color: 0x3a4c78, alpha: 0.7 });
+          g.rect(bx, by, bw * Math.max(0, hull), 10).fill({ color: owner === selfTeam ? 0x5cff9d : 0xff5c6c });
+          for (let seg = 1; seg < 6; seg++) {
+            g.moveTo(bx + (bw * seg) / 6, by).lineTo(bx + (bw * seg) / 6, by + 10).stroke({ width: 2, color: 0x050811, alpha: 0.75 });
+          }
         }
       }
-      this.light(p.x, p.y, 20, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
+      this.light(p.x, p.y, 22, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
     }
 
     // The commander's ping: expanding rings, colored by kind (move, attack, defend).
@@ -778,7 +900,7 @@ export class Renderer {
       g.moveTo(x - r, y).lineTo(x + r, y).moveTo(x, y - r).lineTo(x, y + r).stroke({ width: Math.max(2, px), color, alpha: 0.5 });
     }
 
-    // Deployables
+    // Deployables: industrial mines, shield emitters, beacons, platforms and auto-turrets
     for (let i = 0, k = curr.o.deployables; i < b[H.deployableCount]; i++, k += SNAP.deployable) {
       const x = b[k];
       const y = b[k + 1];
@@ -789,28 +911,45 @@ export class Renderer {
       const color = TEAM_COLORS[team];
       const r = def.radius;
       if (kind === KIND.mine) {
-        g.circle(x, y, r).fill({ color: 0x1a2236 }).stroke({ width: 2, color: 0xff5c6c, alpha: 0.5 + 0.5 * Math.sin(now * 0.01 + i) });
+        for (let s = 0; s < 4; s++) {
+          const a = (s * Math.PI) / 2 + Math.PI / 4;
+          g.moveTo(x - Math.cos(a) * (r + 3.5), y - Math.sin(a) * (r + 3.5))
+            .lineTo(x + Math.cos(a) * (r + 3.5), y + Math.sin(a) * (r + 3.5))
+            .stroke({ width: 2.5, color: 0x526078 });
+        }
+        g.circle(x, y, r).fill({ color: 0x161e30 }).stroke({ width: 2, color });
+        g.circle(x, y, r * 0.42).fill({ color: 0xff5c6c, alpha: 0.45 + 0.55 * Math.sin(now * 0.012 + i) });
         continue;
       }
-      if (kind === KIND.emitter) g.circle(x, y, def.emitter!.radius).fill({ color, alpha: 0.05 }).stroke({ width: 2, color, alpha: 0.3 });
+      if (kind === KIND.emitter) {
+        const er = def.emitter!.radius;
+        g.circle(x, y, er).fill({ color, alpha: 0.045 }).stroke({ width: 2.5, color, alpha: 0.35 });
+      }
       if (kind === KIND.beacon) {
-        const pulse = 60 + 12 * Math.sin(now * 0.005);
-        g.circle(x, y, pulse).stroke({ width: 3, color, alpha: 0.5 });
-        g.poly([x, y - r, x + r * 0.7, y, x, y + r, x - r * 0.7, y]).fill({ color: 0x1a2236 }).stroke({ width: 4, color });
+        const pulse = 58 + 14 * Math.sin(now * 0.005);
+        g.circle(x, y, pulse).stroke({ width: 2.5, color, alpha: 0.5 });
+        const oct: number[] = [];
+        for (let s = 0; s < 8; s++) oct.push(x + Math.cos((s * Math.PI) / 4 + Math.PI / 8) * r, y + Math.sin((s * Math.PI) / 4 + Math.PI / 8) * r);
+        g.poly(oct).fill({ color: 0x12192b }).stroke({ width: 3.5, color });
+        g.poly([x, y - r * 0.72, x + r * 0.72, y, x, y + r * 0.72, x - r * 0.72, y]).fill({ color: 0x1e2c48 }).stroke({ width: 2, color });
+        g.circle(x, y, r * 0.25).fill({ color: 0xffffff });
         this.light(x, y, 30, LIGHT.engine[team]);
       } else if (kind === KIND.platform) {
         const pts: number[] = [];
         for (let s = 0; s < 6; s++) pts.push(x + Math.cos((s * Math.PI) / 3) * r, y + Math.sin((s * Math.PI) / 3) * r);
-        g.poly(pts).fill({ color: 0x1a2236 }).stroke({ width: 5, color });
-        g.circle(x, y, r * 0.35).fill({ color });
+        g.poly(pts).fill({ color: 0x141d30 }).stroke({ width: 5, color });
+        g.circle(x, y, r * 0.58).fill({ color: 0x263452 }).stroke({ width: 2, color });
+        g.circle(x, y, r * 0.28).fill({ color });
         this.light(x, y, 24, LIGHT.engine[team]);
       } else {
-        g.circle(x, y, r).fill({ color: 0x1a2236 }).stroke({ width: 3, color });
-        g.circle(x, y, r * 0.4).fill({ color });
+        const oct: number[] = [];
+        for (let s = 0; s < 8; s++) oct.push(x + Math.cos((s * Math.PI) / 4 + Math.PI / 8) * r, y + Math.sin((s * Math.PI) / 4 + Math.PI / 8) * r);
+        g.poly(oct).fill({ color: 0x162034 }).stroke({ width: 3, color });
+        g.circle(x, y, r * 0.42).fill({ color });
       }
       const hull = b[k + 4];
       if (hull < 0.999) {
-        g.rect(x - r, y + r + 6, r * 2, 4).fill({ color: 0x000000, alpha: 0.6 });
+        g.rect(x - r - 1, y + r + 5, r * 2 + 2, 6).fill({ color: 0x050811, alpha: 0.78 });
         g.rect(x - r, y + r + 6, r * 2 * Math.max(0, hull), 4).fill({ color: team === selfTeam ? 0x5cff9d : 0xff5c6c });
       }
     }

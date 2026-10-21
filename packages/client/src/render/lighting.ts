@@ -14,11 +14,37 @@ import {
 import { AMBIENT, KEY_LIGHT, KEY_POWER } from '../art/raster';
 
 /**
+ * Cost knobs. At the settings PR #1 shipped with (half-resolution buffer, 16 shadowed lights per
+ * hull pixel, 64-step marches) a frame took ~120 ms on a typical GPU, ~9× the earlier lighting.
+ * These keep the same approach at a playable cost; raise them for quality on a fast GPU.
+ */
+export const LIGHT_QUALITY = {
+  /** Light buffer = screen size / this (2 = half resolution, 4 = quarter). */
+  bufferDivisor: 4,
+  /** Steps per cascade ray march. */
+  marchSteps: 28,
+  /**
+   * PR #1's leak-proof cascade merge: each ray re-traces toward the 4 upper probes before
+   * interpolating (4× the marching). Off = the cheaper single-trace merge, where light can leak a
+   * little through thin blockers as probes cross silhouette edges.
+   */
+  bilinearMerge: false,
+  /**
+   * Hulls shadow each other from point lights (PR #1). Costs two extra distance fields per frame
+   * plus a shadow trace per light per hull pixel; off = lights reach hulls unshadowed.
+   */
+  hullShadows: false,
+  /** Lights each hull pixel considers, strongest first. */
+  surfaceLights: 6,
+  /** Steps per shadow trace toward a surface light. */
+  shadowSteps: 16,
+} as const;
+
+/**
  * 2D radiance cascades (after Sannikov; layout as in jason.today's "Radiance Cascades" write-up):
  *   emitters → seed → jump flood → distance field → cascades N-1..0 (each merges the one above)
- * Output: `irradiance` (rgb light arriving in space, averaged over directions) and
- * `direction` (xy = luminance-weighted direction toward the light, z = total luminance), both at a
- * half of screen resolution. Hull normals use per-emitter, shadowed surface lighting; a faint overlay of the
+ * Output: `irradiance` (rgb light arriving in space, averaged over directions), at
+ * screen / LIGHT_QUALITY.bufferDivisor resolution. Hull normals use per-emitter, shadowed surface lighting; a faint overlay of the
  * irradiance lights space itself.
  */
 
@@ -85,6 +111,55 @@ void main() {
   fragColor = vec4(d, 0.0, 0.0, 1.0);
 }`;
 
+/** Ray-march step paired with the bilinear merge (PR #1): creep past pixel footprints, stop on solids. */
+const PRECISE_STEP = /* glsl */ `
+    vec4 surface = texture(uScene, uv);
+    if (d < 1.0 && surface.a > 0.25) return vec4(surface.rgb, 0.0);
+    // Distance is to a pixel center; leave room for its footprint.
+    float stepLength = max(0.35, d - 0.75);
+    p += dir * stepLength;
+    t += stepLength;`;
+
+/** Ray-march step paired with the single merge: stop at the first surface, step the full distance. */
+const FAST_STEP = /* glsl */ `
+    if (d < 0.75) return vec4(texture(uScene, uv).rgb, 0.0);
+    p += dir * d;
+    t += d;`;
+
+/** Cascade merge, one trace per ray (see LIGHT_QUALITY.bilinearMerge). */
+const SINGLE_MERGE = /* glsl */ `
+    vec4 r = march(center + dir * start, dir, len);
+    if (r.a > 0.0 && uCascade < uCount - 1.0) {
+      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
+      vec2 upperProbe = clamp((probe + 0.5) / 2.0, vec2(0.5), upperSize - 0.5);
+      vec4 up = texture(uUpper, (upperTile + upperProbe) / uRes);
+      r.rgb += r.a * up.rgb;
+      r.a *= up.a;
+    }`;
+
+/** Cascade merge, re-traced toward each of the 4 upper probes (PR #1). */
+const BILINEAR_MERGE = /* glsl */ `
+    vec4 r = vec4(0.0);
+    if (uCascade < uCount - 1.0) {
+      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
+      // Merge each connected interval BEFORE interpolation. Interpolating visibility first
+      // lets radiance jump through blockers as probes cross silhouette edges.
+      for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) {
+        vec2 corner = vec2(float(x), float(y));
+        vec2 q = clamp(upperBase + corner, vec2(0.0), upperSize - 1.0);
+        vec2 endpoint = (q + 0.5) * upperSpacing + dir * (start + len);
+        vec2 rayStart = center + dir * start;
+        vec2 delta = endpoint - rayStart;
+        float distanceToEnd = length(delta);
+        vec4 nearLight = march(rayStart, delta / max(distanceToEnd, 1e-4), distanceToEnd);
+        vec4 farLight = texture(uUpper, (upperTile + q + 0.5) / uRes);
+        vec2 weight = mix(1.0 - weights, weights, corner);
+        r += vec4(nearLight.rgb + nearLight.a * farLight.rgb, nearLight.a * farLight.a) * weight.x * weight.y;
+      }
+    } else {
+      r = march(center + dir * start, dir, len);
+    }`;
+
 const CASCADE_FRAG = /* glsl */ `#version 300 es
 precision highp float;
 in vec2 vUv;
@@ -102,16 +177,11 @@ const float TAU = 6.2831853;
 vec4 march(vec2 start, vec2 dir, float len) {
   vec2 p = start;
   float t = 0.0;
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < ${LIGHT_QUALITY.marchSteps}; i++) {
     vec2 uv = p / uRes;
     if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) break;
     float d = texture(uDist, uv).r;
-    vec4 surface = texture(uScene, uv);
-    if (d < 1.0 && surface.a > 0.25) return vec4(surface.rgb, 0.0);
-    // Distance is to a pixel center; leave room for its footprint.
-    float stepLength = max(0.35, d - 0.75);
-    p += dir * stepLength;
-    t += stepLength;
+${LIGHT_QUALITY.bilinearMerge ? PRECISE_STEP : FAST_STEP}
     if (t >= len) break;
   }
   return vec4(0.0, 0.0, 0.0, 1.0);
@@ -143,26 +213,7 @@ void main() {
     float index = group * 4.0 + float(i);
     float angle = (index + 0.5) * TAU / rayCount;
     vec2 dir = vec2(cos(angle), sin(angle));
-    vec4 r = vec4(0.0);
-    if (uCascade < uCount - 1.0) {
-      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
-      // Merge each connected interval BEFORE interpolation. Interpolating visibility first
-      // lets radiance jump through blockers as probes cross silhouette edges.
-      for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) {
-        vec2 corner = vec2(float(x), float(y));
-        vec2 q = clamp(upperBase + corner, vec2(0.0), upperSize - 1.0);
-        vec2 endpoint = (q + 0.5) * upperSpacing + dir * (start + len);
-        vec2 rayStart = center + dir * start;
-        vec2 delta = endpoint - rayStart;
-        float distanceToEnd = length(delta);
-        vec4 nearLight = march(rayStart, delta / max(distanceToEnd, 1e-4), distanceToEnd);
-        vec4 farLight = texture(uUpper, (upperTile + q + 0.5) / uRes);
-        vec2 weight = mix(1.0 - weights, weights, corner);
-        r += vec4(nearLight.rgb + nearLight.a * farLight.rgb, nearLight.a * farLight.a) * weight.x * weight.y;
-      }
-    } else {
-      r = march(center + dir * start, dir, len);
-    }
+${LIGHT_QUALITY.bilinearMerge ? BILINEAR_MERGE : SINGLE_MERGE}
     visibility += r.a;
     total += r.rgb;
     float l = dot(r.rgb, vec3(0.3, 0.5, 0.2));
@@ -208,8 +259,8 @@ uniform sampler2D uShadowDist;
 uniform sampler2D uInterior;
 uniform vec2 uLightRes;
 uniform vec2 uBufferToScreen;
-uniform vec4 uLights[16]; // buffer x/y, radius in screen pixels, unused
-uniform vec4 uLightColors[16];
+uniform vec4 uLights[${LIGHT_QUALITY.surfaceLights}]; // buffer x/y, radius in screen pixels, unused
+uniform vec4 uLightColors[${LIGHT_QUALITY.surfaceLights}];
 uniform float uLightingEnabled;
 uniform vec4 uColor;
 uniform vec3 uKey;
@@ -221,13 +272,14 @@ uniform float uNormalStrength;
 // Skip the receiver's own solid interior, then trace toward the known area emitter.
 // This avoids both self-blackening and the sparse angular hits that formed blue bands.
 float visibility(vec2 start, vec2 end, float radius) {
+  if (${LIGHT_QUALITY.hullShadows ? 'false' : 'true'}) return 1.0;
   vec2 delta = end - start;
   float lengthToLight = length(delta);
   vec2 dir = delta / max(lengthToLight, 0.001);
   float t = 0.0;
   bool insideReceiver = texture(uOcclusion, start / uLightRes).a > 0.25;
   float result = 1.0;
-  for (int step = 0; step < 64; step++) {
+  for (int step = 0; step < ${LIGHT_QUALITY.shadowSteps}; step++) {
     if (t >= lengthToLight - radius) return result;
     vec2 uv = (start + dir * t) / uLightRes;
     if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return result;
@@ -257,7 +309,7 @@ void main() {
   vec3 light = vec3(uAmbient) + uKeyPower * kd * vec3(0.96, 0.98, 1.05);
   vec3 highlights = vec3(ks);
   vec2 point = vScreen * uLightRes;
-  for (int i = 0; i < 16; i++) {
+  for (int i = 0; i < ${LIGHT_QUALITY.surfaceLights}; i++) {
     if (uLightingEnabled < 0.5 || uLights[i].z <= 0.0) continue;
     vec2 delta = (uLights[i].xy - point) * uBufferToScreen;
     float radius = uLights[i].z;
@@ -323,7 +375,6 @@ export class Lighting {
   h = 0;
   private sceneRT!: RenderTexture;
   irradiance!: RenderTexture;
-  direction!: RenderTexture;
   private occlusionRT!: RenderTexture;
   private shadowDist!: RenderTexture;
   private interiorRT!: RenderTexture;
@@ -350,11 +401,11 @@ export class Lighting {
     this.lightUniforms.uniforms.uLightingEnabled = enabled ? 1 : 0;
   }
 
-  /** Light buffer sized to half of the screen, snapped to the top cascade's probe spacing. */
+  /** Light buffer sized to screen / LIGHT_QUALITY.bufferDivisor, snapped to the top cascade's probe spacing. */
   resize(screenW: number, screenH: number): void {
     const snap = 32;
-    const w = Math.max(snap, Math.round(screenW / 2 / snap) * snap);
-    const h = Math.max(snap, Math.round(screenH / 2 / snap) * snap);
+    const w = Math.max(snap, Math.round(screenW / LIGHT_QUALITY.bufferDivisor / snap) * snap);
+    const h = Math.max(snap, Math.round(screenH / LIGHT_QUALITY.bufferDivisor / snap) * snap);
     if (w === this.w && h === this.h) return;
     this.w = w;
     this.h = h;
@@ -387,7 +438,6 @@ export class Lighting {
     const casA = make(true);
     const casB = make(true);
     this.irradiance = make(true);
-    this.direction = make(true);
     this.occlusionRT = make(true);
     this.shadowDist = make(false);
     this.interiorRT = make(false);
@@ -415,8 +465,10 @@ export class Lighting {
       add(this.programs.dist, { uSeed: src.source }, { uRes: vec2 }, target);
     };
     distanceField(this.sceneRT, 0, distRT);
-    distanceField(this.occlusionRT, 0, this.shadowDist);
-    distanceField(this.occlusionRT, 1, this.interiorRT);
+    if (LIGHT_QUALITY.hullShadows) {
+      distanceField(this.occlusionRT, 0, this.shadowDist);
+      distanceField(this.occlusionRT, 1, this.interiorRT);
+    }
 
     // Enough cascades that the top interval reaches across the buffer: Σ 4^n ≥ diagonal.
     const count = Math.min(6, Math.ceil(Math.log(Math.hypot(w, h) * 3 + 1) / Math.log(4)));
@@ -440,7 +492,6 @@ export class Lighting {
       [upper, out] = [out, upper];
     }
     cascade(0, upper, 0, this.irradiance);
-    cascade(0, upper, 1, this.direction);
     this.chain = chain;
     for (const s of this.litShaders) this.bindLightTextures(s);
   }
@@ -456,8 +507,8 @@ export class Lighting {
         uShadowDist: this.black.source,
         uInterior: this.black.source,
         surface: new UniformGroup({
-          uLights: { value: new Float32Array(16 * 4), type: 'vec4<f32>', size: 16 },
-          uLightColors: { value: new Float32Array(16 * 4), type: 'vec4<f32>', size: 16 },
+          uLights: { value: new Float32Array(LIGHT_QUALITY.surfaceLights * 4), type: 'vec4<f32>', size: LIGHT_QUALITY.surfaceLights },
+          uLightColors: { value: new Float32Array(LIGHT_QUALITY.surfaceLights * 4), type: 'vec4<f32>', size: LIGHT_QUALITY.surfaceLights },
         }),
         lightUniforms: this.lightUniforms,
         flash: new UniformGroup({ uFlash: { value: 0, type: 'f32' } }),
@@ -513,16 +564,18 @@ export class Lighting {
       const positions = uniforms.uLights as Float32Array;
       const colors = uniforms.uLightColors as Float32Array;
       positions.fill(0);
-      for (let i = 0; i < Math.min(16, ranked.length); i++) {
+      for (let i = 0; i < Math.min(LIGHT_QUALITY.surfaceLights, ranked.length); i++) {
         const e = ranked[i].light;
         positions.set([this.w / 2 + (e.x - camX) * sx, this.h / 2 + (e.y - camY) * sy, e.radius * zoom, 0], i * 4);
         colors.set([((e.color >> 16) & 255) / 255, ((e.color >> 8) & 255) / 255, (e.color & 255) / 255, 1], i * 4);
       }
     }
     const r = this.renderer;
-    this.scene.visible = false;
-    r.render({ container: this.root, target: this.occlusionRT, clear: true, clearColor: [0, 0, 0, 0] });
-    this.scene.visible = true;
+    if (LIGHT_QUALITY.hullShadows) {
+      this.scene.visible = false;
+      r.render({ container: this.root, target: this.occlusionRT, clear: true, clearColor: [0, 0, 0, 0] });
+      this.scene.visible = true;
+    }
     r.render({ container: this.root, target: this.sceneRT, clear: true, clearColor: [0, 0, 0, 0] });
     for (const p of this.chain) r.render({ container: p.mesh, target: p.target, clear: true, clearColor: [0, 0, 0, 0] });
   }

@@ -24,8 +24,9 @@ const save = (key: string, value: string): void => {
 
 menu.innerHTML = `
   <div class="card">
+    <div class="sys-tag">ORB-COM // TACTICAL FLEET TERMINAL v1.4</div>
     <h1>VOID <span>FRONT</span></h1>
-    <p class="sub">Offline vs bots · six classes · Fleet Command</p>
+    <p class="sub">9 Industrial Hull Classes · 90 Upgrade Nodes · Orbital Sector Warfare</p>
     <label>Fleet size
       <select id="fleet">
         <option value="20">20 v 20</option>
@@ -57,7 +58,7 @@ menu.innerHTML = `
     <div class="keys">
       <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> signature · <kbd>T</kbd> ultimate · <kbd>G</kbd> extra</div>
       <div><kbd>Q W E R</kbd> buy stat upgrades with shards (WASD: <kbd>Z X C V</kbd>) · <kbd>1</kbd> <kbd>2</kbd> pick a tier with XP</div>
-      <div><kbd>Space</kbd> brake · <kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
+      <div><kbd>Space</kbd> brake · <kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map · <kbd>Wheel</kbd> zoom</div>
     </div>
     <p class="note">You fight for Cobalt (blue). Pick a hull class (or Fleet Commander) when you drop in. Take nodes, break the Ember FOBs and then the Ember Titan on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
   </div>`;

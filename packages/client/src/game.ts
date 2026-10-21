@@ -36,6 +36,11 @@ export class Game {
 
   async start(stage: HTMLElement, hudRoot: HTMLElement): Promise<void> {
     await this.renderer.init(stage);
+    try {
+      this.setPilotZoom(Number(localStorage.getItem('vf.pilotZoom') ?? 1) || 1);
+    } catch {
+      /* storage unavailable */
+    }
     this.hud = new Hud(hudRoot, this.opts.scheme, {
       stat: (i) => this.send({ type: 'stat', index: i }),
       tier: (o) => this.send({ type: 'tier', option: o }),
@@ -52,7 +57,10 @@ export class Game {
       bigMap: () => this.hud.toggleMap(),
       autofire: (on) => this.hud.setAutofire(on),
       press: (x, y, button) => this.onPress(x, y, button),
-      wheel: (dy, x, y) => this.mode() === 'commander' && this.renderer.zoomAt(dy < 0 ? 1.15 : 1 / 1.15, x, y),
+      wheel: (dy, x, y) => {
+        if (this.mode() === 'commander') this.renderer.zoomAt(dy < 0 ? 1.15 : 1 / 1.15, x, y);
+        else this.setPilotZoom(this.renderer.pilotZoom * (dy < 0 ? 1.1 : 1 / 1.1));
+      },
       escape: () => this.armOrder(null),
     });
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
@@ -69,6 +77,16 @@ export class Game {
   /** Dev console helpers: `game.grant(500, 200)`, `game.grant(0, 0, true)` to self-destruct. */
   grant(xp: number, shards: number, kill = false): void {
     if (import.meta.env.DEV) this.send({ type: 'devGrant', xp, shards, kill });
+  }
+
+  /** Pilot wheel zoom, kept between sessions. */
+  private setPilotZoom(z: number): void {
+    this.renderer.pilotZoom = Math.min(1.5, Math.max(0.6, z));
+    try {
+      localStorage.setItem('vf.pilotZoom', String(this.renderer.pilotZoom));
+    } catch {
+      /* storage unavailable: zoom just won't persist */
+    }
   }
 
   private send(msg: ToWorker): void {
