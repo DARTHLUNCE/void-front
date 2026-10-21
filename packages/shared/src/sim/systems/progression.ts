@@ -228,6 +228,9 @@ export function respawnShip(w: World, s: Ship): void {
   s.vx = 0;
   s.vy = 0;
   s.angle = s.team === 0 ? 0 : Math.PI;
+  s.thrustAngle = s.angle;
+  s.ax = s.ay = s.angularVelocity = 0;
+  s.engineForward = s.engineLateral = s.engineTorque = 0;
   s.input.aim = s.angle;
   applyLoadout(s);
   s.hull = s.maxHull;

@@ -1,3 +1,4 @@
+import { THRUSTERS, HULL_CLASS_SCALE } from '@void-front/shared';
 import type { ClassId } from '@void-front/shared';
 import { emitter, nozzle, plus, seam } from './parts';
 import { BATTLECRUISER_HULLS, CRUISER_HULLS, DESTROYER_HULLS } from './lineHulls';
@@ -11,7 +12,7 @@ export interface HullArt {
   tier: 0 | 3;
   shapes: Shape[];
   /** Engine exhaust points (in-game flares and light emitters). */
-  engines: { x: number; y: number; r: number }[];
+  engines: readonly { x: number; y: number; r: number }[];
 }
 
 /*
@@ -34,7 +35,7 @@ const patrol: HullArt = {
   name: 'Patrol Craft',
   classId: 'patrol',
   tier: 0,
-  engines: [{ x: -25, y: 0, r: 4 }],
+  engines: THRUSTERS.patrol,
   shapes: [
     // Cannons first, so they slide out from under the wing roots.
     ...pair({ t: 'poly', pts: rect(-2, -9.8, 18, -7.8), fill: 'metal' }),
@@ -59,10 +60,7 @@ const striker: HullArt = {
   name: 'Striker',
   classId: 'patrol',
   tier: 3,
-  engines: [
-    { x: -24, y: -3.6, r: 3 },
-    { x: -24, y: 3.6, r: 3 },
-  ],
+  engines: THRUSTERS.striker,
   shapes: [
     ...pair({ t: 'poly', pts: [-2, -6, 11, -23, 4, -25, -17, -7], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [2, -9, 9, -19, 5, -20, -4, -9], fill: 'dark' }),
@@ -87,11 +85,7 @@ const comet: HullArt = {
   name: 'Comet',
   classId: 'patrol',
   tier: 3,
-  engines: [
-    { x: -21, y: 0, r: 3.4 },
-    { x: -19, y: -7.5, r: 2.4 },
-    { x: -19, y: 7.5, r: 2.4 },
-  ],
+  engines: THRUSTERS.comet,
   shapes: [
     ...pair({ t: 'poly', pts: [-4, -13, -13, -20.5, -20, -20.5, -18, -11.5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-10, -15, -14, -18.5, -18, -18.5, -16.5, -14], fill: 'dark' }),
@@ -115,10 +109,7 @@ const corvette: HullArt = {
   name: 'Corvette',
   classId: 'corvette',
   tier: 0,
-  engines: [
-    { x: -6.5, y: -4.6, r: 2.4 },
-    { x: -6.5, y: 4.6, r: 2.4 },
-  ],
+  engines: THRUSTERS.corvette,
   shapes: [
     { t: 'poly', pts: sym([21, 0, 7, -8, -8, -25, -12, -23, -6, -15, -13, -10, -7, -5.5, -12, 0]), fill: 'hull' },
     ...pair({ t: 'poly', pts: [2, -9, -7, -20, -9, -19, -2, -9], fill: 'dark' }),
@@ -138,7 +129,7 @@ const wraith: HullArt = {
   name: 'Wraith',
   classId: 'corvette',
   tier: 3,
-  engines: [{ x: -22, y: 0, r: 3 }],
+  engines: THRUSTERS.wraith,
   shapes: [
     ...pair({ t: 'poly', pts: [9, -3, -5, -10, -29, -26, -22, -13, -15, -3.4], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-2, -7, -9, -11, -22, -21, -16, -11], fill: 'dark' }),
@@ -158,10 +149,7 @@ const specter: HullArt = {
   name: 'Specter',
   classId: 'corvette',
   tier: 3,
-  engines: [
-    { x: -26, y: -5, r: 2.6 },
-    { x: -26, y: 5, r: 2.6 },
-  ],
+  engines: THRUSTERS.specter,
   shapes: [
     { t: 'poly', pts: [...specterOuter, ...specterInner], fill: 'hull' },
     ...pair({ t: 'poly', pts: arc(-4, 0, 20.5, -1.25, -2.6, 10).concat(arc(2, 0, 17, -2.45, -1.35, 8)), fill: 'dark' }),
@@ -181,11 +169,7 @@ const battleship: HullArt = {
   name: 'Battleship',
   classId: 'battleship',
   tier: 0,
-  engines: [
-    { x: -40, y: -10, r: 4.2 },
-    { x: -40, y: 0, r: 3.4 },
-    { x: -40, y: 10, r: 4.2 },
-  ],
+  engines: THRUSTERS.battleship,
   shapes: [
     { t: 'poly', pts: rect(-40, -15.5, -30, 15.5), fill: 'metal' },
     { t: 'poly', pts: sym([44, 0, 39, -8, 28, -14, 12, -15, 12, -18, -22, -18, -28, -15, -36, -14, -36, 0]), fill: 'hull' },
@@ -218,10 +202,7 @@ const bastion: HullArt = {
   name: 'Bastion',
   classId: 'battleship',
   tier: 3,
-  engines: [
-    { x: -33, y: -6, r: 4 },
-    { x: -33, y: 6, r: 4 },
-  ],
+  engines: THRUSTERS.bastion,
   shapes: [
     { t: 'poly', pts: rect(-34, -11, -26, 11), fill: 'metal' },
     { t: 'poly', pts: sym([18, 0, 14, -10, 2, -15, -20, -15, -28, -10, -30, 0]), fill: 'hull' },
@@ -246,11 +227,7 @@ const juggernaut: HullArt = {
   name: 'Juggernaut',
   classId: 'battleship',
   tier: 3,
-  engines: [
-    { x: -44, y: -18.5, r: 5.4 },
-    { x: -44, y: 18.5, r: 5.4 },
-    { x: -29, y: 0, r: 3.6 },
-  ],
+  engines: THRUSTERS.juggernaut,
   shapes: [
     ...pair({ t: 'poly', pts: [-12, -12, -16, -25, -42, -25, -45, -22, -45, -15, -42, -12], fill: 'hull' }),
     ...pair({ t: 'poly', pts: rect(-38, -22.4, -21, -15), fill: 'dark' }),
@@ -273,7 +250,7 @@ const dreadnought: HullArt = {
   name: 'Dreadnought',
   classId: 'dreadnought',
   tier: 0,
-  engines: [{ x: -27, y: 0, r: 3.6 }],
+  engines: THRUSTERS.dreadnought,
   shapes: [
     ...pair({ t: 'poly', pts: [-14, -7, -22, -17, -29, -17, -22, -5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-17, -9, -22, -15, -25, -15, -21, -8.5], fill: 'dark' }),
@@ -296,10 +273,7 @@ const railstorm: HullArt = {
   name: 'Railstorm',
   classId: 'dreadnought',
   tier: 3,
-  engines: [
-    { x: -26.5, y: -3.8, r: 3 },
-    { x: -26.5, y: 3.8, r: 3 },
-  ],
+  engines: THRUSTERS.railstorm,
   shapes: [
     ...pair({ t: 'poly', pts: [-10, -9, -20, -19, -28, -17, -20, -9], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-13, -11, -20, -17, -24, -16, -18.5, -10.5], fill: 'dark' }),
@@ -324,7 +298,7 @@ const eclipse: HullArt = {
   name: 'Eclipse',
   classId: 'dreadnought',
   tier: 3,
-  engines: [{ x: -27, y: 0, r: 3.6 }],
+  engines: THRUSTERS.eclipse,
   shapes: [
     ...pair({ t: 'poly', pts: [-8, -8, -18, -19, -28, -18, -19, -7.5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-11, -10, -18, -16.5, -23, -16, -17, -9.5], fill: 'dark' }),
@@ -348,12 +322,7 @@ const carrier: HullArt = {
   name: 'Carrier',
   classId: 'carrier',
   tier: 0,
-  engines: [
-    { x: -30, y: -17, r: 3.4 },
-    { x: -32, y: -6, r: 3.4 },
-    { x: -32, y: 6, r: 3.4 },
-    { x: -30, y: 17, r: 3.4 },
-  ],
+  engines: THRUSTERS.carrier,
   shapes: [
     { t: 'poly', pts: sym([28, 0, 26, -8, 18, -20, 2, -31, -10, -33, -20, -27, -30, -20, -33, -9, -33, 0]), fill: 'hull' },
     ...pair({ t: 'poly', pts: [12, -20, 0, -28, -14, -27, -12, -17], fill: 'dark' }),
@@ -389,10 +358,7 @@ const hive: HullArt = {
   name: 'Hive',
   classId: 'carrier',
   tier: 3,
-  engines: [
-    { x: -23, y: -8.3, r: 3 },
-    { x: -23, y: 8.3, r: 3 },
-  ],
+  engines: THRUSTERS.hive,
   shapes: [
     ...pair({ t: 'poly', pts: [20, -11, 35, -10, 37, -5.5, 21, -4], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [33, -10.2, 39.5, -13, 40.5, -7, 37, -5.5], fill: 'metal' }),
@@ -410,10 +376,7 @@ const overlord: HullArt = {
   name: 'Overlord',
   classId: 'carrier',
   tier: 3,
-  engines: [
-    { x: -34, y: -7, r: 3.4 },
-    { x: -34, y: 7, r: 3.4 },
-  ],
+  engines: THRUSTERS.overlord,
   shapes: [
     ...pair({ t: 'poly', pts: [-11, -10.5, -17, -33, -26, -33, -27, -10.5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-14, -16, -19, -30, -24, -30, -24, -16], fill: 'dark' }),
@@ -441,10 +404,7 @@ const frigate: HullArt = {
   name: 'Frigate',
   classId: 'frigate',
   tier: 0,
-  engines: [
-    { x: -21, y: -6, r: 3 },
-    { x: -21, y: 6, r: 3 },
-  ],
+  engines: THRUSTERS.frigate,
   shapes: [
     ...pair({ t: 'poly', pts: [-17, -11.5, -17, -17, -14, -19, 0, -19, 2, -11.5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: rect(-14, -17, -2, -14), fill: 'dark' }),
@@ -471,10 +431,7 @@ const fortress: HullArt = {
   name: 'Fortress',
   classId: 'frigate',
   tier: 3,
-  engines: [
-    { x: -25, y: -6.5, r: 3.2 },
-    { x: -25, y: 6.5, r: 3.2 },
-  ],
+  engines: THRUSTERS.fortress,
   shapes: [
     ...pair({ t: 'poly', pts: [-24, -12, -24, -15, -22, -16.2, 13, -16.2, 15, -15, 15, -12], fill: 'metal' }),
     ...fortressTreads,
@@ -500,7 +457,7 @@ const warden: HullArt = {
   name: 'Warden',
   classId: 'frigate',
   tier: 3,
-  engines: [{ x: -21, y: 0, r: 3.6 }],
+  engines: THRUSTERS.warden,
   shapes: [
     ...pair({ t: 'poly', pts: [6, -5, 4, -22, -4, -22, -6, -5], fill: 'hull' }),
     ...pair({ t: 'poly', pts: rect(-2, -18, 2, -9), fill: 'dark' }),
@@ -523,18 +480,6 @@ const warden: HullArt = {
  * read as a size ladder (Patrol Craft ~40 u long up to a ~170 u Dreadnought). The new line hulls
  * (Destroyer, Cruiser, Battlecruiser) are drawn at their final size.
  */
-const CLASS_SCALE: Record<ClassId, number> = {
-  patrol: 0.65,
-  corvette: 1,
-  frigate: 1.1,
-  destroyer: 1,
-  cruiser: 1,
-  battlecruiser: 1,
-  battleship: 1.6,
-  dreadnought: 2.2,
-  carrier: 2,
-};
-
 function scaleShape(s: Shape, k: number): Shape {
   const w = 'w' in s && s.w !== undefined ? { w: s.w * k } : {};
   switch (s.t) {
@@ -549,7 +494,7 @@ function scaleShape(s: Shape, k: number): Shape {
 }
 
 function scaled(h: HullArt): HullArt {
-  const k = CLASS_SCALE[h.classId];
+  const k = HULL_CLASS_SCALE[h.classId];
   if (k === 1) return h;
   return { ...h, shapes: h.shapes.map((s) => scaleShape(s, k)), engines: h.engines.map((e) => ({ x: e.x * k, y: e.y * k, r: e.r * k })) };
 }

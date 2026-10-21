@@ -56,6 +56,8 @@ function applyInput(w: World): void {
     inp.ultimate = latest.ultimate;
     inp.extra = latest.extra;
     inp.cruise = latest.cruise;
+    inp.brake = latest.brake;
+    inp.steerWithAim = latest.steerWithAim;
   }
   const stat = statQueue.shift();
   if (stat !== undefined) inp.statPick = stat;

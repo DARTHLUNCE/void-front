@@ -124,12 +124,12 @@ export class Hud {
         </div>
       </div>
       <div data-k="abilities" class="abilities panel hidden">
-        ${['RMB', 'Space', 'G']
+        ${['RMB', 'T', 'G']
           .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
           .join('')}
         <div class="meters">
           <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
-          <div class="chips"><span data-k="cruise" class="chip">Cruise · Shift</span><span data-k="auto" class="chip">Auto-fire · ${autofireKeyLabel(scheme)}</span></div>
+          <div class="chips"><span data-k="brake" class="chip">Brake · Space</span><span data-k="cruise" class="chip">Cruise · Shift</span><span data-k="auto" class="chip">Auto-fire · ${autofireKeyLabel(scheme)}</span></div>
         </div>
       </div>
       <div data-k="tierPop" class="tierpop panel hidden"></div>
@@ -214,6 +214,8 @@ export class Hud {
     this.mini.height = this.bigMap ? 440 : 150;
     this.lastMini = 0;
   }
+
+  setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
 
   setAutofire(on: boolean): void {
     this.$.auto.classList.toggle('on', on);
@@ -407,7 +409,7 @@ export class Hud {
       row.querySelector('.cost')!.textContent = cost < 0 ? 'MAX' : `◆ ${cost}`;
     }
 
-    // Ability slots: signature (RMB), ultimate (Space, tier 5), extra (G, from a tier node).
+    // Ability slots: signature (RMB), ultimate (T, tier 5), extra (G, from a tier node).
     const sig = nodes.reduce((a, n) => n.replacesSignature ?? a, cls.signature);
     const ult = nodes.find((n) => n.ultimate)?.ultimate;
     const extra = nodes.find((n) => n.extraAbility)?.extraAbility;
@@ -468,7 +470,7 @@ export class Hud {
           <p class="hint">Press <kbd>1</kbd> or <kbd>2</kbd> (or click) to choose.${hullTier ? ' <b>New hull:</b> your stat upgrades reset and their costs start over.' : ''}</p>
           ${tier.options
             .map(
-              (o, i) => `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><b>${o.name}</b>${o.hullModel ? '<small>hull change</small>' : o.ultimate ? '<small>ultimate · Space</small>' : o.extraAbility ? '<small>extra ability · G</small>' : ''}<em>${o.description}</em></button>`,
+              (o, i) => `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><b>${o.name}</b>${o.hullModel ? '<small>hull change</small>' : o.ultimate ? '<small>ultimate · T</small>' : o.extraAbility ? '<small>extra ability · G</small>' : ''}<em>${o.description}</em></button>`,
             )
             .join('')}`;
       }

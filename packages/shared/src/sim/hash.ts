@@ -21,6 +21,13 @@ export function hashWorld(w: World): string {
     mix(s.vx);
     mix(s.vy);
     mix(s.angle);
+    mix(s.thrustAngle);
+    mix(s.ax);
+    mix(s.ay);
+    mix(s.angularVelocity);
+    mix(s.engineForward);
+    mix(s.engineLateral);
+    mix(s.engineTorque);
     mix(s.hull);
     mix(s.xp);
     mix(s.shards);

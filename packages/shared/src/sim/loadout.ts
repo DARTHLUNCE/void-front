@@ -22,7 +22,7 @@ export interface DeckRow {
 }
 
 export interface DeckAbility {
-  slot: 'RMB' | 'Space' | 'G';
+  slot: 'RMB' | 'T' | 'G';
   name: string;
   cooldown: number;
   charges: number;
@@ -126,7 +126,7 @@ export function loadoutDeck(classId: ClassId, picks: ArrayLike<number>, statLeve
     st && def ? { slot, name: def.name, cooldown: def.cooldown * v('cooldown', 1), charges: st.maxCharges } : null;
   const abilities = [
     ability('RMB', ship.signature, ship.signature.def),
-    ability('Space', ship.ultimate, ship.ultimate?.def),
+    ability('T', ship.ultimate, ship.ultimate?.def),
     ability('G', ship.extra, ship.extra?.def),
   ].filter((a): a is DeckAbility => a !== null);
   rows.push(...abilities.map((a) => ({ id: `cd.${a.slot}`, group: 'Abilities' as const, label: `${a.name} cooldown`, value: a.cooldown, neutral: -1, unit: 's' as const, better: 'lower' as const })));

@@ -20,6 +20,9 @@ export function place(w: World, s: Ship, x: number, y: number, angle: number): v
   s.vx = 0;
   s.vy = 0;
   s.angle = angle;
+  s.thrustAngle = s.angle;
+  s.ax = s.ay = s.angularVelocity = 0;
+  s.engineForward = s.engineLateral = s.engineTorque = 0;
   s.input.aim = angle;
   rebuildShipHash(w);
 }

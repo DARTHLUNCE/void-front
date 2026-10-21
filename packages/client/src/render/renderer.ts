@@ -206,6 +206,7 @@ export class Renderer {
   private info: MatchInfo | null = null;
   private seenTick = -1;
   private lastFrame = 0;
+  private readonly exhaustGimbals: number[] = [];
   /** Commander mode: free war-map camera instead of following a ship. */
   commander = false;
   private cmdZoom = 0;
@@ -318,6 +319,7 @@ export class Renderer {
     this.rings.length = 0;
     this.beams.length = 0;
     this.seenTick = -1;
+    this.exhaustGimbals.length = 0;
     this.cmdZoom = 0;
     const home = KESSLER_REACH.motherships[0];
     this.camera.x = home.x;
@@ -404,6 +406,7 @@ export class Renderer {
 
     const dt = this.lastFrame ? Math.min(0.1, (now - this.lastFrame) / 1000) : 1 / 60;
     this.lastFrame = now;
+    const exhaustBlend = 1 - Math.exp(-dt / 0.1);
 
     // Pilots: the camera follows our ship and pulls back while cruising. Docked: it looks at our
     // mothership. Commander: a free war-map camera (pan / zoom from Game).
@@ -541,6 +544,7 @@ export class Renderer {
           .fill({ color, alpha: cloaked ? 0.4 : 0.95 })
           .stroke({ width: 1 / z, color: 0x000000, alpha: 0.6 });
       }
+      const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
       const glow = this.glows.next();
       glow.position.set(x, y);
       const dashing = (flags & SHIP_FLAG.dashing) !== 0;
@@ -548,10 +552,9 @@ export class Renderer {
       glow.tint = dashing ? 0xffffff : color;
       glow.alpha = dashing ? 0.8 : isMe ? 0.45 : 0.3;
       glow.scale.set(cruisingShip ? 1.3 : dashing ? 1.1 : 0.7, dashing || cruisingShip ? 0.55 : 0.7);
-      glow.rotation = Math.atan2(b[k + SHIP.vy], b[k + SHIP.vx]);
+      glow.rotation = rot;
 
       const art = this.hullFor(curr, slot);
-      const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
       const s = this.hullPool(art.id, team).next();
       s.position.set(x, y);
       s.rotation = rot;
@@ -559,13 +562,19 @@ export class Renderer {
 
       // Engine flares at the hull's exhaust points, stretched by speed.
       const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
-      const thrust = Math.min(1, speed / 320) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
+      const thrust = Math.max(b[k + SHIP.enginePower], Math.min(1, speed / 320) * 0.25) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
       const cos = Math.cos(rot);
       const sin = Math.sin(rot);
+      const forceAngle = lerpAngle(pb[pk + SHIP.thrustAngle], b[k + SHIP.thrustAngle], a);
+      const gimbal = b[k + SHIP.enginePower] > 0.01 ? Math.atan2(Math.sin(forceAngle - rot), Math.cos(forceAngle - rot)) : 0;
+      // Smooth the plume relative to the hull so gyro corrections don't wag the entire trail.
+      const exhaustGimbal = (this.exhaustGimbals[slot] ?? gimbal) + (gimbal - (this.exhaustGimbals[slot] ?? gimbal)) * exhaustBlend;
+      this.exhaustGimbals[slot] = exhaustGimbal;
       for (const e of art.engines) {
         const f = this.flares.next();
-        f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
-        f.rotation = rot;
+        const hullScale = isMe ? 1.15 : 1;
+        f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
+        f.rotation = rot + exhaustGimbal;
         f.tint = team === 0 ? 0x7df9ff : 0xffc061;
         f.alpha = 0.55 + 0.35 * thrust;
         f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));

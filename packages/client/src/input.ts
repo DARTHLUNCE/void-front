@@ -63,7 +63,7 @@ export class Input {
         if (!e.repeat) this.h.scoreboard(true);
         return;
       }
-      // Space is the ultimate: never let it scroll or re-click a focused HUD button.
+      // Space is the brake: never let it scroll or re-click a focused HUD button.
       if (e.code === 'Space') e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
@@ -82,6 +82,7 @@ export class Input {
       else if (e.code === 'Equal') this.h.digit(12);
     });
     this.on(window, 'keyup', (e: KeyboardEvent) => {
+      if (e.code === 'Space') e.preventDefault();
       if (e.code === 'Tab') {
         e.preventDefault();
         this.h.scoreboard(false);
@@ -124,19 +125,24 @@ export class Input {
       }
     }
     const cursor = toWorld(this.mouseX, this.mouseY);
+    const braking = this.braking;
     return {
-      moveX,
-      moveY,
+      moveX: braking ? 0 : moveX,
+      moveY: braking ? 0 : moveY,
       aim,
       cursorX: cursor.x,
       cursorY: cursor.y,
       fire: this.left || this.autofire,
-      ability: this.right,
-      ultimate: this.keys.has('Space'),
+      ability: this.right && !braking,
+      ultimate: this.keys.has('KeyT'),
       extra: this.keys.has('KeyG'),
-      cruise: this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'),
+      cruise: !braking && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')),
+      brake: braking,
+      steerWithAim: this.scheme === 'mouse',
     };
   }
+
+  get braking(): boolean { return this.keys.has('Space'); }
 
   /** Held-key test for the commander camera. */
   held(code: string): boolean {

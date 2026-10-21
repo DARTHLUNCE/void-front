@@ -1,3 +1,5 @@
+import { MATCH } from '../../content/match';
+import { angleDelta } from '../angles';
 import { ECONOMY } from '../../content/progression';
 import { QUIRK_PARAMS } from '../../content/quirks';
 import { DEPLOYABLES, NODE, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
@@ -93,19 +95,24 @@ export function spawnPattern(
 /** Pass 3 for one ship: turn toward the aim and work the trigger. Abilities run from step.ts. */
 export function aimAndFire(w: World, s: Ship): void {
   const inp = s.input;
-  const turn = s.cls.turnRate;
-  if (turn) {
-    let d = inp.aim - s.angle;
-    d = Math.atan2(Math.sin(d), Math.cos(d));
-    const max = turn * DT;
-    s.angle += d > max ? max : d < -max ? -max : d;
+  const tuning = MATCH.movement;
+  const turnRate = s.cls.turnRate ?? tuning.aimTurnRate;
+  const desiredTurn = Math.max(-turnRate, Math.min(turnRate, angleDelta(s.angle, inp.aim) * tuning.aimResponse));
+  const driven = inp.steerWithAim && !inp.brake && !hasStatus(s, 'stun') && !hasStatus(s, 'rooted') && s.dashTime <= 0 && Math.hypot(inp.moveX, inp.moveY) > 0;
+  if (driven) {
+    // The aft drive's actual force produces yaw: torque / moment of inertia.
+    s.angularVelocity += s.engineTorque / (s.radius * s.radius * tuning.inertiaFactor) * DT;
   } else {
-    s.angle = inp.aim;
+    // Attitude jets retain aim control while coasting, braking or using vector controls.
+    s.angularVelocity += (desiredTurn - s.angularVelocity) * (1 - Math.exp(-tuning.angularResponse * DT));
   }
+  s.angularVelocity = Math.max(-turnRate, Math.min(turnRate, s.angularVelocity));
+  const angle = s.angle + s.angularVelocity * DT;
+  s.angle = Math.atan2(Math.sin(angle), Math.cos(angle));
 
   s.fireCooldown -= DT;
   const quirk = quirkOf(s);
-  const able = !inp.cruise && s.dashTime <= 0 && canAct(s) && (quirk.canFire?.(w, s) ?? true);
+  const able = (!inp.cruise || inp.brake) && s.dashTime <= 0 && canAct(s) && (quirk.canFire?.(w, s) ?? true);
   const charging = s.cls.quirk === 'chargeShot';
 
   if (charging) {

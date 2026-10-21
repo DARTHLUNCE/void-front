@@ -12,6 +12,8 @@ export interface InputFrame {
   ultimate: boolean;
   extra: boolean;
   cruise: boolean;
+  brake: boolean;
+  steerWithAim: boolean;
 }
 
 export type ToWorker =

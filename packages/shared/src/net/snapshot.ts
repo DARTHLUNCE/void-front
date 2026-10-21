@@ -18,7 +18,7 @@ export const SNAP = {
   header: 48,
   self: 64,
   command: COMMANDS.length * 2,
-  ship: 16,
+  ship: 18,
   projectile: 7,
   crystal: 3,
   point: 8,
@@ -139,6 +139,8 @@ export const SHIP = {
   /** Bit i set = STATUS_IDS[i] active. */
   status: 14,
   quirkGauge: 15,
+  thrustAngle: 16,
+  enginePower: 17,
 } as const;
 export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visible1: 16, human: 32, invulnerable: 64, retreating: 128, commander: 256, docked: 512 } as const;
 
@@ -343,6 +345,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + SHIP.vx] = s.vx;
     b[k + SHIP.vy] = s.vy;
     b[k + SHIP.angle] = s.angle;
+    b[k + SHIP.thrustAngle] = s.thrustAngle;
+    b[k + SHIP.enginePower] = Math.min(1, Math.hypot(s.engineForward, s.engineLateral) / (s.cls.speed * 3.2));
     b[k + SHIP.hull] = s.hull;
     b[k + SHIP.maxHull] = s.maxHull;
     b[k + SHIP.rank] = s.rank;

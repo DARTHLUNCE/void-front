@@ -11,6 +11,29 @@ export const MATCH = {
   cruise: { spool: 1, speedMul: 2.5 },
   /** Ship acceleration responsiveness (1/s). */
   accel: 5,
+  movement: {
+    /** Base top speeds gained per second; velocity changes are vector-limited. */
+    acceleration: 3.2,
+    /** Thrust heading and hull/gun rotation caps (radians/s). */
+    thrustTurnRate: Math.PI,
+    thrustResponse: 6,
+    aimTurnRate: Math.PI * 2,
+    aimResponse: 9,
+    angularResponse: 22.4,
+    /** Aft engine gimbal, torque authority and normalized moment of inertia. */
+    gimbalAngle: Math.PI / 8,
+    angularAcceleration: 36,
+    inertiaFactor: 0.6,
+    lateralDamping: 4.5,
+    /** Velocity error response and acceleration smoothing (1/s). */
+    velocityResponse: 5,
+    accelerationResponse: 18,
+    /** Passive drag (1/s); Space uses active counter-thrust instead. */
+    coastDrag: 0.45,
+    brakeDeceleration: 1.8,
+    brakeResponse: 4,
+    stopSpeed: 0.5,
+  },
 } as const;
 
 /** Capture points, resources and hot zones (SPEC "Objectives" and "Resources and Fleet Command"). */
