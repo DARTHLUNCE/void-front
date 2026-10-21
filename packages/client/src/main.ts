@@ -55,9 +55,9 @@ menu.innerHTML = `
     </label>
     <button id="play" class="primary">Launch</button>
     <div class="keys">
-      <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> signature · <kbd>Space</kbd> ultimate · <kbd>G</kbd> extra</div>
+      <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> signature · <kbd>T</kbd> ultimate · <kbd>G</kbd> extra</div>
       <div><kbd>Q W E R</kbd> buy stat upgrades with shards (WASD: <kbd>Z X C V</kbd>) · <kbd>1</kbd> <kbd>2</kbd> pick a tier with XP</div>
-      <div><kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
+      <div><kbd>Space</kbd> brake · <kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
     </div>
     <p class="note">You fight for Cobalt (blue). Pick a hull class (or Fleet Commander) when you drop in. Take nodes, break the Ember FOBs and then the Ember Titan on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
   </div>`;

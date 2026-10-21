@@ -185,6 +185,7 @@ export class Game {
     if (mode === 'commander') this.panCamera(deltaMs / 1000);
     this.renderer.render(this.prev, curr, now, myTeam);
     this.hud.update(curr, now, this.fps, this.simMs);
+    this.hud.setBraking(this.input.braking);
 
     const alive = (curr.buf[me + SHIP.flags] & SHIP_FLAG.alive) !== 0;
     if (mode === 'pilot' && alive && curr.buf[H.over] !== 1) {

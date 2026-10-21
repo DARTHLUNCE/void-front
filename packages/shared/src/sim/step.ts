@@ -70,7 +70,7 @@ export function step(w: World): void {
     const inp = s.input;
     if (inp.cruise) continue;
     const target = s.bot ? s.bot.targetShip : -1;
-    if (inp.ability) tryCast(w, s, s.signature, target);
+    if (inp.ability && !inp.brake) tryCast(w, s, s.signature, target);
     if (inp.ultimate && s.ultimate) tryCast(w, s, s.ultimate, target);
     if (inp.extra && s.extra) tryCast(w, s, s.extra, target);
   }

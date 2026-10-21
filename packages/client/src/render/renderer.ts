@@ -30,8 +30,8 @@ import { Lighting, litGeometry } from './lighting';
 import { makeTextures, type LitArt, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
-const VIEW_W = 2200;
-const VIEW_H = 1250;
+const VIEW_W = 1650;
+const VIEW_H = 937.5;
 const LABEL_RANGE = 1200;
 const PARTICLE_CAP = 2000;
 const TICK_MS = 1000 / 30;
@@ -84,8 +84,7 @@ class MeshPool {
   used = 0;
   constructor(
     private readonly layer: Container,
-    private readonly geometry: MeshGeometry,
-    private readonly shader: Shader,
+    private readonly createMesh: () => Mesh<MeshGeometry, Shader>,
   ) {}
 
   begin(): void {
@@ -95,7 +94,7 @@ class MeshPool {
   next(): Mesh<MeshGeometry, Shader> {
     let m = this.meshes[this.used];
     if (!m) {
-      m = new Mesh({ geometry: this.geometry, shader: this.shader });
+      m = this.createMesh();
       this.layer.addChild(m);
       this.meshes.push(m);
     }
@@ -181,6 +180,8 @@ export class Renderer {
   private lighting!: Lighting;
   private lightOverlay!: Sprite;
   private lights!: SpritePool;
+  private readonly occluderLayer = new Container();
+  private shipOccluders!: SpritePool;
   private readonly hullPools = new Map<string, MeshPool>();
   private readonly crystalLayer = new Container();
   private readonly glowLayer = new Container();
@@ -205,6 +206,7 @@ export class Renderer {
   private info: MatchInfo | null = null;
   private seenTick = -1;
   private lastFrame = 0;
+  private readonly exhaustGimbals: number[] = [];
   /** Commander mode: free war-map camera instead of following a ship. */
   commander = false;
   private cmdZoom = 0;
@@ -225,6 +227,7 @@ export class Renderer {
     this.lightOverlay.blendMode = 'add';
     this.lightOverlay.alpha = 0.32;
     this.app.stage.addChild(this.stars, this.lightOverlay, this.world);
+    this.lighting.occluders.addChild(this.occluderLayer);
     const shipyard = new Container();
     const msArt = this.tex.mothership;
     const msGeom = litGeometry(msArt.widthWorld, msArt.heightWorld, msArt.anchorX, msArt.anchorY);
@@ -234,6 +237,7 @@ export class Renderer {
       ms.rotation = team === 0 ? 0 : Math.PI; // each mothership faces the enemy
       shipyard.addChild(ms);
       this.motherships.push(ms);
+      this.lighting.trackReceiver(ms);
       // In the light pass the mothership is a solid occluder (black, opaque).
       const occ = new Sprite(msArt.albedo[team]);
       occ.anchor.set(msArt.anchorX, msArt.anchorY);
@@ -242,7 +246,7 @@ export class Renderer {
       occ.position.set(pos.x, pos.y);
       occ.rotation = ms.rotation;
       occ.tint = 0x000000;
-      this.lighting.scene.addChild(occ);
+      this.occluderLayer.addChild(occ);
       this.msOccluders.push(occ);
     });
     const fobArt = this.tex.fob;
@@ -253,6 +257,7 @@ export class Renderer {
       m.rotation = f.team === 0 ? 0 : Math.PI;
       shipyard.addChild(m);
       this.fobMeshes.push(m);
+      this.lighting.trackReceiver(m);
       const occ = new Sprite(fobArt.albedo[f.team]);
       occ.anchor.set(fobArt.anchorX, fobArt.anchorY);
       occ.width = fobArt.widthWorld;
@@ -260,7 +265,7 @@ export class Renderer {
       occ.position.set(f.pos.x, f.pos.y);
       occ.rotation = m.rotation;
       occ.tint = 0x000000;
-      this.lighting.scene.addChild(occ);
+      this.occluderLayer.addChild(occ);
       this.fobOccluders.push(occ);
     }
     for (const p of KESSLER_REACH.points) {
@@ -271,10 +276,12 @@ export class Renderer {
         m.position.set(p.pos.x, p.pos.y);
         m.visible = false;
         shipyard.addChild(m);
+        this.lighting.trackReceiver(m);
         return m;
       });
       this.nodeMeshes.push(states);
     }
+    this.shipOccluders = new SpritePool(this.occluderLayer, this.tex.disc);
     this.lights = new SpritePool(this.lighting.scene, this.tex.disc, 'add');
     this.world.addChild(
       this.staticLayer,
@@ -312,6 +319,7 @@ export class Renderer {
     this.rings.length = 0;
     this.beams.length = 0;
     this.seenTick = -1;
+    this.exhaustGimbals.length = 0;
     this.cmdZoom = 0;
     const home = KESSLER_REACH.motherships[0];
     this.camera.x = home.x;
@@ -398,6 +406,7 @@ export class Renderer {
 
     const dt = this.lastFrame ? Math.min(0.1, (now - this.lastFrame) / 1000) : 1 / 60;
     this.lastFrame = now;
+    const exhaustBlend = 1 - Math.exp(-dt / 0.1);
 
     // Pilots: the camera follows our ship and pulls back while cruising. Docked: it looks at our
     // mothership. Commander: a free war-map camera (pan / zoom from Game).
@@ -449,7 +458,9 @@ export class Renderer {
     const cy = this.camera.y;
     const inView = (x: number, y: number) => Math.abs(x - cx) < halfW && Math.abs(y - cy) < halfH;
 
+    this.lighting.beginFrame();
     this.lights.begin();
+    this.shipOccluders.begin();
     this.drawStructures(curr, now);
 
     // Crystals
@@ -533,6 +544,7 @@ export class Renderer {
           .fill({ color, alpha: cloaked ? 0.4 : 0.95 })
           .stroke({ width: 1 / z, color: 0x000000, alpha: 0.6 });
       }
+      const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
       const glow = this.glows.next();
       glow.position.set(x, y);
       const dashing = (flags & SHIP_FLAG.dashing) !== 0;
@@ -540,10 +552,9 @@ export class Renderer {
       glow.tint = dashing ? 0xffffff : color;
       glow.alpha = dashing ? 0.8 : isMe ? 0.45 : 0.3;
       glow.scale.set(cruisingShip ? 1.3 : dashing ? 1.1 : 0.7, dashing || cruisingShip ? 0.55 : 0.7);
-      glow.rotation = Math.atan2(b[k + SHIP.vy], b[k + SHIP.vx]);
+      glow.rotation = rot;
 
       const art = this.hullFor(curr, slot);
-      const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
       const s = this.hullPool(art.id, team).next();
       s.position.set(x, y);
       s.rotation = rot;
@@ -551,13 +562,19 @@ export class Renderer {
 
       // Engine flares at the hull's exhaust points, stretched by speed.
       const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
-      const thrust = Math.min(1, speed / 320) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
+      const thrust = Math.max(b[k + SHIP.enginePower], Math.min(1, speed / 320) * 0.25) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
       const cos = Math.cos(rot);
       const sin = Math.sin(rot);
+      const forceAngle = lerpAngle(pb[pk + SHIP.thrustAngle], b[k + SHIP.thrustAngle], a);
+      const gimbal = b[k + SHIP.enginePower] > 0.01 ? Math.atan2(Math.sin(forceAngle - rot), Math.cos(forceAngle - rot)) : 0;
+      // Smooth the plume relative to the hull so gyro corrections don't wag the entire trail.
+      const exhaustGimbal = (this.exhaustGimbals[slot] ?? gimbal) + (gimbal - (this.exhaustGimbals[slot] ?? gimbal)) * exhaustBlend;
+      this.exhaustGimbals[slot] = exhaustGimbal;
       for (const e of art.engines) {
         const f = this.flares.next();
-        f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
-        f.rotation = rot;
+        const hullScale = isMe ? 1.15 : 1;
+        f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
+        f.rotation = rot + exhaustGimbal;
         f.tint = team === 0 ? 0x7df9ff : 0xffc061;
         f.alpha = 0.55 + 0.35 * thrust;
         f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
@@ -565,6 +582,14 @@ export class Renderer {
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
       s.scale.set(isMe ? 1.15 : 1);
+      const baked = this.tex.hulls[art.id];
+      const occ = this.shipOccluders.next(baked.albedo[team]);
+      occ.anchor.set(baked.anchorX, baked.anchorY);
+      occ.position.set(x, y);
+      occ.rotation = rot;
+      occ.width = baked.widthWorld * s.scale.x;
+      occ.height = baked.heightWorld * s.scale.y;
+      occ.tint = 0x000000;
       if (cloaked) glow.alpha *= 0.3;
       this.statusFx(bars, x, y, status, now);
 
@@ -642,6 +667,7 @@ export class Renderer {
     this.drawRings(dt);
     if (this.commander && this.pendingOrder) this.drawOrderPreview(z);
     this.lights.end();
+    this.shipOccluders.end();
 
     this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
     this.lightOverlay.visible = this.lighting.enabled;
@@ -920,6 +946,7 @@ export class Renderer {
   /** Add a light emitter (a solid disc in the light pass) at a world position. */
   private light(x: number, y: number, radius: number, color: number): void {
     if (!this.lighting.enabled) return;
+    this.lighting.addEmitter(x, y, radius, color);
     const l = this.lights.next();
     l.position.set(x, y);
     l.scale.set((radius * 2) / 32);
@@ -943,7 +970,11 @@ export class Renderer {
     if (!pool) {
       const art: LitArt = this.tex.hulls[id];
       const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
-      pool = new MeshPool(this.shipLayer, geom, this.lighting.litShader(art.albedo[team].source, art.normal.source));
+      pool = new MeshPool(this.shipLayer, () => {
+        const mesh = new Mesh({ geometry: geom, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source) });
+        this.lighting.trackReceiver(mesh);
+        return mesh;
+      });
       this.hullPools.set(key, pool);
     }
     return pool;

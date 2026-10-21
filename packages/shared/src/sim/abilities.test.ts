@@ -181,7 +181,8 @@ describe('Patrol Craft', () => {
     for (let i = 0; i < 4 * 30; i++) step(w);
     expect(momentumLevel(a)).toBeGreaterThan(0);
     a.input.moveX = -1;
-    for (let i = 0; i < 15; i++) step(w);
+    // Momentum follows the trajectory, which takes time to bend through a reversal.
+    for (let i = 0; i < 45; i++) step(w);
     expect(momentumLevel(a)).toBe(0);
   });
 });
@@ -240,7 +241,7 @@ describe('every class and node', () => {
           }
           step(w);
         }
-        expect(a.damageDealt + b.damageDealt).toBeGreaterThan(0);
+        expect(a.damageDealt + b.damageDealt, `${id} branch ${pick}`).toBeGreaterThan(0);
       }
     }
   });

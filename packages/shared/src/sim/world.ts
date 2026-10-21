@@ -56,6 +56,10 @@ export interface ShipInput {
   ultimate: boolean;
   extra: boolean;
   cruise: boolean;
+  /** Consume velocity with active counter-thrust. */
+  brake: boolean;
+  /** Mouse steering applies propulsion through the hull and aft engines. */
+  steerWithAim: boolean;
   /** One-shot: stat upgrade index to buy this tick, or -1. */
   statPick: number;
   /** One-shot: tier option to buy (0 = A, 1 = B), or -1. */
@@ -63,7 +67,7 @@ export interface ShipInput {
 }
 
 export function emptyInput(): ShipInput {
-  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, extra: false, cruise: false, statPick: -1, tierPick: -1 };
+  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, extra: false, cruise: false, brake: false, steerWithAim: false, statPick: -1, tierPick: -1 };
 }
 
 export const Job = { Farm: 0, Skirmish: 1, Assault: 2, Defend: 3, Rally: 4 } as const;
@@ -135,6 +139,17 @@ export class Ship {
   vx = 0;
   vy = 0;
   angle = 0;
+  /** ext: propulsion heading turns separately from gun aim and existing velocity. */
+  thrustAngle = 0;
+  /** ext: persistent acceleration keeps steering corrections continuous across ticks. */
+  ax = 0;
+  ay = 0;
+  /** ext: hull/gun angular momentum (radians/s). */
+  angularVelocity = 0;
+  /** ext: body-space drive acceleration; applied at the shared aft engine mounts. */
+  engineForward = 0;
+  engineLateral = 0;
+  engineTorque = 0;
   hull = 0;
   maxHull = 0;
 

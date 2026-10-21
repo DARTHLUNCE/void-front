@@ -1,3 +1,5 @@
+import { THRUSTERS, HULL_CLASS_SCALE } from '../../content/thrusters';
+import { angleDelta, turnToward } from '../angles';
 import { MATCH } from '../../content/match';
 import { hasFlag, liveStat, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
@@ -14,14 +16,16 @@ export function baseSpeed(w: World, s: Ship): number {
 export function moveShips(w: World): void {
   const W = w.map.width;
   const H = w.map.height;
+  const tuning = MATCH.movement;
   for (const s of w.ships) {
     if (!s.alive) continue;
     const inp = s.input;
     // Big hulls answer the helm slowly.
-    const k = Math.min(1, (s.cls.accel ?? MATCH.accel) * DT);
+    const acceleration = tuning.acceleration * (s.cls.accel ?? MATCH.accel) / MATCH.accel;
+    s.engineTorque = 0;
     const stuck = hasStatus(s, 'stun') || hasStatus(s, 'rooted');
 
-    if (inp.cruise && s.dashTime <= 0 && !stuck) {
+    if (inp.cruise && !inp.brake && s.dashTime <= 0 && !stuck) {
       s.cruiseSpool += DT;
       s.cruising = s.cruiseSpool >= MATCH.cruise.spool;
     } else {
@@ -31,6 +35,9 @@ export function moveShips(w: World): void {
 
     const speed = baseSpeed(w, s);
     if (s.dashTime > 0 && !stuck) {
+      s.engineForward = s.engineLateral = 0;
+      s.ax = s.ay = 0;
+      s.thrustAngle = Math.atan2(s.dashDy, s.dashDx);
       s.vx = s.dashDx * speed * s.dashMul;
       s.vy = s.dashDy * speed * s.dashMul;
       s.dashTime -= DT;
@@ -38,24 +45,87 @@ export function moveShips(w: World): void {
       if (s.dashTime <= 0) {
         s.dashTime = 0;
         s.lastDashEnd = w.time;
-        // Leave the dash at normal top speed instead of carrying dash velocity.
+        // Preserve the upstream ability exit speed; ordinary thrust and braking use inertia.
         s.vx = s.dashDx * speed;
         s.vy = s.dashDy * speed;
       }
     } else if (stuck) {
+      s.engineForward = s.engineLateral = s.ax = s.ay = 0;
       s.vx *= 0.8;
       s.vy *= 0.8;
     } else {
-      let mx = inp.moveX;
-      let my = inp.moveY;
-      const len = Math.hypot(mx, my);
-      if (len > 1) {
-        mx /= len;
-        my /= len;
+      const throttle = inp.brake ? 0 : Math.min(1, Math.hypot(inp.moveX, inp.moveY));
+      if (inp.brake) {
+        s.engineForward = s.engineLateral = 0;
+        s.ax = s.ay = 0;
+        const velocity = Math.hypot(s.vx, s.vy);
+        // Consume actual velocity, easing near rest; releasing cannot restore old momentum.
+        const deceleration = Math.min(speed * tuning.brakeDeceleration, velocity * tuning.brakeResponse);
+        const remaining = Math.max(0, velocity - deceleration * DT);
+        const scale = velocity > 0 ? remaining / velocity : 0;
+        s.vx *= scale;
+        s.vy *= scale;
+      } else {
+        let ax = -s.vx * tuning.coastDrag;
+        let ay = -s.vy * tuning.coastDrag;
+        if (throttle > 0 && inp.steerWithAim) {
+          const cruiseMul = s.cruising ? MATCH.cruise.speedMul : 1;
+          const maxForce = speed * cruiseMul * acceleration;
+          const cos = Math.cos(s.angle);
+          const sin = Math.sin(s.angle);
+          const forwardSpeed = s.vx * cos + s.vy * sin;
+          const sideSpeed = -s.vx * sin + s.vy * cos;
+          const mounts = THRUSTERS[s.hullModel];
+          const mountScale = HULL_CLASS_SCALE[s.classId];
+          // Equal drive shares across the actual nozzle positions. Symmetric mounts cancel
+          // straight-line torque; gimballed force pushes the stern opposite the desired yaw.
+          let armX = 0;
+          let armY = 0;
+          for (const mount of mounts) { armX += mount.x * mountScale / mounts.length; armY += mount.y * mountScale / mounts.length; }
+          const inertia = s.radius * s.radius * tuning.inertiaFactor;
+          const turnRate = s.cls.turnRate ?? tuning.aimTurnRate;
+          const desiredRate = Math.max(-turnRate, Math.min(turnRate, angleDelta(s.angle, inp.aim) * tuning.aimResponse));
+          const desiredAlpha = Math.max(-tuning.angularAcceleration, Math.min(tuning.angularAcceleration,
+            (desiredRate - s.angularVelocity) * tuning.angularResponse));
+          const lateral = desiredAlpha * inertia / armX;
+          const forward = Math.max(0, (speed * cruiseMul * throttle - forwardSpeed) * tuning.velocityResponse,
+            Math.abs(lateral) / Math.tan(tuning.gimbalAngle));
+          const forceScale = Math.min(1, maxForce / Math.max(1, Math.hypot(forward, lateral)));
+          const engineBlend = 1 - Math.exp(-tuning.accelerationResponse * DT);
+          s.engineForward += (forward * forceScale - s.engineForward) * engineBlend;
+          s.engineLateral += (lateral * forceScale - s.engineLateral) * engineBlend;
+          s.engineTorque = armX * s.engineLateral - armY * s.engineForward;
+          s.thrustAngle = s.angle + Math.atan2(s.engineLateral, Math.max(1e-6, s.engineForward));
+          // Stabilizing jets damp sideslip; excess forward speed is shed gradually.
+          const forwardDrag = Math.max(0, forwardSpeed - speed * cruiseMul * throttle) * tuning.velocityResponse;
+          const lateralDrag = sideSpeed * tuning.lateralDamping;
+          ax = cos * (s.engineForward - forwardDrag) - sin * (s.engineLateral - lateralDrag);
+          ay = sin * (s.engineForward - forwardDrag) + cos * (s.engineLateral - lateralDrag);
+        } else {
+          s.engineForward = s.engineLateral = 0;
+          if (throttle > 0) {
+            s.thrustAngle = turnToward(s.thrustAngle, Math.atan2(inp.moveY, inp.moveX),
+              tuning.thrustTurnRate * DT, 1 - Math.exp(-tuning.thrustResponse * DT));
+            const cruiseMul = s.cruising ? MATCH.cruise.speedMul : 1;
+            const top = speed * cruiseMul * throttle;
+            ax = (Math.cos(s.thrustAngle) * top - s.vx) * tuning.velocityResponse;
+            ay = (Math.sin(s.thrustAngle) * top - s.vy) * tuning.velocityResponse;
+            const force = Math.hypot(ax, ay);
+            const scale = force > 0 ? Math.min(1, speed * cruiseMul * acceleration / force) : 0;
+            ax *= scale;
+            ay *= scale;
+          }
+        }
+        // Ease the corrective force instead of landing exactly on target velocity in one tick.
+        const blend = throttle > 0 && inp.steerWithAim ? 1 : 1 - Math.exp(-tuning.accelerationResponse * DT);
+        s.ax += (ax - s.ax) * blend;
+        s.ay += (ay - s.ay) * blend;
+        s.vx += s.ax * DT;
+        s.vy += s.ay * DT;
       }
-      const top = s.cruising ? speed * MATCH.cruise.speedMul : speed;
-      s.vx += (mx * top - s.vx) * k;
-      s.vy += (my * top - s.vy) * k;
+      if (throttle === 0 && Math.hypot(s.vx, s.vy) < tuning.stopSpeed) {
+        s.vx = s.vy = s.ax = s.ay = 0;
+      }
     }
 
     s.x += s.vx * DT;

@@ -34,9 +34,10 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 | Action | Mouse steering (default) | WASD mode |
 |---|---|---|
 | Move | Point where you want to go | W A S D |
+| Brake / hold still | Hold Space | Hold Space |
 | Fire | Hold left click | Hold left click |
 | Signature ability | Right click | Right click |
-| Ultimate (tier 5) | Space | Space |
+| Ultimate (tier 5) | T | T |
 | Extra ability (some tier nodes) | G | G |
 | Cruise drive | Hold Shift | Hold Shift |
 | Buy stat upgrades (shards) | Q W E R | Z X C V |

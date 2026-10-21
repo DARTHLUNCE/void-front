@@ -1,3 +1,4 @@
+import { THRUSTERS } from '@void-front/shared';
 import type { HullArt } from './hulls';
 import { emitter, nozzle, seam } from './parts';
 import { arc, pair, rect, sym, type Shape } from './shapes';
@@ -22,10 +23,7 @@ const destroyer: HullArt = {
   name: 'Destroyer',
   classId: 'destroyer',
   tier: 0,
-  engines: [
-    { x: -35, y: -6, r: 3.4 },
-    { x: -35, y: 6, r: 3.4 },
-  ],
+  engines: THRUSTERS.destroyer,
   shapes: [
     ...pair({ t: 'poly', pts: [-6, -11, -16, -20, -22, -20, -18, -10], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-10, -12.5, -16, -18, -19, -18, -15.5, -12], fill: 'dark' }),
@@ -50,11 +48,7 @@ const hunter: HullArt = {
   name: 'Hunter-Killer',
   classId: 'destroyer',
   tier: 3,
-  engines: [
-    { x: -37, y: -8, r: 3.2 },
-    { x: -38, y: 0, r: 2.8 },
-    { x: -37, y: 8, r: 3.2 },
-  ],
+  engines: THRUSTERS.hunter,
   shapes: [
     ...pair({ t: 'poly', pts: rect(-8, -15.5, 12, -10.5), fill: 'metal' }),
     ...[-4, 1, 6].flatMap((x) => pair({ t: 'poly', pts: rect(x, -14.4, x + 3, -12), fill: 'dark' })),
@@ -79,10 +73,7 @@ const escort: HullArt = {
   name: 'Escort',
   classId: 'destroyer',
   tier: 3,
-  engines: [
-    { x: -31, y: -8, r: 3.4 },
-    { x: -31, y: 8, r: 3.4 },
-  ],
+  engines: THRUSTERS.escort,
   shapes: [
     ...pair({ t: 'line', pts: [4, -21, 17, -25], stroke: 'metal', w: 2 }),
     ...pair({ t: 'poly', pts: [8, -10, 8, -16, -6, -24, -12, -24, -12, -10], fill: 'hull' }),
@@ -109,11 +100,7 @@ const cruiser: HullArt = {
   name: 'Cruiser',
   classId: 'cruiser',
   tier: 0,
-  engines: [
-    { x: -45, y: -9, r: 4 },
-    { x: -46, y: 0, r: 3.4 },
-    { x: -45, y: 9, r: 4 },
-  ],
+  engines: THRUSTERS.cruiser,
   shapes: [
     { t: 'poly', pts: rect(-47, -14, -38, 14), fill: 'metal' },
     { t: 'poly', pts: sym([52, 0, 40, -10, 20, -18, -20, -18, -36, -15, -44, -15, -44, 0]), fill: 'hull' },
@@ -139,10 +126,7 @@ const strikecruiser: HullArt = {
   name: 'Strike Cruiser',
   classId: 'cruiser',
   tier: 3,
-  engines: [
-    { x: -47, y: -7, r: 4 },
-    { x: -47, y: 7, r: 4 },
-  ],
+  engines: THRUSTERS.strikecruiser,
   shapes: [
     ...pair({ t: 'poly', pts: [12, -12, -4, -30, -22, -30, -20, -12], fill: 'hull' }),
     ...pair({ t: 'poly', pts: rect(-18, -27, -6, -17), fill: 'dark' }),
@@ -167,11 +151,7 @@ const commandcruiser: HullArt = {
   name: 'Command Cruiser',
   classId: 'cruiser',
   tier: 3,
-  engines: [
-    { x: -41, y: -12, r: 4 },
-    { x: -42, y: 0, r: 3.2 },
-    { x: -41, y: 12, r: 4 },
-  ],
+  engines: THRUSTERS.commandcruiser,
   shapes: [
     ...pair({ t: 'poly', pts: [14, -20, 10, -40, -2, -42, -14, -20], fill: 'hull' }),
     ...pair(emitter(4, -38, 3.8)[0]),
@@ -198,11 +178,7 @@ const battlecruiser: HullArt = {
   name: 'Battlecruiser',
   classId: 'battlecruiser',
   tier: 0,
-  engines: [
-    { x: -51, y: -7, r: 4.6 },
-    { x: -52, y: 0, r: 3.4 },
-    { x: -51, y: 7, r: 4.6 },
-  ],
+  engines: THRUSTERS.battlecruiser,
   shapes: [
     ...pair({ t: 'poly', pts: [-14, -12, -36, -31, -45, -31, -36, -12], fill: 'hull' }),
     ...pair({ t: 'poly', pts: [-22, -14.5, -35, -27.5, -39, -27.5, -32, -14], fill: 'dark' }),
@@ -228,10 +204,7 @@ const raider: HullArt = {
   name: 'Raider',
   classId: 'battlecruiser',
   tier: 3,
-  engines: [
-    { x: -52, y: -7, r: 5.4 },
-    { x: -52, y: 7, r: 5.4 },
-  ],
+  engines: THRUSTERS.raider,
   shapes: [
     ...pair({ t: 'poly', pts: [-4, -11, 16, -31, 7, -33, -22, -11], fill: 'hull' }),
     ...pair({ t: 'line', pts: [-4, -14, 10, -28], stroke: 'accent', w: 1.1 }),
@@ -254,11 +227,7 @@ const ironclad: HullArt = {
   name: 'Ironclad',
   classId: 'battlecruiser',
   tier: 3,
-  engines: [
-    { x: -53, y: -6, r: 4.2 },
-    { x: -54, y: 0, r: 3 },
-    { x: -53, y: 6, r: 4.2 },
-  ],
+  engines: THRUSTERS.ironclad,
   shapes: [
     { t: 'poly', pts: rect(-55, -10, -46, 10), fill: 'metal' },
     { t: 'poly', pts: sym([58, 0, 58, -6, 48, -11, -38, -12, -50, -10, -52, -10, -52, 0]), fill: 'hull' },
