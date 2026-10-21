@@ -56,7 +56,7 @@ export type StatId =
   | 'stealthMinimap'
   | 'knockbackImmune'
   | 'healPower'
-  | 'rebuildSpeed';
+  | 'structureRepair';
 
 export type ConditionId =
   | 'cloaked'
@@ -93,7 +93,8 @@ export type StatusId =
 
 export type AbilityTag = 'move' | 'heal' | 'guard' | 'stealth' | 'hit' | 'closeRange' | 'structure' | 'area';
 export type Affects = 'enemies' | 'allies' | 'self' | 'drones' | 'structures';
-export type ResourceId = 'alloy' | 'energy' | 'intel';
+/** Munitions buy weapon and recon orders, Fuel buys drone wings, Manpower buys spawns and reinforcements. */
+export type ResourceId = 'munitions' | 'fuel' | 'manpower';
 
 export interface StatusApply {
   status: StatusId;
@@ -126,7 +127,7 @@ export interface GunDef {
 }
 
 /** ext: how summoned drones fly and fight. */
-export type DroneBehavior = 'orbit' | 'swarm' | 'guard' | 'decoy';
+export type DroneBehavior = 'orbit' | 'swarm' | 'guard' | 'decoy' | 'bomber' | 'interceptor' | 'recon';
 
 export interface DroneStats {
   hull: number;
@@ -137,6 +138,8 @@ export interface DroneStats {
   splash: number;
   structureMul: number;
   lifesteal: number;
+  /** ext: vision radius it gives its team (recon drones), 0 for none. */
+  vision?: number;
 }
 
 /** ext: deployable structures (engineer kit, commander call-ins). */
@@ -185,7 +188,7 @@ export type PrimitiveDef =
   | { kind: 'tether'; duration: number; range: number; healPerSecond: number } // ext: Warden heal beam
   | { kind: 'droneOrder'; order: 'kamikaze'; damage: number; radius: number } // ext: Kamikaze Wing
   // ext: team-level effects used by Fleet Command
-  | { kind: 'teamBuff'; buff: 'overcharge' | 'jam'; duration: number }
+  | { kind: 'teamBuff'; buff: 'overcharge' | 'jam' | 'reinforce'; duration: number }
   | { kind: 'rally'; duration: number }
   | { kind: 'repairMothership'; fraction: number };
 
@@ -280,7 +283,12 @@ export interface CapturePointDef {
   id: string;
   name: string; // ext: display name
   pos: Vec2;
-  resource: ResourceId;
+  /**
+   * The building on the asteroid decides what it pays (weapons factory, fuel refinery, training
+   * camp). A research lab pays nothing and boosts its holder's XP gain through its buff instead.
+   */
+  resource?: ResourceId;
+  /** Paid once per income pulse (every minute) while held. */
   income: number;
   buff: ModifierDef;
   botValue: number; // ext: Fleet Director base score (Nexus 1.5)
@@ -292,7 +300,8 @@ export interface MapDef {
   width: number;
   height: number;
   motherships: [Vec2, Vec2];
-  fobs: { team: TeamId; pos: Vec2; linkedPoint: string }[];
+  /** Two per team, between the mothership and the nodes. The mothership is shielded while any stands. */
+  fobs: { team: TeamId; pos: Vec2 }[];
   points: CapturePointDef[];
   terrain: TerrainDef[];
 }

@@ -18,6 +18,8 @@ export interface MatchResult {
   /** nodeId → times picked by bots. */
   tierPicks: Record<string, number>;
   pointFlips: number;
+  fobsDestroyed: number;
+  nodesDestroyed: number;
   /** Tiers owned on average at the end. */
   avgRankAtEnd: [number, number];
   /** Ships per class across both fleets. */
@@ -86,6 +88,8 @@ export function runMatch(index: number, seed: number, fleet: number, classId?: C
     killsByClass: { ...w.stats.killsByClass },
     tierPicks: { ...w.stats.tierPicks },
     pointFlips: w.stats.pointFlips,
+    fobsDestroyed: w.stats.fobsDestroyed,
+    nodesDestroyed: w.stats.nodesDestroyed,
     avgRankAtEnd: [avgRank(w, 0), avgRank(w, 1)],
     classCounts: classCounts(w),
     tickMsMean: timer.mean,

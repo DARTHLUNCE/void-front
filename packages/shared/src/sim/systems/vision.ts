@@ -9,7 +9,7 @@ export const VISION_EVERY = 6;
 
 /**
  * Sets `visibleMask` on every ship: bit t = team t can see it. Ships see 1,800 u; held points,
- * structures and deployables see further; recon zones reveal through cloak (unless Sensor Ghost).
+ * structures, deployables and recon drones see further; recon zones reveal through cloak (unless Sensor Ghost).
  * Cloaked ships stay hidden from the enemy unless revealed.
  */
 export function updateVision(w: World): void {
@@ -24,6 +24,11 @@ export function updateVision(w: World): void {
   for (let i = 0; i < dep.count; i++) {
     const d = dep.at(i);
     if (d.def.vision > 0) reveal(w, d.team, d.x, d.y, d.def.vision, false);
+  }
+  const drones = w.drones;
+  for (let i = 0; i < drones.count; i++) {
+    const d = drones.at(i);
+    if (d.vision > 0) reveal(w, d.team, d.x, d.y, d.vision, false);
   }
   const zones = w.zones;
   for (let i = 0; i < zones.count; i++) {

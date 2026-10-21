@@ -4,7 +4,6 @@ import {
   createWorld,
   DT,
   encodeSnapshot,
-  issueCommand,
   matchInfo,
   pickClass,
   setCommander,
@@ -63,10 +62,11 @@ function applyInput(w: World): void {
   const tier = tierQueue.shift();
   if (tier !== undefined) inp.tierPick = tier;
   // Orders go in between ticks, before the step that will carry them out.
+  // Orders are checked now and carried out inside the next step (so their events reach the snapshot).
   for (const order of commandQueue.splice(0)) {
     const reason = commandBlocker(w, order);
-    const ok = reason === null && issueCommand(w, order);
-    post({ type: 'commandResult', id: order.id, ok, reason: reason ?? '' });
+    if (reason === null) w.pendingOrders.push(order);
+    post({ type: 'commandResult', id: order.id, ok: reason === null, reason: reason ?? '' });
   }
 }
 
@@ -125,6 +125,9 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       break;
     case 'command':
       if (w) commandQueue.push({ team: w.ships[HUMAN_SLOT].team, id: msg.id, x: msg.x, y: msg.y, point: msg.point });
+      break;
+    case 'ping':
+      if (w) w.pendingPings.push({ team: w.ships[HUMAN_SLOT].team, x: msg.x, y: msg.y });
       break;
     case 'devGrant':
       if (w && import.meta.env.DEV) {

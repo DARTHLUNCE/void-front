@@ -86,7 +86,7 @@ export function buildReport(matches: MatchResult[], bench: BenchResult[], args: 
     failIf: 'either under 10%',
     value: routed.length ? `${routed.filter((m) => m.route === 'siege').length} / ${routed.filter((m) => m.route === 'territory').length}` : '—',
     status: 'N/A',
-    note: 'Shield routes need FOBs and capture points (Phase 1).',
+    note: 'A mothership is shielded until both its FOBs fall; this metric splits wins once motherships die.',
   });
 
   // Kill share per ship of that class, so uneven class rolls don't skew it.
@@ -184,6 +184,7 @@ export function toMarkdown(r: Report): string {
   lines.push(`- Average rank (tiers owned) at end: ${avg((m) => (m.avgRankAtEnd[0] + m.avgRankAtEnd[1]) / 2).toFixed(1)}`);
   lines.push(`- Lowest mothership hull at end: ${Math.min(...ms.map((m) => Math.min(...m.mothershipHullPct))).toFixed(1)}% (mean of losing side ${avg((m) => Math.min(...m.mothershipHullPct)).toFixed(1)}%)`);
   lines.push(`- Matches ended by mothership destroyed: ${ms.filter((m) => m.endReason === 'destroyed').length}`);
+  lines.push(`- FOBs destroyed per match: ${avg((m) => m.fobsDestroyed).toFixed(1)} of 4; nodes destroyed per match: ${avg((m) => m.nodesDestroyed).toFixed(1)}`);
   lines.push(`- Projectile peak: ${Math.max(...ms.map((m) => m.projectilePeak))}, pool overflows: ${ms.reduce((a, m) => a + m.projectileOverflow, 0)}`);
   lines.push(`- Sim tick (${r.args.fleet} v ${r.args.fleet}): mean ${avg((m) => m.tickMsMean).toFixed(3)} ms, worst p99 ${Math.max(...ms.map((m) => m.tickMsP99)).toFixed(2)} ms`);
 

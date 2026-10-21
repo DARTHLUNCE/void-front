@@ -43,7 +43,7 @@ export const STAT_IDS: readonly StatId[] = [
   'stealthMinimap',
   'knockbackImmune',
   'healPower',
-  'rebuildSpeed',
+  'structureRepair',
 ];
 
 export const STAT_INDEX = Object.fromEntries(STAT_IDS.map((id, i) => [id, i])) as Record<StatId, number>;

@@ -1,9 +1,12 @@
 import { DIRECTOR } from '../../content/bots';
-import { EventType, Job, type Ship, type TeamState, type World } from '../world';
+import { COMMAND_RULES } from '../../content/command';
+import type { TeamId } from '../../content/types';
+import { EventType, Job, PingKind, type Ship, type Structure, type TeamState, type World } from '../world';
 
 /**
- * Fleet Director: one per team, every 2 s, assigns each bot a job: farm, take or hold a capture
- * point, defend the mothership, push the enemy mothership, or answer the commander's rally.
+ * Fleet Director: one per team, every 2 s, assigns each bot a job: farm, take or hold a node,
+ * defend the mothership, push the enemy FOBs then mothership, or answer the commander's rally and
+ * pings.
  */
 export function runDirectors(w: World): void {
   for (const team of w.teams) {
@@ -19,20 +22,42 @@ const pointWeight = new Float64Array(32);
 function direct(w: World, team: TeamState): void {
   const n = w.fleetSize;
   const cap = Math.floor(DIRECTOR.objectiveCapFrac * n);
+  const exposed = !w.enemyOf(team.id).mothership.shielded;
+
+  // An attack ping on an enemy structure calls the next push now.
+  const pinged = !team.pingHandled && w.time - team.pingAt < COMMAND_RULES.pingLife;
+  if (pinged && team.pingKind === PingKind.Attack && team.pingPoint < 0 && w.time >= team.pushUntil) team.nextPush = w.time;
 
   if (w.time >= team.nextPush) {
+    // The wave gathers at the staging point until most of it has arrived (or the gather runs out),
+    // then attacks together.
     team.pushGatherUntil = w.time + DIRECTOR.pushGather;
     team.pushUntil = team.pushGatherUntil + DIRECTOR.pushDuration;
-    team.nextPush = w.time + team.rng.range(DIRECTOR.pushIntervalMin, DIRECTOR.pushIntervalMax);
+    const gap = team.rng.range(DIRECTOR.pushIntervalMin, DIRECTOR.pushIntervalMax);
+    team.nextPush = team.pushUntil + (exposed ? gap * DIRECTOR.allIn.intervalMul : gap);
     w.emit(EventType.PushStart, team.id, 0);
+  } else if (w.time < team.pushGatherUntil && waveReady(w, team)) {
+    team.pushGatherUntil = w.time;
+    team.pushUntil = w.time + DIRECTOR.pushDuration;
   }
   // Recruit only while gathering so the wave hits together.
   const pushing = w.time < team.pushGatherUntil;
 
-  const home = team.mothership;
-  const threat = countEnemiesNear(w, team.id, home.x, home.y, DIRECTOR.threatRadius);
+  // Defenders guard whichever of our structures (mothership or a standing FOB) is most threatened.
+  let home: Structure = team.mothership;
+  let threat = countEnemiesNear(w, team.id, home.x, home.y, DIRECTOR.threatRadius);
+  for (const f of team.fobs) {
+    if (!f.alive) continue;
+    const t = countEnemiesNear(w, team.id, f.x, f.y, DIRECTOR.threatRadius);
+    if (t > threat) {
+      threat = t;
+      home = f;
+    }
+  }
+  team.defendTarget = home.index;
   const defendWant = Math.min(cap, Math.max(Math.ceil(DIRECTOR.defendMinFrac * n), threat + 2));
-  const assaultWant = pushing ? cap : 0;
+  // Enemy mothership exposed (both its FOBs down): go all in.
+  const assaultWant = pushing ? (exposed ? Math.floor(DIRECTOR.allIn.assaultFrac * n) : cap) : 0;
 
   // Farmers: low-level bots that rolled the farming habit at spawn, up to a share of the team.
   const farmCap = Math.floor(DIRECTOR.farmCapFrac * n);
@@ -97,6 +122,18 @@ function direct(w: World, team: TeamState): void {
     }
   }
 
+  // Node pings: the skirmishers nearest the pinged node head there.
+  if (pinged && team.pingPoint >= 0) {
+    const p = w.points[team.pingPoint];
+    const want = Math.ceil(COMMAND_RULES.pingBotFrac * n);
+    for (let k = 0; k < want; k++) {
+      const s = pickBot(w, team, (b) => b.job === Job.Skirmish && b.jobPoint !== p.index, (s) => -dist2(s.x, s.y, p.x, p.y));
+      if (!s) break;
+      setSkirmish(w, s, p.index);
+    }
+  }
+  team.pingHandled = true;
+
   // Skirmishers: keep their point until their job timer runs out or the point is over cap.
   pointCount.fill(0);
   for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
@@ -135,7 +172,8 @@ function choosePoint(w: World, team: TeamState, s: Ship, cap: number): number {
     const dOwn = Math.sqrt(dist2(p.x, p.y, home.x, home.y));
     const dEnemy = Math.sqrt(dist2(p.x, p.y, enemy.x, enemy.y));
     const side = Math.abs(dOwn - dEnemy) < 1500 ? DIRECTOR.sideWeight.middle : dOwn < dEnemy ? DIRECTOR.sideWeight.own : DIRECTOR.sideWeight.enemy;
-    const wgt = pointCount[i] >= cap ? 0 : points[i].botValue * side * ownerWeight(w, team, i);
+    const pinged = i === team.pingPoint && w.time - team.pingAt < COMMAND_RULES.pingBotTime ? DIRECTOR.pingWeight : 1;
+    const wgt = pointCount[i] >= cap ? 0 : points[i].botValue * side * ownerWeight(w, team, i) * pinged;
     pointWeight[k] = wgt;
     total += wgt;
   }
@@ -146,6 +184,41 @@ function choosePoint(w: World, team: TeamState, s: Ship, cap: number): number {
     if (r < 0) return w.teamPoint(team.id, k);
   }
   return w.teamPoint(team.id, points.length - 1);
+}
+
+/** Where a push gathers: short of the push target, on our side of it. */
+export function stagingPoint(w: World, team: TeamId): { x: number; y: number } | null {
+  const target = pushTarget(w, team);
+  if (!target) return null;
+  return { x: target.x - w.teamSign(team) * DIRECTOR.pushStageDistance, y: target.y };
+}
+
+/** Enough of the wave has reached the staging point to go in together. */
+function waveReady(w: World, team: TeamState): boolean {
+  const stage = stagingPoint(w, team.id);
+  if (!stage) return false;
+  let alive = 0;
+  let there = 0;
+  const r2 = DIRECTOR.stageArriveRadius ** 2;
+  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
+    const s = w.ships[slot];
+    if (!s.alive || s.bot?.job !== Job.Assault) continue;
+    alive++;
+    if ((s.x - stage.x) ** 2 + (s.y - stage.y) ** 2 <= r2) there++;
+  }
+  return alive >= 4 && there >= DIRECTOR.stageReadyFrac * alive;
+}
+
+/**
+ * The enemy structure a push goes for: the weaker standing enemy FOB (ties to the first in
+ * team-relative order), then the mothership once both FOBs are down.
+ */
+export function pushTarget(w: World, team: TeamId): Structure | null {
+  const enemy = w.enemyOf(team);
+  let best: Structure | null = null;
+  for (const f of enemy.fobs) if (f.alive && (!best || f.hull / f.maxHull < best.hull / best.maxHull)) best = f;
+  if (best) return best;
+  return enemy.mothership.alive ? enemy.mothership : null;
 }
 
 function ownerWeight(w: World, team: TeamState, i: number): number {

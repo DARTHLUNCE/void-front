@@ -10,6 +10,9 @@ import {
   KESSLER_REACH,
   MOTHERSHIP,
   pickedNodes,
+  POINT,
+  POINTS,
+  RESOURCE_INDEX,
   SELF,
   SHIP,
   SHIP_FLAG,
@@ -17,6 +20,8 @@ import {
   STAT_POINT_MAX,
   STAT_POINTS,
   STATUS_BIT,
+  STRUCT,
+  SPAWN_AT_STRUCTURE,
   TIERS,
   type ClassId,
   type CommandId,
@@ -29,10 +34,14 @@ import type { Snap } from '../snap';
 const TEAM_NAMES = ['Cobalt', 'Ember'];
 const TEAM_CSS = ['var(--cobalt)', 'var(--ember)'];
 const RESOURCES = [
-  { id: 'alloy', name: 'Alloy', css: '#c9d3e6' },
-  { id: 'energy', name: 'Energy', css: '#ffd166' },
-  { id: 'intel', name: 'Intel', css: '#b48cff' },
+  { id: 'munitions', name: 'Munitions', css: '#ff8a5c', use: 'weapons and recon' },
+  { id: 'fuel', name: 'Fuel', css: '#ffd166', use: 'drone wings' },
+  { id: 'manpower', name: 'Manpower', css: '#8cf0b0', use: 'spawns and reinforcements' },
 ] as const;
+/** Commander hotkeys, in COMMANDS order. */
+export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
+const PING_NAMES = ['Move here', 'Attack', 'Defend'];
+const PING_CSS = ['#6ff3ff', '#ff7a4d', '#5cff9d'];
 const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge' };
 const BEACON = DEPLOY_KINDS.indexOf('beacon');
 
@@ -73,7 +82,7 @@ export class Hud {
   pendingOrder: CommandId | null = null;
 
   constructor(
-    root: HTMLElement,
+    private readonly root: HTMLElement,
     scheme: ControlScheme,
     private readonly h: HudHandlers,
   ) {
@@ -83,7 +92,7 @@ export class Hud {
         <div class="team cobalt"><span class="tname">Cobalt</span><span data-k="k0" class="kills">0</span></div>
         <div class="center">
           <div data-k="clock" class="clock">0:00</div>
-          <div class="ms"><div class="msbar cobalt"><i data-k="ms0"></i></div><div class="msbar ember"><i data-k="ms1"></i></div></div>
+          <div class="ms"><span data-k="fob0" class="fobs cobalt"></span><div class="msbar cobalt"><i data-k="ms0"></i></div><div class="msbar ember"><i data-k="ms1"></i></div><span data-k="fob1" class="fobs ember"></span></div>
           <div data-k="pointStrip" class="pointstrip">${KESSLER_REACH.points.map((p) => `<span title="${p.name}"><i></i>${p.name.split(' ').map((w) => w[0]).join('')}</span>`).join('')}</div>
           <div data-k="banner" class="banner"></div>
         </div>
@@ -122,11 +131,16 @@ export class Hud {
         <div data-k="res" class="res"></div>
         <div data-k="cmdNote" class="note"></div>
         <div class="orders">
-          ${COMMANDS.map(
-            (c, i) => `<button class="order" data-order="${c.id}" title="${c.description}"><kbd>${i + 1}</kbd><b>${c.name}</b><span class="cost"></span><em>${c.description}</em><i class="cd"></i></button>`,
+          ${RESOURCES.map(
+            (r) =>
+              `<h4 style="color:${r.css}">${r.name} <small>${r.use}</small></h4>` +
+              COMMANDS.map((c, i) => [c, i] as const)
+                .filter(([c]) => c.resource === r.id)
+                .map(([c, i]) => `<button class="order" data-order="${c.id}" title="${c.description}"><kbd>${ORDER_KEYS[i]}</kbd><b>${c.name}</b><span class="cost"></span><em>${c.description}</em><i class="cd"></i></button>`)
+                .join(''),
           ).join('')}
         </div>
-        <div class="hint">WASD / arrows / edge of screen pan · wheel zoom · Esc cancels an order</div>
+        <div class="hint">Right-click the map to ping (free) · WASD / arrows / screen edge pan · wheel zoom · Esc cancels an order</div>
       </div>
       <div data-k="perf" class="perf"></div>
       <div data-k="death" class="overlay death passive hidden"><div class="card panel">
@@ -140,7 +154,7 @@ export class Hud {
         <div class="classes">
           ${CLASS_ORDER.map((id, i) => classCard(CLASSES[id], i)).join('')}
           <button class="cls commander" data-pick="commander"><kbd>7</kbd><b>Fleet Commander</b><small>Strategist · no ship</small>
-            <em>Watch the whole war map and spend your capture points' Alloy, Energy and Intel: defense drones, forward spawn beacons, orbital strikes, rally orders.</em>
+            <em>Watch the whole war map, ping targets for free, and spend the Munitions, Fuel and Manpower your nodes and FOBs pay each minute: strikes, drone wings, spawn beacons, reinforcements.</em>
             <span data-k="cmdTaken" class="taken"></span></button>
         </div>
       </div></div>
@@ -238,6 +252,15 @@ export class Hud {
     this.set('ms0', `${(100 * b[H.ms0Hull]) / b[H.ms0Max]}%`, 'width');
     this.set('ms1', `${(100 * b[H.ms1Hull]) / b[H.ms1Max]}%`, 'width');
     this.updatePoints(snap);
+    for (const team of [0, 1]) {
+      let pips = '';
+      KESSLER_REACH.fobs.forEach((f, i) => {
+        if (f.team === team) pips += `<i class="${b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] === 1 ? 'up' : ''}"></i>`;
+      });
+      const shielded = b[snap.o.structures + team * SNAP.structure + STRUCT.shielded] === 1;
+      this.set(`fob${team}`, pips + (shielded ? '' : '<b>!</b>'), 'html');
+      this.$[`fob${team}`].title = shielded ? 'FOBs standing: mothership shielded' : 'Both FOBs down: mothership exposed';
+    }
     const ourPush = b[myTeam === 0 ? H.push0 : H.push1];
     const theirPush = b[myTeam === 0 ? H.push1 : H.push0];
     const rally = b[H.rallyLeft];
@@ -249,6 +272,7 @@ export class Hud {
     this.show('pilot', !commander && !docked);
     this.show('abilities', !commander && !docked);
     this.show('command', commander && !over);
+    this.root.classList.toggle('cmdmode', commander);
     if (commander) this.updateCommand(snap);
     else if (!docked) this.updatePilot(snap);
     this.show('tierPop', !commander && !docked && !over && this.tierReady(snap));
@@ -273,6 +297,19 @@ export class Hud {
           const p = KESSLER_REACH.points[b[k + 1]];
           const team = b[k + 2];
           this.pushFeed(`<div><span style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]}</span> took <b>${p.name}</b></div>`, now);
+        } else if (type === EventType.NodeDestroyed) {
+          const p = KESSLER_REACH.points[b[k + 1]];
+          const team = b[k + 2];
+          this.pushFeed(`<div><span style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]}</span> destroyed <b>${p.name}</b> · open in 20s</div>`, now);
+        } else if (type === EventType.StructureDestroyed && b[k + 1] >= 2) {
+          const fob = KESSLER_REACH.fobs[b[k + 1] - 2];
+          const left = KESSLER_REACH.fobs.filter((f, i) => f.team === fob.team && b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] === 1).length;
+          this.pushFeed(`<div class="big"><span style="color:${TEAM_CSS[fob.team]}">${TEAM_NAMES[fob.team]} FOB destroyed</span> · salvage beacon for ${TEAM_NAMES[1 - fob.team]}${left === 0 ? ' · mothership shield down' : ''}</div>`, now);
+          if (left === 0) this.toast(fob.team === myTeam ? 'Our mothership shield is down' : 'Enemy mothership shield is down', now, fob.team === myTeam);
+        } else if (type === EventType.Ping && b[k + 1] === myTeam) {
+          const point = b[k + 5];
+          const where = point >= 0 ? KESSLER_REACH.points[point].name : 'marked spot';
+          this.pushFeed(`<div><b style="color:${PING_CSS[b[k + 2]]}">Commander:</b> ${PING_NAMES[b[k + 2]]} · ${where}</div>`, now);
         } else if (type === EventType.Command && b[k + 1] !== myTeam) {
           this.pushFeed(`<div><span style="color:${TEAM_CSS[b[k + 1]]}">Enemy command:</span> ${COMMANDS[b[k + 2]]?.name ?? ''}</div>`, now);
         } else if (type === EventType.TierBought && b[k + 1] === info.selfSlot) {
@@ -438,30 +475,42 @@ export class Hud {
     this.set('lost', lost > 0 ? `Lost ◆ ${Math.floor(lost)} unspent shards (kept ${keep}%) — they dropped as loot where you died.` : 'No unspent shards were lost.');
     const choice = b[s + SELF.spawnChoice];
     const options = [`<button data-spawn="-1" class="${choice < 0 ? 'on' : ''}">Mothership</button>`];
+    KESSLER_REACH.fobs.forEach((f, i) => {
+      const idx = 2 + i;
+      if (f.team !== myTeam || b[snap.o.structures + idx * SNAP.structure + STRUCT.alive] !== 1) return;
+      const v = SPAWN_AT_STRUCTURE + idx;
+      options.push(`<button data-spawn="${v}" class="${choice === v ? 'on' : ''}">FOB ${f.pos.y < KESSLER_REACH.height / 2 ? 'North' : 'South'}</button>`);
+    });
     let n = 0;
     for (let i = 0, k = snap.o.deployables; i < b[H.deployableCount]; i++, k += SNAP.deployable) {
       if (b[k + 3] !== BEACON || b[k + 2] !== myTeam) continue;
       const idx = b[k + 5];
-      options.push(`<button data-spawn="${idx}" class="${choice === idx ? 'on' : ''}">Forward beacon ${++n}</button>`);
+      options.push(`<button data-spawn="${idx}" class="${choice === idx ? 'on' : ''}">Beacon ${++n}</button>`);
     }
     this.set('spawns', `<span>Spawn at</span>${options.join('')}`, 'html');
   }
 
   private updateCommand(snap: Snap): void {
     const b = snap.buf;
-    const res = [b[H.alloy], b[H.energy], b[H.intel]];
-    this.set('res', RESOURCES.map((r, i) => `<span style="color:${r.css}">${r.name} <b>${Math.floor(res[i])}</b></span>`).join(''), 'html');
+    const res = [b[H.munitions], b[H.fuel], b[H.manpower]];
+    const income = incomePerMinute(snap);
+    this.set(
+      'res',
+      RESOURCES.map((r, i) => `<span style="color:${r.css}">${r.name} <b>${Math.floor(res[i])}</b><small>+${income[i]}/min</small></span>`).join('') +
+        `<span class="pulse">next pay ${Math.ceil(b[H.nextIncome])}s</span>`,
+      'html',
+    );
     const held = b[myTeamHeld(snap)];
     const pending = this.pendingOrder ? COMMANDS.find((c) => c.id === this.pendingOrder) : null;
     this.set(
       'cmdNote',
       pending
         ? pending.target === 'point'
-          ? `${pending.name}: click a capture point`
+          ? `${pending.name}: click a node`
           : `${pending.name}: click the map${pending.needsVision ? ' where your team can see' : ''}`
         : held <= 2
-          ? 'Holding 2 or fewer points: orders cost 30% less'
-          : `Holding ${held} points`,
+          ? 'Holding 2 or fewer nodes: orders cost 30% less'
+          : `Holding ${held} nodes`,
     );
     COMMANDS.forEach((c, i) => {
       const row = this.orderRows[i];
@@ -487,14 +536,17 @@ export class Hud {
     for (let i = 0, k = snap.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const meter = b[k];
       const owner = b[k + 1];
-      const v = `${Math.round(meter)}:${owner}:${b[k + 2]}:${b[k + 3] > 0}`;
+      const hull = b[k + POINT.hull];
+      const locked = b[k + POINT.locked] > 0;
+      const v = `${Math.round(meter)}:${owner}:${b[k + 2]}:${b[k + 3] > 0}:${Math.round(hull * 50)}:${locked}`;
       if (this.cache.get(`pt${i}`) === v) continue;
       this.cache.set(`pt${i}`, v);
       const el = spans[i] as HTMLElement;
-      el.className = `${owner === 0 ? 'c' : owner === 1 ? 'e' : ''} ${b[k + 2] ? 'contested' : ''} ${b[k + 3] > 0 ? 'hot' : ''}`;
+      el.className = `${owner === 0 ? 'c' : owner === 1 ? 'e' : ''} ${b[k + 2] ? 'contested' : ''} ${b[k + 3] > 0 ? 'hot' : ''} ${locked ? 'locked' : ''}`;
       const fill = el.firstElementChild as HTMLElement;
-      fill.style.width = `${Math.abs(meter)}%`;
-      fill.style.background = meter >= 0 ? 'var(--cobalt)' : 'var(--ember)';
+      // Neutral: the capture meter. Held: the node's hull.
+      fill.style.width = `${owner >= 0 ? hull * 100 : Math.abs(meter)}%`;
+      fill.style.background = owner >= 0 ? (owner === 0 ? 'var(--cobalt)' : 'var(--ember)') : meter >= 0 ? 'var(--cobalt)' : 'var(--ember)';
     }
   }
 
@@ -547,7 +599,7 @@ export class Hud {
     for (let i = 0, k = snap.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const p = map.points[i];
       const owner = b[k + 1];
-      c.fillStyle = owner < 0 ? 'rgba(108,122,168,0.35)' : owner === 0 ? 'rgba(74,168,255,0.4)' : 'rgba(255,122,61,0.4)';
+      c.fillStyle = b[k + POINT.locked] > 0 ? 'rgba(255,92,108,0.3)' : owner < 0 ? 'rgba(108,122,168,0.35)' : owner === 0 ? 'rgba(74,168,255,0.4)' : 'rgba(255,122,61,0.4)';
       c.beginPath();
       c.arc(p.pos.x * sx, p.pos.y * sy, Math.max(3, 450 * sx), 0, Math.PI * 2);
       c.fill();
@@ -564,6 +616,21 @@ export class Hud {
       c.arc(m.x * sx, m.y * sy, MOTHERSHIP.turrets.range * sx, 0, Math.PI * 2);
       c.stroke();
     });
+    KESSLER_REACH.fobs.forEach((f, i) => {
+      if (b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] !== 1) return;
+      c.fillStyle = colors[f.team];
+      c.beginPath();
+      c.arc(f.pos.x * sx, f.pos.y * sy, this.bigMap ? 6 : 4, 0, Math.PI * 2);
+      c.fill();
+    });
+    if (b[H.pingLeft] > 0) {
+      c.strokeStyle = PING_CSS[b[H.pingKind]];
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(b[H.pingX] * sx, b[H.pingY] * sy, 6 + ((performance.now() / 120) % 6), 0, Math.PI * 2);
+      c.stroke();
+      c.lineWidth = 1;
+    }
     for (let i = 0, k = snap.o.deployables; i < b[H.deployableCount]; i++, k += SNAP.deployable) {
       if (b[k + 2] !== myTeam || b[k + 3] !== BEACON) continue;
       c.strokeStyle = colors[myTeam];
@@ -595,6 +662,20 @@ export class Hud {
       c.fillText('SIGNAL JAMMED', 6, Hh - 6);
     }
   }
+}
+
+/** What the viewer's team earns per income pulse: its nodes' own resource plus 20 of each per standing FOB. */
+function incomePerMinute(snap: Snap): number[] {
+  const b = snap.buf;
+  const team = b[snap.ship(b[H.selfSlot]) + SHIP.team];
+  const out = [0, 0, 0];
+  KESSLER_REACH.points.forEach((p, i) => {
+    if (p.resource && b[snap.o.points + i * SNAP.point + POINT.owner] === team) out[RESOURCE_INDEX[p.resource]] += p.income;
+  });
+  KESSLER_REACH.fobs.forEach((f, i) => {
+    if (f.team === team && b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] === 1) for (let r = 0; r < 3; r++) out[r] += POINTS.fobIncome;
+  });
+  return out;
 }
 
 function myTeamHeld(snap: Snap): number {

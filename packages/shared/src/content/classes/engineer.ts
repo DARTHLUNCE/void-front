@@ -37,8 +37,8 @@ export const ENGINEER: ShipClass = {
         {
           id: 'engineer.t1.salvager',
           name: 'Salvager',
-          description: 'Your kills pay your team 15 Alloy.',
-          onKill: { resources: { alloy: 15 } },
+          description: 'Your kills pay your team 2 Fuel.',
+          onKill: { resources: { fuel: 2 } },
           botTags: ['hit'],
         },
       ],
@@ -108,10 +108,10 @@ export const ENGINEER: ShipClass = {
       tier: 4,
       options: [
         {
-          id: 'engineer.t4.rapidRebuild',
-          name: 'Rapid Rebuild',
-          description: 'FOB rebuild time −50% and possible while contested (FOBs arrive in a later phase).',
-          modifiers: [{ stat: 'rebuildSpeed', op: 'mul', value: 1 }],
+          id: 'engineer.t4.fieldRepairs',
+          name: 'Field Repairs',
+          description: 'Repair Pulse also repairs your nodes, FOBs and mothership in range (3% of their hull).',
+          modifiers: [{ stat: 'structureRepair', op: 'add', value: 0.03 }],
           botTags: ['structure'],
         },
         {

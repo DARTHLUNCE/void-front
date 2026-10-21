@@ -1,11 +1,11 @@
 import { COMMAND_RULES } from '../../content/command';
-import { DEPLOYABLES, DRONES } from '../../content/structures';
+import { DEPLOYABLES, DRONES, NODE } from '../../content/structures';
 import type { GunDef, PrimitiveDef, PrimitiveKind, TeamId } from '../../content/types';
-import { hasFlag, liveStat } from '../stats';
+import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
 import { damageDeployable, damageShip, damageStructure, outgoingDamageMul, spawnPattern } from './combat';
 import { damageDrone, spawnDrone } from './drones';
-import { pointBuff } from './points';
+import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
 import { applyStatus, canAct, hasStatus } from './status';
 
@@ -142,6 +142,14 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         }
       }
     }
+    // Field Repairs: the pulse also patches up friendly nodes, FOBs and the mothership.
+    const repair = c.ship ? statValue(c.ship, 'structureRepair', 0) : 0;
+    if (structures && repair > 0) {
+      for (const p of w.points) if (p.owner === c.team && (p.x - cx) ** 2 + (p.y - cy) ** 2 <= (r + NODE.radius) ** 2) repairNode(p, p.maxHull * repair);
+      for (const st of w.structures) {
+        if (st.alive && st.team === c.team && (st.x - cx) ** 2 + (st.y - cy) ** 2 <= (r + st.radius) ** 2) st.hull = Math.min(st.maxHull, st.hull + st.maxHull * repair);
+      }
+    }
     if (structures && step.heal) {
       const dep = w.deployables;
       for (let i = 0; i < dep.count; i++) {
@@ -276,6 +284,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
   teamBuff(w, c, step) {
     const team = w.teams[c.team];
     if (step.buff === 'overcharge') team.overchargeUntil = w.time + step.duration;
+    else if (step.buff === 'reinforce') team.reinforceUntil = w.time + step.duration;
     else team.jamUntil = w.time + step.duration;
   },
 
@@ -355,6 +364,7 @@ function beamHits(w: World, c: Caster, x: number, y: number, ux: number, uy: num
     if (d.active && d.team !== c.team && onBeam(d.x, d.y, d.radius)) damageDrone(w, d, damage, c.slot);
   }
   for (const st of w.structures) if (st.alive && st.team !== c.team && onBeam(st.x, st.y, st.radius)) damageStructure(w, st, damage, c.slot);
+  for (const p of w.points) if (p.owner >= 0 && p.owner !== c.team && onBeam(p.x, p.y, NODE.radius)) damageNode(w, p, damage, c.team, c.slot);
   const dep = w.deployables;
   for (let i = dep.count - 1; i >= 0; i--) {
     const d = dep.at(i);

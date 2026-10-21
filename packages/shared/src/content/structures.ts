@@ -1,5 +1,19 @@
 import type { DeployKind, DroneBehavior, DroneStats, StructureDef } from './types';
 
+/**
+ * Capture-point nodes: an asteroid with a building. A held node has hull; the enemy must destroy
+ * it, wait out the lockout, then capture it from neutral.
+ */
+export const NODE = {
+  hull: 6_000,
+  /** Hit radius of the asteroid (the capture zone is POINTS.radius). */
+  radius: 110,
+  lockout: 20,
+  /** Self-repair, fraction of hull per second, after `regenDelay` s without damage. */
+  regen: 0.005,
+  regenDelay: 8,
+} as const;
+
 export const MOTHERSHIP: StructureDef = {
   id: 'mothership',
   hull: 60_000,
@@ -48,25 +62,46 @@ export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
   swarm: { hull: 30, damage: 6, fireInterval: 0.25, speed: 420, range: 380, splash: 0, structureMul: 1, lifesteal: 0, radius: 7 },
   guard: { hull: 140, damage: 9, fireInterval: 0.3, speed: 300, range: 650, splash: 0, structureMul: 1, lifesteal: 0, radius: 11 },
   decoy: { hull: 30, damage: 0, fireInterval: 1, speed: 330, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 17 },
+  // Commander wings: bombers hit structures and nodes, interceptors hunt ships and drones, recon spots.
+  bomber: { hull: 160, damage: 45, fireInterval: 1.4, speed: 250, range: 480, splash: 140, structureMul: 3, lifesteal: 0, radius: 13 },
+  interceptor: { hull: 80, damage: 8, fireInterval: 0.2, speed: 540, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 9 },
+  recon: { hull: 60, damage: 0, fireInterval: 1, speed: 420, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 9, vision: 1_600 },
 };
 
-/** Phase 1: FOBs are data-ready but not simulated yet. */
+/**
+ * A mothership whose FOBs are both down is exposed: its heal aura runs at reduced power and its
+ * team's respawns slow down (the FOBs carried the fleet's support network).
+ */
+export const EXPOSED = { auraMul: 0.3, respawnMul: 2 } as const;
+
+/**
+ * Destroying an enemy FOB leaves the attackers a salvage beacon at the wreck: a permanent spawn
+ * point (until the defenders destroy it) so a siege can be reinforced like a defense.
+ */
+export const SALVAGE = { hull: 5_000, offset: 90 } as const;
+/** Owner value for salvage beacons (no ship, not the commander's -1). */
+export const SALVAGE_OWNER = -2;
+
+/** Ships can't respawn at an FOB that took damage this recently (no spawning into a siege). */
+export const FOB_SPAWN_BLOCK = 10;
+
+/** Forward operating base: a space station guarding the mothership. Destroyed FOBs stay destroyed. */
 export const FOB: StructureDef = {
   id: 'fob',
-  hull: 12_000,
-  radius: 160,
+  hull: 30_000,
+  radius: 170,
   turrets: {
     offsets: [
       { x: 0, y: -110 },
       { x: 0, y: 110 },
     ],
-    range: 700,
-    damage: 18,
-    interval: 0.3,
+    range: 750,
+    damage: 22,
+    interval: 0.24,
     projectileSpeed: 1300,
     size: 5,
   },
-  healRadius: 450,
+  healRadius: 600,
   healPerSecond: 0.05,
   vision: 2500,
 };

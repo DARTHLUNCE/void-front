@@ -10,7 +10,7 @@ const AUTOFIRE_KEY: Record<ControlScheme, string> = { mouse: 'KeyX', wasd: 'KeyF
 
 export interface InputHandlers {
   stat(index: number): void;
-  /** Number row 1–9 (tier picks for pilots, orders for the commander). */
+  /** Number row 1–9, then 0, -, = as 10–12 (tier picks for pilots, orders for the commander). */
   digit(n: number): void;
   scoreboard(show: boolean): void;
   bigMap(): void;
@@ -76,6 +76,10 @@ export class Input {
       if (e.code === 'KeyM') this.h.bigMap();
       if (e.code === 'Escape') this.h.escape();
       if (/^Digit[1-9]$/.test(e.code)) this.h.digit(Number(e.code.slice(5)));
+      // 0, -, = continue the number row (commander orders 10–12).
+      else if (e.code === 'Digit0') this.h.digit(10);
+      else if (e.code === 'Minus') this.h.digit(11);
+      else if (e.code === 'Equal') this.h.digit(12);
     });
     this.on(window, 'keyup', (e: KeyboardEvent) => {
       if (e.code === 'Tab') {

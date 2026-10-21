@@ -4,11 +4,16 @@ export const DIRECTOR = {
   interval: 2,
   defendMinFrac: 0.15,
   objectiveCapFrac: 0.4,
-  pushIntervalMin: 70,
-  pushIntervalMax: 100,
+  /** The opening minutes are for taking nodes; the first push waits until then. */
+  firstPushMin: 300,
+  firstPushMax: 360,
+  pushIntervalMin: 110,
+  pushIntervalMax: 150,
   pushDuration: 30,
-  /** Seconds a push gathers at its staging point before attacking. */
-  pushGather: 30,
+  /** Longest a push waits at its staging point; it goes early once `stageReadyFrac` of the wave is there. */
+  pushGather: 60,
+  stageReadyFrac: 0.7,
+  stageArriveRadius: 1_800,
   /** Staging point distance short of the enemy mothership. */
   pushStageDistance: 4_500,
   /** Bots that own fewer tiers than this may be sent to farm shards. */
@@ -25,6 +30,10 @@ export const DIRECTOR = {
   ownerWeight: { ours: 0.7, contestedOurs: 1.8, neutral: 1.3, theirs: 1.2 },
   /** Share of skirmishers that answer a commander's Rally Order. */
   rallyFrac: 0.5,
+  /** Once the enemy mothership is exposed: bigger, more frequent pushes. */
+  allIn: { assaultFrac: 0.65, intervalMul: 0.6 },
+  /** Point weight multiplier for a node the commander pinged. */
+  pingWeight: 3,
 } as const;
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
@@ -61,8 +70,10 @@ export const PILOT = {
   cruiseMinDistance: 1_600,
   retreatBelow: 0.3,
   retreatUntil: 0.85,
-  /** Non-assault bots stay out of enemy mothership turret range. */
-  enemyBaseAvoid: 1_150,
+  /** Assaulters in reach of their objective keep shooting it unless an enemy is closer than this. */
+  objectiveFocus: 220,
+  /** Bots stay this far beyond enemy turret range (mothership, FOBs) unless assaulting that structure. */
+  turretAvoidMargin: 250,
   farmSearchRadius: 1_800,
   arriveRadius: 350,
 } as const;

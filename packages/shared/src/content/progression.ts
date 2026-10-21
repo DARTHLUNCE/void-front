@@ -30,6 +30,8 @@ export const ECONOMY = {
     capturePerSecond: 1.5,
     defendPerSecond: 3,
     defendKillBonus: 20,
+    /** Bonus for the ship that lands the killing blow on an enemy node. */
+    nodeDestroy: 60,
   },
   trailingMaxBonus: 0.6,
   trailingFullGap: 160,

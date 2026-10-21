@@ -3,7 +3,9 @@ import { HULLS } from '../art/hulls';
 import { bakeArt, type ArtTexture } from '../art/pixiArt';
 import { BOLT_ART, CRYSTAL_ART, CRYSTAL_PALETTES, MOTHERSHIP_ART, SHELL_ART } from '../art/props';
 import { bakeArtCanvas, type BakedArt } from '../art/raster';
-import { PALETTES, type Shape } from '../art/shapes';
+import { PALETTES, type Palette, type Shape } from '../art/shapes';
+import { FOB_ART, NODE_ART, NODE_PALETTES } from '../art/stations';
+import type { ResourceId } from '@void-front/shared';
 
 type PerTeam<T> = [T, T];
 
@@ -17,10 +19,18 @@ export interface LitArt {
   anchorY: number;
 }
 
+/** Lit art with one albedo per state (nodes: neutral and each team) and a shared normal map. */
+export interface LitStates extends Omit<LitArt, 'albedo'> {
+  albedo: Texture[];
+}
+
 export interface Textures {
   /** hull id → lit art */
   hulls: Record<string, LitArt>;
   mothership: LitArt;
+  fob: LitArt;
+  /** Node art per building, with albedo per state: [neutral, Cobalt, Ember]. */
+  nodes: Record<ResourceId | 'research', LitStates>;
   bolt: PerTeam<ArtTexture>;
   shell: PerTeam<ArtTexture>;
   crystal: ArtTexture;
@@ -74,9 +84,14 @@ function discTexture(size: number): Texture {
 const mip = (canvas: HTMLCanvasElement) => new Texture({ source: new CanvasSource({ resource: canvas, autoGenerateMipmaps: true }) });
 
 function litArt(shapes: Shape[], scale: number, bevel = 1): LitArt {
-  const baked: [BakedArt, BakedArt] = [bakeArtCanvas(shapes, PALETTES[0], scale, 3, bevel), bakeArtCanvas(shapes, PALETTES[1], scale, 3, bevel)];
+  const art = litStates(shapes, scale, bevel, PALETTES);
+  return { ...art, albedo: [art.albedo[0], art.albedo[1]] };
+}
+
+function litStates(shapes: Shape[], scale: number, bevel: number, palettes: readonly Palette[]): LitStates {
+  const baked: BakedArt[] = palettes.map((p) => bakeArtCanvas(shapes, p, scale, 3, bevel));
   return {
-    albedo: [mip(baked[0].albedo), mip(baked[1].albedo)],
+    albedo: baked.map((b) => mip(b.albedo)),
     normal: mip(baked[0].normal),
     widthWorld: baked[0].width / scale,
     heightWorld: baked[0].height / scale,
@@ -100,6 +115,13 @@ export function makeTextures(renderer: Renderer): Textures {
   return {
     hulls,
     mothership: litArt(MOTHERSHIP_ART, 1.2, 5),
+    fob: litArt(FOB_ART, 1.4, 4),
+    nodes: {
+      munitions: litStates(NODE_ART.munitions, 1.8, 3, NODE_PALETTES),
+      fuel: litStates(NODE_ART.fuel, 1.8, 3, NODE_PALETTES),
+      manpower: litStates(NODE_ART.manpower, 1.8, 3, NODE_PALETTES),
+      research: litStates(NODE_ART.research, 1.8, 3, NODE_PALETTES),
+    },
     bolt: both(BOLT_ART),
     shell: both(SHELL_ART),
     crystal: bakeArt(renderer, CRYSTAL_ART[0], CRYSTAL_PALETTES[0]),

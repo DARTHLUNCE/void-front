@@ -39,8 +39,8 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 ## Tick order (30 Hz, `sim/step.ts`)
 
 1. Inputs + Fleet Director + pilot brains (bots write the same `ShipInput` humans do)
-   (shop picks `statPick`/`tierPick` apply first; Fleet Command orders are applied by the host
-   between ticks with `issueCommand`)
+   (shop picks `statPick`/`tierPick` apply first; hosts queue Fleet Command orders and pings on
+   `w.pendingOrders` / `w.pendingPings`, which run here so their events reach the snapshot)
 2. Move every ship, collisions, separation
 3. Aim, fire, abilities (signature, ultimate, extra) — **only after every ship has moved** (fairness rule)
 4. Projectiles, drones, zones and orbital strikes (deployables fire in step 3)

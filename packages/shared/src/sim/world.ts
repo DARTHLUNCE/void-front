@@ -1,11 +1,11 @@
-import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
+import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
 import { CLASS_ORDER, getClass } from '../content/classes/index';
 import type { CommandId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import { MATCH, POINTS } from '../content/match';
 import { STAT_POINTS } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
-import { DEPLOYABLES, MOTHERSHIP, type DeployableDef } from '../content/structures';
+import { DEPLOYABLES, FOB, MOTHERSHIP, NODE, type DeployableDef } from '../content/structures';
 import type {
   AbilityDef,
   Affects,
@@ -38,6 +38,11 @@ export const STRIKE_CAPACITY = 64;
 export const TETHER_CAPACITY = 64;
 export const EVENT_CAPACITY = 512;
 export const TIERS = 5;
+/** spawnChoice values at or above this pick a structure (an FOB) by index. */
+export const SPAWN_AT_STRUCTURE = 1000;
+
+export const PingKind = { Move: 0, Attack: 1, Defend: 2 } as const;
+export type PingKind = (typeof PingKind)[keyof typeof PingKind];
 
 /** Per-ship input. Humans fill it from the client; bot pilot brains fill the same struct. */
 export interface ShipInput {
@@ -83,6 +88,8 @@ export interface BotBrain {
   targetShip: number;
   /** Drone index being fought, or -1. */
   targetDrone: number;
+  /** Enemy-held node (point index) being shot down, or -1. */
+  targetNode: number;
   /** Structure index being fought, or -1. */
   targetStructure: number;
   destX: number;
@@ -179,7 +186,7 @@ export class Ship {
   lastHitBy = -1;
   lastHitTime = -99;
   respawnAt = 0;
-  /** Where to respawn: -1 = mothership, otherwise a deployable index (a beacon). */
+  /** Where to respawn: -1 = mothership, a deployable index (a beacon), or SPAWN_AT_STRUCTURE + an FOB's structure index. */
   spawnChoice = -1;
   kills = 0;
   deaths = 0;
@@ -298,12 +305,17 @@ export class Drone implements Pooled {
   splash = 0;
   structureMul = 1;
   lifesteal = 0;
+  /** Vision it gives its team (recon drones). */
+  vision = 0;
   radius = 8;
   guardX = 0;
   guardY = 0;
   orbitAngle = 0;
   targetShip = -1;
   targetDrone = -1;
+  /** Bombers: structure / node / deployable index being bombed, or -1 (kind in targetKind). */
+  targetObj = -1;
+  targetKind = 0;
   aimError = 0.05;
   /** Kamikaze dive: when > 0 the drone flies at (kx, ky) and explodes for this much. */
   kamikazeDamage = 0;
@@ -372,11 +384,19 @@ export class Tether implements Pooled {
 }
 
 export class PointState {
-  /** −100 (Ember) … +100 (Cobalt). Owner flips at ±100 and goes neutral when pushed back through 0. */
+  /**
+   * −100 (Ember) … +100 (Cobalt) while neutral. A team takes the node at its end of the meter; a
+   * held node can't be pushed back, only destroyed (hull to 0), which leaves it locked out for
+   * NODE.lockout seconds before anyone can capture it again.
+   */
   meter = 0;
   owner: TeamId | -1 = -1;
   contested = false;
   hotUntil = -1;
+  hull = 0;
+  readonly maxHull = NODE.hull;
+  lockedUntil = -1;
+  lastDamageTime = -99;
   /** Ships of each team pushing this tick (after the cap). */
   readonly pushing = new Float64Array(2);
   flips = 0;
@@ -406,6 +426,10 @@ export const EventType = {
   Explosion: 9,
   Command: 10,
   StrikeLanded: 11,
+  /** a = point index, b = destroying team, c = attacker slot. */
+  NodeDestroyed: 12,
+  /** a = team, b = PingKind, c = point index or -1. */
+  Ping: 13,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
@@ -439,7 +463,22 @@ export class TeamState {
   rallyX = 0;
   rallyY = 0;
   rallyUntil = -1;
+  /** Structure index the Defend job guards (the most threatened of mothership and FOBs). */
+  defendTarget: number;
+  /** Rapid Deployment: faster respawns until this time. */
+  reinforceUntil = -1;
   pointsHeld = 0;
+  /** This team's FOBs (structure objects), in map order. */
+  readonly fobs: Structure[] = [];
+  /** The commander's latest ping. */
+  pingX = 0;
+  pingY = 0;
+  pingAt = -99;
+  pingKind = 0;
+  /** Point index the ping is on, or -1. */
+  pingPoint = -1;
+  /** Bots were already sent toward the latest ping. */
+  pingHandled = true;
 
   constructor(
     readonly id: TeamId,
@@ -450,7 +489,8 @@ export class TeamState {
     this.resources.fill(POINTS.startingBank);
     this.firstSlot = id * fleetSize;
     this.lastSlot = this.firstSlot + fleetSize - 1;
-    this.nextPush = rng.range(70, 100);
+    this.nextPush = rng.range(DIRECTOR.firstPushMin, DIRECTOR.firstPushMax);
+    this.defendTarget = mothership.index;
   }
 
   commandReadyAt(id: CommandId): number {
@@ -526,12 +566,20 @@ export class World {
   readonly pushY: Float64Array;
   readonly events: SimEvent[];
   eventCount = 0;
+  /**
+   * Fleet Command orders and pings from hosts, carried out in step 1 of the next tick (so their
+   * events land in that tick's snapshot). See systems/command.ts.
+   */
+  readonly pendingOrders: { team: TeamId; id: CommandId; x: number; y: number; point: number }[] = [];
+  readonly pendingPings: { team: TeamId; x: number; y: number }[] = [];
   /** Fractional crystal pairs owed by the spawner. */
   crystalSpawnAcc = 0;
   readonly match: MatchState = { over: false, winner: -1, endReason: '', endTime: 0, killsAtCheck: null, vp: [0, 0] };
   readonly stats = {
     projectilePeak: 0,
     projectileOverflow: 0,
+    nodesDestroyed: 0,
+    fobsDestroyed: 0,
     crystalsCollected: 0,
     killsByClass: {} as Record<string, number>,
     tierPicks: {} as Record<string, number>,
@@ -548,6 +596,8 @@ export class World {
     const ms0 = new Structure(0, MOTHERSHIP, 0, this.map.motherships[0].x, this.map.motherships[0].y);
     const ms1 = new Structure(1, MOTHERSHIP, 1, this.map.motherships[1].x, this.map.motherships[1].y);
     this.structures.push(ms0, ms1);
+    const fobs = this.map.fobs.map((f, i) => new Structure(2 + i, FOB, f.team, f.pos.x, f.pos.y));
+    this.structures.push(...fobs);
     this.points = this.map.points.map((def, i) => new PointState(i, def));
 
     const mirror = opts.mirrorStreams === true;
@@ -555,6 +605,9 @@ export class World {
       new TeamState(0, new Rng(hashSeed(seed, 0, 0x7ea)), this.fleetSize, ms0),
       new TeamState(1, new Rng(hashSeed(seed, mirror ? 0 : 1, 0x7ea)), this.fleetSize, ms1),
     ];
+
+    for (const f of fobs) this.teams[f.team].fobs.push(f);
+    for (const ms of [ms0, ms1]) ms.shielded = fobs.some((f) => f.team === ms.team);
 
     const humans = new Set(opts.humanSlots ?? []);
     const total = this.fleetSize * 2;
@@ -656,6 +709,7 @@ function makeBrain(rng: Rng, skill: BotSkill): BotBrain {
     retreating: false,
     targetShip: -1,
     targetDrone: -1,
+    targetNode: -1,
     targetStructure: -1,
     destX: 0,
     destY: 0,

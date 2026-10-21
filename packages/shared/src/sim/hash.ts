@@ -45,7 +45,11 @@ export function hashWorld(w: World): string {
   }
   mix(w.deployables.count);
   mix(w.zones.count);
-  for (const p of w.points) mix(p.meter);
+  for (const p of w.points) {
+    mix(p.meter);
+    mix(p.hull);
+    mix(p.owner);
+  }
   for (const t of w.teams) for (const r of t.resources) mix(r);
   for (const r of w.rng.state()) mix(r);
   mix(w.teams[0].kills);

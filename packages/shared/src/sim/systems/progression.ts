@@ -1,12 +1,17 @@
 import { BOT_TIER_PREFS, DIRECTOR } from '../../content/bots';
 import { getClass } from '../../content/classes/index';
+import { COMMAND_RULES } from '../../content/command';
 import { CRYSTALS } from '../../content/crystals';
+import { RESOURCE_IDS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../../content/progression';
-import type { ClassId } from '../../content/types';
+import { EXPOSED, FOB_SPAWN_BLOCK } from '../../content/structures';
+import type { ClassId, TeamId } from '../../content/types';
 import { applyLoadout, statValue } from '../stats';
-import { EventType, Job, TIERS, type Ship, type TeamState, type World } from '../world';
+import { EventType, Job, SPAWN_AT_STRUCTURE, TIERS, type Ship, type Structure, type TeamState, type World } from '../world';
 import { inOwnedPoint, pointBuff } from './points';
+import { pushTarget } from './director';
 import { quirkOf } from './quirks';
+import { isExposed } from './structures';
 import { applyStatus, clearStatuses } from './status';
 
 /** Team behind on kills earns up to +60% XP and shards, full bonus at 160 kills behind. */
@@ -117,7 +122,9 @@ export function killShip(w: World, victim: Ship): void {
   victim.alive = false;
   victim.hull = 0;
   victim.deaths++;
-  victim.respawnAt = w.time + respawnTime(victim.rank);
+  const reinforced = w.time < w.teams[victim.team].reinforceUntil ? COMMAND_RULES.reinforceRespawnMul : 1;
+  const exposed = isExposed(w, w.teams[victim.team].mothership) ? EXPOSED.respawnMul : 1;
+  victim.respawnAt = w.time + respawnTime(victim.rank) * reinforced * exposed;
   victim.vx = 0;
   victim.vy = 0;
   victim.dashTime = 0;
@@ -157,9 +164,7 @@ function applyKillEffects(w: World, killer: Ship): void {
     if (!k) continue;
     if (k.resources) {
       const res = w.teams[killer.team].resources;
-      if (k.resources.alloy) res[0] += k.resources.alloy;
-      if (k.resources.energy) res[1] += k.resources.energy;
-      if (k.resources.intel) res[2] += k.resources.intel;
+      for (const id of RESOURCE_IDS) res[RESOURCE_INDEX[id]] += k.resources[id] ?? 0;
     }
     if (k.ventHeat) quirkOf(killer).vent?.(killer);
     if (k.signatureCooldownMul !== undefined) killer.signature.cooldown *= k.signatureCooldownMul;
@@ -194,8 +199,16 @@ export function respawnShip(w: World, s: Ship): void {
   if (s.commander || s.awaitingClass) return;
   const home = w.teams[s.team].mothership;
   const sign = w.teamSign(s.team);
-  const beacon = s.spawnChoice >= 0 ? w.deployables.items[s.spawnChoice] : null;
-  if (beacon && beacon.active && beacon.team === s.team && beacon.def.respawn) {
+  if (s.bot) s.spawnChoice = botSpawn(w, s);
+  const fob = s.spawnChoice >= SPAWN_AT_STRUCTURE ? w.structures[s.spawnChoice - SPAWN_AT_STRUCTURE] : null;
+  const beacon = s.spawnChoice >= 0 && !fob ? w.deployables.items[s.spawnChoice] : null;
+  if (fob && canSpawnAt(w, fob, s.team)) {
+    // FOBs launch ships from their enemy-facing side.
+    const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
+    const d = fob.radius + 60 + s.rng.next() * 160;
+    s.x = fob.x + sign * Math.cos(a) * d;
+    s.y = fob.y + sign * Math.sin(a) * d;
+  } else if (beacon && beacon.active && beacon.team === s.team && beacon.def.respawn) {
     const a = s.rng.next() * Math.PI * 2;
     const d = beacon.def.radius + 40 + s.rng.next() * 120;
     s.x = beacon.x + Math.cos(a) * d;
@@ -235,12 +248,50 @@ export function respawnShip(w: World, s: Ship): void {
     b.targetStructure = -1;
     b.nextThink = w.time;
     b.farmer = s.rank < DIRECTOR.farmBelowRank && s.rng.chance(DIRECTOR.farmChance);
-    if (b.job === Job.Assault) {
+    // Assaulters who die rejoin the push if it's still on, otherwise go back to skirmishing.
+    if (b.job === Job.Assault && w.time >= w.teams[s.team].pushUntil) {
       b.job = Job.Skirmish;
       b.jobUntil = 0;
     }
   }
   w.emit(EventType.Respawn, s.slot, 0, s.x, s.y);
+}
+
+/** An FOB takes respawns while it stands and hasn't been hit for FOB_SPAWN_BLOCK seconds. */
+export function canSpawnAt(w: World, fob: Structure, team: TeamId): boolean {
+  return fob.alive && fob.team === team && w.time - fob.lastDamageTime >= FOB_SPAWN_BLOCK;
+}
+
+/** Bots launch from the standing FOB nearest their job (defenders from the mothership). */
+function botSpawn(w: World, s: Ship): number {
+  const b = s.bot!;
+  if (b.job === Job.Defend) return -1;
+  const team = w.teams[s.team];
+  // Assaulters on a live push launch toward the push target; everyone else toward their node.
+  const target = b.job === Job.Assault && w.time < team.pushUntil ? pushTarget(w, s.team) : null;
+  const p = target ?? w.map.points[b.jobPoint].pos;
+  let best = -1;
+  let bestD = Infinity;
+  for (const f of team.fobs) {
+    if (!canSpawnAt(w, f, s.team)) continue;
+    const d = (f.x - p.x) ** 2 + (f.y - p.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = SPAWN_AT_STRUCTURE + f.index;
+    }
+  }
+  // Beacons (salvage beacons, forward beacons) count too.
+  const dep = w.deployables;
+  for (let i = 0; i < dep.count; i++) {
+    const d = dep.at(i);
+    if (d.team !== s.team || !d.def.respawn) continue;
+    const dd = (d.x - p.x) ** 2 + (d.y - p.y) ** 2;
+    if (dd < bestD || (dd === bestD && best >= 0 && best < SPAWN_AT_STRUCTURE && d.index < best)) {
+      bestD = dd;
+      best = d.index;
+    }
+  }
+  return best;
 }
 
 /** Passive hull repair after a few seconds without damage; Drone Link adds regen per active drone. */

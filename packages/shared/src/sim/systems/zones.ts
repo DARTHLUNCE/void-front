@@ -3,6 +3,7 @@ import { DT, EventType, type World } from '../world';
 import { damageDeployable, damageShip, damageStructure, leadAngle, spawnPattern } from './combat';
 import { damageDrone, explode } from './drones';
 import { creditHealing, heal } from './progression';
+import { damageNodesInRadius } from './points';
 import { applyStatus } from './status';
 
 /** Step 4: zones tick their per-second effects and pulls; orbital strikes land; heal tethers pulse. */
@@ -76,6 +77,7 @@ export function stepZones(w: World): void {
       const d = dep.at(k);
       if (d.team !== st.team && (d.x - st.x) ** 2 + (d.y - st.y) ** 2 <= st.radius * st.radius) damageDeployable(w, d, st.structureDamage, st.owner);
     }
+    damageNodesInRadius(w, st.team, st.x, st.y, st.radius, st.structureDamage, st.owner);
     w.emit(EventType.StrikeLanded, st.team, st.owner, st.x, st.y, st.radius);
     strikes.release(st);
   }

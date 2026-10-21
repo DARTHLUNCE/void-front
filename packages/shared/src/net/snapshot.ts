@@ -1,10 +1,11 @@
 import { CLASS_ORDER, HULL_INDEX } from '../content/classes/index';
-import { COMMANDS } from '../content/command';
+import { COMMAND_RULES, COMMANDS } from '../content/command';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
 import type { DeployKind, DroneBehavior } from '../content/types';
 import { abilityCooldown } from '../sim/systems/abilities';
 import { commandCost } from '../sim/systems/command';
+import { nextIncomeIn } from '../sim/systems/points';
 import { quirkGauge } from '../sim/systems/quirks';
 import { type AbilityState, type Ship, TIERS, type World } from '../sim/world';
 
@@ -14,13 +15,14 @@ import { type AbilityState, type Ship, TIERS, type World } from '../sim/world';
  * section layout here is the starting point for that protocol.
  */
 export const SNAP = {
-  header: 40,
+  header: 48,
   self: 64,
   command: COMMANDS.length * 2,
   ship: 16,
   projectile: 7,
   crystal: 3,
-  point: 6,
+  point: 8,
+  structure: 4,
   drone: 7,
   deployable: 6,
   zone: 6,
@@ -57,10 +59,10 @@ export const H = {
   zoneCount: 24,
   strikeCount: 25,
   tetherCount: 26,
-  /** The viewer's team bank: alloy, energy, intel. */
-  alloy: 27,
-  energy: 28,
-  intel: 29,
+  /** The viewer's team bank: munitions, fuel, manpower. */
+  munitions: 27,
+  fuel: 28,
+  manpower: 29,
   /** Seconds left on the viewer team's Fleet Overcharge / enemy Signal Jam / Rally Order. */
   overcharge: 30,
   jammed: 31,
@@ -71,7 +73,22 @@ export const H = {
   commanderSlot: 35,
   pointsHeld0: 36,
   pointsHeld1: 37,
+  /** Seconds left on the viewer team's Rapid Deployment, and until the next income pulse. */
+  reinforce: 38,
+  nextIncome: 39,
+  /** The viewer team's latest commander ping: position, seconds left, PingKind, point index or -1. */
+  pingX: 40,
+  pingY: 41,
+  pingLeft: 42,
+  pingKind: 43,
+  pingPoint: 44,
+  structureCount: 45,
 } as const;
+
+/** Per structure (motherships 0–1, then FOBs in map order): hull, max hull, alive, shielded. */
+export const STRUCT = { hull: 0, maxHull: 1, alive: 2, shielded: 3 } as const;
+/** Per node: meter, owner, contested, hot seconds left, pushing ×2, hull fraction, lockout seconds left. */
+export const POINT = { meter: 0, owner: 1, contested: 2, hot: 3, push0: 4, push1: 5, hull: 6, locked: 7 } as const;
 
 /** Per-ability block inside SELF: cooldown, cooldown max, charges, max charges (max 0 = none). */
 export const ABILITY = { cooldown: 0, cooldownMax: 1, charges: 2, maxCharges: 3 } as const;
@@ -136,6 +153,7 @@ export const STATUS_BIT: Readonly<Record<string, number>> = Object.fromEntries(S
 export interface SnapshotOffsets {
   self: number;
   command: number;
+  structures: number;
   ships: number;
   projectiles: number;
   crystals: number;
@@ -150,6 +168,7 @@ export interface SnapshotOffsets {
 }
 
 export interface SnapshotCounts {
+  structures: number;
   ships: number;
   projectiles: number;
   crystals: number;
@@ -165,7 +184,8 @@ export interface SnapshotCounts {
 export function snapshotOffsets(n: SnapshotCounts): SnapshotOffsets {
   const self = SNAP.header;
   const command = self + SNAP.self;
-  const ships = command + SNAP.command;
+  const structures = command + SNAP.command;
+  const ships = structures + n.structures * SNAP.structure;
   const projectiles = ships + n.ships * SNAP.ship;
   const crystals = projectiles + n.projectiles * SNAP.projectile;
   const points = crystals + n.crystals * SNAP.crystal;
@@ -175,11 +195,12 @@ export function snapshotOffsets(n: SnapshotCounts): SnapshotOffsets {
   const strikes = zones + n.zones * SNAP.zone;
   const tethers = strikes + n.strikes * SNAP.strike;
   const events = tethers + n.tethers * SNAP.tether;
-  return { self, command, ships, projectiles, crystals, points, drones, deployables, zones, strikes, tethers, events, length: events + n.events * SNAP.event };
+  return { self, command, structures, ships, projectiles, crystals, points, drones, deployables, zones, strikes, tethers, events, length: events + n.events * SNAP.event };
 }
 
 export function readOffsets(buf: Float32Array): SnapshotOffsets {
   return snapshotOffsets({
+    structures: buf[H.structureCount],
     ships: buf[H.shipCount],
     projectiles: buf[H.projectileCount],
     crystals: buf[H.crystalCount],
@@ -209,6 +230,7 @@ export function statusBits(s: Ship): number {
 
 export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
   const o = snapshotOffsets({
+    structures: w.structures.length,
     ships: w.ships.length,
     projectiles: w.projectiles.count,
     crystals: w.crystals.count,
@@ -251,9 +273,24 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
   b[H.zoneCount] = w.zones.count;
   b[H.strikeCount] = w.strikes.count;
   b[H.tetherCount] = w.tethers.count;
-  b[H.alloy] = myTeam.resources[0];
-  b[H.energy] = myTeam.resources[1];
-  b[H.intel] = myTeam.resources[2];
+  b[H.munitions] = myTeam.resources[0];
+  b[H.fuel] = myTeam.resources[1];
+  b[H.manpower] = myTeam.resources[2];
+  b[H.reinforce] = Math.max(0, myTeam.reinforceUntil - w.time);
+  b[H.nextIncome] = nextIncomeIn(w);
+  b[H.pingX] = myTeam.pingX;
+  b[H.pingY] = myTeam.pingY;
+  b[H.pingLeft] = Math.max(0, COMMAND_RULES.pingLife - (w.time - myTeam.pingAt));
+  b[H.pingKind] = myTeam.pingKind;
+  b[H.pingPoint] = myTeam.pingPoint;
+  b[H.structureCount] = w.structures.length;
+  for (let i = 0, k = o.structures; i < w.structures.length; i++, k += SNAP.structure) {
+    const st = w.structures[i];
+    b[k + STRUCT.hull] = st.hull;
+    b[k + STRUCT.maxHull] = st.maxHull;
+    b[k + STRUCT.alive] = st.alive ? 1 : 0;
+    b[k + STRUCT.shielded] = st.shielded ? 1 : 0;
+  }
   b[H.overcharge] = Math.max(0, myTeam.overchargeUntil - w.time);
   b[H.jammed] = Math.max(0, w.enemyOf(myTeam.id).jamUntil - w.time);
   b[H.rallyLeft] = Math.max(0, myTeam.rallyUntil - w.time);
@@ -368,6 +405,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 3] = Math.max(0, p.hotUntil - w.time);
     b[k + 4] = p.pushing[0];
     b[k + 5] = p.pushing[1];
+    b[k + 6] = p.owner >= 0 ? p.hull / p.maxHull : 0;
+    b[k + 7] = Math.max(0, p.lockedUntil - w.time);
     k += SNAP.point;
   }
 

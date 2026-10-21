@@ -3,8 +3,9 @@ import type { TeamId } from '../../content/types';
 import { EventType, type World } from '../world';
 
 /**
- * Step 7: win and time-limit checks. VP = mothership damage dealt plus capture points held.
- * (Motherships are never shielded yet: the Aegis Grid arrives with FOBs.)
+ * Step 7: win and time-limit checks. A team wins by destroying the enemy mothership, which is
+ * shielded until both of that team's FOBs are down. At the time limit, VP = mothership damage
+ * dealt + enemy FOBs destroyed + nodes held.
  */
 export function updateMatch(w: World): void {
   const m = w.match;
@@ -29,7 +30,8 @@ export function computeVp(w: World): void {
   for (const team of w.teams) {
     const enemyMs = w.enemyOf(team.id).mothership;
     const removedPct = (1 - enemyMs.hull / enemyMs.maxHull) * 100;
-    w.match.vp[team.id] = removedPct * MATCH.vpPerMothershipPercent + team.pointsHeld * MATCH.vpPerPoint;
+    const fobsDown = w.enemyOf(team.id).fobs.filter((f) => !f.alive).length;
+    w.match.vp[team.id] = removedPct * MATCH.vpPerMothershipPercent + fobsDown * MATCH.vpPerFob + team.pointsHeld * MATCH.vpPerPoint;
   }
 }
 

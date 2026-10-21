@@ -5,6 +5,7 @@ import type { DroneBehavior, DroneStats, TeamId } from '../../content/types';
 import { hasFlag, statValue } from '../stats';
 import { DT, EventType, type Drone, type Ship, type World } from '../world';
 import { damageDeployable, damageShip, damageStructure, leadAngle, spawnPattern } from './combat';
+import { damageNodesInRadius } from './points';
 import { DRONE_READY } from './quirks';
 
 const DRONE_GUN = { damage: 0, fireInterval: 1, projectileSpeed: 900, count: 1, spread: 0, size: 3, life: 0.6 };
@@ -66,6 +67,8 @@ export function spawnDrone(
   d.orbitAngle = (d.index * 2.39996) % (Math.PI * 2);
   d.targetShip = -1;
   d.targetDrone = -1;
+  d.targetObj = -1;
+  d.vision = base.vision ?? 0;
   d.kamikazeDamage = 0;
   d.lastHitBy = -1;
   const skill = ownerShip?.bot?.skill ?? BOT_SKILL.normal;
@@ -127,10 +130,13 @@ export function stepDrones(w: World): void {
     // Anchor: the owner, or the guarded point.
     const ax = d.behavior === 'guard' || !owner ? d.guardX : owner.x;
     const ay = d.behavior === 'guard' || !owner ? d.guardY : owner.y;
-    const leash = d.behavior === 'guard' ? 750 : d.behavior === 'orbit' ? 480 : 700;
+    const leash = LEASH[d.behavior];
 
-    // Targeting every few ticks, staggered by index.
-    if ((w.tick + d.index) % 6 === 0) pickTarget(w, d, owner, ax, ay, leash);
+    // Targeting every few ticks, staggered by index. Recon drones never fight; bombers go for
+    // structures, nodes and deployables first.
+    if (d.behavior !== 'recon' && (w.tick + d.index) % 6 === 0) {
+      if (d.behavior !== 'bomber' || !pickStructureTarget(w, d, ax, ay, leash)) pickTarget(w, d, owner, ax, ay, leash);
+    }
     const t = d.targetShip >= 0 ? w.ships[d.targetShip] : null;
     const td = d.targetDrone >= 0 ? w.drones.items[d.targetDrone] : null;
     let tx = 0;
@@ -138,7 +144,12 @@ export function stepDrones(w: World): void {
     let tvx = 0;
     let tvy = 0;
     let engaged = false;
-    if (t && t.alive) {
+    const obj = d.targetObj >= 0 ? objectPos(w, d) : null;
+    if (obj) {
+      tx = obj.x;
+      ty = obj.y;
+      engaged = true;
+    } else if (t && t.alive) {
       tx = t.x;
       ty = t.y;
       tvx = t.vx;
@@ -153,6 +164,7 @@ export function stepDrones(w: World): void {
     } else {
       d.targetShip = -1;
       d.targetDrone = -1;
+      d.targetObj = -1;
     }
 
     // Steering
@@ -162,13 +174,13 @@ export function stepDrones(w: World): void {
       const dx = tx - d.x;
       const dy = ty - d.y;
       const dist = Math.hypot(dx, dy) || 1;
-      const want = d.range * 0.6;
+      const want = obj ? d.range * 0.8 : d.range * 0.6;
       const radial = dist > want ? 1 : -0.6;
       gx = d.x + (dx / dist) * radial * 100 - (dy / dist) * 60;
       gy = d.y + (dy / dist) * radial * 100 + (dx / dist) * 60;
     } else {
-      const r = d.behavior === 'guard' ? 260 : QUIRK_PARAMS.droneBay.orbitRadius + (d.index % 4) * 14;
-      d.orbitAngle += DT * (d.behavior === 'guard' ? 0.5 : 1.6);
+      const r = IDLE_ORBIT[d.behavior] || QUIRK_PARAMS.droneBay.orbitRadius + (d.index % 4) * 14;
+      d.orbitAngle += DT * (d.behavior === 'orbit' || d.behavior === 'swarm' ? 1.6 : 0.5);
       gx = ax + Math.cos(d.orbitAngle) * r;
       gy = ay + Math.sin(d.orbitAngle) * r;
     }
@@ -201,6 +213,76 @@ export function stepDrones(w: World): void {
       d.cooldown = 0;
     }
   }
+}
+
+/** How far from its anchor a drone will chase, and how wide it circles when idle. */
+const LEASH: Record<DroneBehavior, number> = { orbit: 480, swarm: 700, guard: 750, decoy: 0, bomber: 900, interceptor: 1_100, recon: 0 };
+const IDLE_ORBIT: Record<DroneBehavior, number> = { orbit: 0, swarm: 0, guard: 260, decoy: 0, bomber: 320, interceptor: 380, recon: 200 };
+
+/** Object target kinds for d.targetKind. */
+const OBJ_STRUCTURE = 1;
+const OBJ_NODE = 2;
+const OBJ_DEPLOYABLE = 3;
+const objPos = { x: 0, y: 0 };
+
+function objectPos(w: World, d: Drone): { x: number; y: number } | null {
+  if (d.targetKind === OBJ_STRUCTURE) {
+    const st = w.structures[d.targetObj];
+    if (!st.alive) return null;
+    objPos.x = st.x;
+    objPos.y = st.y;
+  } else if (d.targetKind === OBJ_NODE) {
+    const p = w.points[d.targetObj];
+    if (p.owner < 0 || p.owner === d.team) return null;
+    objPos.x = p.x;
+    objPos.y = p.y;
+  } else {
+    const dp = w.deployables.items[d.targetObj];
+    if (!dp.active || dp.team === d.team) return null;
+    objPos.x = dp.x;
+    objPos.y = dp.y;
+  }
+  return objPos;
+}
+
+/** Bombers: nearest enemy structure (not a shielded mothership), held node or deployable in reach. */
+function pickStructureTarget(w: World, d: Drone, ax: number, ay: number, leash: number): boolean {
+  let best = leash * leash;
+  d.targetObj = -1;
+  for (const st of w.structures) {
+    if (!st.alive || st.team === d.team || st.shielded) continue;
+    const dd = Math.max(0, Math.hypot(st.x - ax, st.y - ay) - st.radius) ** 2;
+    if (dd < best) {
+      best = dd;
+      d.targetObj = st.index;
+      d.targetKind = OBJ_STRUCTURE;
+    }
+  }
+  for (const p of w.points) {
+    if (p.owner < 0 || p.owner === d.team) continue;
+    const dd = (p.x - ax) ** 2 + (p.y - ay) ** 2;
+    if (dd < best) {
+      best = dd;
+      d.targetObj = p.index;
+      d.targetKind = OBJ_NODE;
+    }
+  }
+  const dep = w.deployables;
+  for (let i = 0; i < dep.count; i++) {
+    const dp = dep.at(i);
+    if (dp.team === d.team || dp.kind === 'mine') continue;
+    const dd = (dp.x - ax) ** 2 + (dp.y - ay) ** 2;
+    if (dd < best) {
+      best = dd;
+      d.targetObj = dp.index;
+      d.targetKind = OBJ_DEPLOYABLE;
+    }
+  }
+  if (d.targetObj >= 0) {
+    d.targetShip = -1;
+    d.targetDrone = -1;
+  }
+  return d.targetObj >= 0;
 }
 
 function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: number, leash: number): void {
@@ -300,6 +382,7 @@ export function explode(w: World, team: TeamId, owner: number, x: number, y: num
     const dp = dep.at(i);
     if (dp.team !== team && (dp.x - x) ** 2 + (dp.y - y) ** 2 <= (radius + dp.def.radius) ** 2) damageDeployable(w, dp, damage * structureMul, owner);
   }
+  damageNodesInRadius(w, team, x, y, radius, damage * structureMul, owner);
   w.emit(EventType.Explosion, team, 0, x, y, radius);
 }
 

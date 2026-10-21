@@ -43,16 +43,22 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 | Scoreboard / map | Tab / M | Tab / M |
 | Lighting on/off | L | L |
 
-You fly for Cobalt (blue). Destroy the Ember mothership on the far right of the map.
+You fly for Cobalt (blue). Win by destroying the Ember mothership on the far right of the map. It is
+shielded until both of Ember's FOBs (the space stations in front of it) are destroyed. Take the
+asteroid nodes in the middle for resources (the Research Lab in the center gives +25% XP instead): a
+node someone holds has to be shot down, then sits locked for 20 s before it can be captured again.
+Destroying an enemy FOB leaves you a salvage beacon to respawn at. FOBs and motherships heal friendly
+ships nearby. Bot matches run about 20–35 minutes.
 
 **Economy.** Shards (crystals and wreck loot) buy stat upgrades; each level costs more, and upgrades reset
 when tier 3 swaps your hull. XP from kills, damage, healing and capturing or defending points buys tiers.
 Dying drops 40% of your unspent shards as loot; XP and anything you bought are kept.
 
 **Fleet Commander.** One human per team can take the commander seat instead of a ship: pan the war map
-(WASD, arrows, screen edge, wheel to zoom) and spend the Alloy, Energy and Intel your capture points
-bank on orders (keys 1–9): defense drones, forward spawn beacons, orbital strikes, platforms, recon,
-rally orders and team buffs.
+(WASD, arrows, screen edge, wheel to zoom), right-click to ping targets for free, and spend what your
+nodes and FOBs pay each minute on orders (keys 1–9, 0, -, =). Munitions (weapons factories) buy
+strikes and recon, Fuel (refineries) buys drone wings, Manpower (training camps) buys spawn beacons
+and reinforcements.
 
 ## For developers
 

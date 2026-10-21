@@ -1,5 +1,6 @@
 import type { GunDef, StructureDef } from '../../content/types';
-import { DT, type Ship, type World } from '../world';
+import { EXPOSED } from '../../content/structures';
+import { DT, type Ship, type Structure, type World } from '../world';
 import { leadAngle, spawnPattern } from './combat';
 import { hasStatus } from './status';
 
@@ -68,13 +69,19 @@ function nearestEnemy(w: World, team: number, x: number, y: number, range: numbe
 export function structureAuras(w: World): void {
   for (const st of w.structures) {
     if (!st.alive || st.def.healPerSecond <= 0) continue;
+    const mul = isExposed(w, st) ? EXPOSED.auraMul : 1;
     const r = st.def.healRadius;
     const n = w.shipHash.query(st.x, st.y, r, w.scratch);
     for (let i = 0; i < n; i++) {
       const s = w.ships[w.scratch[i]];
       if (!s.alive || s.team !== st.team || s.hull >= s.maxHull) continue;
       if ((s.x - st.x) ** 2 + (s.y - st.y) ** 2 > r * r) continue;
-      s.hull = Math.min(s.maxHull, s.hull + s.maxHull * st.def.healPerSecond * DT);
+      s.hull = Math.min(s.maxHull, s.hull + s.maxHull * st.def.healPerSecond * mul * DT);
     }
   }
+}
+
+/** A mothership with both its FOBs down (see EXPOSED). */
+export function isExposed(w: World, st: Structure): boolean {
+  return st === w.teams[st.team].mothership && !st.shielded && w.teams[st.team].fobs.length > 0;
 }

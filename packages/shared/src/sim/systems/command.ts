@@ -1,10 +1,8 @@
-import { COMMAND_BY_ID, COMMAND_RULES, type CommandId } from '../../content/command';
-import { MATCH, POINTS } from '../../content/match';
+import { COMMAND_BY_ID, COMMAND_RULES, COMMANDS, type CommandId } from '../../content/command';
+import { MATCH, POINTS, RESOURCE_INDEX } from '../../content/match';
 import type { TeamId } from '../../content/types';
-import { EventType, type World } from '../world';
+import { EventType, PingKind, type World } from '../world';
 import { runSteps, type Caster } from './abilities';
-
-const RESOURCE_INDEX = { alloy: 0, energy: 1, intel: 2 } as const;
 
 export interface CommandOrder {
   team: TeamId;
@@ -30,7 +28,7 @@ export function commandCost(w: World, team: TeamId, id: CommandId): number {
   return Math.round(def.cost * (1 - discount));
 }
 
-/** Can the team see this spot (ships, held points, structures, its deployables)? */
+/** Can the team see this spot (ships, held points, structures, deployables, recon drones)? */
 export function teamSees(w: World, team: TeamId, x: number, y: number): boolean {
   const n = w.shipHash.query(x, y, MATCH.shipVision, w.scratch3);
   for (let i = 0; i < n; i++) {
@@ -44,6 +42,11 @@ export function teamSees(w: World, team: TeamId, x: number, y: number): boolean 
     const d = dep.at(i);
     if (d.team === team && d.def.vision > 0 && (d.x - x) ** 2 + (d.y - y) ** 2 <= d.def.vision ** 2) return true;
   }
+  const drones = w.drones;
+  for (let i = 0; i < drones.count; i++) {
+    const d = drones.at(i);
+    if (d.team === team && d.vision > 0 && (d.x - x) ** 2 + (d.y - y) ** 2 <= d.vision ** 2) return true;
+  }
   return false;
 }
 
@@ -55,7 +58,7 @@ export function commandBlocker(w: World, order: CommandOrder): string | null {
   if (!def) return 'Unknown order';
   if (w.time < team.commandReadyAt(order.id)) return 'Cooling down';
   if (team.resources[RESOURCE_INDEX[def.resource]] < commandCost(w, order.team, order.id)) return `Not enough ${def.resource}`;
-  if (def.target === 'point' && (order.point < 0 || order.point >= w.points.length)) return 'Pick a capture point';
+  if (def.target === 'point' && (order.point < 0 || order.point >= w.points.length)) return 'Pick a node';
   if (def.needsVision && !teamSees(w, order.team, order.x, order.y)) return 'Your team cannot see there';
   return null;
 }
@@ -75,6 +78,53 @@ export function issueCommand(w: World, order: CommandOrder): boolean {
   runSteps(w, caster, def.steps);
   team.resources[RESOURCE_INDEX[def.resource]] -= commandCost(w, order.team, order.id);
   team.commandReady[order.id] = w.time + def.cooldown;
-  w.emit(EventType.Command, order.team, Object.keys(COMMAND_BY_ID).indexOf(order.id), x, y);
+  w.emit(EventType.Command, order.team, COMMANDS.findIndex((c) => c.id === order.id), x, y);
+  return true;
+}
+
+/** Pings snap to a node or enemy structure within this distance of the click. */
+const PING_SNAP = 700;
+
+/**
+ * Free commander ping. It snaps to the nearest node or enemy structure: an enemy-held or open node
+ * or an enemy structure is "attack", our own node or structure is "defend", empty space is "move".
+ * Bots favor a pinged node for a while (systems/director.ts).
+ */
+export function issuePing(w: World, team: TeamId, x: number, y: number): boolean {
+  const t = w.teams[team];
+  if (t.commanderSlot < 0 || w.time - t.pingAt < 0.5) return false;
+  let kind: PingKind = PingKind.Move;
+  let point = -1;
+  let best = PING_SNAP * PING_SNAP;
+  let px = x;
+  let py = y;
+  for (const p of w.points) {
+    const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+    if (d < best) {
+      best = d;
+      point = p.index;
+      px = p.x;
+      py = p.y;
+      kind = p.owner === team ? PingKind.Defend : PingKind.Attack;
+    }
+  }
+  for (const st of w.structures) {
+    if (!st.alive) continue;
+    const d = (st.x - x) ** 2 + (st.y - y) ** 2;
+    if (d < best && d < (st.radius + PING_SNAP) ** 2) {
+      best = d;
+      point = -1;
+      px = st.x;
+      py = st.y;
+      kind = st.team === team ? PingKind.Defend : PingKind.Attack;
+    }
+  }
+  t.pingX = px;
+  t.pingY = py;
+  t.pingAt = w.time;
+  t.pingKind = kind;
+  t.pingPoint = point;
+  t.pingHandled = false;
+  w.emit(EventType.Ping, team, kind, px, py, point);
   return true;
 }

@@ -3,7 +3,7 @@ import { Hud } from './hud/hud';
 import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
 import { Renderer } from './render/renderer';
-import { Snap } from './snap';
+import { carryEvents, Snap } from './snap';
 
 export interface GameOptions {
   fleet: number;
@@ -26,6 +26,8 @@ export class Game {
   private prev: Snap | null = null;
   private curr: Snap | null = null;
   private simMs = 0;
+  /** The latest snapshot has been drawn (its events consumed). */
+  private drawn = false;
   private fps = 60;
 
   constructor(private readonly opts: GameOptions) {
@@ -117,7 +119,12 @@ export class Game {
     if (this.mode() !== 'commander') return;
     const id = this.hud.pendingOrder;
     if (button === 2) {
-      this.armOrder(null);
+      // Right-click: cancel an armed order, otherwise drop a free ping.
+      if (id) this.armOrder(null);
+      else {
+        const at = this.renderer.screenToWorld(x, y);
+        this.send({ type: 'ping', x: at.x, y: at.y });
+      }
       return;
     }
     if (button !== 0 || !id) return;
@@ -134,7 +141,7 @@ export class Game {
         }
       });
       if (best > POINTS.radius * 2) {
-        this.hud.toast('Click on a capture point', performance.now(), true);
+        this.hud.toast('Click on a node', performance.now(), true);
         return;
       }
     }
@@ -153,8 +160,10 @@ export class Game {
       this.renderer.setMatch(msg.info);
       this.hud.setMatch(msg.info);
     } else if (msg.type === 'snap') {
+      const unseen = this.curr && !this.drawn ? this.curr : null;
       this.prev = this.curr;
-      this.curr = new Snap(msg.buf, performance.now());
+      this.curr = new Snap(unseen ? carryEvents(unseen, msg.buf) : msg.buf, performance.now());
+      this.drawn = false;
       this.simMs = this.simMs * 0.9 + msg.simMs * 0.1;
     } else {
       const name = COMMANDS.find((c) => c.id === msg.id)?.name ?? '';
@@ -166,6 +175,7 @@ export class Game {
     const curr = this.curr;
     const info = this.info;
     if (!curr || !info) return;
+    this.drawn = true;
     this.fps = this.fps * 0.95 + (1000 / Math.max(1, deltaMs)) * 0.05;
     const now = performance.now();
     const me = curr.ship(info.selfSlot);

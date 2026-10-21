@@ -5,16 +5,20 @@ import {
   DEPLOYABLES,
   DRONE_BEHAVIORS,
   EventType,
+  FOB,
   H,
   HULL_MODELS,
   KESSLER_REACH,
   MOTHERSHIP,
+  NODE,
+  POINT,
   POINTS,
   PROJ_FLAG,
   SHIP,
   SHIP_FLAG,
   SNAP,
   STATUS_BIT,
+  STRUCT,
   ZONE_FLAG,
   type CommandId,
   type MatchInfo,
@@ -133,6 +137,9 @@ interface BeamFx {
 }
 
 const DECOY = DRONE_BEHAVIORS.indexOf('decoy');
+/** Ping colors by PingKind: move, attack, defend. */
+export const PING_COLORS = [0x6ff3ff, 0xff7a4d, 0x5cff9d];
+const TEAM_ACCENT = [0x5fc8ff, 0xff9a4a];
 const KIND = Object.fromEntries(DEPLOY_KINDS.map((k, i) => [k, i])) as Record<(typeof DEPLOY_KINDS)[number], number>;
 
 interface Particle {
@@ -167,6 +174,10 @@ export class Renderer {
   private readonly warLayer = new Graphics();
   private readonly motherships: Mesh<MeshGeometry, Shader>[] = [];
   private readonly msOccluders: Sprite[] = [];
+  /** FOB meshes in map order (structure index 2 + i), and each node's mesh per state (neutral, Cobalt, Ember). */
+  private readonly fobMeshes: Mesh<MeshGeometry, Shader>[] = [];
+  private readonly fobOccluders: Sprite[] = [];
+  private readonly nodeMeshes: Mesh<MeshGeometry, Shader>[][] = [];
   private lighting!: Lighting;
   private lightOverlay!: Sprite;
   private lights!: SpritePool;
@@ -234,6 +245,36 @@ export class Renderer {
       this.lighting.scene.addChild(occ);
       this.msOccluders.push(occ);
     });
+    const fobArt = this.tex.fob;
+    const fobGeom = litGeometry(fobArt.widthWorld, fobArt.heightWorld, fobArt.anchorX, fobArt.anchorY);
+    for (const f of KESSLER_REACH.fobs) {
+      const m = new Mesh({ geometry: fobGeom, shader: this.lighting.litShader(fobArt.albedo[f.team].source, fobArt.normal.source) });
+      m.position.set(f.pos.x, f.pos.y);
+      m.rotation = f.team === 0 ? 0 : Math.PI;
+      shipyard.addChild(m);
+      this.fobMeshes.push(m);
+      const occ = new Sprite(fobArt.albedo[f.team]);
+      occ.anchor.set(fobArt.anchorX, fobArt.anchorY);
+      occ.width = fobArt.widthWorld;
+      occ.height = fobArt.heightWorld;
+      occ.position.set(f.pos.x, f.pos.y);
+      occ.rotation = m.rotation;
+      occ.tint = 0x000000;
+      this.lighting.scene.addChild(occ);
+      this.fobOccluders.push(occ);
+    }
+    for (const p of KESSLER_REACH.points) {
+      const art = this.tex.nodes[p.resource ?? 'research'];
+      const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
+      const states = art.albedo.map((albedo) => {
+        const m = new Mesh({ geometry: geom, shader: this.lighting.litShader(albedo.source, art.normal.source) });
+        m.position.set(p.pos.x, p.pos.y);
+        m.visible = false;
+        shipyard.addChild(m);
+        return m;
+      });
+      this.nodeMeshes.push(states);
+    }
     this.lights = new SpritePool(this.lighting.scene, this.tex.disc, 'add');
     this.world.addChild(
       this.staticLayer,
@@ -291,10 +332,11 @@ export class Renderer {
     g.rect(0, 0, map.width, map.height).stroke({ width: 8, color: 0x31406a, alpha: 0.8 });
     g.moveTo(map.width / 2, 0).lineTo(map.width / 2, map.height).stroke({ width: 4, color: 0x31406a, alpha: 0.35 });
     for (const p of map.points) {
-      const t = new Text({ text: `${p.name.toUpperCase()}\n${p.resource}`, style: { fontFamily: 'Rajdhani, sans-serif', fontSize: 28, fontWeight: '600', fill: 0xffffff, align: 'center', letterSpacing: 2 } });
+      const what = p.resource ?? `+${Math.round(p.buff.value * 100)}% XP`;
+      const t = new Text({ text: `${p.name.toUpperCase()}\n${what}`, style: { fontFamily: 'Rajdhani, sans-serif', fontSize: 28, fontWeight: '600', fill: 0xffffff, align: 'center', letterSpacing: 2 } });
       t.alpha = 0.55;
       t.anchor.set(0.5);
-      t.position.set(p.pos.x, p.pos.y + 90);
+      t.position.set(p.pos.x, p.pos.y + 175);
       this.staticLabels.addChild(t);
     }
   }
@@ -311,11 +353,33 @@ export class Renderer {
       this.msOccluders[team].visible = alive;
       if (alive) this.mothershipLights(pos.x, pos.y, team, now);
       if (alive) g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
+      // Shield bubble while any of its FOBs stands
+      if (alive && b[snap.o.structures + team * SNAP.structure + STRUCT.shielded] === 1) {
+        const r = MOTHERSHIP.radius + 110;
+        g.circle(pos.x, pos.y, r).fill({ color, alpha: 0.06 }).stroke({ width: 6, color, alpha: 0.35 + 0.15 * Math.sin(now * 0.003 + team) });
+      }
       // Hull bar
       const w = 520;
       const top = pos.y - MOTHERSHIP.radius - 90;
       g.rect(pos.x - w / 2, top, w, 18).fill({ color: 0x000000, alpha: 0.6 });
       g.rect(pos.x - w / 2, top, w * Math.max(0, hulls[team]), 18).fill({ color });
+    });
+    KESSLER_REACH.fobs.forEach((f, i) => {
+      const k = snap.o.structures + (2 + i) * SNAP.structure;
+      const alive = b[k + STRUCT.alive] === 1;
+      const color = TEAM_COLORS[f.team];
+      this.fobMeshes[i].tint = alive ? 0xffffff : 0x3a3a3a;
+      this.fobOccluders[i].visible = alive;
+      if (!alive) return;
+      g.circle(f.pos.x, f.pos.y, FOB.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
+      const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + i);
+      this.light(f.pos.x, f.pos.y, 22 * pulse, TEAM_ACCENT[f.team]);
+      for (const y of [-110, 110]) this.light(f.pos.x, f.pos.y + y, 7, TEAM_ACCENT[f.team]);
+      const frac = b[k + STRUCT.hull] / b[k + STRUCT.maxHull];
+      const w = 300;
+      const top = f.pos.y - FOB.radius - 70;
+      g.rect(f.pos.x - w / 2, top, w, 14).fill({ color: 0x000000, alpha: 0.6 });
+      g.rect(f.pos.x - w / 2, top, w * Math.max(0, frac), 14).fill({ color });
     });
   }
 
@@ -561,6 +625,11 @@ export class Renderer {
         } else if (type === EventType.PointFlip) {
           this.ring(b[k + 3], b[k + 4], POINTS.radius, TEAM_COLORS[b[k + 2]], 0.9);
           this.burst(b[k + 3], b[k + 4], TEAM_COLORS[b[k + 2]], 60, 420);
+        } else if (type === EventType.NodeDestroyed) {
+          this.ring(b[k + 3], b[k + 4], POINTS.radius, 0xff5c6c, 0.9);
+          this.burst(b[k + 3], b[k + 4], 0xffa040, 120, 600);
+        } else if (type === EventType.Ping && b[k + 1] === selfTeam) {
+          this.ring(b[k + 3], b[k + 4], 500, PING_COLORS[b[k + 2]] ?? PING_COLORS[0], 0.8);
         } else if (type === EventType.TierBought) {
           this.ring(b[k + 3], b[k + 4], 120, 0xb48cff, 0.6);
           this.burst(b[k + 3], b[k + 4], 0xb48cff, 30, 300);
@@ -594,28 +663,58 @@ export class Renderer {
     const halfH = this.app.screen.height / 2 / z;
     const near = (x: number, y: number, r: number) => Math.abs(x - this.camera.x) < halfW + r && Math.abs(y - this.camera.y) < halfH + r;
 
-    // Capture points: owner ring, capture meter arc (Cobalt clockwise, Ember counter-clockwise), hot zones in gold.
+    // Nodes: the asteroid in its holder's colors, the capture ring, the meter arc while neutral,
+    // hull while held, and the lockout countdown after one is destroyed.
     for (let i = 0, k = curr.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const p = KESSLER_REACH.points[i].pos;
+      const meshes = this.nodeMeshes[i];
+      const owner = b[k + POINT.owner];
+      const locked = b[k + POINT.locked];
+      for (let st = 0; st < 3; st++) meshes[st].visible = st === owner + 1;
+      meshes[0].tint = locked > 0 ? 0x5a5a5a : 0xffffff;
       if (!near(p.x, p.y, POINTS.radius + 60)) continue;
-      const meter = b[k];
-      const owner = b[k + 1];
-      const contested = b[k + 2] === 1;
+      const meter = b[k + POINT.meter];
+      const contested = b[k + POINT.contested] === 1;
       const color = owner < 0 ? 0x8a96bd : TEAM_COLORS[owner];
       g.circle(p.x, p.y, POINTS.radius)
-        .fill({ color, alpha: owner < 0 ? 0.03 : 0.07 })
+        .fill({ color, alpha: owner < 0 ? 0.025 : 0.06 })
         .stroke({ width: Math.max(3, 2 * px), color, alpha: contested ? 0.55 + 0.4 * Math.sin(now * 0.012) : 0.45 });
-      if (b[k + 3] > 0) g.circle(p.x, p.y, POINTS.radius + 34).stroke({ width: Math.max(4, 3 * px), color: 0xffd166, alpha: 0.45 + 0.3 * Math.sin(now * 0.004) });
-      if (Math.abs(meter) > 0.5) {
-        const r = POINTS.radius - 20;
-        const start = -Math.PI / 2;
+      if (b[k + POINT.hot] > 0) g.circle(p.x, p.y, POINTS.radius + 34).stroke({ width: Math.max(4, 3 * px), color: 0xffd166, alpha: 0.45 + 0.3 * Math.sin(now * 0.004) });
+      const r = POINTS.radius - 20;
+      const start = -Math.PI / 2;
+      if (owner < 0 && locked > 0) {
+        // Lockout: a red arc running down to zero.
+        const sweep = (locked / NODE.lockout) * Math.PI * 2;
+        g.moveTo(p.x + Math.cos(start) * r, p.y + Math.sin(start) * r)
+          .arc(p.x, p.y, r, start, start + sweep)
+          .stroke({ width: Math.max(10, 4 * px), color: 0xff5c6c, alpha: 0.75 });
+      } else if (owner < 0 && Math.abs(meter) > 0.5) {
         const sweep = (meter / 100) * Math.PI * 2;
         g.moveTo(p.x + Math.cos(start) * r, p.y + Math.sin(start) * r)
           .arc(p.x, p.y, r, start, start + sweep, sweep < 0)
           .stroke({ width: Math.max(10, 4 * px), color: TEAM_COLORS[meter > 0 ? 0 : 1], alpha: 0.85 });
+      } else if (owner >= 0) {
+        const hull = b[k + POINT.hull];
+        if (hull < 0.999) {
+          g.rect(p.x - 90, p.y + 128, 180, 10).fill({ color: 0x000000, alpha: 0.6 });
+          g.rect(p.x - 90, p.y + 128, 180 * Math.max(0, hull), 10).fill({ color: owner === selfTeam ? 0x5cff9d : 0xff5c6c });
+        }
       }
-      g.circle(p.x, p.y, 26).fill({ color, alpha: 0.65 });
-      this.light(p.x, p.y, 26, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
+      this.light(p.x, p.y, 20, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
+    }
+
+    // The commander's ping: expanding rings, colored by kind (move, attack, defend).
+    if (b[H.pingLeft] > 0) {
+      const x = b[H.pingX];
+      const y = b[H.pingY];
+      const color = PING_COLORS[b[H.pingKind]] ?? PING_COLORS[0];
+      const t = (now * 0.0012) % 1;
+      // World-size rings up close; a fixed screen size (~70 px) on the zoomed-out war map.
+      const scale = Math.max(1, px * 0.18);
+      g.circle(x, y, (160 + 260 * t) * scale).stroke({ width: Math.max(6, 3 * px), color, alpha: 0.8 * (1 - t) });
+      g.circle(x, y, 60 * scale).stroke({ width: Math.max(5, 2.5 * px), color, alpha: 0.9 });
+      g.moveTo(x, y - 110 * scale).lineTo(x, y - 30 * scale).stroke({ width: Math.max(5, 2.5 * px), color });
+      this.light(x, y, 30, color);
     }
 
     // Zones: domes in team color, recon in violet, heals in green, gravity wells swirl.

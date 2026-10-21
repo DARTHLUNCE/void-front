@@ -24,6 +24,8 @@ export type ToWorker =
   /** Respawn at the mothership (-1) or at a friendly beacon (its deployable index). */
   | { type: 'spawn'; choice: number }
   | { type: 'command'; id: CommandId; x: number; y: number; point: number }
+  /** Free commander ping at a world position. */
+  | { type: 'ping'; x: number; y: number }
   /** Dev builds only: grant XP and shards for testing the economy UI. */
   | { type: 'devGrant'; xp: number; shards: number; kill?: boolean }
   | { type: 'stop' };

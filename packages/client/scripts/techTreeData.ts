@@ -210,7 +210,7 @@ export const TREE: TreeClass[] = [
     tiers: [
       [
         { name: 'Nanite Rounds', text: 'Heal on allies raised to 60% of gun damage.' },
-        { name: 'Salvager', text: 'Your kills pay your team 15 Alloy.' },
+        { name: 'Salvager', text: 'Your kills pay your team 2 Fuel.' },
       ],
       [
         { name: 'Turret Kit', text: 'Deploy 1 auto-turret for 20 s, 14 s cooldown (G).' },

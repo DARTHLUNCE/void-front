@@ -984,3 +984,85 @@ button.primary:hover {
     display: none;
   }
 }
+
+/* FOB pips beside the mothership bars: lit while standing, "!" once the shield is down */
+.fobs {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.fobs i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  opacity: 0.45;
+}
+
+.fobs i.up {
+  background: currentColor;
+  opacity: 1;
+}
+
+.fobs.cobalt {
+  color: var(--cobalt);
+}
+
+.fobs.ember {
+  color: var(--ember);
+}
+
+.fobs b {
+  color: #ff5c6c;
+  font-size: 0.85rem;
+}
+
+.pointstrip span.locked {
+  border-color: #ff5c6c;
+  color: #ff5c6c;
+  text-decoration: line-through;
+}
+
+.command .orders h4 {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.command .orders h4 small {
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dim);
+}
+
+.command .res {
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.command .res small {
+  margin-left: 3px;
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+
+.command .res .pulse {
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.feed > div.big {
+  font-size: 1.05rem;
+  outline: 1px solid rgba(255, 92, 108, 0.5);
+}
+
+/* Commander: the order panel owns the right edge, so the feed moves left */
+#hud.cmdmode .feed {
+  right: auto;
+  left: 10px;
+  top: 60px;
+  justify-items: start;
+}

@@ -1,5 +1,6 @@
 import { tickAbility, tryCast } from './systems/abilities';
 import { aimAndFire, damageShip, stepProjectiles } from './systems/combat';
+import { issueCommand, issuePing } from './systems/command';
 import { collectCrystals, rebuildCrystalHash, seedCrystals, spawnCrystals } from './systems/crystals';
 import { runDirectors } from './systems/director';
 import { countOwnedDrones, rebuildDroneHash, stepDrones } from './systems/drones';
@@ -34,8 +35,8 @@ export function step(w: World): void {
   w.time = w.tick * DT;
   w.eventCount = 0;
 
-  // 1. Inputs and decisions. Bots write the same ShipInput humans do. (Commander orders are
-  //    applied by the host between ticks via issueCommand.)
+  // 1. Inputs and decisions. Bots write the same ShipInput humans do; queued Fleet Command
+  //    orders and pings run here.
   for (const s of w.ships) {
     const inp = s.input;
     if (inp.statPick >= 0) {
@@ -47,6 +48,8 @@ export function step(w: World): void {
       inp.tierPick = -1;
     }
   }
+  for (const order of w.pendingOrders.splice(0)) issueCommand(w, order);
+  for (const ping of w.pendingPings.splice(0)) issuePing(w, ping.team, ping.x, ping.y);
   runDirectors(w);
   for (const s of w.ships) {
     if (!s.alive || !s.bot) continue;

@@ -1,9 +1,11 @@
 import { ECONOMY } from '../../content/progression';
 import { QUIRK_PARAMS } from '../../content/quirks';
+import { DEPLOYABLES, NODE, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
 import type { GunDef, TeamId } from '../../content/types';
 import { hasFlag, hitMul, liveStat, statValue } from '../stats';
 import { DT, EventType, type Deployable, type Projectile, type Ship, type Structure, type World } from '../world';
 import { damageDrone, explode } from './drones';
+import { damageNode } from './points';
 import { creditHealing, grantXp, heal } from './progression';
 import { CHARGE, quirkOf } from './quirks';
 import { applyStatus, canAct, hasStatus, removeStatus, statusMagnitude } from './status';
@@ -194,6 +196,7 @@ const SHIP = 1;
 const DRONE = 2;
 const STRUCTURE = 3;
 const DEPLOYABLE = 4;
+const NODE_HIT = 5;
 
 /** Step 4: move projectiles and resolve the earliest hit along each one's path this tick. */
 export function stepProjectiles(w: World): void {
@@ -270,6 +273,17 @@ export function stepProjectiles(w: World): void {
         hitShip = null;
       }
     }
+    for (const pt of w.points) {
+      if (pt.owner < 0 || pt.owner === p.team) continue;
+      if (Math.abs(pt.x - mx) > qr + NODE.radius || Math.abs(pt.y - my) > qr + NODE.radius) continue;
+      const t = segmentCircleT(p.x, p.y, dx, dy, pt.x, pt.y, NODE.radius + p.radius);
+      if (t >= 0 && t < bestT) {
+        bestT = t;
+        kind = NODE_HIT;
+        hitIndex = pt.index;
+        hitShip = null;
+      }
+    }
 
     if (kind === SHIP && hitShip) {
       const s = hitShip;
@@ -303,6 +317,11 @@ export function stepProjectiles(w: World): void {
       const st = w.structures[hitIndex];
       if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul);
       else creditLifesteal(w, p, damageStructure(w, st, p.damage * p.structureMul, p.owner));
+      pool.release(p);
+      continue;
+    } else if (kind === NODE_HIT) {
+      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul);
+      else damageNode(w, w.points[hitIndex], p.damage * p.structureMul, p.team, p.owner);
       pool.release(p);
       continue;
     } else if (kind === DEPLOYABLE) {
@@ -432,9 +451,32 @@ export function damageStructure(w: World, st: Structure, amount: number, attacke
   }
   if (st.hull <= 0) {
     st.alive = false;
+    const team = w.teams[st.team];
+    if (st !== team.mothership) {
+      // An FOB fell: the mothership's shield holds only while one of its FOBs stands.
+      w.stats.fobsDestroyed++;
+      team.mothership.shielded = team.fobs.some((f) => f.alive);
+      salvageBeacon(w, st);
+    }
     w.emit(EventType.StructureDestroyed, st.index, attackerSlot, st.x, st.y);
   }
   return dmg;
+}
+
+/** The team that destroyed an FOB gets a beacon on its attackers' side of the wreck. */
+function salvageBeacon(w: World, fob: Structure): void {
+  const d = w.deployables.alloc();
+  if (!d) return;
+  const team = fob.team === 0 ? 1 : 0;
+  d.team = team;
+  d.owner = SALVAGE_OWNER;
+  d.kind = 'beacon';
+  d.def = DEPLOYABLES.beacon;
+  d.x = fob.x - w.teamSign(team) * (fob.radius + SALVAGE.offset);
+  d.y = fob.y;
+  d.maxHull = d.hull = SALVAGE.hull;
+  d.expires = Infinity;
+  d.cooldown = 0;
 }
 
 export function damageDeployable(w: World, d: Deployable, amount: number, attackerSlot: number): number {
