@@ -9,7 +9,7 @@
 import { HULLS } from './art/hulls';
 import { MOTHERSHIP_ART } from './art/props';
 import { bakeArtCanvas, shadeCanvas, type BakedArt } from './art/raster';
-import { PALETTES } from './art/shapes';
+import { PALETTES, type Palette } from './art/shapes';
 
 const q = new URLSearchParams(location.search);
 const only = q.get('class');
@@ -50,6 +50,67 @@ for (const h of hulls) {
 
 // ?save=1 writes full-resolution review sheets to packages/client/.inspect via the dev server.
 if (q.get('save')) void saveSheets();
+
+/** Neutral palette so value structure, not team color, carries the read. */
+const GREY: Palette = { hull: 0x8c9099, dark: 0x3c4048, accent: 0xd4d8e0, trim: 0xb6bac2, metal: 0x63676f, cockpit: 0xc0c4cc, engine: 0xeeeeee, void: 0x08090b };
+
+/** Lit with the key light only, then collapsed to luminance. */
+function greyLit(art: BakedArt): HTMLCanvasElement {
+  const c = shadeCanvas(art);
+  const ctx = c.getContext('2d')!;
+  const img = ctx.getImageData(0, 0, c.width, c.height);
+  const d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const y = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
+    d[i] = d[i + 1] = d[i + 2] = y;
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
+// ?lineup=1 writes lineup.png: every hull at one true scale, greyscale, on black.
+if (q.get('lineup')) void saveLineup();
+
+async function saveLineup(): Promise<void> {
+  const S = 4; // pixels per world unit, for every hull and the mothership alike
+  const classes = [...new Set(HULLS.map((h) => h.classId))];
+  const cellW = 104 * S;
+  const cellH = 92 * S;
+  const labelH = 26;
+  const ms = bakeArtCanvas(MOTHERSHIP_ART, GREY, S, 3, 5);
+  const width = Math.max(cellW * classes.length, ms.width + 80);
+  const msTop = 3 * (cellH + labelH) + 60;
+  const sheet = document.createElement('canvas');
+  sheet.width = width;
+  sheet.height = msTop + ms.height + labelH + 40;
+  const ctx = sheet.getContext('2d')!;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, sheet.width, sheet.height);
+  ctx.font = '20px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  const label = (text: string, x: number, y: number) => {
+    ctx.fillStyle = '#6b6f78';
+    ctx.fillText(text, x, y);
+  };
+  const ox = (width - cellW * classes.length) / 2;
+  classes.forEach((cls, col) => {
+    HULLS.filter((h) => h.classId === cls).forEach((h, row) => {
+      const art = bakeArtCanvas(h.shapes, GREY, S);
+      const img = greyLit(art);
+      // Place each hull by its own origin (the ship's center), so sizes compare honestly.
+      const cx = ox + col * cellW + cellW / 2;
+      const cy = row * (cellH + labelH) + cellH / 2 + 20;
+      ctx.drawImage(img, cx - art.anchorX * art.width, cy - art.anchorY * art.height);
+      label(h.name, cx, row * (cellH + labelH) + cellH + labelH + 4);
+    });
+  });
+  const msImg = greyLit(ms);
+  const mcx = width / 2;
+  ctx.drawImage(msImg, mcx - ms.anchorX * ms.width, msTop);
+  label('Mothership', mcx, msTop + ms.height + labelH + 6);
+  await post('lineup', sheet);
+  document.title = 'lineup saved';
+}
 
 async function post(name: string, c: HTMLCanvasElement): Promise<void> {
   const blob = await new Promise<Blob>((done) => c.toBlob((b) => done(b!), 'image/png'));
