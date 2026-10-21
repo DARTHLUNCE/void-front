@@ -1,9 +1,10 @@
-import { Application, Container, Graphics, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
+import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import { EventType, H, KESSLER_REACH, MOTHERSHIP, SHIP, SHIP_FLAG, SNAP, type MatchInfo } from '@void-front/shared';
 import { HULL_BY_ID, type HullArt } from '../art/hulls';
 import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
-import { makeTextures, type Textures } from './textures';
+import { Lighting, litGeometry } from './lighting';
+import { makeTextures, type LitArt, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
 const VIEW_W = 2200;
@@ -54,6 +55,44 @@ class SpritePool {
   }
 }
 
+/** Pool of lit meshes that share one hull's geometry and one (hull, team) shader. */
+class MeshPool {
+  private readonly meshes: Mesh<MeshGeometry, Shader>[] = [];
+  used = 0;
+  constructor(
+    private readonly layer: Container,
+    private readonly geometry: MeshGeometry,
+    private readonly shader: Shader,
+  ) {}
+
+  begin(): void {
+    this.used = 0;
+  }
+
+  next(): Mesh<MeshGeometry, Shader> {
+    let m = this.meshes[this.used];
+    if (!m) {
+      m = new Mesh({ geometry: this.geometry, shader: this.shader });
+      this.layer.addChild(m);
+      this.meshes.push(m);
+    }
+    m.visible = true;
+    this.used++;
+    return m;
+  }
+
+  end(): void {
+    for (let i = this.used; i < this.meshes.length; i++) this.meshes[i].visible = false;
+  }
+}
+
+/** Light emitter colors (the light pass sums them additively). */
+const LIGHT = {
+  bolt: [0x5fc8ff, 0xff9a4a],
+  engine: [0x5fe8ff, 0xffb84a],
+  crystal: [0x1d6f7a, 0x6e5418],
+} as const;
+
 interface Particle {
   x: number;
   y: number;
@@ -79,7 +118,12 @@ export class Renderer {
   private readonly staticLayer = new Graphics();
   private readonly staticLabels = new Container();
   private readonly structureLayer = new Graphics();
-  private readonly motherships: Sprite[] = [];
+  private readonly motherships: Mesh<MeshGeometry, Shader>[] = [];
+  private readonly msOccluders: Sprite[] = [];
+  private lighting!: Lighting;
+  private lightOverlay!: Sprite;
+  private lights!: SpritePool;
+  private readonly hullPools = new Map<string, MeshPool>();
   private readonly crystalLayer = new Container();
   private readonly glowLayer = new Container();
   private readonly shotLayer = new Container();
@@ -91,7 +135,6 @@ export class Renderer {
   private crystalsBig!: SpritePool;
   private shots!: SpritePool;
   private glows!: SpritePool;
-  private ships!: SpritePool;
   private sparks!: SpritePool;
   private flares!: SpritePool;
   private readonly labels: (Text | undefined)[] = [];
@@ -101,29 +144,46 @@ export class Renderer {
   private info: MatchInfo | null = null;
   private seenTick = -1;
 
+  constructor(private readonly lightingOn = true) {}
+
   async init(parent: HTMLElement): Promise<void> {
     await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, window.devicePixelRatio || 1) });
     parent.appendChild(this.app.canvas);
     this.tex = makeTextures(this.app.renderer);
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
-    this.app.stage.addChild(this.stars, this.world);
+    this.lighting = new Lighting(this.app.renderer, this.lightingOn);
+    // Faint light spill on space itself; ships get their lighting from the lit shader instead.
+    this.lightOverlay = new Sprite();
+    this.lightOverlay.blendMode = 'add';
+    this.lightOverlay.alpha = 0.32;
+    this.app.stage.addChild(this.stars, this.lightOverlay, this.world);
     const shipyard = new Container();
+    const msArt = this.tex.mothership;
+    const msGeom = litGeometry(msArt.widthWorld, msArt.heightWorld, msArt.anchorX, msArt.anchorY);
     KESSLER_REACH.motherships.forEach((pos, team) => {
-      const art = this.tex.mothership[team];
-      const ms = new Sprite(art.texture);
-      ms.anchor.set(art.anchorX, art.anchorY);
+      const ms = new Mesh({ geometry: msGeom, shader: this.lighting.litShader(msArt.albedo[team].source, msArt.normal.source) });
       ms.position.set(pos.x, pos.y);
       ms.rotation = team === 0 ? 0 : Math.PI; // each mothership faces the enemy
       shipyard.addChild(ms);
       this.motherships.push(ms);
+      // In the light pass the mothership is a solid occluder (black, opaque).
+      const occ = new Sprite(msArt.albedo[team]);
+      occ.anchor.set(msArt.anchorX, msArt.anchorY);
+      occ.width = msArt.widthWorld;
+      occ.height = msArt.heightWorld;
+      occ.position.set(pos.x, pos.y);
+      occ.rotation = ms.rotation;
+      occ.tint = 0x000000;
+      this.lighting.scene.addChild(occ);
+      this.msOccluders.push(occ);
     });
+    this.lights = new SpritePool(this.lighting.scene, this.tex.disc, 'add');
     this.world.addChild(this.staticLayer, this.staticLabels, this.structureLayer, shipyard, this.crystalLayer, this.glowLayer, this.shotLayer, this.shipLayer, this.fxLayer, this.barLayer, this.labelLayer);
     this.crystals = new SpritePool(this.crystalLayer, this.tex.crystal);
     this.crystalsBig = new SpritePool(this.crystalLayer, this.tex.crystalBig);
     this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add');
     this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
-    this.ships = new SpritePool(this.shipLayer, this.tex.hulls.interceptor[0]);
     this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
     this.drawStatic();
   }
@@ -158,7 +218,7 @@ export class Renderer {
     }
   }
 
-  private drawStructures(snap: Snap): void {
+  private drawStructures(snap: Snap, now: number): void {
     const g = this.structureLayer;
     g.clear();
     const b = snap.buf;
@@ -167,6 +227,8 @@ export class Renderer {
       const color = TEAM_COLORS[team];
       const alive = hulls[team] > 0;
       this.motherships[team].tint = alive ? 0xffffff : 0x3a3a3a;
+      this.msOccluders[team].visible = alive;
+      if (alive) this.mothershipLights(pos.x, pos.y, team, now);
       if (alive) g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
       // Hull bar
       const w = 520;
@@ -216,7 +278,8 @@ export class Renderer {
     const cy = this.camera.y;
     const inView = (x: number, y: number) => Math.abs(x - cx) < halfW && Math.abs(y - cy) < halfH;
 
-    this.drawStructures(curr);
+    this.lights.begin();
+    this.drawStructures(curr, now);
 
     // Crystals
     this.crystals.begin();
@@ -231,6 +294,7 @@ export class Renderer {
       const phase = (x + y) * 0.01;
       s.position.set(x, y + Math.sin(now * 0.003 + phase) * 2.5);
       s.rotation = Math.sin(now * 0.0015 + phase) * 0.12;
+      this.light(x, y, big ? 9 : 6, LIGHT.crystal[big ? 1 : 0]);
     }
     this.crystals.end();
     this.crystalsBig.end();
@@ -246,11 +310,12 @@ export class Renderer {
       const s = this.shots.next(structureShot ? this.tex.shell[team] : this.tex.bolt[team]);
       s.position.set(x, y);
       s.rotation = Math.atan2(b[k + 3], b[k + 2]);
+      this.light(x, y, structureShot ? 12 : 8, LIGHT.bolt[team]);
     }
     this.shots.end();
 
     // Ships, glows, bars, labels
-    this.ships.begin();
+    for (const pool of this.hullPools.values()) pool.begin();
     this.glows.begin();
     this.flares.begin();
     const bars = this.barLayer;
@@ -287,7 +352,7 @@ export class Renderer {
 
       const art = this.hullFor(slot);
       const rot = lerpAngle(pb[pk + SHIP.angle], b[k + SHIP.angle], a);
-      const s = this.ships.next(this.tex.hulls[art.id][team]);
+      const s = this.hullPool(art.id, team).next();
       s.position.set(x, y);
       s.rotation = rot;
       if (isMe) bars.circle(x, y, 34).stroke({ width: 2, color: 0xffffff, alpha: 0.35 });
@@ -304,6 +369,7 @@ export class Renderer {
         f.tint = team === 0 ? 0x7df9ff : 0xffc061;
         f.alpha = 0.55 + 0.35 * thrust;
         f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
+        this.light(f.position.x, f.position.y, e.r * (0.9 + thrust * 0.7), LIGHT.engine[team]);
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : 1;
       s.scale.set(isMe ? 1.15 : 1);
@@ -338,7 +404,7 @@ export class Renderer {
         label.visible = false;
       }
     }
-    this.ships.end();
+    for (const pool of this.hullPools.values()) pool.end();
     this.glows.end();
     this.flares.end();
 
@@ -357,6 +423,51 @@ export class Renderer {
       }
     }
     this.drawParticles(1 / 60, inView);
+    this.lights.end();
+
+    this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
+    this.lightOverlay.visible = this.lighting.enabled;
+    if (this.lighting.enabled) {
+      this.lightOverlay.texture = this.lighting.irradiance;
+      this.lightOverlay.width = sw;
+      this.lightOverlay.height = sh;
+    }
+  }
+
+  /** Add a light emitter (a solid disc in the light pass) at a world position. */
+  private light(x: number, y: number, radius: number, color: number): void {
+    if (!this.lighting.enabled) return;
+    const l = this.lights.next();
+    l.position.set(x, y);
+    l.scale.set((radius * 2) / 32);
+    l.tint = color;
+  }
+
+  /** Reactor, hangar mouth, turret sights and engines of a mothership as light emitters. */
+  private mothershipLights(x: number, y: number, team: number, now: number): void {
+    const sign = team === 0 ? 1 : -1;
+    const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + team);
+    const accent = team === 0 ? 0x5fc8ff : 0xff9a4a;
+    this.light(x + sign * 60, y, 30 * pulse, accent);
+    this.light(x + sign * 250, y, 22, accent);
+    for (const ty of [-92, -46, 0, 46, 92]) this.light(x - sign * 300, y + sign * ty, 18, LIGHT.engine[team]);
+    for (const tx of [-170, 170]) for (const tyy of [-170, 170]) this.light(x + sign * (tx + 8), y + sign * tyy, 7, accent);
+  }
+
+  private hullPool(id: string, team: number): MeshPool {
+    const key = `${id}:${team}`;
+    let pool = this.hullPools.get(key);
+    if (!pool) {
+      const art: LitArt = this.tex.hulls[id];
+      const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
+      pool = new MeshPool(this.shipLayer, geom, this.lighting.litShader(art.albedo[team].source, art.normal.source));
+      this.hullPools.set(key, pool);
+    }
+    return pool;
+  }
+
+  setLighting(on: boolean): void {
+    this.lighting.setEnabled(on);
   }
 
   private burst(x: number, y: number, color: number, count: number, speed: number): void {
@@ -384,6 +495,7 @@ export class Renderer {
       p.vx *= 0.96;
       p.vy *= 0.96;
       if (!inView(p.x, p.y)) continue;
+      if (p.life / p.max > 0.4) this.light(p.x, p.y, 7 * p.size * (p.life / p.max), p.color);
       const s = this.sparks.next();
       s.position.set(p.x, p.y);
       s.tint = p.color;

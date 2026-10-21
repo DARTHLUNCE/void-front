@@ -47,6 +47,22 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 7. Match state: pushes, win and time-limit checks
 8. Events for clients
 
+## Art and lighting (client)
+
+- Ship and structure art is vector data in `packages/client/src/art` (`hulls.ts`, `props.ts`). The game
+  bakes it to per-team albedo plus a generated normal map (`raster.ts`); the tech tree renders the
+  same data to SVG (`pnpm tech-tree`).
+- Hull rules, enforced by `art/art.test.ts`: one connected silhouette (no floating parts), no fully
+  hidden shapes, outline overlap < 0.3 and fill overlap < 0.72 between any two hulls. Keep dark paint
+  off the silhouette edge and bright paint small.
+- Review art with `http://localhost:5173/inspect.html` (`?class=…&view=all`), or `?save=1` to write
+  full-size sheets to `packages/client/.inspect/` (dev server only).
+- Lighting (`render/lighting.ts`): ships use a normal-mapped shader lit by a fixed key light plus a
+  2D radiance-cascades light field. Emitters are solid discs added in `Renderer.light()`; the
+  mothership is an occluder. Keep it subtle: `uGI` and the overlay alpha are the two dials.
+- Pixi 8.5 allocates resource-less render textures as RGBA8 regardless of `format`; float targets
+  must be backed by a `BufferImageSource` (see `Lighting.resize`).
+
 ## Performance
 
 - Entities live in fixed pools (`sim/pool.ts`); nothing is allocated per tick in the hot path.

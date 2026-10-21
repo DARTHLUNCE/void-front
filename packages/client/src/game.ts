@@ -9,12 +9,13 @@ export interface GameOptions {
   fleet: number;
   scheme: ControlScheme;
   difficulty: BotDifficulty;
+  lighting: boolean;
 }
 
 /** Offline game: the sim runs in a Web Worker; this side renders, runs the HUD and sends input. */
 export class Game {
   private readonly worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-  private readonly renderer = new Renderer();
+  private readonly renderer: Renderer;
   private hud!: Hud;
   private input!: Input;
   private info: MatchInfo | null = null;
@@ -23,7 +24,9 @@ export class Game {
   private simMs = 0;
   private fps = 60;
 
-  constructor(private readonly opts: GameOptions) {}
+  constructor(private readonly opts: GameOptions) {
+    this.renderer = new Renderer(opts.lighting);
+  }
 
   async start(stage: HTMLElement, hudRoot: HTMLElement): Promise<void> {
     await this.renderer.init(stage);
@@ -35,6 +38,12 @@ export class Game {
       autofire: (on) => this.hud.setAutofire(on),
     });
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
+    let lit = this.opts.lighting;
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'KeyL' || e.repeat) return;
+      lit = !lit;
+      this.renderer.setLighting(lit);
+    });
     this.restart();
     this.renderer.app.ticker.add((t) => this.frame(t.deltaMS));
   }

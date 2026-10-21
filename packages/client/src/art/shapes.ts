@@ -25,9 +25,9 @@ export interface Palette {
 
 export const PALETTES: [Palette, Palette] = [
   // Cobalt
-  { hull: 0x3f7fd9, dark: 0x1b345e, accent: 0x8fe3ff, trim: 0xd5deef, metal: 0x5c6880, cockpit: 0xe9fbff, engine: 0x7df9ff, void: 0x05070f },
+  { hull: 0x3f7fd9, dark: 0x1b345e, accent: 0x8fe3ff, trim: 0xc9d4e8, metal: 0x5c6880, cockpit: 0x7fd0ec, engine: 0x7df9ff, void: 0x05070f },
   // Ember
-  { hull: 0xd9622b, dark: 0x5e2410, accent: 0xffc27a, trim: 0xefe0d5, metal: 0x7a6560, cockpit: 0xfff3e2, engine: 0xffd166, void: 0x0f0705 },
+  { hull: 0xd9622b, dark: 0x5e2410, accent: 0xffc27a, trim: 0xe8d8cc, metal: 0x7a6560, cockpit: 0xf5c48e, engine: 0xffd166, void: 0x0f0705 },
 ];
 
 /** Upper-side outline from the nose to the tail; returns the closed outline mirrored across y = 0. */

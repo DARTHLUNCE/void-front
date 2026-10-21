@@ -45,6 +45,11 @@ Status at end of Phase 0 (Oct 20, 2026). Harness report: `reports/latest.md` (30
   art to SVG in `docs/tech-tree.html` (tier copy in `packages/client/scripts/techTreeData.ts` until
   Phase 1 adds real NodeDefs).
 
+- **Ship redesign and lighting.** All 18 hulls redesigned around per-class silhouettes and checked
+  for floating parts and look-alikes (`art.test.ts`), then inspected at full size and at game size.
+  Hulls and motherships render through a normal-mapped shader; a quarter-resolution radiance-cascades
+  pass lights them from shots, engines, explosions, crystals and mothership lights (L toggles it).
+
 ## Findings
 
 - Mothership is unreachable in Phase 0: 30/30 matches hit the 35-min limit with ≥ 99.5% hull. Waves

@@ -41,6 +41,12 @@ menu.innerHTML = `
         <option value="hard">Hard · full spec skill</option>
       </select>
     </label>
+    <label>Lighting
+      <select id="lighting">
+        <option value="on">Radiance cascades (L toggles in game)</option>
+        <option value="off">Off</option>
+      </select>
+    </label>
     <label>Controls
       <select id="scheme">
         <option value="mouse">Mouse steering (classic)</option>
@@ -59,17 +65,20 @@ menu.innerHTML = `
 const fleetSel = document.getElementById('fleet') as HTMLSelectElement;
 const schemeSel = document.getElementById('scheme') as HTMLSelectElement;
 const difficultySel = document.getElementById('difficulty') as HTMLSelectElement;
+const lightingSel = document.getElementById('lighting') as HTMLSelectElement;
 fleetSel.value = saved('vf.fleet', '60');
 schemeSel.value = saved('vf.scheme', 'mouse');
 difficultySel.value = saved('vf.difficulty', 'normal');
+lightingSel.value = saved('vf.lighting', 'on');
 
 document.getElementById('play')!.addEventListener('click', async () => {
   save('vf.fleet', fleetSel.value);
   save('vf.scheme', schemeSel.value);
   save('vf.difficulty', difficultySel.value);
+  save('vf.lighting', lightingSel.value);
   menu.classList.add('hidden');
   hud.classList.remove('hidden');
-  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty });
+  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty, lighting: lightingSel.value === 'on' });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   await game.start(stage, hud);
 });
