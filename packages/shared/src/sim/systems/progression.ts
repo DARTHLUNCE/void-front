@@ -1,5 +1,5 @@
 import { BOT_TIER_PREFS, DIRECTOR } from '../../content/bots';
-import { getClass } from '../../content/classes/index';
+import { getClass, teamCap } from '../../content/classes/index';
 import { COMMAND_RULES } from '../../content/command';
 import { CRYSTALS } from '../../content/crystals';
 import { RESOURCE_IDS, RESOURCE_INDEX } from '../../content/match';
@@ -7,7 +7,7 @@ import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost }
 import { EXPOSED, FOB_SPAWN_BLOCK } from '../../content/structures';
 import type { ClassId, TeamId } from '../../content/types';
 import { applyLoadout, statValue } from '../stats';
-import { EventType, Job, SPAWN_AT_STRUCTURE, TIERS, type Ship, type Structure, type TeamState, type World } from '../world';
+import { classCount, EventType, Job, SPAWN_AT_STRUCTURE, TIERS, type Ship, type Structure, type TeamState, type World } from '../world';
 import { inOwnedPoint, pointBuff } from './points';
 import { pushTarget } from './director';
 import { quirkOf } from './quirks';
@@ -81,11 +81,14 @@ export function setClass(ship: Ship, classId: ClassId): void {
 }
 
 /** A docked human picks their class: they launch straight away. */
-export function pickClass(w: World, ship: Ship, classId: ClassId): void {
-  if (ship.commander) return;
+/** Returns false when the class is at its team cap (or the player is the commander). */
+export function pickClass(w: World, ship: Ship, classId: ClassId): boolean {
+  if (ship.commander) return false;
+  if (classCount(w, ship.team, classId) >= teamCap(getClass(classId), w.fleetSize)) return false;
   setClass(ship, classId);
   ship.awaitingClass = false;
   respawnShip(w, ship);
+  return true;
 }
 
 /** Bots buy tiers as soon as they can afford them, then spend shards by their stat weighting. */
@@ -124,7 +127,7 @@ export function killShip(w: World, victim: Ship): void {
   victim.deaths++;
   const reinforced = w.time < w.teams[victim.team].reinforceUntil ? COMMAND_RULES.reinforceRespawnMul : 1;
   const exposed = isExposed(w, w.teams[victim.team].mothership) ? EXPOSED.respawnMul : 1;
-  victim.respawnAt = w.time + respawnTime(victim.rank) * reinforced * exposed;
+  victim.respawnAt = w.time + respawnTime(victim.rank) * victim.cls.respawnMul * reinforced * exposed;
   victim.vx = 0;
   victim.vy = 0;
   victim.dashTime = 0;

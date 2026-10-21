@@ -8,6 +8,7 @@
  */
 import { HULLS } from './art/hulls';
 import { MOTHERSHIP_ART } from './art/props';
+import { bounds } from './art/shapes';
 import { bakeArtCanvas, shadeCanvas, type BakedArt } from './art/raster';
 import { PALETTES, type Palette } from './art/shapes';
 
@@ -72,13 +73,15 @@ function greyLit(art: BakedArt): HTMLCanvasElement {
 if (q.get('lineup')) void saveLineup();
 
 async function saveLineup(): Promise<void> {
-  const S = 4; // pixels per world unit, for every hull and the mothership alike
+  const S = 2.5; // pixels per world unit, for every hull and the Titan alike
   const classes = [...new Set(HULLS.map((h) => h.classId))];
-  const cellW = 104 * S;
-  const cellH = 92 * S;
+  // Each column is as wide as its class's widest hull; rows share the tallest hull's height.
+  const colW = classes.map((cls) => Math.max(...HULLS.filter((h) => h.classId === cls).map((h) => bounds(h.shapes).x1 - bounds(h.shapes).x0)) * S + 40);
+  const cellH = Math.max(...HULLS.map((h) => bounds(h.shapes).y1 - bounds(h.shapes).y0)) * S + 30;
   const labelH = 26;
   const ms = bakeArtCanvas(MOTHERSHIP_ART, GREY, S, 3, 5);
-  const width = Math.max(cellW * classes.length, ms.width + 80);
+  const rowsW = colW.reduce((a, b) => a + b, 0);
+  const width = Math.max(rowsW, ms.width + 80);
   const msTop = 3 * (cellH + labelH) + 60;
   const sheet = document.createElement('canvas');
   sheet.width = width;
@@ -92,22 +95,24 @@ async function saveLineup(): Promise<void> {
     ctx.fillStyle = '#6b6f78';
     ctx.fillText(text, x, y);
   };
-  const ox = (width - cellW * classes.length) / 2;
+  let x0 = (width - rowsW) / 2;
   classes.forEach((cls, col) => {
     HULLS.filter((h) => h.classId === cls).forEach((h, row) => {
       const art = bakeArtCanvas(h.shapes, GREY, S);
       const img = greyLit(art);
-      // Place each hull by its own origin (the ship's center), so sizes compare honestly.
-      const cx = ox + col * cellW + cellW / 2;
+      // Center each hull's outline in its column; every hull shares one scale, so sizes compare honestly.
+      const hb = bounds(h.shapes);
+      const cx = x0 + colW[col] / 2 - ((hb.x0 + hb.x1) / 2) * S;
       const cy = row * (cellH + labelH) + cellH / 2 + 20;
       ctx.drawImage(img, cx - art.anchorX * art.width, cy - art.anchorY * art.height);
       label(h.name, cx, row * (cellH + labelH) + cellH + labelH + 4);
     });
+    x0 += colW[col];
   });
   const msImg = greyLit(ms);
   const mcx = width / 2;
   ctx.drawImage(msImg, mcx - ms.anchorX * ms.width, msTop);
-  label('Mothership', mcx, msTop + ms.height + labelH + 6);
+  label('Titan', mcx, msTop + ms.height + labelH + 6);
   await post('lineup', sheet);
   document.title = 'lineup saved';
 }

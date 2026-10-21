@@ -1,31 +1,35 @@
 import type { ShipClass } from '../types';
 
-export const INTERCEPTOR: ShipClass = {
-  id: 'interceptor',
-  name: 'Interceptor',
-  role: 'Flanker',
-  summary: 'Fast flanker. Builds momentum flying straight; Phase Dash dodges everything.',
-  hull: 140,
-  speed: 320,
-  radius: 18,
+export const PATROL_CRAFT: ShipClass = {
+  id: 'patrol',
+  name: 'Patrol Craft',
+  role: 'Scout / raider',
+  summary: 'The smallest, fastest hull. Builds momentum flying straight; Phase Dash dodges everything.',
+  hull: 125,
+  speed: 360,
+  radius: 13,
   // Twin rapid: 2 barrels × 10 damage every 0.2 s = 100 DPS.
-  gun: { damage: 10, fireInterval: 0.2, projectileSpeed: 950, count: 2, spread: 0, barrelGap: 12, size: 4, life: 0.75 },
+  gun: { damage: 10, fireInterval: 0.2, projectileSpeed: 950, count: 2, spread: 0, barrelGap: 9, size: 4, life: 0.75 },
   quirk: 'momentum',
+  accel: 6,
+  respawnMul: 0.8,
+  quirkInfo: { name: 'Momentum', text: 'After 2 s flying within 30° of straight, gain up to +15% speed and +30% damage. A sharp turn or taking a hit resets it.' },
   signature: {
-    id: 'interceptor.phaseDash',
+    id: 'patrol.phaseDash',
     name: 'Phase Dash',
+    description: 'Fast dash; no damage taken during it.',
     cooldown: 5,
     steps: [{ kind: 'dash', speedMul: 3.2, duration: 0.28, invulnerable: true }],
     botTags: ['move'],
   },
-  hullModel: 'interceptor',
+  hullModel: 'patrol',
   botRange: 360,
   tiers: [
     {
       tier: 1,
       options: [
         {
-          id: 'interceptor.t1.splitBarrels',
+          id: 'patrol.t1.splitBarrels',
           name: 'Split Barrels',
           description: '+1 barrel, −15% damage per shot.',
           modifiers: [
@@ -35,7 +39,7 @@ export const INTERCEPTOR: ShipClass = {
           botTags: ['hit'],
         },
         {
-          id: 'interceptor.t1.tracerRounds',
+          id: 'patrol.t1.tracerRounds',
           name: 'Tracer Rounds',
           description: 'Hits slow targets 10% for 1 s.',
           onHit: [{ status: 'slow', duration: 1, magnitude: 0.1 }],
@@ -47,14 +51,14 @@ export const INTERCEPTOR: ShipClass = {
       tier: 2,
       options: [
         {
-          id: 'interceptor.t2.afterburnerTank',
+          id: 'patrol.t2.afterburnerTank',
           name: 'Afterburner Tank',
           description: 'Phase Dash holds 2 charges.',
           modifiers: [{ stat: 'dashCharges', op: 'add', value: 1 }],
           botTags: ['move'],
         },
         {
-          id: 'interceptor.t2.reactivePlating',
+          id: 'patrol.t2.reactivePlating',
           name: 'Reactive Plating',
           description: 'Hits in the second after a dash deal 50% less.',
           modifiers: [{ stat: 'damageTaken', op: 'mul', value: -0.5, when: 'recentlyDashed' }],
@@ -66,12 +70,12 @@ export const INTERCEPTOR: ShipClass = {
       tier: 3,
       options: [
         {
-          id: 'interceptor.t3.striker',
+          id: 'patrol.t3.striker',
           name: 'Striker',
           description: 'Dash becomes Blink Strike: teleport up to 380 u and deal 50 damage in 130 u where you land.',
           hullModel: 'striker',
           replacesSignature: {
-            id: 'interceptor.blinkStrike',
+            id: 'patrol.blinkStrike',
             name: 'Blink Strike',
             cooldown: 5,
             steps: [
@@ -83,12 +87,12 @@ export const INTERCEPTOR: ShipClass = {
           botTags: ['move'],
         },
         {
-          id: 'interceptor.t3.comet',
+          id: 'patrol.t3.comet',
           name: 'Comet',
           description: 'Dash becomes Ram Charge: 90 damage and knockback to anything you hit.',
           hullModel: 'comet',
           replacesSignature: {
-            id: 'interceptor.ramCharge',
+            id: 'patrol.ramCharge',
             name: 'Ram Charge',
             cooldown: 6,
             steps: [{ kind: 'dash', speedMul: 3.4, duration: 0.35, invulnerable: true, ramDamage: 90, knockback: 420 }],
@@ -102,14 +106,14 @@ export const INTERCEPTOR: ShipClass = {
       tier: 4,
       options: [
         {
-          id: 'interceptor.t4.huntersMark',
+          id: 'patrol.t4.huntersMark',
           name: "Hunter's Mark",
           description: 'Ships you dash past take +20% damage from your team for 4 s.',
           modifiers: [{ stat: 'dashMark', op: 'add', value: 0.2 }],
           botTags: ['hit'],
         },
         {
-          id: 'interceptor.t4.slipstream',
+          id: 'patrol.t4.slipstream',
           name: 'Slipstream',
           description: 'Allies flying behind you within 300 u gain +15% speed.',
           aura: { radius: 300, behind: true, status: { status: 'haste', duration: 0.5, magnitude: 0.15 } },
@@ -121,12 +125,12 @@ export const INTERCEPTOR: ShipClass = {
       tier: 5,
       options: [
         {
-          id: 'interceptor.t5.stormRun',
+          id: 'patrol.t5.stormRun',
           name: 'Storm Run',
           description: '6 s of unlimited dashes.',
           modifiers: [{ stat: 'castCost', op: 'mul', value: -1, when: 'stormRun' }],
           ultimate: {
-            id: 'interceptor.stormRun',
+            id: 'patrol.stormRun',
             name: 'Storm Run',
             cooldown: 70,
             steps: [{ kind: 'selfStatus', status: 'stormRun', duration: 6 }],
@@ -135,11 +139,11 @@ export const INTERCEPTOR: ShipClass = {
           botTags: ['move'],
         },
         {
-          id: 'interceptor.t5.missileSwarm',
+          id: 'patrol.t5.missileSwarm',
           name: 'Missile Swarm',
           description: '12 homing missiles, 30 damage each.',
           ultimate: {
-            id: 'interceptor.missileSwarm',
+            id: 'patrol.missileSwarm',
             name: 'Missile Swarm',
             cooldown: 60,
             steps: [

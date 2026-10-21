@@ -1,4 +1,6 @@
 import type { ClassId } from '@void-front/shared';
+import { emitter, nozzle, plus, seam } from './parts';
+import { BATTLECRUISER_HULLS, CRUISER_HULLS, DESTROYER_HULLS } from './lineHulls';
 import { arc, ngon, pair, rect, sym, type Shape } from './shapes';
 
 export interface HullArt {
@@ -15,37 +17,22 @@ export interface HullArt {
 /*
  * Design rules (art.test.ts checks the first two):
  * - One connected silhouette: every part is attached to the hull, nothing floats.
- * - Each class has its own outline language so it reads at ~40 px:
- *   Interceptor = swept arrowhead, Phantom = wide sawtooth wing, Dreadnought = long stepped
- *   battleship, Lancer = spear with a long barrel, Carrier = broad manta deck, Engineer = pincers.
+ * - Each class has its own outline language so it reads at a glance:
+ *   Patrol Craft = swept arrowhead, Corvette = wide sawtooth wing, Frigate = pincers,
+ *   Destroyer = notched knife with torpedo tubes, Cruiser = hexagonal hull with a triple turret
+ *   spine, Battlecruiser = long sharp gun-deck with swept fins, Battleship = long stepped hull,
+ *   Dreadnought = spear around a spinal cannon, Carrier = broad manta deck.
  * - A tier-3 hull keeps its class language but breaks the base outline.
  * - The outline is hull-colored: dark paint only for inset panels, never on the silhouette edge,
  *   or it vanishes against space and the part reads as detached.
  * - Bright paint (accent, trim, cockpit) stays small; engines are compact nozzles set into the hull.
  */
 
-/** Metal nozzle ring with a glowing core. */
-const nozzle = (x: number, y: number, r: number): Shape[] => [
-  { t: 'circle', x, y, r, fill: 'metal' },
-  { t: 'circle', x: x - r * 0.15, y, r: r * 0.58, fill: 'engine' },
-];
-/** Recessed panel seam, read mostly through the normal map. */
-const seam = (pts: number[]): Shape => ({ t: 'line', pts, stroke: 'void', w: 0.55, alpha: 0.4 });
-/** Diamond emitter (deliberately unlike a round engine nozzle). */
-const emitter = (x: number, y: number, r: number): Shape[] => [
-  { t: 'poly', pts: ngon(x, y, r, 4, 0), fill: 'accent', stroke: 'dark', w: 0.8 },
-  { t: 'circle', x, y, r: r * 0.32, fill: 'cockpit' },
-];
-const plus = (cx: number, cy: number, s: number, t: number): number[] => [
-  cx + t, cy - t, cx + t, cy - s, cx - t, cy - s, cx - t, cy - t, cx - s, cy - t, cx - s, cy + t,
-  cx - t, cy + t, cx - t, cy + s, cx + t, cy + s, cx + t, cy + t, cx + s, cy + t, cx + s, cy - t,
-];
-
-// ─── Interceptor: swept arrowhead, cannons faired into the wing roots, twin tail fins ───
-const interceptor: HullArt = {
-  id: 'interceptor',
-  name: 'Interceptor',
-  classId: 'interceptor',
+// ─── Patrol Craft: swept arrowhead, cannons faired into the wing roots, twin tail fins ───
+const patrol: HullArt = {
+  id: 'patrol',
+  name: 'Patrol Craft',
+  classId: 'patrol',
   tier: 0,
   engines: [{ x: -25, y: 0, r: 4 }],
   shapes: [
@@ -70,7 +57,7 @@ const interceptor: HullArt = {
 const striker: HullArt = {
   id: 'striker',
   name: 'Striker',
-  classId: 'interceptor',
+  classId: 'patrol',
   tier: 3,
   engines: [
     { x: -24, y: -3.6, r: 3 },
@@ -98,7 +85,7 @@ const striker: HullArt = {
 const comet: HullArt = {
   id: 'comet',
   name: 'Comet',
-  classId: 'interceptor',
+  classId: 'patrol',
   tier: 3,
   engines: [
     { x: -21, y: 0, r: 3.4 },
@@ -122,11 +109,11 @@ const comet: HullArt = {
   ],
 };
 
-// ─── Phantom: wide flying wing with a sawtooth trailing edge, buried exhausts ───
-const phantom: HullArt = {
-  id: 'phantom',
-  name: 'Phantom',
-  classId: 'phantom',
+// ─── Corvette: wide flying wing with a sawtooth trailing edge, buried exhausts ───
+const corvette: HullArt = {
+  id: 'corvette',
+  name: 'Corvette',
+  classId: 'corvette',
   tier: 0,
   engines: [
     { x: -6.5, y: -4.6, r: 2.4 },
@@ -149,7 +136,7 @@ const phantom: HullArt = {
 const wraith: HullArt = {
   id: 'wraith',
   name: 'Wraith',
-  classId: 'phantom',
+  classId: 'corvette',
   tier: 3,
   engines: [{ x: -22, y: 0, r: 3 }],
   shapes: [
@@ -169,7 +156,7 @@ const specterInner = arc(2, 0, 15.5, Math.PI * 2 - 1.2, 1.2, 22).map((v, i) => (
 const specter: HullArt = {
   id: 'specter',
   name: 'Specter',
-  classId: 'phantom',
+  classId: 'corvette',
   tier: 3,
   engines: [
     { x: -26, y: -5, r: 2.6 },
@@ -188,11 +175,11 @@ const specter: HullArt = {
   ],
 };
 
-// ─── Dreadnought: long stepped battleship, superfiring turrets, casemates, engine block ───
-const dreadnought: HullArt = {
-  id: 'dreadnought',
-  name: 'Dreadnought',
-  classId: 'dreadnought',
+// ─── Battleship: long stepped hull, superfiring turrets, casemates, engine block ───
+const battleship: HullArt = {
+  id: 'battleship',
+  name: 'Battleship',
+  classId: 'battleship',
   tier: 0,
   engines: [
     { x: -40, y: -10, r: 4.2 },
@@ -229,7 +216,7 @@ const bastionPlate = arc(-10, 0, 40, -0.78, 0.78, 16).concat(arc(-10, 0, 32, 0.7
 const bastion: HullArt = {
   id: 'bastion',
   name: 'Bastion',
-  classId: 'dreadnought',
+  classId: 'battleship',
   tier: 3,
   engines: [
     { x: -33, y: -6, r: 4 },
@@ -257,7 +244,7 @@ const bastion: HullArt = {
 const juggernaut: HullArt = {
   id: 'juggernaut',
   name: 'Juggernaut',
-  classId: 'dreadnought',
+  classId: 'battleship',
   tier: 3,
   engines: [
     { x: -44, y: -18.5, r: 5.4 },
@@ -280,11 +267,11 @@ const juggernaut: HullArt = {
   ],
 };
 
-// ─── Lancer: a spear: slim body, capacitor bulge, one long slotted rail barrel ───
-const lancer: HullArt = {
-  id: 'lancer',
-  name: 'Lancer',
-  classId: 'lancer',
+// ─── Dreadnought: a spear around a spinal cannon: slim body, capacitor bulge, one long slotted barrel ───
+const dreadnought: HullArt = {
+  id: 'dreadnought',
+  name: 'Dreadnought',
+  classId: 'dreadnought',
   tier: 0,
   engines: [{ x: -27, y: 0, r: 3.6 }],
   shapes: [
@@ -307,7 +294,7 @@ const lancer: HullArt = {
 const railstorm: HullArt = {
   id: 'railstorm',
   name: 'Railstorm',
-  classId: 'lancer',
+  classId: 'dreadnought',
   tier: 3,
   engines: [
     { x: -26.5, y: -3.8, r: 3 },
@@ -335,7 +322,7 @@ const railstorm: HullArt = {
 const eclipse: HullArt = {
   id: 'eclipse',
   name: 'Eclipse',
-  classId: 'lancer',
+  classId: 'dreadnought',
   tier: 3,
   engines: [{ x: -27, y: 0, r: 3.6 }],
   shapes: [
@@ -448,11 +435,11 @@ const overlord: HullArt = {
   ],
 };
 
-// ─── Engineer: a compact work hull with two forward pincer arms and tool pods ───
-const engineer: HullArt = {
-  id: 'engineer',
-  name: 'Engineer',
-  classId: 'engineer',
+// ─── Frigate: a compact escort hull with two forward pincer arms and tool pods ───
+const frigate: HullArt = {
+  id: 'frigate',
+  name: 'Frigate',
+  classId: 'frigate',
   tier: 0,
   engines: [
     { x: -21, y: -6, r: 3 },
@@ -482,7 +469,7 @@ for (let x = -21; x <= 11; x += 4) fortressTreads.push(...pair(seam([x, -15.6, x
 const fortress: HullArt = {
   id: 'fortress',
   name: 'Fortress',
-  classId: 'engineer',
+  classId: 'frigate',
   tier: 3,
   engines: [
     { x: -25, y: -6.5, r: 3.2 },
@@ -511,7 +498,7 @@ const fortress: HullArt = {
 const warden: HullArt = {
   id: 'warden',
   name: 'Warden',
-  classId: 'engineer',
+  classId: 'frigate',
   tier: 3,
   engines: [{ x: -21, y: 0, r: 3.6 }],
   shapes: [
@@ -531,25 +518,64 @@ const warden: HullArt = {
   ],
 };
 
+/**
+ * Art scale per class: hulls are drawn at a comfortable working size, then scaled so the classes
+ * read as a size ladder (Patrol Craft ~40 u long up to a ~170 u Dreadnought). The new line hulls
+ * (Destroyer, Cruiser, Battlecruiser) are drawn at their final size.
+ */
+const CLASS_SCALE: Record<ClassId, number> = {
+  patrol: 0.65,
+  corvette: 1,
+  frigate: 1.1,
+  destroyer: 1,
+  cruiser: 1,
+  battlecruiser: 1,
+  battleship: 1.6,
+  dreadnought: 2.2,
+  carrier: 2,
+};
+
+function scaleShape(s: Shape, k: number): Shape {
+  const w = 'w' in s && s.w !== undefined ? { w: s.w * k } : {};
+  switch (s.t) {
+    case 'poly':
+    case 'line':
+      return { ...s, ...w, pts: s.pts.map((v) => v * k) } as Shape;
+    case 'circle':
+      return { ...s, ...w, x: s.x * k, y: s.y * k, r: s.r * k };
+    case 'ellipse':
+      return { ...s, x: s.x * k, y: s.y * k, rx: s.rx * k, ry: s.ry * k };
+  }
+}
+
+function scaled(h: HullArt): HullArt {
+  const k = CLASS_SCALE[h.classId];
+  if (k === 1) return h;
+  return { ...h, shapes: h.shapes.map((s) => scaleShape(s, k)), engines: h.engines.map((e) => ({ x: e.x * k, y: e.y * k, r: e.r * k })) };
+}
+
 export const HULLS: HullArt[] = [
-  interceptor,
+  patrol,
   striker,
   comet,
-  phantom,
+  corvette,
   wraith,
   specter,
-  dreadnought,
+  frigate,
+  fortress,
+  warden,
+  ...DESTROYER_HULLS,
+  ...CRUISER_HULLS,
+  ...BATTLECRUISER_HULLS,
+  battleship,
   bastion,
   juggernaut,
-  lancer,
+  dreadnought,
   railstorm,
   eclipse,
   carrier,
   hive,
   overlord,
-  engineer,
-  fortress,
-  warden,
-];
+].map(scaled);
 
 export const HULL_BY_ID: Record<string, HullArt> = Object.fromEntries(HULLS.map((h) => [h.id, h]));

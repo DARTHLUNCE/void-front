@@ -11,7 +11,7 @@ import { CHARGE, quirkOf } from './quirks';
 import { applyStatus, canAct, hasStatus, removeStatus, statusMagnitude } from './status';
 
 /** Largest ship radius any class can have; bounds hash queries for hits. */
-export const MAX_SHIP_RADIUS = 40;
+export const MAX_SHIP_RADIUS = 50;
 
 /** The ship's gun after stat upgrades and node modifiers (Split Barrels, Flak Spread, siege...). */
 export function gunFor(w: World, ship: Ship): GunDef {

@@ -5,7 +5,7 @@ import { MOTHERSHIP_ART } from './props';
 import { bounds } from './shapes';
 
 /** Every hull on one shared grid around the ship's center, so silhouettes compare at true size. */
-const GRID = { x0: -50, y0: -42, x1: 54, y1: 42 };
+const GRID = { x0: -120, y0: -90, x1: 140, y1: 90 };
 const masks = new Map(HULLS.map((h) => [h.id, rasterMask(h.shapes, GRID.x0, GRID.y0, GRID.x1, GRID.y1, 0.5)]));
 
 describe('hull art', () => {

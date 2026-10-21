@@ -89,22 +89,26 @@ export function buildReport(matches: MatchResult[], bench: BenchResult[], args: 
     note: 'A mothership is shielded until both its FOBs fall; this metric splits wins once motherships die.',
   });
 
-  // Kill share per ship of that class, so uneven class rolls don't skew it.
+  // Kills per ship of each class relative to the average ship. Big hulls should out-kill small
+  // ones (they're capped and respawn slower), but no class should be useless or dominant.
   const classKills: Record<string, number> = {};
   const classShips: Record<string, number> = {};
+  const classDeaths: Record<string, number> = {};
   for (const m of matches) {
     for (const [k, v] of Object.entries(m.killsByClass)) classKills[k] = (classKills[k] ?? 0) + v;
     for (const [k, v] of Object.entries(m.classCounts)) classShips[k] = (classShips[k] ?? 0) + v;
+    for (const [k, v] of Object.entries(m.classDeaths)) classDeaths[k] = (classDeaths[k] ?? 0) + v;
   }
-  const perShip = Object.keys(classShips).map((k) => [k, (classKills[k] ?? 0) / classShips[k]] as const);
-  const perShipTotal = perShip.reduce((a, [, v]) => a + v, 0);
-  const shares = perShip.map(([k, v]) => [k, v / Math.max(1e-9, perShipTotal)] as const);
+  const allKills = Object.keys(classShips).reduce((a, k) => a + (classKills[k] ?? 0), 0);
+  const allShips = Object.values(classShips).reduce((a, b) => a + b, 0);
+  const avgPerShip = allKills / Math.max(1, allShips);
+  const rel = Object.keys(classShips).map((k) => [k, (classKills[k] ?? 0) / classShips[k] / Math.max(1e-9, avgPerShip)] as const);
   metrics.push({
-    name: 'Class share of kills (per ship of that class)',
-    target: '12–22% each',
-    failIf: 'any over 26% or under 8%',
-    value: shares.map(([k, v]) => `${k} ${pct(v)}`).join(', ') || '—',
-    status: !shares.length ? 'N/A' : shares.some(([, v]) => v > 0.26 || v < 0.08) ? 'FAIL' : shares.every(([, v]) => v >= 0.12 && v <= 0.22) ? 'PASS' : 'WARN',
+    name: 'Class kills per ship (× average ship)',
+    target: '0.6–1.8× each',
+    failIf: 'any under 0.4× or over 2.5×',
+    value: rel.map(([k, v]) => `${k} ${v.toFixed(2)}× (K/D ${((classKills[k] ?? 0) / Math.max(1, classDeaths[k] ?? 0)).toFixed(2)})`).join(', ') || '—',
+    status: !rel.length ? 'N/A' : rel.some(([, v]) => v < 0.4 || v > 2.5) ? 'FAIL' : rel.every(([, v]) => v >= 0.6 && v <= 1.8) ? 'PASS' : 'WARN',
   });
 
   const picks: Record<string, number> = {};

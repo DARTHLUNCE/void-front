@@ -5,8 +5,9 @@ export interface Vec2 {
   y: number;
 }
 
-export type ClassId = 'interceptor' | 'phantom' | 'dreadnought' | 'lancer' | 'carrier' | 'engineer';
-export type QuirkId = 'momentum' | 'ghostDrive' | 'heat' | 'chargeShot' | 'droneBay' | 'fieldEngineer';
+/** Hull classes, smallest to largest (Carrier sits beside the line ships). Titans are the motherships. */
+export type ClassId = 'patrol' | 'corvette' | 'frigate' | 'destroyer' | 'cruiser' | 'battlecruiser' | 'battleship' | 'dreadnought' | 'carrier';
+export type QuirkId = 'momentum' | 'ghostDrive' | 'heat' | 'chargeShot' | 'droneBay' | 'fieldEngineer' | 'pointDefense' | 'lockOn';
 export type TeamId = 0 | 1;
 
 /**
@@ -197,6 +198,8 @@ export type PrimitiveKind = PrimitiveDef['kind'];
 export interface AbilityDef {
   id: string;
   name: string;
+  /** ext: rules text for the HUD and tech tree. */
+  description?: string;
   cooldown: number;
   steps: PrimitiveDef[];
   botTags: AbilityTag[]; // ext: signatures need bot tags too, not only nodes
@@ -242,8 +245,16 @@ export interface ShipClass {
   speed: number;
   radius: number;
   turnRate?: number;
+  /** ext: steering responsiveness (1/s); big hulls answer the helm slowly. Defaults to MATCH.accel. */
+  accel?: number;
+  /** ext: respawn time multiplier: big hulls take longer to get back in the fight. */
+  respawnMul: number;
+  /** ext: most ships of this class a team may field, as a share of the fleet (min 1). Absent = no cap. */
+  teamCapFrac?: number;
   gun: GunDef;
   quirk: QuirkId;
+  /** ext: the quirk's display name and rules text (picker, tech tree). */
+  quirkInfo: { name: string; text: string };
   signature: AbilityDef;
   hullModel: string;
   tiers: [TierDef, TierDef, TierDef, TierDef, TierDef];

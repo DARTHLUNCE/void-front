@@ -1,21 +1,33 @@
 import type { ClassId, NodeDef, ShipClass } from '../types';
+import { BATTLECRUISER } from './battlecruiser';
+import { BATTLESHIP } from './battleship';
 import { CARRIER } from './carrier';
+import { CORVETTE } from './corvette';
+import { CRUISER } from './cruiser';
+import { DESTROYER } from './destroyer';
 import { DREADNOUGHT } from './dreadnought';
-import { ENGINEER } from './engineer';
-import { INTERCEPTOR } from './interceptor';
-import { LANCER } from './lancer';
-import { PHANTOM } from './phantom';
+import { FRIGATE } from './frigate';
+import { PATROL_CRAFT } from './patrol';
 
 export const CLASSES: Record<ClassId, ShipClass> = {
-  interceptor: INTERCEPTOR,
-  phantom: PHANTOM,
+  patrol: PATROL_CRAFT,
+  corvette: CORVETTE,
+  frigate: FRIGATE,
+  destroyer: DESTROYER,
+  cruiser: CRUISER,
+  battlecruiser: BATTLECRUISER,
+  battleship: BATTLESHIP,
   dreadnought: DREADNOUGHT,
-  lancer: LANCER,
   carrier: CARRIER,
-  engineer: ENGINEER,
 };
 
-export const CLASS_ORDER: readonly ClassId[] = ['interceptor', 'phantom', 'dreadnought', 'lancer', 'carrier', 'engineer'];
+/** Smallest to largest, Carrier last (it sits beside the line ships). */
+export const CLASS_ORDER: readonly ClassId[] = ['patrol', 'corvette', 'frigate', 'destroyer', 'cruiser', 'battlecruiser', 'battleship', 'dreadnought', 'carrier'];
+
+/** Most ships of a class one team may field (Infinity when uncapped). */
+export function teamCap(cls: ShipClass, fleetSize: number): number {
+  return cls.teamCapFrac === undefined ? Infinity : Math.max(1, Math.floor(cls.teamCapFrac * fleetSize));
+}
 
 export function getClass(id: ClassId): ShipClass {
   return CLASSES[id];

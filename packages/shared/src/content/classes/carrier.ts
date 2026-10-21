@@ -3,17 +3,23 @@ import type { ShipClass } from '../types';
 export const CARRIER: ShipClass = {
   id: 'carrier',
   name: 'Carrier',
-  role: 'Summoner',
-  summary: 'Fights through drones. Two permanent escorts, plus a swarm on demand.',
-  hull: 220,
-  speed: 225,
-  radius: 26,
-  // Light gun: 7 every 0.2 s = 35 DPS. The drones do the real work.
-  gun: { damage: 7, fireInterval: 0.2, projectileSpeed: 900, count: 1, spread: 0, size: 4, life: 0.7 },
+  role: 'Starship carrier',
+  summary: 'Fights through its starships: two permanent escorts, plus a swarm on demand.',
+  hull: 520,
+  speed: 190,
+  radius: 44,
+  turnRate: 2,
+  // Light gun: 10 every 0.2 s = 50 DPS. The starships do the real work.
+  gun: { damage: 10, fireInterval: 0.2, projectileSpeed: 900, count: 1, spread: 0, size: 4, life: 0.7 },
   quirk: 'droneBay',
+  accel: 2.6,
+  respawnMul: 1.5,
+  teamCapFrac: 0.1,
+  quirkInfo: { name: 'Starship Bay', text: 'Always has 2 escort starships that relaunch 8 s after dying and grow stronger with your tier.' },
   signature: {
     id: 'carrier.launchSwarm',
     name: 'Launch Swarm',
+    description: 'Launch 4 extra attack starships for 12 s.',
     cooldown: 12,
     steps: [{ kind: 'summon', unit: 'drone', count: 4, life: 12, behavior: 'swarm' }],
     botTags: ['hit'],
@@ -26,8 +32,8 @@ export const CARRIER: ShipClass = {
       options: [
         {
           id: 'carrier.t1.interceptorDrones',
-          name: 'Interceptor Drones',
-          description: 'Drones +40% speed, −20% damage.',
+          name: 'Interceptor Starships',
+          description: 'Starships +40% speed, −20% damage.',
           modifiers: [
             { stat: 'droneSpeed', op: 'mul', value: 0.4 },
             { stat: 'droneDamage', op: 'mul', value: -0.2 },
@@ -36,8 +42,8 @@ export const CARRIER: ShipClass = {
         },
         {
           id: 'carrier.t1.bomberDrones',
-          name: 'Bomber Drones',
-          description: 'Slower drones with 80 u splash, ×2 vs structures.',
+          name: 'Bomber Starships',
+          description: 'Slower starships with 80 u splash, ×2 vs structures.',
           modifiers: [
             { stat: 'droneSpeed', op: 'mul', value: -0.25 },
             { stat: 'droneSplash', op: 'add', value: 80 },
@@ -53,14 +59,14 @@ export const CARRIER: ShipClass = {
         {
           id: 'carrier.t2.bayExpansion',
           name: 'Bay Expansion',
-          description: '+2 permanent drones.',
+          description: '+2 permanent starships.',
           modifiers: [{ stat: 'droneCount', op: 'add', value: 2 }],
           botTags: ['hit'],
         },
         {
           id: 'carrier.t2.pointDefense',
           name: 'Point Defense',
-          description: 'Drones shoot down missiles and mines near you.',
+          description: 'Starships shoot down missiles and mines near you.',
           modifiers: [{ stat: 'dronePointDefense', op: 'add', value: 1 }],
           botTags: ['guard'],
         },
@@ -72,7 +78,7 @@ export const CARRIER: ShipClass = {
         {
           id: 'carrier.t3.hive',
           name: 'Hive',
-          description: 'Launch Swarm sends 7 fast drones; drone hits heal you for 20% of damage.',
+          description: 'Launch Swarm sends 7 fast starships; starship hits heal you for 20% of damage.',
           hullModel: 'hive',
           replacesSignature: {
             id: 'carrier.hiveSwarm',
@@ -87,7 +93,7 @@ export const CARRIER: ShipClass = {
         {
           id: 'carrier.t3.overlord',
           name: 'Overlord',
-          description: 'Launch Swarm becomes EMP Burst: 380 u pulse that slows and silences for 2.5 s and destroys enemy drones.',
+          description: 'Launch Swarm becomes EMP Burst: 380 u pulse that slows and silences for 2.5 s and destroys enemy starships.',
           hullModel: 'overlord',
           replacesSignature: {
             id: 'carrier.empBurst',
@@ -116,15 +122,15 @@ export const CARRIER: ShipClass = {
       options: [
         {
           id: 'carrier.t4.droneLink',
-          name: 'Drone Link',
-          description: '+2% hull regen per second per active drone.',
+          name: 'Starship Link',
+          description: '+2% hull regen per second per active starship.',
           modifiers: [{ stat: 'droneRegen', op: 'add', value: 0.02 }],
           botTags: ['heal'],
         },
         {
           id: 'carrier.t4.commandUplink',
           name: 'Command Uplink',
-          description: 'Drones attack whatever is under your cursor.',
+          description: 'Starships attack whatever is under your cursor.',
           modifiers: [{ stat: 'droneCursor', op: 'add', value: 1 }],
           botTags: ['hit'],
         },
@@ -136,7 +142,7 @@ export const CARRIER: ShipClass = {
         {
           id: 'carrier.t5.mothershipMode',
           name: 'Mothership Mode',
-          description: 'Become immobile for 10 s, spawn 12 drones and a turret ring.',
+          description: 'Become immobile for 10 s, spawn 12 starships and a turret ring.',
           ultimate: {
             id: 'carrier.mothershipMode',
             name: 'Mothership Mode',
@@ -153,7 +159,7 @@ export const CARRIER: ShipClass = {
         {
           id: 'carrier.t5.kamikazeWing',
           name: 'Kamikaze Wing',
-          description: 'Every drone dives your cursor and explodes for 80 damage.',
+          description: 'Every starship dives your cursor and explodes for 80 damage.',
           ultimate: {
             id: 'carrier.kamikazeWing',
             name: 'Kamikaze Wing',

@@ -24,6 +24,8 @@ export interface MatchResult {
   avgRankAtEnd: [number, number];
   /** Ships per class across both fleets. */
   classCounts: Record<string, number>;
+  /** Deaths per class across both fleets. */
+  classDeaths: Record<string, number>;
   tickMsMean: number;
   tickMsP99: number;
   tickMsMax: number;
@@ -92,6 +94,7 @@ export function runMatch(index: number, seed: number, fleet: number, classId?: C
     nodesDestroyed: w.stats.nodesDestroyed,
     avgRankAtEnd: [avgRank(w, 0), avgRank(w, 1)],
     classCounts: classCounts(w),
+    classDeaths: classDeaths(w),
     tickMsMean: timer.mean,
     tickMsP99: timer.percentile(0.99),
     tickMsMax: timer.max,
@@ -110,6 +113,12 @@ function avgRank(w: World, team: 0 | 1): number {
   let sum = 0;
   for (let i = t.firstSlot; i <= t.lastSlot; i++) sum += w.ships[i].rank;
   return sum / w.fleetSize;
+}
+
+function classDeaths(w: World): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of w.ships) out[s.classId] = (out[s.classId] ?? 0) + s.deaths;
+  return out;
 }
 
 function classCounts(w: World): Record<string, number> {

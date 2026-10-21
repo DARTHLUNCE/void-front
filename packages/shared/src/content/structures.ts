@@ -88,7 +88,7 @@ export const FOB_SPAWN_BLOCK = 10;
 /** Forward operating base: a space station guarding the mothership. Destroyed FOBs stay destroyed. */
 export const FOB: StructureDef = {
   id: 'fob',
-  hull: 30_000,
+  hull: 36_000,
   radius: 170,
   turrets: {
     offsets: [

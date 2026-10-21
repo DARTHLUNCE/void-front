@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLASS_ORDER } from '../content/classes/index';
-import { INTERCEPTOR } from '../content/classes/interceptor';
+import { PATROL_CRAFT } from '../content/classes/patrol';
 import { QUIRK_PARAMS } from '../content/quirks';
 import type { AbilityDef } from '../content/types';
 import { duelWorld, place } from '../test-utils';
@@ -19,7 +19,7 @@ describe('primitives', () => {
     PRIMITIVES.dash(w, shipCaster(a, -1), { kind: 'dash', speedMul: 3, duration: 0.3, invulnerable: true });
     const x0 = a.x;
     step(w);
-    expect(a.x - x0).toBeCloseTo(INTERCEPTOR.speed * 3 * DT, 0);
+    expect(a.x - x0).toBeCloseTo(PATROL_CRAFT.speed * 3 * DT, 0);
     expect(hasStatus(a, 'invulnerable')).toBe(true);
     expect(damageShip(w, a, 50, b.slot)).toBe(0);
     for (let i = 0; i < 12; i++) step(w);
@@ -147,7 +147,7 @@ describe('statuses', () => {
   });
 });
 
-describe('Interceptor', () => {
+describe('Patrol Craft', () => {
   it('signature Phase Dash: dashes with invulnerability and goes on cooldown', () => {
     const { w, a } = duelWorld();
     a.input.moveX = 1;
@@ -156,7 +156,7 @@ describe('Interceptor', () => {
     expect(a.dashTime).toBeGreaterThan(0);
     expect(hasStatus(a, 'invulnerable')).toBe(true);
     expect(a.signature.charges).toBe(0);
-    expect(a.signature.cooldown).toBeCloseTo(INTERCEPTOR.signature.cooldown - DT, 5);
+    expect(a.signature.cooldown).toBeCloseTo(PATROL_CRAFT.signature.cooldown - DT, 5);
   });
 
   it('gun: twin barrels deal 100 DPS against a stationary target', () => {
@@ -165,7 +165,7 @@ describe('Interceptor', () => {
     a.input.fire = true;
     for (let i = 0; i < 30 * 5; i++) step(w);
     const dps = (b.maxHull - b.hull) / 5;
-    expect(dps).toBeGreaterThan(90);
+    expect(dps).toBeGreaterThan(85); // the first 0.6 s are bolts in flight
     expect(dps).toBeLessThan(110);
   });
 
@@ -187,8 +187,8 @@ describe('Interceptor', () => {
 });
 
 describe('class quirks', () => {
-  it('Lancer: holding fire charges, releasing fires a full-charge shot for 3×', () => {
-    const { w, a, b } = duelWorld(1, 'lancer');
+  it('Dreadnought: holding fire charges, releasing fires a full-charge shot for 3×', () => {
+    const { w, a, b } = duelWorld(1, 'dreadnought');
     b.hull = b.maxHull = 1e6;
     a.input.fire = true;
     for (let i = 0; i < 30 * 2; i++) step(w);
@@ -198,8 +198,8 @@ describe('class quirks', () => {
     expect(b.maxHull - b.hull).toBeGreaterThanOrEqual(a.cls.gun.damage * QUIRK_PARAMS.chargeShot.fullChargeMul * 0.99);
   });
 
-  it('Dreadnought: sustained fire builds heat until the guns lock', () => {
-    const { w, a, b } = duelWorld(1, 'dreadnought');
+  it('Battleship: sustained fire builds heat until the guns lock', () => {
+    const { w, a, b } = duelWorld(1, 'battleship');
     b.hull = b.maxHull = 1e6;
     a.input.fire = true;
     let peak = 0;

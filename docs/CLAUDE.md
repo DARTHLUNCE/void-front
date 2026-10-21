@@ -55,6 +55,8 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 - Ship and structure art is vector data in `packages/client/src/art` (`hulls.ts`, `props.ts`). The game
   bakes it to per-team albedo plus a generated normal map (`raster.ts`); the tech tree renders the
   same data to SVG (`pnpm tech-tree`).
+- Hull art is drawn at a working size and scaled per class by `CLASS_SCALE` in `art/hulls.ts` so the
+  classes read as a size ladder; the line hulls in `art/lineHulls.ts` are drawn at final size.
 - Hull rules, enforced by `art/art.test.ts`: one connected silhouette (no floating parts), no fully
   hidden shapes, outline overlap < 0.3 and fill overlap < 0.72 between any two hulls. Keep dark paint
   off the silhouette edge and bright paint small.

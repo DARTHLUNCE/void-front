@@ -818,7 +818,7 @@ export class Renderer {
       const team = b[k + 4];
       const rot = Math.atan2(b[k + 3], b[k + 2]);
       if (b[k + 5] === DECOY) {
-        const m = this.hullPool('phantom', team).next();
+        const m = this.hullPool('corvette', team).next();
         m.position.set(x, y);
         m.rotation = rot;
         m.alpha = 0.9;
@@ -990,7 +990,7 @@ export class Renderer {
 
   /** The hull this ship flies right now (its class base hull, or its tier-3 hull). */
   private hullFor(snap: Snap, slot: number): HullArt {
-    return HULL_BY_ID[HULL_MODELS[snap.buf[snap.ship(slot) + SHIP.hullIndex]]] ?? HULL_BY_ID.interceptor;
+    return HULL_BY_ID[HULL_MODELS[snap.buf[snap.ship(slot) + SHIP.hullIndex]]] ?? HULL_BY_ID.patrol;
   }
 
   /** Commander camera controls. */

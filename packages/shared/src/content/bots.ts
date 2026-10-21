@@ -101,13 +101,17 @@ export const BOT_NAMES: readonly string[] = [
 ];
 
 /** Relative odds of each class for bot pilots. */
+/** Relative odds a bot rolls each class (team caps still apply). */
 export const BOT_CLASS_WEIGHTS: Record<ClassId, number> = {
-  interceptor: 1,
-  phantom: 1,
-  dreadnought: 1,
-  lancer: 1,
-  carrier: 1,
-  engineer: 1,
+  patrol: 1.2,
+  corvette: 1,
+  frigate: 1.1,
+  destroyer: 1.1,
+  cruiser: 1,
+  battlecruiser: 0.8,
+  battleship: 0.7,
+  dreadnought: 0.4,
+  carrier: 0.7,
 };
 
 /**

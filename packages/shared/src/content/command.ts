@@ -31,7 +31,7 @@ export interface CommandDef {
 
 /**
  * Fleet Command. The commander doesn't fly: they watch the war map and spend what the team's nodes
- * and FOBs pay each minute. Munitions buy weapon and recon orders, Fuel buys drone wings, Manpower
+ * and FOBs pay each minute. Munitions buy weapon and recon orders, Fuel buys starship wings (launched from the Titan), Manpower
  * buys spawn points and reinforcements. Costs drop 30% while your team holds 2 or fewer nodes.
  * Pings are free and separate (systems/command.ts).
  */
@@ -81,8 +81,8 @@ export const COMMANDS: readonly CommandDef[] = [
   // Fuel
   {
     id: 'defenseDrones',
-    name: 'Defense Drones',
-    description: 'Warp 4 guard drones onto a node. They hold it for 90 s.',
+    name: 'Defense Wing',
+    description: 'Launch 4 guard starships onto a node. They hold it for 90 s.',
     resource: 'fuel',
     cost: 35,
     cooldown: 45,
@@ -92,7 +92,7 @@ export const COMMANDS: readonly CommandDef[] = [
   {
     id: 'bomberWing',
     name: 'Bomber Wing',
-    description: '3 slow bombers that hit nodes, FOBs and structures near the target for 60 s.',
+    description: '3 slow bomber starships that hit nodes, FOBs and structures near the target for 60 s.',
     resource: 'fuel',
     cost: 60,
     cooldown: 60,
@@ -102,7 +102,7 @@ export const COMMANDS: readonly CommandDef[] = [
   {
     id: 'interceptorWing',
     name: 'Interceptor Wing',
-    description: '5 fast interceptors that hunt enemy ships and drones around the target for 45 s.',
+    description: '5 fast interceptor starships that hunt enemy ships and starships around the target for 45 s.',
     resource: 'fuel',
     cost: 45,
     cooldown: 50,
@@ -111,8 +111,8 @@ export const COMMANDS: readonly CommandDef[] = [
   },
   {
     id: 'reconDrones',
-    name: 'Recon Drones',
-    description: '2 spotter drones that hover at the target and give 1,600 u of vision for 60 s.',
+    name: 'Recon Wing',
+    description: '2 spotter starships that hover at the target and give 1,600 u of vision for 60 s.',
     resource: 'fuel',
     cost: 15,
     cooldown: 30,
@@ -154,7 +154,7 @@ export const COMMANDS: readonly CommandDef[] = [
   {
     id: 'hullReinforcement',
     name: 'Hull Reinforcement',
-    description: 'Repair crews restore 5% of your mothership hull.',
+    description: 'Repair crews restore 5% of your Titan hull.',
     resource: 'manpower',
     cost: 80,
     cooldown: 120,

@@ -1,26 +1,30 @@
 import type { AbilityDef, PrimitiveDef, ShipClass } from '../types';
 
 const repairPulse = (extra: PrimitiveDef[] = []): AbilityDef => ({
-  id: 'engineer.repairPulse',
+  id: 'frigate.repairPulse',
   name: 'Repair Pulse',
+  description: 'Heals you 35% and allies within 300 u for 25%.',
   cooldown: 10,
   steps: [{ kind: 'pulse', radius: 300, heal: 0.25, selfHeal: 0.35, affects: ['allies', 'self', 'structures'] }, ...extra],
   botTags: ['heal'],
 });
 
-export const ENGINEER: ShipClass = {
-  id: 'engineer',
-  name: 'Engineer',
-  role: 'Support / builder',
-  summary: 'Captures points twice as fast; the nanite gun heals allies and structures it hits.',
-  hull: 200,
-  speed: 245,
-  radius: 21,
+export const FRIGATE: ShipClass = {
+  id: 'frigate',
+  name: 'Frigate',
+  role: 'Escort / support',
+  summary: 'Escort hull. Captures nodes twice as fast; the nanite gun heals allies it hits.',
+  hull: 220,
+  speed: 270,
+  radius: 20,
   // Nanite gun: 8 every 0.2 s = 40 DPS; heals allies hit for 40% of damage.
   gun: { damage: 8, fireInterval: 0.2, projectileSpeed: 900, count: 1, spread: 0, size: 4, life: 0.72 },
   quirk: 'fieldEngineer',
+  accel: 5,
+  respawnMul: 1,
+  quirkInfo: { name: 'Field Engineer', text: 'Captures nodes at double rate, and its nanite gun heals friendly ships it hits.' },
   signature: repairPulse(),
-  hullModel: 'engineer',
+  hullModel: 'frigate',
   botRange: 380,
   baseStats: { healPower: 0.4 },
   tiers: [
@@ -28,14 +32,14 @@ export const ENGINEER: ShipClass = {
       tier: 1,
       options: [
         {
-          id: 'engineer.t1.naniteRounds',
+          id: 'frigate.t1.naniteRounds',
           name: 'Nanite Rounds',
           description: 'Healing on allies raised to 60% of gun damage.',
           modifiers: [{ stat: 'healPower', op: 'mul', value: 0.5 }],
           botTags: ['heal'],
         },
         {
-          id: 'engineer.t1.salvager',
+          id: 'frigate.t1.salvager',
           name: 'Salvager',
           description: 'Your kills pay your team 2 Fuel.',
           onKill: { resources: { fuel: 2 } },
@@ -47,11 +51,11 @@ export const ENGINEER: ShipClass = {
       tier: 2,
       options: [
         {
-          id: 'engineer.t2.turretKit',
+          id: 'frigate.t2.turretKit',
           name: 'Turret Kit',
           description: 'Deploy an auto-turret for 20 s (G), 14 s cooldown.',
           extraAbility: {
-            id: 'engineer.turretKit',
+            id: 'frigate.turretKit',
             name: 'Turret Kit',
             cooldown: 14,
             steps: [{ kind: 'deploy', structure: 'turret', count: 1, cap: 1, life: 20, hull: 300 }],
@@ -60,11 +64,11 @@ export const ENGINEER: ShipClass = {
           botTags: ['guard'],
         },
         {
-          id: 'engineer.t2.mineLayer',
+          id: 'frigate.t2.mineLayer',
           name: 'Mine Layer',
           description: 'Drop 6 proximity mines (G), 9 s cooldown.',
           extraAbility: {
-            id: 'engineer.mineLayer',
+            id: 'frigate.mineLayer',
             name: 'Mine Layer',
             cooldown: 9,
             steps: [{ kind: 'deploy', structure: 'mine', count: 6, cap: 12, life: 60 }],
@@ -78,7 +82,7 @@ export const ENGINEER: ShipClass = {
       tier: 3,
       options: [
         {
-          id: 'engineer.t3.fortress',
+          id: 'frigate.t3.fortress',
           name: 'Fortress',
           description: 'Repair Pulse also builds 2 turrets and a 300 u shield emitter.',
           hullModel: 'fortress',
@@ -89,12 +93,12 @@ export const ENGINEER: ShipClass = {
           botTags: ['guard', 'heal'],
         },
         {
-          id: 'engineer.t3.warden',
+          id: 'frigate.t3.warden',
           name: 'Warden',
           description: 'Repair Pulse becomes a heal beam locked to one ally for 6 s.',
           hullModel: 'warden',
           replacesSignature: {
-            id: 'engineer.wardenBeam',
+            id: 'frigate.wardenBeam',
             name: 'Warden Beam',
             cooldown: 10,
             steps: [{ kind: 'tether', duration: 6, range: 600, healPerSecond: 0.12 }],
@@ -108,14 +112,14 @@ export const ENGINEER: ShipClass = {
       tier: 4,
       options: [
         {
-          id: 'engineer.t4.fieldRepairs',
+          id: 'frigate.t4.fieldRepairs',
           name: 'Field Repairs',
           description: 'Repair Pulse also repairs your nodes, FOBs and mothership in range (3% of their hull).',
           modifiers: [{ stat: 'structureRepair', op: 'add', value: 0.03 }],
           botTags: ['structure'],
         },
         {
-          id: 'engineer.t4.overcharge',
+          id: 'frigate.t4.overcharge',
           name: 'Overcharge',
           description: 'Allies you heal gain +20% fire rate for 3 s.',
           onHealAlly: { status: 'rapid', duration: 3, magnitude: 0.2 },
@@ -127,11 +131,11 @@ export const ENGINEER: ShipClass = {
       tier: 5,
       options: [
         {
-          id: 'engineer.t5.forwardBeacon',
+          id: 'frigate.t5.forwardBeacon',
           name: 'Forward Beacon',
           description: 'Deploy a 60 s mini-FOB: respawn point with 1,500 hull.',
           ultimate: {
-            id: 'engineer.forwardBeacon',
+            id: 'frigate.forwardBeacon',
             name: 'Forward Beacon',
             cooldown: 90,
             steps: [{ kind: 'deploy', structure: 'beacon', count: 1, cap: 1, life: 60, hull: 1500 }],
@@ -140,11 +144,11 @@ export const ENGINEER: ShipClass = {
           botTags: ['guard'],
         },
         {
-          id: 'engineer.t5.restorationField',
+          id: 'frigate.t5.restorationField',
           name: 'Restoration Field',
           description: '8 s zone (500 u) healing allies 10% per second.',
           ultimate: {
-            id: 'engineer.restorationField',
+            id: 'frigate.restorationField',
             name: 'Restoration Field',
             cooldown: 80,
             steps: [{ kind: 'zone', at: 'self', radius: 500, duration: 8, perSecond: { heal: 0.1 }, affects: ['allies', 'self'] }],

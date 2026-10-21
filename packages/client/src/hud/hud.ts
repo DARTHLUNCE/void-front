@@ -22,12 +22,15 @@ import {
   STATUS_BIT,
   STRUCT,
   SPAWN_AT_STRUCTURE,
+  teamCap,
   TIERS,
   type ClassId,
   type CommandId,
   type MatchInfo,
   type ShipClass,
 } from '@void-front/shared';
+import { HULL_BY_ID } from '../art/hulls';
+import { bounds, type Shape } from '../art/shapes';
 import { autofireKeyLabel, statKeyLabels, type ControlScheme } from '../input';
 import type { Snap } from '../snap';
 
@@ -35,14 +38,16 @@ const TEAM_NAMES = ['Cobalt', 'Ember'];
 const TEAM_CSS = ['var(--cobalt)', 'var(--ember)'];
 const RESOURCES = [
   { id: 'munitions', name: 'Munitions', css: '#ff8a5c', use: 'weapons and recon' },
-  { id: 'fuel', name: 'Fuel', css: '#ffd166', use: 'drone wings' },
+  { id: 'fuel', name: 'Fuel', css: '#ffd166', use: 'starship wings' },
   { id: 'manpower', name: 'Manpower', css: '#8cf0b0', use: 'spawns and reinforcements' },
 ] as const;
 /** Commander hotkeys, in COMMANDS order. */
 export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
 const PING_NAMES = ['Move here', 'Attack', 'Defend'];
 const PING_CSS = ['#6ff3ff', '#ff7a4d', '#5cff9d'];
-const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge' };
+const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge', lockOn: 'Lock-On' };
+/** Picker key for the commander seat: the key after the last class (0 on the number row). */
+const COMMANDER_KEY = CLASS_ORDER.length + 1 === 10 ? '0' : String(CLASS_ORDER.length + 1);
 const BEACON = DEPLOY_KINDS.indexOf('beacon');
 
 interface FeedEntry {
@@ -68,6 +73,8 @@ export class Hud {
   private readonly statRows: HTMLElement[] = [];
   private readonly abilityRings: HTMLElement[] = [];
   private readonly orderRows: HTMLElement[] = [];
+  /** Picker cap labels, by CLASS_ORDER index. */
+  private readonly capEls: HTMLElement[] = [];
   private readonly mini: HTMLCanvasElement;
   private readonly miniCtx: CanvasRenderingContext2D;
   private bigMap = false;
@@ -150,11 +157,11 @@ export class Hud {
       </div></div>
       <div data-k="picker" class="overlay picker hidden"><div class="card">
         <h2>Choose your ship</h2>
-        <p class="hint">Six classes, five tiers each. Tiers cost XP; stat upgrades cost shards.</p>
+        <p class="hint">Nine hull classes, smallest to largest, five tiers each. Bigger hulls hit harder and take more punishment, but turn and accelerate slowly, respawn slower, and are limited per team.</p>
         <div class="classes">
           ${CLASS_ORDER.map((id, i) => classCard(CLASSES[id], i)).join('')}
-          <button class="cls commander" data-pick="commander"><kbd>7</kbd><b>Fleet Commander</b><small>Strategist · no ship</small>
-            <em>Watch the whole war map, ping targets for free, and spend the Munitions, Fuel and Manpower your nodes and FOBs pay each minute: strikes, drone wings, spawn beacons, reinforcements.</em>
+          <button class="cls commander" data-pick="commander"><kbd>${COMMANDER_KEY}</kbd><b>Fleet Commander</b><small>Strategist · commands from the Titan</small>
+            <em>Watch the whole war map, ping targets for free, and spend the Munitions, Fuel and Manpower your nodes and FOBs pay each minute: strikes, starship wings, spawn beacons, reinforcements.</em>
             <span data-k="cmdTaken" class="taken"></span></button>
         </div>
       </div></div>
@@ -172,6 +179,7 @@ export class Hud {
       b.addEventListener('click', () => this.h.order(b.dataset.order as CommandId));
     });
     root.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => this.h.pickClass(b.dataset.pick as ClassId | 'commander')));
+    CLASS_ORDER.forEach((id, i) => (this.capEls[i] = root.querySelector<HTMLElement>(`[data-cap="${id}"]`)!));
     this.$.tierPop.addEventListener('click', (e) => {
       const opt = (e.target as HTMLElement).closest<HTMLElement>('[data-opt]');
       if (opt) this.h.tier(Number(opt.dataset.opt));
@@ -259,7 +267,7 @@ export class Hud {
       });
       const shielded = b[snap.o.structures + team * SNAP.structure + STRUCT.shielded] === 1;
       this.set(`fob${team}`, pips + (shielded ? '' : '<b>!</b>'), 'html');
-      this.$[`fob${team}`].title = shielded ? 'FOBs standing: mothership shielded' : 'Both FOBs down: mothership exposed';
+      this.$[`fob${team}`].title = shielded ? 'FOBs standing: Titan shielded' : 'Both FOBs down: Titan exposed';
     }
     const ourPush = b[myTeam === 0 ? H.push0 : H.push1];
     const theirPush = b[myTeam === 0 ? H.push1 : H.push0];
@@ -268,7 +276,10 @@ export class Hud {
     this.$.banner.className = `banner ${ourPush > 0 || rally > 0 ? 'ours' : theirPush > 0 ? 'theirs' : ''}`;
 
     this.show('picker', docked && !over);
-    if (docked) this.set('cmdTaken', b[H.commanderSlot] >= 0 ? 'Seat taken' : '');
+    if (docked) {
+      this.set('cmdTaken', b[H.commanderSlot] >= 0 ? 'Seat taken' : '');
+      this.updateCaps(snap, myTeam);
+    }
     this.show('pilot', !commander && !docked);
     this.show('abilities', !commander && !docked);
     this.show('command', commander && !over);
@@ -305,7 +316,7 @@ export class Hud {
           const fob = KESSLER_REACH.fobs[b[k + 1] - 2];
           const left = KESSLER_REACH.fobs.filter((f, i) => f.team === fob.team && b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] === 1).length;
           this.pushFeed(`<div class="big"><span style="color:${TEAM_CSS[fob.team]}">${TEAM_NAMES[fob.team]} FOB destroyed</span> · salvage beacon for ${TEAM_NAMES[1 - fob.team]}${left === 0 ? ' · mothership shield down' : ''}</div>`, now);
-          if (left === 0) this.toast(fob.team === myTeam ? 'Our mothership shield is down' : 'Enemy mothership shield is down', now, fob.team === myTeam);
+          if (left === 0) this.toast(fob.team === myTeam ? 'Our Titan shield is down' : 'Enemy Titan shield is down', now, fob.team === myTeam);
         } else if (type === EventType.Ping && b[k + 1] === myTeam) {
           const point = b[k + 5];
           const where = point >= 0 ? KESSLER_REACH.points[point].name : 'marked spot';
@@ -333,7 +344,7 @@ export class Hud {
       this.$.over.classList.remove('hidden');
       this.$.winner.textContent = winner < 0 ? 'Draw' : winner === myTeam ? 'Victory' : 'Defeat';
       this.$.winner.style.color = winner < 0 ? '' : TEAM_CSS[winner];
-      const reason = b[H.endReason] === 1 ? 'Mothership destroyed' : `Time limit · Victory Points ${b[H.vp0].toFixed(1)} – ${b[H.vp1].toFixed(1)}`;
+      const reason = b[H.endReason] === 1 ? 'Titan destroyed' : `Time limit · Victory Points ${b[H.vp0].toFixed(1)} – ${b[H.vp1].toFixed(1)}`;
       this.$.reason.textContent = `${winner >= 0 ? TEAM_NAMES[winner] + ' wins. ' : ''}${reason}. Kills ${b[H.kills0]} – ${b[H.kills1]}.`;
     }
   }
@@ -466,6 +477,26 @@ export class Hud {
     }
   }
 
+  /** Picker: team count against the cap for each capped class; full classes can't be picked. */
+  private updateCaps(snap: Snap, myTeam: number): void {
+    const b = snap.buf;
+    const counts = new Array(CLASS_ORDER.length).fill(0);
+    for (let slot = 0; slot < b[H.shipCount]; slot++) {
+      const k = snap.ship(slot);
+      if (b[k + SHIP.team] !== myTeam || b[k + SHIP.flags] & (SHIP_FLAG.commander | SHIP_FLAG.docked)) continue;
+      counts[b[k + SHIP.classIndex]]++;
+    }
+    CLASS_ORDER.forEach((id, i) => {
+      const cap = teamCap(CLASSES[id], this.info!.fleetSize);
+      const el = this.capEls[i];
+      if (!el || cap === Infinity) return;
+      const full = counts[i] >= cap;
+      const text = `${counts[i]}/${cap} on your team${full ? ' · full' : ''}`;
+      if (el.textContent !== text) el.textContent = text;
+      el.closest('.cls')!.classList.toggle('full', full);
+    });
+  }
+
   private updateDeath(snap: Snap, myTeam: number): void {
     const b = snap.buf;
     const s = snap.o.self;
@@ -474,7 +505,7 @@ export class Hud {
     const keep = Math.round(this.info!.deathShardKeep * 100);
     this.set('lost', lost > 0 ? `Lost ◆ ${Math.floor(lost)} unspent shards (kept ${keep}%) — they dropped as loot where you died.` : 'No unspent shards were lost.');
     const choice = b[s + SELF.spawnChoice];
-    const options = [`<button data-spawn="-1" class="${choice < 0 ? 'on' : ''}">Mothership</button>`];
+    const options = [`<button data-spawn="-1" class="${choice < 0 ? 'on' : ''}">Titan</button>`];
     KESSLER_REACH.fobs.forEach((f, i) => {
       const idx = 2 + i;
       if (f.team !== myTeam || b[snap.o.structures + idx * SNAP.structure + STRUCT.alive] !== 1) return;
@@ -684,8 +715,26 @@ function myTeamHeld(snap: Snap): number {
 }
 
 function classCard(cls: ShipClass, i: number): string {
-  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd><b>${cls.name}</b><small>${cls.role}</small>
+  const art = HULL_BY_ID[cls.hullModel];
+  const preview = art ? `<span class="hullpic" style="--k:${(cls.radius / 48).toFixed(2)}">${hullSvg(art.shapes)}</span>` : '';
+  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd>${preview}<b>${cls.name}</b><small>${cls.role}</small>
     <em>${cls.summary}</em>
-    <span class="kv"><span>Hull <b>${cls.hull}</b></span><span>Speed <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span></span>
-    <span class="sig">RMB · ${cls.signature.name}</span></button>`;
+    <span class="kv"><span>Hull <b>${cls.hull}</b></span><span>Speed <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>Respawn <b>×${cls.respawnMul}</b></span></span>
+    <span class="sig">RMB · ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
+}
+
+/** Tiny team-neutral silhouette for the picker card, scaled by hull size. */
+function hullSvg(shapes: Shape[]): string {
+  const b = bounds(shapes);
+  const parts = shapes
+    .filter((s) => s.t === 'poly' || s.t === 'circle')
+    .map((s) =>
+      s.t === 'poly'
+        ? `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}"/>`
+        : s.t === 'circle'
+          ? `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}"/>`
+          : '',
+    )
+    .join('');
+  return `<svg viewBox="${b.x0.toFixed(0)} ${b.y0.toFixed(0)} ${(b.x1 - b.x0).toFixed(0)} ${(b.y1 - b.y0).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
 }

@@ -14,10 +14,11 @@ export function baseSpeed(w: World, s: Ship): number {
 export function moveShips(w: World): void {
   const W = w.map.width;
   const H = w.map.height;
-  const k = Math.min(1, MATCH.accel * DT);
   for (const s of w.ships) {
     if (!s.alive) continue;
     const inp = s.input;
+    // Big hulls answer the helm slowly.
+    const k = Math.min(1, (s.cls.accel ?? MATCH.accel) * DT);
     const stuck = hasStatus(s, 'stun') || hasStatus(s, 'rooted');
 
     if (inp.cruise && s.dashTime <= 0 && !stuck) {

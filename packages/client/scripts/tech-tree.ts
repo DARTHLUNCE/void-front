@@ -10,7 +10,6 @@ import { build, type Rollup } from 'vite';
 import { HULL_BY_ID, HULLS } from '../src/art/hulls';
 import { BOLT_ART, CRYSTAL_ART, CRYSTAL_PALETTES, MOTHERSHIP_ART, SHELL_ART } from '../src/art/props';
 import { bounds, PALETTES, type Paint, type Palette, type Shape } from '../src/art/shapes';
-import { TREE } from './techTreeData';
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
 const num = (v: number) => +v.toFixed(2);
@@ -77,7 +76,6 @@ const gallery = CLASS_ORDER.map((id) => {
 
 function section(id: ClassId): string {
   const c = CLASSES[id];
-  const copy = TREE.find((t) => t.id === id)!;
   const specs = c.tiers[2].options.map((o) => o.hullModel!);
   const heads = [c.hullModel, ...specs]
     .map((h, i) => `<div class="hero-art" data-hull="${i - 1}"${i === 0 ? '' : ' hidden'}>${hullSvg(h, 'hero-svg')}</div>`)
@@ -109,8 +107,8 @@ function section(id: ClassId): string {
         <p class="role">${c.role}</p>
         <p class="summary">${esc(c.summary)}</p>
         <div class="kits">
-          <div class="kit"><h3>Signature · RMB <span>${c.signature.cooldown} s</span></h3><b>${c.signature.name}</b><p>${esc(copy.signature.text)}</p></div>
-          <div class="kit"><h3>Quirk</h3><b>${copy.quirk.name}</b><p>${esc(copy.quirk.text)}</p></div>
+          <div class="kit"><h3>Signature · RMB <span>${c.signature.cooldown} s</span></h3><b>${c.signature.name}</b><p>${esc(c.signature.description ?? '')}</p></div>
+          <div class="kit"><h3>Quirk</h3><b>${c.quirkInfo.name}</b><p>${esc(c.quirkInfo.text)}</p></div>
         </div>
       </div>
     </div>
@@ -336,11 +334,11 @@ html { scroll-behavior: smooth; }
   <div class="wrap">
     <p class="eyebrow">Void Front · build planner</p>
     <h1>Tech <span>tree</span></h1>
-    <p class="lede">Pick a class when you drop in, then buy five <b>A-or-B</b> tiers with <b class="xp">XP</b> from kills, damage, healing and capturing or defending points. Stat upgrades cost <b class="sh">shards</b>, climb in price each level, and reset when <b>tier 3</b> swaps your hull. Mix and match tiers and upgrades below and the stat deck shows what the build adds up to, compared with the bare base hull. Tiers are bought in order, so picking a later tier fills earlier empty ones with option A (dashed).</p>
+    <p class="lede">Pick a hull class when you drop in (Patrol Craft up to Dreadnought and Carrier; the big ones are capped per team), then buy five <b>A-or-B</b> tiers with <b class="xp">XP</b> from kills, damage, healing and capturing or defending points. Stat upgrades cost <b class="sh">shards</b>, climb in price each level, and reset when <b>tier 3</b> swaps your hull. Mix and match tiers and upgrades below and the stat deck shows what the build adds up to, compared with the bare base hull. Tiers are bought in order, so picking a later tier fills earlier empty ones with option A (dashed).</p>
     <div class="figures">
-      <div><b>6</b><span>classes</span></div>
-      <div><b>60</b><span>upgrade nodes</span></div>
-      <div><b>18</b><span>hull models</span></div>
+      <div><b>${CLASS_ORDER.length}</b><span>hull classes</span></div>
+      <div><b>${CLASS_ORDER.length * 10}</b><span>upgrade nodes</span></div>
+      <div><b>${HULLS.length}</b><span>hull models</span></div>
       <div><b>${int(allTiersXp)}</b><span>XP for all tiers</span></div>
       <div><b>${int(allStatsShards)}</b><span>shards to max a hull</span></div>
     </div>
@@ -354,7 +352,7 @@ html { scroll-behavior: smooth; }
 <nav class="rail" aria-label="Classes"><div class="wrap">${nav}</div></nav>
 
 <main class="wrap">
-  <h2 class="sec">Hangar · all 18 hulls</h2>
+  <h2 class="sec">Hangar · all ${HULLS.length} hulls, smallest to largest</h2>
   <div class="hangar">${gallery}</div>
   ${sections}
   <h2 class="sec">Field assets</h2>

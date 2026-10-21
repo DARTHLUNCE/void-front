@@ -40,4 +40,16 @@ export const QUIRK_PARAMS = {
   fieldEngineer: {
     captureMul: 2,
   },
+  pointDefense: {
+    radius: 320,
+    interval: 0.5,
+    starshipDamage: 25,
+  },
+  lockOn: {
+    rampTime: 3,
+    maxBonus: 0.25,
+    /** Firing gaps longer than this drain the lock. */
+    holdWindow: 0.5,
+    drainPerSecond: 2,
+  },
 } as const satisfies Record<QuirkId, Record<string, number>>;

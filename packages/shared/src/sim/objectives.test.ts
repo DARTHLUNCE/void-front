@@ -34,7 +34,7 @@ describe('nodes', () => {
   });
 
   it('contested neutral nodes freeze; engineers capture twice as fast', () => {
-    const { w, a, b } = duelWorld(1, 'engineer');
+    const { w, a, b } = duelWorld(1, 'frigate');
     const p = w.points[0];
     place(w, a, p.x, p.y, 0);
     place(w, b, p.x + 100, p.y, 0);
@@ -145,7 +145,7 @@ describe('sieges', () => {
     for (const f of w.teams[0].fobs) damageStructure(w, f, 1e9, b.slot);
     a.lastHitBy = -1;
     killShip(w, a);
-    expect(a.respawnAt - w.time).toBeCloseTo(5 * EXPOSED.respawnMul);
+    expect(a.respawnAt - w.time).toBeCloseTo(5 * EXPOSED.respawnMul * a.cls.respawnMul);
   });
 });
 
@@ -175,7 +175,7 @@ describe('Fleet Commander', () => {
     const w = commandWorld();
     for (let i = 0; i < 30 * 15; i++) step(w);
     expect(w.ships[0].alive).toBe(false);
-    pickClass(w, w.ships[0], 'interceptor');
+    pickClass(w, w.ships[0], 'patrol');
     expect(w.ships[0].alive).toBe(false);
   });
 
@@ -227,7 +227,7 @@ describe('Fleet Commander', () => {
     const s = w.ships[1];
     s.lastHitBy = -1;
     killShip(w, s);
-    expect(s.respawnAt - w.time).toBeCloseTo(5 * COMMAND_RULES.reinforceRespawnMul);
+    expect(s.respawnAt - w.time).toBeCloseTo(5 * COMMAND_RULES.reinforceRespawnMul * s.cls.respawnMul);
   });
 
   it('pings are free, snap to nodes, and send nearby bots to a pinged node', () => {

@@ -1,5 +1,5 @@
 import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
-import { CLASS_ORDER, getClass } from '../content/classes/index';
+import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
 import type { CommandId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import { MATCH, POINTS } from '../content/match';
@@ -610,12 +610,17 @@ export class World {
     for (const ms of [ms0, ms1]) ms.shielded = fobs.some((f) => f.team === ms.team);
 
     const humans = new Set(opts.humanSlots ?? []);
+    const classCounts: [Partial<Record<ClassId, number>>, Partial<Record<ClassId, number>>] = [{}, {}];
+    // Bots leave one slot of every capped class per human on their team, so players can still pick one.
+    const humansOn = [0, 0];
+    for (const slot of humans) humansOn[slot < this.fleetSize ? 0 : 1]++;
     const total = this.fleetSize * 2;
     for (let slot = 0; slot < total; slot++) {
       const team: TeamId = slot < this.fleetSize ? 0 : 1;
       const teamSlot = slot - team * this.fleetSize;
       const shipRng = new Rng(hashSeed(seed, mirror ? 0 : team, teamSlot, 0x5419));
-      const classId = opts.classId ?? rollClass(shipRng);
+      const classId = opts.classId ?? rollClass(shipRng, this.fleetSize, classCounts[team], humansOn[team]);
+      classCounts[team][classId] = (classCounts[team][classId] ?? 0) + 1;
       const ship = new Ship(slot, team, classId, shipRng);
       ship.isBot = !humans.has(slot);
       ship.awaitingClass = !ship.isBot && opts.humansPickClass === true;
@@ -668,15 +673,24 @@ export class World {
   }
 }
 
-function rollClass(rng: Rng): ClassId {
+/** Roll a bot's class by BOT_CLASS_WEIGHTS, skipping classes at their cap (less the slots kept for humans). */
+function rollClass(rng: Rng, fleetSize: number, counts: Partial<Record<ClassId, number>>, reserved: number): ClassId {
+  const weight = (id: ClassId) => ((counts[id] ?? 0) < teamCap(getClass(id), fleetSize) - reserved ? BOT_CLASS_WEIGHTS[id] : 0);
   let total = 0;
-  for (const id of CLASS_ORDER) total += BOT_CLASS_WEIGHTS[id];
+  for (const id of CLASS_ORDER) total += weight(id);
   let r = rng.next() * total;
   for (const id of CLASS_ORDER) {
-    r -= BOT_CLASS_WEIGHTS[id];
+    r -= weight(id);
     if (r < 0) return id;
   }
-  return CLASS_ORDER[CLASS_ORDER.length - 1];
+  return CLASS_ORDER[0];
+}
+
+/** Ships of a class a team fields right now (docked pickers and commanders don't count). */
+export function classCount(w: World, team: TeamId, classId: ClassId): number {
+  let n = 0;
+  for (const s of w.ships) if (s.team === team && s.classId === classId && !s.awaitingClass && !s.commander) n++;
+  return n;
 }
 
 function mirrorIndex(map: MapDef): Int32Array {

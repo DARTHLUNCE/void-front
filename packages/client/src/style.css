@@ -1066,3 +1066,32 @@ button.primary:hover {
   top: 60px;
   justify-items: start;
 }
+
+/* Picker: hull silhouette scaled by class size, team cap counter */
+.cls .hullpic {
+  display: flex;
+  align-items: center;
+  height: 46px;
+}
+
+.cls .hullpic svg {
+  height: calc(46px * var(--k));
+  min-height: 14px;
+  max-width: 100%;
+  fill: var(--cobalt);
+  opacity: 0.85;
+}
+
+.cls .cap {
+  font-size: 0.8rem;
+  color: var(--dim);
+}
+
+.cls.full {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.cls.full .cap {
+  color: #ff5c6c;
+}

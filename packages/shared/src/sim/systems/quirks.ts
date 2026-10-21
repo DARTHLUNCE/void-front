@@ -2,7 +2,7 @@ import { QUIRK_PARAMS } from '../../content/quirks';
 import type { QuirkId } from '../../content/types';
 import { liveStat, QUIRK_LEFT_CLOAK, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
-import { spawnDrone } from './drones';
+import { damageDrone, spawnDrone } from './drones';
 import { applyStatus, hasStatus, removeStatus } from './status';
 
 /**
@@ -175,6 +175,56 @@ const droneBay: QuirkHooks = {
 // Double capture speed (systems/points.ts) and a healing gun (combat.ts); no per-tick state.
 const fieldEngineer: QuirkHooks = {};
 
+// ─── Point Defense (Destroyer) ──────────────────────────────────────────────
+const PD_TIMER = 0;
+
+const pointDefense: QuirkHooks = {
+  tick(w, s) {
+    const p = QUIRK_PARAMS.pointDefense;
+    s.quirk[PD_TIMER] -= DT;
+    if (s.quirk[PD_TIMER] > 0) return;
+    s.quirk[PD_TIMER] = p.interval;
+    const r2 = p.radius * p.radius;
+    // An enemy missile first, otherwise an enemy starship.
+    const proj = w.projectiles;
+    for (let i = proj.count - 1; i >= 0; i--) {
+      const m = proj.at(i);
+      if (m.missile && m.team !== s.team && (m.x - s.x) ** 2 + (m.y - s.y) ** 2 <= r2) {
+        proj.release(m);
+        return;
+      }
+    }
+    const n = w.droneHash.query(s.x, s.y, p.radius, w.scratch3);
+    for (let i = 0; i < n; i++) {
+      const d = w.drones.items[w.scratch3[i]];
+      if (d.active && d.team !== s.team && (d.x - s.x) ** 2 + (d.y - s.y) ** 2 <= r2) {
+        damageDrone(w, d, p.starshipDamage, s.slot);
+        return;
+      }
+    }
+  },
+  reset(_w, s) {
+    s.quirk[PD_TIMER] = 0;
+  },
+};
+
+// ─── Lock-On (Cruiser) ──────────────────────────────────────────────────────
+const LOCK = 0;
+
+const lockOn: QuirkHooks = {
+  tick(w, s) {
+    const p = QUIRK_PARAMS.lockOn;
+    const firing = w.time - s.lastFireTime <= p.holdWindow;
+    s.quirk[LOCK] = Math.min(1, Math.max(0, s.quirk[LOCK] + (firing ? DT / p.rampTime : -DT * p.drainPerSecond)));
+  },
+  damageBonus(s) {
+    return s.quirk[LOCK] * QUIRK_PARAMS.lockOn.maxBonus;
+  },
+  reset(_w, s) {
+    s.quirk[LOCK] = 0;
+  },
+};
+
 export const QUIRKS: Record<QuirkId, QuirkHooks> = {
   momentum,
   ghostDrive,
@@ -182,6 +232,8 @@ export const QUIRKS: Record<QuirkId, QuirkHooks> = {
   chargeShot,
   droneBay,
   fieldEngineer,
+  pointDefense,
+  lockOn,
 };
 
 export function quirkOf(ship: Ship): QuirkHooks {
@@ -202,6 +254,8 @@ export function quirkGauge(ship: Ship): number {
       return ship.quirk[HEAT] / QUIRK_PARAMS.heat.max;
     case 'chargeShot':
       return ship.quirk[CHARGE];
+    case 'lockOn':
+      return ship.quirk[LOCK];
     default:
       return 0;
   }

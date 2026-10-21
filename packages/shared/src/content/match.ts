@@ -38,6 +38,6 @@ export const RESOURCE_IDS = ['munitions', 'fuel', 'manpower'] as const;
 export const RESOURCE_INDEX = { munitions: 0, fuel: 1, manpower: 2 } as const;
 export const RESOURCE_INFO = {
   munitions: { name: 'Munitions', building: 'Weapons factory', use: 'weapon and recon orders' },
-  fuel: { name: 'Fuel', building: 'Fuel refinery', use: 'drone wings' },
+  fuel: { name: 'Fuel', building: 'Fuel refinery', use: 'starship wings' },
   manpower: { name: 'Manpower', building: 'Training camp', use: 'spawn points and reinforcements' },
 } as const;
