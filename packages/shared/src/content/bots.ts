@@ -1,4 +1,4 @@
-import type { AbilityTag } from './types';
+import type { AbilityTag, ClassId } from './types';
 
 export const DIRECTOR = {
   interval: 2,
@@ -11,8 +11,8 @@ export const DIRECTOR = {
   pushGather: 30,
   /** Staging point distance short of the enemy mothership. */
   pushStageDistance: 4_500,
-  /** Bots below this level may be sent to farm. */
-  farmBelowLevel: 6,
+  /** Bots that own fewer tiers than this may be sent to farm shards. */
+  farmBelowRank: 1,
   farmChance: 0.65,
   farmCapFrac: 0.25,
   /** Enemies this close to our mothership count as a threat. */
@@ -21,6 +21,10 @@ export const DIRECTOR = {
   jobMaxTime: 40,
   /** Point weight multipliers by which side of the map it's on, relative to us. */
   sideWeight: { own: 0.9, middle: 1.25, enemy: 0.65 },
+  /** Point weight multipliers by who holds it: bots go take points and save contested ones. */
+  ownerWeight: { ours: 0.7, contestedOurs: 1.8, neutral: 1.3, theirs: 1.2 },
+  /** Share of skirmishers that answer a commander's Rally Order. */
+  rallyFrac: 0.5,
 } as const;
 
 export type BotDifficulty = 'easy' | 'normal' | 'hard';
@@ -74,6 +78,7 @@ export const BOT_TAG_RULES: Record<AbilityTag, BotConditionId[]> = {
   hit: ['engaged'],
   closeRange: ['enemyClose'],
   structure: ['nearStructure'],
+  area: ['engaged'],
 };
 
 export const BOT_NAMES: readonly string[] = [
@@ -83,3 +88,19 @@ export const BOT_NAMES: readonly string[] = [
   'Ivo', 'Calder', 'Tamsin', 'Rhee', 'Bastian', 'Nova', 'Grim', 'Petra', 'Sorrel', 'Ozzy',
   'Kael', 'Lyric', 'Moth', 'Riven', 'Dax', 'Selka', 'Brine', 'Tycho', 'Wick', 'Arden',
 ];
+
+/** Relative odds of each class for bot pilots. */
+export const BOT_CLASS_WEIGHTS: Record<ClassId, number> = {
+  interceptor: 1,
+  phantom: 1,
+  dreadnought: 1,
+  lancer: 1,
+  carrier: 1,
+  engineer: 1,
+};
+
+/**
+ * Chance a bot picks option A at each tier, per class (default 0.5). Kept near even so the harness
+ * sees every node used.
+ */
+export const BOT_TIER_PREFS: Partial<Record<ClassId, [number, number, number, number, number]>> = {};

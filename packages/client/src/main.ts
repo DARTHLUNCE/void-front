@@ -25,7 +25,7 @@ const save = (key: string, value: string): void => {
 menu.innerHTML = `
   <div class="card">
     <h1>VOID <span>FRONT</span></h1>
-    <p class="sub">Phase 0 · offline vs bots · Interceptor</p>
+    <p class="sub">Offline vs bots · six classes · Fleet Command</p>
     <label>Fleet size
       <select id="fleet">
         <option value="20">20 v 20</option>
@@ -55,11 +55,11 @@ menu.innerHTML = `
     </label>
     <button id="play" class="primary">Launch</button>
     <div class="keys">
-      <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> Phase Dash</div>
-      <div><kbd>Shift</kbd> cruise · <kbd>Q W E R</kbd> stats (WASD: <kbd>Z X C V</kbd>)</div>
-      <div><kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
+      <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> signature · <kbd>Space</kbd> ultimate · <kbd>G</kbd> extra</div>
+      <div><kbd>Q W E R</kbd> buy stat upgrades with shards (WASD: <kbd>Z X C V</kbd>) · <kbd>1</kbd> <kbd>2</kbd> pick a tier with XP</div>
+      <div><kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
     </div>
-    <p class="note">You fly for Cobalt (blue). Destroy the Ember mothership on the far right.</p>
+    <p class="note">You fight for Cobalt (blue). Pick a class (or Fleet Commander) when you drop in. Take capture points, break the Ember mothership on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
   </div>`;
 
 const fleetSel = document.getElementById('fleet') as HTMLSelectElement;

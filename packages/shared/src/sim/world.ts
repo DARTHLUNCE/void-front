@@ -1,11 +1,26 @@
-import { BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
-import { getClass } from '../content/classes/index';
+import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
+import { CLASS_ORDER, getClass } from '../content/classes/index';
+import type { CommandId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
-import { MATCH } from '../content/match';
+import { MATCH, POINTS } from '../content/match';
 import { STAT_POINTS } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
-import { MOTHERSHIP } from '../content/structures';
-import type { AbilityDef, ClassId, MapDef, ModifierDef, ShipClass, StructureDef, TeamId } from '../content/types';
+import { DEPLOYABLES, MOTHERSHIP, type DeployableDef } from '../content/structures';
+import type {
+  AbilityDef,
+  Affects,
+  CapturePointDef,
+  ClassId,
+  DeployKind,
+  DroneBehavior,
+  MapDef,
+  ModifierDef,
+  NodeDef,
+  ShipClass,
+  StatusApply,
+  StructureDef,
+  TeamId,
+} from '../content/types';
 import { Pool, type Pooled } from './pool';
 import { hashSeed, Rng } from './rng';
 import { SpatialHash } from './spatialHash';
@@ -15,8 +30,14 @@ export const TICK_RATE = 30;
 export const DT = 1 / TICK_RATE;
 export const HASH_CELL = 512;
 export const PROJECTILE_CAPACITY = 8192;
-export const CRYSTAL_CAPACITY = 1400;
+export const CRYSTAL_CAPACITY = 1600;
+export const DRONE_CAPACITY = 1024;
+export const DEPLOYABLE_CAPACITY = 512;
+export const ZONE_CAPACITY = 128;
+export const STRIKE_CAPACITY = 64;
+export const TETHER_CAPACITY = 64;
 export const EVENT_CAPACITY = 512;
+export const TIERS = 5;
 
 /** Per-ship input. Humans fill it from the client; bot pilot brains fill the same struct. */
 export interface ShipInput {
@@ -28,16 +49,19 @@ export interface ShipInput {
   fire: boolean;
   ability: boolean;
   ultimate: boolean;
+  extra: boolean;
   cruise: boolean;
-  /** One-shot: stat point index to spend this tick, or -1. */
+  /** One-shot: stat upgrade index to buy this tick, or -1. */
   statPick: number;
+  /** One-shot: tier option to buy (0 = A, 1 = B), or -1. */
+  tierPick: number;
 }
 
 export function emptyInput(): ShipInput {
-  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, cruise: false, statPick: -1 };
+  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, extra: false, cruise: false, statPick: -1, tierPick: -1 };
 }
 
-export const Job = { Farm: 0, Skirmish: 1, Assault: 2, Defend: 3 } as const;
+export const Job = { Farm: 0, Skirmish: 1, Assault: 2, Defend: 3, Rally: 4 } as const;
 export type Job = (typeof Job)[keyof typeof Job];
 
 export interface BotBrain {
@@ -57,6 +81,8 @@ export interface BotBrain {
   retreating: boolean;
   /** Ship slot being fought, or -1. */
   targetShip: number;
+  /** Drone index being fought, or -1. */
+  targetDrone: number;
   /** Structure index being fought, or -1. */
   targetStructure: number;
   destX: number;
@@ -71,13 +97,13 @@ export interface BotBrain {
 export class AbilityState {
   cooldown = 0;
   charges: number;
-  readonly maxCharges: number;
+  maxCharges: number;
 
-  constructor(readonly def: AbilityDef) {
+  constructor(readonly def: AbilityDef, extraCharges = 0) {
     let charges = 1;
     for (const s of def.steps) if (s.kind === 'dash' && s.charges) charges = Math.max(charges, s.charges);
-    this.maxCharges = charges;
-    this.charges = charges;
+    this.maxCharges = charges + extraCharges;
+    this.charges = this.maxCharges;
   }
 
   reset(): void {
@@ -87,9 +113,14 @@ export class AbilityState {
 }
 
 export class Ship {
-  readonly cls: ShipClass;
-  readonly radius: number;
+  cls: ShipClass;
+  classId: ClassId;
+  radius: number;
   isBot = true;
+  /** A human who chose Commander: never spawns a ship. */
+  commander = false;
+  /** A human who hasn't picked a class yet: stays docked. */
+  awaitingClass = false;
   name = '';
   alive = false;
   x = 0;
@@ -99,30 +130,47 @@ export class Ship {
   angle = 0;
   hull = 0;
   maxHull = 0;
-  level = 1;
-  /** XP into the current level. */
+
+  // Economy
+  /** Unspent shards (stat upgrade currency). */
+  shards = 0;
+  /** Unspent XP (tier currency). Never lost. */
   xp = 0;
-  totalXp = 0;
+  /** Lifetime XP, for stats and the scoreboard. */
+  xpEarned = 0;
+  /** Shards spilled at the last death (shown on the respawn screen). */
+  shardsLost = 0;
+  /** Tier picks: -1 not bought, 0 = option A, 1 = option B. */
+  readonly picks = new Int8Array(TIERS).fill(-1);
+  tiersOwned = 0;
+  /** Stat upgrade levels bought with shards on the current hull. */
   readonly statPoints = new Int8Array(STAT_POINTS.length);
-  /** Order stat points were spent in, so a respawn can replay the earliest picks. */
-  readonly statHistory = new Int8Array(64);
-  statHistoryLen = 0;
-  unspent = 0;
+  hullModel: string;
+  nodes: NodeDef[] = [];
+
   readonly modAdd = new Float64Array(STAT_IDS.length);
   readonly modMul = new Float64Array(STAT_IDS.length);
   /** Node modifiers with a `when` condition, checked at use time. */
   conditional: ModifierDef[] = [];
   fireCooldown = 0;
+  lastFireTime = -99;
   signature: AbilityState;
+  ultimate: AbilityState | null = null;
+  extra: AbilityState | null = null;
   dashTime = 0;
   dashMul = 1;
   dashDx = 0;
   dashDy = 0;
+  dashRam = 0;
+  dashKnock = 0;
+  /** Ships already rammed or marked during the current dash. */
+  readonly dashHits = new Int32Array(16);
+  dashHitCount = 0;
   lastDashEnd = -99;
   cruiseSpool = 0;
   cruising = false;
   /** Scratch state owned by the class quirk (see systems/quirks.ts). */
-  readonly quirk = new Float64Array(8);
+  readonly quirk = new Float64Array(16);
   readonly statusTime = new Float64Array(STATUS_IDS.length);
   readonly statusMag = new Float64Array(STATUS_IDS.length);
   readonly statusStacks = new Int8Array(STATUS_IDS.length);
@@ -131,10 +179,14 @@ export class Ship {
   lastHitBy = -1;
   lastHitTime = -99;
   respawnAt = 0;
+  /** Where to respawn: -1 = mothership, otherwise a deployable index (a beacon). */
+  spawnChoice = -1;
   kills = 0;
   deaths = 0;
   damageDealt = 0;
   structureDamage = 0;
+  healingDone = 0;
+  captures = 0;
   /** Bit t set = visible to team t. */
   visibleMask = 0;
   readonly input: ShipInput = emptyInput();
@@ -143,18 +195,24 @@ export class Ship {
   constructor(
     readonly slot: number,
     readonly team: TeamId,
-    readonly classId: ClassId,
+    classId: ClassId,
     readonly rng: Rng,
   ) {
+    this.classId = classId;
     this.cls = getClass(classId);
     this.radius = this.cls.radius;
+    this.hullModel = this.cls.hullModel;
     this.signature = new AbilityState(this.cls.signature);
+  }
+
+  get rank(): number {
+    return this.tiersOwned;
   }
 }
 
 export class Structure {
   hull: number;
-  readonly maxHull: number;
+  maxHull: number;
   alive = true;
   shielded = false;
   lastDamageTime = -99;
@@ -181,16 +239,28 @@ export class Projectile implements Pooled {
   y = 0;
   vx = 0;
   vy = 0;
+  speed = 0;
   life = 0;
   damage = 0;
   radius = 0;
   team: TeamId = 0;
-  /** Ship slot that fired it, or -1 for structures. */
+  /** Ship slot credited for the hit, or -1 for structures and commander call-ins. */
   owner = -1;
   pierceLeft = 0;
+  pierceBonus = 0;
   readonly hits = new Int32Array(8);
   hitCount = 0;
   structureMul = 1;
+  splash = 0;
+  crit = false;
+  fullCharge = false;
+  missile = false;
+  homingTurn = 0;
+  /** Fraction of damage that heals allies hit instead (engineer nanite gun). */
+  heal = 0;
+  /** Fraction of damage dealt that heals the owner (Hive drones). */
+  lifesteal = 0;
+  fromDrone = false;
   constructor(readonly index: number) {}
 }
 
@@ -198,13 +268,145 @@ export class Crystal implements Pooled {
   active = false;
   x = 0;
   y = 0;
-  xp = 0;
+  shards = 0;
   radius = 0;
+  /** 0 small, 1 large, 2 wreck loot. */
   kind = 0;
+  /** Loot crystals expire; field crystals don't. */
+  expires = Infinity;
   constructor(readonly index: number) {}
 }
 
-export const EventType = { Kill: 1, StructureDestroyed: 2, LevelUp: 3, PushStart: 4, MatchEnd: 5, Respawn: 6 } as const;
+export class Drone implements Pooled {
+  active = false;
+  team: TeamId = 0;
+  /** Ship slot that owns it, or -1 for a commander call-in. */
+  owner = -1;
+  behavior: DroneBehavior = 'swarm';
+  x = 0;
+  y = 0;
+  vx = 0;
+  vy = 0;
+  hull = 0;
+  maxHull = 0;
+  expires = Infinity;
+  damage = 0;
+  fireInterval = 1;
+  cooldown = 0;
+  speed = 0;
+  range = 0;
+  splash = 0;
+  structureMul = 1;
+  lifesteal = 0;
+  radius = 8;
+  guardX = 0;
+  guardY = 0;
+  orbitAngle = 0;
+  targetShip = -1;
+  targetDrone = -1;
+  aimError = 0.05;
+  /** Kamikaze dive: when > 0 the drone flies at (kx, ky) and explodes for this much. */
+  kamikazeDamage = 0;
+  kamikazeRadius = 0;
+  kx = 0;
+  ky = 0;
+  lastHitBy = -1;
+  constructor(readonly index: number) {}
+}
+
+export class Deployable implements Pooled {
+  active = false;
+  team: TeamId = 0;
+  owner = -1;
+  kind: DeployKind = 'turret';
+  def: DeployableDef = DEPLOYABLES.turret;
+  x = 0;
+  y = 0;
+  hull = 0;
+  maxHull = 0;
+  expires = Infinity;
+  cooldown = 0;
+  constructor(readonly index: number) {}
+}
+
+export class Zone implements Pooled {
+  active = false;
+  team: TeamId = 0;
+  owner = -1;
+  x = 0;
+  y = 0;
+  radius = 0;
+  expires = 0;
+  follow = false;
+  damage = 0;
+  heal = 0;
+  status: StatusApply | null = null;
+  pull = 0;
+  blocksProjectiles = false;
+  reveal = false;
+  affects: Affects[] = [];
+  constructor(readonly index: number) {}
+}
+
+export class Strike implements Pooled {
+  active = false;
+  team: TeamId = 0;
+  owner = -1;
+  x = 0;
+  y = 0;
+  radius = 0;
+  landsAt = 0;
+  damage = 0;
+  structureDamage = 0;
+  constructor(readonly index: number) {}
+}
+
+export class Tether implements Pooled {
+  active = false;
+  owner = -1;
+  target = -1;
+  expires = 0;
+  range = 0;
+  healPerSecond = 0;
+  constructor(readonly index: number) {}
+}
+
+export class PointState {
+  /** −100 (Ember) … +100 (Cobalt). Owner flips at ±100 and goes neutral when pushed back through 0. */
+  meter = 0;
+  owner: TeamId | -1 = -1;
+  contested = false;
+  hotUntil = -1;
+  /** Ships of each team pushing this tick (after the cap). */
+  readonly pushing = new Float64Array(2);
+  flips = 0;
+  constructor(
+    readonly index: number,
+    readonly def: CapturePointDef,
+  ) {}
+
+  get x(): number {
+    return this.def.pos.x;
+  }
+
+  get y(): number {
+    return this.def.pos.y;
+  }
+}
+
+export const EventType = {
+  Kill: 1,
+  StructureDestroyed: 2,
+  TierBought: 3,
+  PushStart: 4,
+  MatchEnd: 5,
+  Respawn: 6,
+  Beam: 7,
+  PointFlip: 8,
+  Explosion: 9,
+  Command: 10,
+  StrikeLanded: 11,
+} as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
 export interface SimEvent {
@@ -213,6 +415,9 @@ export interface SimEvent {
   b: number;
   x: number;
   y: number;
+  /** Extra payload (beam angle, length...). */
+  c: number;
+  d: number;
 }
 
 export class TeamState {
@@ -224,8 +429,17 @@ export class TeamState {
   nextPush: number;
   readonly firstSlot: number;
   readonly lastSlot: number;
-  levelSum = 0;
-  aliveCount = 0;
+  /** Banked alloy, energy, intel. */
+  readonly resources = new Float64Array(3);
+  /** Human commander's slot, or -1. */
+  commanderSlot = -1;
+  readonly commandReady: Record<string, number> = {};
+  overchargeUntil = -1;
+  jamUntil = -1;
+  rallyX = 0;
+  rallyY = 0;
+  rallyUntil = -1;
+  pointsHeld = 0;
 
   constructor(
     readonly id: TeamId,
@@ -233,9 +447,14 @@ export class TeamState {
     fleetSize: number,
     readonly mothership: Structure,
   ) {
+    this.resources.fill(POINTS.startingBank);
     this.firstSlot = id * fleetSize;
     this.lastSlot = this.firstSlot + fleetSize - 1;
     this.nextPush = rng.range(70, 100);
+  }
+
+  commandReadyAt(id: CommandId): number {
+    return this.commandReady[id] ?? 0;
   }
 }
 
@@ -257,12 +476,15 @@ export interface WorldOptions {
   fleetSize: number;
   /** Slots flown by humans; every other slot is a bot. */
   humanSlots?: number[];
+  /** Humans start docked until they pick a class (or Commander). */
+  humansPickClass?: boolean;
   /**
    * Give both teams identical RNG streams (slot i on team 0 shares a seed with slot i on team 1).
    * Only for the fairness test: real matches need independent streams.
    */
   mirrorStreams?: boolean;
   map?: MapDef;
+  /** Force every ship to one class (tests). Otherwise bots roll from BOT_CLASS_WEIGHTS. */
   classId?: ClassId;
   timeLimit?: number;
   /** Bot skill per team; defaults to the SPEC spread ('hard') for both. */
@@ -279,13 +501,21 @@ export class World {
   readonly ships: Ship[] = [];
   readonly structures: Structure[] = [];
   readonly teams: [TeamState, TeamState];
+  readonly points: PointState[];
   readonly projectiles: Pool<Projectile>;
   readonly crystals: Pool<Crystal>;
+  readonly drones: Pool<Drone>;
+  readonly deployables: Pool<Deployable>;
+  readonly zones: Pool<Zone>;
+  readonly strikes: Pool<Strike>;
+  readonly tethers: Pool<Tether>;
   readonly shipHash: SpatialHash;
   readonly crystalHash: SpatialHash;
+  readonly droneHash: SpatialHash;
   /** Shared query buffers. A system must finish with one before calling into another that uses it. */
   readonly scratch = new Int32Array(4096);
   readonly scratch2 = new Int32Array(4096);
+  readonly scratch3 = new Int32Array(4096);
   /**
    * pointMirror[i] = index of the capture point at point i's mirrored position. Team 1 walks
    * points in this order so both teams see the map in the same team-relative order.
@@ -299,7 +529,14 @@ export class World {
   /** Fractional crystal pairs owed by the spawner. */
   crystalSpawnAcc = 0;
   readonly match: MatchState = { over: false, winner: -1, endReason: '', endTime: 0, killsAtCheck: null, vp: [0, 0] };
-  readonly stats = { projectilePeak: 0, projectileOverflow: 0, crystalsCollected: 0, killsByClass: {} as Record<string, number> };
+  readonly stats = {
+    projectilePeak: 0,
+    projectileOverflow: 0,
+    crystalsCollected: 0,
+    killsByClass: {} as Record<string, number>,
+    tierPicks: {} as Record<string, number>,
+    pointFlips: 0,
+  };
 
   constructor(readonly opts: WorldOptions) {
     this.map = opts.map ?? KESSLER_REACH;
@@ -311,6 +548,7 @@ export class World {
     const ms0 = new Structure(0, MOTHERSHIP, 0, this.map.motherships[0].x, this.map.motherships[0].y);
     const ms1 = new Structure(1, MOTHERSHIP, 1, this.map.motherships[1].x, this.map.motherships[1].y);
     this.structures.push(ms0, ms1);
+    this.points = this.map.points.map((def, i) => new PointState(i, def));
 
     const mirror = opts.mirrorStreams === true;
     this.teams = [
@@ -319,14 +557,15 @@ export class World {
     ];
 
     const humans = new Set(opts.humanSlots ?? []);
-    const classId = opts.classId ?? 'interceptor';
     const total = this.fleetSize * 2;
     for (let slot = 0; slot < total; slot++) {
       const team: TeamId = slot < this.fleetSize ? 0 : 1;
       const teamSlot = slot - team * this.fleetSize;
       const shipRng = new Rng(hashSeed(seed, mirror ? 0 : team, teamSlot, 0x5419));
+      const classId = opts.classId ?? rollClass(shipRng);
       const ship = new Ship(slot, team, classId, shipRng);
       ship.isBot = !humans.has(slot);
+      ship.awaitingClass = !ship.isBot && opts.humansPickClass === true;
       ship.name = ship.isBot ? `${BOT_NAMES[(teamSlot * 7 + team * 23) % BOT_NAMES.length]}-${teamSlot + 1}` : 'You';
       if (ship.isBot) ship.bot = makeBrain(shipRng, BOT_SKILL[opts.botSkill?.[team] ?? 'hard']);
       this.ships.push(ship);
@@ -334,13 +573,19 @@ export class World {
 
     this.projectiles = new Pool(PROJECTILE_CAPACITY, (i) => new Projectile(i));
     this.crystals = new Pool(CRYSTAL_CAPACITY, (i) => new Crystal(i));
+    this.drones = new Pool(DRONE_CAPACITY, (i) => new Drone(i));
+    this.deployables = new Pool(DEPLOYABLE_CAPACITY, (i) => new Deployable(i));
+    this.zones = new Pool(ZONE_CAPACITY, (i) => new Zone(i));
+    this.strikes = new Pool(STRIKE_CAPACITY, (i) => new Strike(i));
+    this.tethers = new Pool(TETHER_CAPACITY, (i) => new Tether(i));
     this.shipHash = new SpatialHash(this.map.width, this.map.height, HASH_CELL, total);
     this.crystalHash = new SpatialHash(this.map.width, this.map.height, HASH_CELL, CRYSTAL_CAPACITY);
+    this.droneHash = new SpatialHash(this.map.width, this.map.height, HASH_CELL, DRONE_CAPACITY);
     this.pointMirror = mirrorIndex(this.map);
     this.pushX = new Float64Array(total);
     this.pushY = new Float64Array(total);
     this.events = [];
-    for (let i = 0; i < EVENT_CAPACITY; i++) this.events.push({ type: EventType.Kill, a: 0, b: 0, x: 0, y: 0 });
+    for (let i = 0; i < EVENT_CAPACITY; i++) this.events.push({ type: EventType.Kill, a: 0, b: 0, x: 0, y: 0, c: 0, d: 0 });
   }
 
   /** Map a team-relative point index k to the actual point index for `team`. */
@@ -357,7 +602,7 @@ export class World {
     return this.teams[team === 0 ? 1 : 0];
   }
 
-  emit(type: EventType, a: number, b: number, x = 0, y = 0): void {
+  emit(type: EventType, a: number, b: number, x = 0, y = 0, c = 0, d = 0): void {
     if (this.eventCount >= EVENT_CAPACITY) return;
     const e = this.events[this.eventCount++];
     e.type = type;
@@ -365,7 +610,20 @@ export class World {
     e.b = b;
     e.x = x;
     e.y = y;
+    e.c = c;
+    e.d = d;
   }
+}
+
+function rollClass(rng: Rng): ClassId {
+  let total = 0;
+  for (const id of CLASS_ORDER) total += BOT_CLASS_WEIGHTS[id];
+  let r = rng.next() * total;
+  for (const id of CLASS_ORDER) {
+    r -= BOT_CLASS_WEIGHTS[id];
+    if (r < 0) return id;
+  }
+  return CLASS_ORDER[CLASS_ORDER.length - 1];
 }
 
 function mirrorIndex(map: MapDef): Int32Array {
@@ -397,6 +655,7 @@ function makeBrain(rng: Rng, skill: BotSkill): BotBrain {
     nextThink: rng.range(0, skill.thinkMax),
     retreating: false,
     targetShip: -1,
+    targetDrone: -1,
     targetStructure: -1,
     destX: 0,
     destY: 0,

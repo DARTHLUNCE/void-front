@@ -1,15 +1,15 @@
 # Void Front
 
 A browser team space shooter. Two fleets of up to 100 ships fight across a large map; you fly one of
-them alongside bots that fill every empty slot. Shoot, farm crystals, level up, spend stat points, and
-push for the enemy mothership.
+them alongside bots that fill every empty slot. Pick one of six classes (or command the fleet from the war
+map), take capture points, earn XP and shards, and push for the enemy mothership.
 
 ![All ship hulls at true relative scale](docs/art/ship-lineup.png)
 
-**Status: Phase 0 prototype.** You can play offline against bots as the Interceptor. The other five
-classes, the upgrade tree, capture points, forward bases and multiplayer come in later phases. See
-[docs/SPEC.md](docs/SPEC.md) for the full design and [docs/phase-0-notes.md](docs/phase-0-notes.md)
-for what's built so far.
+**Status: offline prototype.** All six classes with their full five-tier trees, the shard/XP economy,
+capture points with resources, and the Fleet Commander role are playable offline against bots. Forward
+bases and multiplayer come later. See [docs/SPEC.md](docs/SPEC.md) for the full design and the phase
+notes in [docs/](docs/) for what's built so far.
 
 ## Run it
 
@@ -22,7 +22,8 @@ npx --yes pnpm@9.15.0 install
 npx --yes pnpm@9.15.0 dev
 ```
 
-Open http://localhost:5173, pick a fleet size and enemy difficulty, and press **Launch**.
+Open http://localhost:5173, pick a fleet size and enemy difficulty, and press **Launch**. Then choose a
+class (keys 1–6) or the Fleet Commander seat (7).
 
 If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` and `pnpm dev` work too.
 
@@ -32,14 +33,26 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 |---|---|---|
 | Move | Point where you want to go | W A S D |
 | Fire | Hold left click | Hold left click |
-| Phase Dash | Right click | Right click |
+| Signature ability | Right click | Right click |
+| Ultimate (tier 5) | Space | Space |
+| Extra ability (some tier nodes) | G | G |
 | Cruise drive | Hold Shift | Hold Shift |
-| Stat points | Q W E R | Z X C V |
+| Buy stat upgrades (shards) | Q W E R | Z X C V |
+| Pick a tier (XP) when the pop-up shows | 1 / 2 | 1 / 2 |
 | Auto-fire | X | F |
 | Scoreboard / map | Tab / M | Tab / M |
 | Lighting on/off | L | L |
 
 You fly for Cobalt (blue). Destroy the Ember mothership on the far right of the map.
+
+**Economy.** Shards (crystals and wreck loot) buy stat upgrades; each level costs more, and upgrades reset
+when tier 3 swaps your hull. XP from kills, damage, healing and capturing or defending points buys tiers.
+Dying drops 40% of your unspent shards as loot; XP and anything you bought are kept.
+
+**Fleet Commander.** One human per team can take the commander seat instead of a ship: pan the war map
+(WASD, arrows, screen edge, wheel to zoom) and spend the Alloy, Energy and Intel your capture points
+bank on orders (keys 1–9): defense drones, forward spawn beacons, orbital strikes, platforms, recon,
+rally orders and team buffs.
 
 ## For developers
 
@@ -56,7 +69,7 @@ The repo is a pnpm workspace:
 | `pnpm test` | Unit tests (Vitest) |
 | `pnpm typecheck` | Type-check every package |
 | `pnpm harness --matches 30 --fleet 60 --seed 1` | Simulate bot matches and write `reports/latest.md` |
-| `pnpm tech-tree` | Rebuild `docs/tech-tree.html` from the ship art |
+| `pnpm tech-tree` | Rebuild `docs/tech-tree.html`, the interactive build planner |
 
 Hull art can be reviewed at http://localhost:5173/inspect.html while `pnpm dev` is running.
 Project conventions are in [docs/CLAUDE.md](docs/CLAUDE.md).

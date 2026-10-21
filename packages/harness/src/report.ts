@@ -89,35 +89,54 @@ export function buildReport(matches: MatchResult[], bench: BenchResult[], args: 
     note: 'Shield routes need FOBs and capture points (Phase 1).',
   });
 
+  // Kill share per ship of that class, so uneven class rolls don't skew it.
   const classKills: Record<string, number> = {};
-  for (const m of matches) for (const [k, v] of Object.entries(m.killsByClass)) classKills[k] = (classKills[k] ?? 0) + v;
-  const shipKills = Object.entries(classKills).filter(([k]) => k !== 'structure');
-  const totalShipKills = shipKills.reduce((a, [, v]) => a + v, 0);
+  const classShips: Record<string, number> = {};
+  for (const m of matches) {
+    for (const [k, v] of Object.entries(m.killsByClass)) classKills[k] = (classKills[k] ?? 0) + v;
+    for (const [k, v] of Object.entries(m.classCounts)) classShips[k] = (classShips[k] ?? 0) + v;
+  }
+  const perShip = Object.keys(classShips).map((k) => [k, (classKills[k] ?? 0) / classShips[k]] as const);
+  const perShipTotal = perShip.reduce((a, [, v]) => a + v, 0);
+  const shares = perShip.map(([k, v]) => [k, v / Math.max(1e-9, perShipTotal)] as const);
   metrics.push({
-    name: 'Class share of kills',
+    name: 'Class share of kills (per ship of that class)',
     target: '12–22% each',
     failIf: 'any over 26% or under 8%',
-    value: shipKills.map(([k, v]) => `${k} ${pct(v / Math.max(1, totalShipKills))}`).join(', ') || '—',
-    status: 'N/A',
-    note: 'Only the Interceptor exists in Phase 0.',
+    value: shares.map(([k, v]) => `${k} ${pct(v)}`).join(', ') || '—',
+    status: !shares.length ? 'N/A' : shares.some(([, v]) => v > 0.26 || v < 0.08) ? 'FAIL' : shares.every(([, v]) => v >= 0.12 && v <= 0.22) ? 'PASS' : 'WARN',
   });
 
+  const picks: Record<string, number> = {};
+  for (const m of matches) for (const [k, v] of Object.entries(m.tierPicks)) picks[k] = (picks[k] ?? 0) + v;
+  const pairs = new Map<string, number[]>();
+  for (const [id, n] of Object.entries(picks)) {
+    const tier = id.split('.').slice(0, 2).join('.');
+    pairs.set(tier, [...(pairs.get(tier) ?? []), n]);
+  }
+  const rates: number[] = [];
+  for (const ns of pairs.values()) {
+    const total = ns.reduce((a, b) => a + b, 0);
+    for (const n of ns) rates.push(n / total);
+    if (ns.length === 1) rates.push(0);
+  }
   metrics.push({
     name: 'Tier option pick rate (bots)',
     target: '35–65% per option',
     failIf: 'any under 20%',
-    value: '—',
-    status: 'N/A',
-    note: 'No tier nodes in Phase 0.',
+    value: rates.length ? `min ${pct(Math.min(...rates))}, max ${pct(Math.max(...rates))} over ${pairs.size} tiers` : '—',
+    status: !rates.length ? 'N/A' : Math.min(...rates) < 0.2 ? 'FAIL' : rates.every((r) => r >= 0.35 && r <= 0.65) ? 'PASS' : 'WARN',
+    note: 'Bots pick tier options at random (50/50), so this only checks every node gets bought.',
   });
 
+  const flips = matches.map((m) => m.pointFlips);
+  const meanFlips = flips.reduce((a, b) => a + b, 0) / Math.max(1, flips.length);
   metrics.push({
     name: 'Capture point flips per match',
     target: '15+',
     failIf: 'under 8',
-    value: '—',
-    status: 'N/A',
-    note: 'Capture points arrive in Phase 1.',
+    value: matches.length ? meanFlips.toFixed(1) : '—',
+    status: !matches.length ? 'N/A' : meanFlips < 8 ? 'FAIL' : meanFlips >= 15 ? 'PASS' : 'WARN',
   });
 
   const full = bench.find((b) => b.fleet === 100 && b.label.includes('match'));
@@ -134,7 +153,7 @@ export function buildReport(matches: MatchResult[], bench: BenchResult[], args: 
   return {
     generatedAt: new Date().toISOString(),
     args,
-    phase: 'Phase 0 (Interceptor base, motherships only)',
+    phase: 'Phase 1a (six classes, economy, capture points, Fleet Command)',
     metrics,
     matches,
     bench,
@@ -162,7 +181,7 @@ export function toMarkdown(r: Report): string {
   lines.push('');
   const avg = (f: (m: MatchResult) => number) => ms.reduce((a, m) => a + f(m), 0) / Math.max(1, ms.length);
   lines.push(`- Kills per match: ${avg((m) => m.kills[0] + m.kills[1]).toFixed(0)} (≈ one death per ship every ${(avg((m) => m.durationSec) / (avg((m) => m.kills[0] + m.kills[1]) / (2 * r.args.fleet))).toFixed(0)} s)`);
-  lines.push(`- Average level at end: ${avg((m) => (m.avgLevelAtEnd[0] + m.avgLevelAtEnd[1]) / 2).toFixed(1)}`);
+  lines.push(`- Average rank (tiers owned) at end: ${avg((m) => (m.avgRankAtEnd[0] + m.avgRankAtEnd[1]) / 2).toFixed(1)}`);
   lines.push(`- Lowest mothership hull at end: ${Math.min(...ms.map((m) => Math.min(...m.mothershipHullPct))).toFixed(1)}% (mean of losing side ${avg((m) => Math.min(...m.mothershipHullPct)).toFixed(1)}%)`);
   lines.push(`- Matches ended by mothership destroyed: ${ms.filter((m) => m.endReason === 'destroyed').length}`);
   lines.push(`- Projectile peak: ${Math.max(...ms.map((m) => m.projectilePeak))}, pool overflows: ${ms.reduce((a, m) => a + m.projectileOverflow, 0)}`);

@@ -1,15 +1,19 @@
-import { tickAbility, tryCast, type CastContext } from './systems/abilities';
-import { aimAndFire, stepProjectiles } from './systems/combat';
+import { tickAbility, tryCast } from './systems/abilities';
+import { aimAndFire, damageShip, stepProjectiles } from './systems/combat';
 import { collectCrystals, rebuildCrystalHash, seedCrystals, spawnCrystals } from './systems/crystals';
 import { runDirectors } from './systems/director';
+import { countOwnedDrones, rebuildDroneHash, stepDrones } from './systems/drones';
 import { updateMatch } from './systems/match';
-import { moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
+import { applyAuras, moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
 import { botAim, steer, think } from './systems/pilot';
-import { processRespawns, regenHull, resolveDeaths, respawnShip, spendStatPoint } from './systems/progression';
+import { updatePoints } from './systems/points';
+import { buyStat, buyTier, processRespawns, regenHull, resolveDeaths, respawnShip } from './systems/progression';
+import { quirkOf } from './systems/quirks';
 import { fireTurrets, structureAuras } from './systems/structures';
-import { tickStatuses } from './systems/status';
+import { statusMagnitude, tickStatuses } from './systems/status';
 import { updateVision, VISION_EVERY } from './systems/vision';
-import { DT, World, type WorldOptions } from './world';
+import { stepDeployables, stepZones } from './systems/zones';
+import { DT, World, type Ship, type WorldOptions } from './world';
 
 /** Build a world and put it in its t = 0 state: ships spawned, crystal field seeded. */
 export function createWorld(opts: WorldOptions): World {
@@ -23,8 +27,6 @@ export function createWorld(opts: WorldOptions): World {
   return w;
 }
 
-const castCtx: CastContext = { cursorX: 0, cursorY: 0, targetSlot: -1 };
-
 /** Advance the world one fixed 30 Hz tick, in the order SPEC "Simulation tick" defines. */
 export function step(w: World): void {
   if (w.match.over) return;
@@ -32,11 +34,17 @@ export function step(w: World): void {
   w.time = w.tick * DT;
   w.eventCount = 0;
 
-  // 1. Inputs and decisions. Bots write the same ShipInput humans do.
+  // 1. Inputs and decisions. Bots write the same ShipInput humans do. (Commander orders are
+  //    applied by the host between ticks via issueCommand.)
   for (const s of w.ships) {
-    if (s.input.statPick >= 0) {
-      spendStatPoint(s, s.input.statPick);
-      s.input.statPick = -1;
+    const inp = s.input;
+    if (inp.statPick >= 0) {
+      buyStat(s, inp.statPick);
+      inp.statPick = -1;
+    }
+    if (inp.tierPick >= 0) {
+      buyTier(w, s, inp.tierPick);
+      inp.tierPick = -1;
     }
   }
   runDirectors(w);
@@ -49,37 +57,48 @@ export function step(w: World): void {
   // 2. Move everything, then collisions and separation.
   moveShips(w);
   resolveCollisions(w);
+  rebuildDroneHash(w);
 
   // 3. Only now aim, fire and use abilities (fairness rule: all ships have moved).
   for (const s of w.ships) {
     if (!s.alive) continue;
     if (s.bot) botAim(w, s);
     aimAndFire(w, s);
-    if (s.input.ability && !s.input.cruise) {
-      castCtx.cursorX = s.input.cursorX;
-      castCtx.cursorY = s.input.cursorY;
-      castCtx.targetSlot = s.bot ? s.bot.targetShip : -1;
-      tryCast(w, s, s.signature, castCtx);
-    }
+    const inp = s.input;
+    if (inp.cruise) continue;
+    const target = s.bot ? s.bot.targetShip : -1;
+    if (inp.ability) tryCast(w, s, s.signature, target);
+    if (inp.ultimate && s.ultimate) tryCast(w, s, s.ultimate, target);
+    if (inp.extra && s.extra) tryCast(w, s, s.extra, target);
   }
   fireTurrets(w);
+  stepDeployables(w);
 
-  // 4. Projectiles and hits.
+  // 4. Projectiles, drones, zones and strikes.
   stepProjectiles(w);
+  stepDrones(w);
+  stepZones(w);
 
-  // 5. Statuses, regen, cooldowns, crystals, deaths, XP, respawns.
+  // 5. Statuses, regen, cooldowns, quirks, auras, crystals, deaths, rewards, respawns.
+  const drones = countOwnedDrones(w);
   for (const s of w.ships) {
     if (!s.alive) continue;
     tickStatuses(w, s, DT);
-    regenHull(w, s, DT);
-    tickAbility(s, s.signature);
+    bleed(w, s);
+    regenHull(w, s, DT, drones[s.slot]);
+    tickAbility(w, s, s.signature);
+    tickAbility(w, s, s.ultimate);
+    tickAbility(w, s, s.extra);
+    quirkOf(s).tick?.(w, s);
   }
+  applyAuras(w);
   collectCrystals(w);
   resolveDeaths(w);
   processRespawns(w);
 
-  // 6. Structures and the crystal field. (Phase 1: points, FOBs, shields, resources, command.)
+  // 6. Structures, capture points and resources, the crystal field.
   structureAuras(w);
+  updatePoints(w);
   spawnCrystals(w);
   rebuildCrystalHash(w);
 
@@ -88,4 +107,10 @@ export function step(w: World): void {
   updateMatch(w);
 
   // 8. Events were emitted into w.events during the tick; readers consume them before the next step.
+}
+
+/** Bleed: magnitude is damage per second (stacks add), credited to whoever last hit the ship. */
+function bleed(w: World, s: Ship): void {
+  const dps = statusMagnitude(s, 'bleed');
+  if (dps > 0) damageShip(w, s, dps * DT, s.lastHitBy);
 }

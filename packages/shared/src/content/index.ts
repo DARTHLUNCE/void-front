@@ -8,3 +8,4 @@ export * from './maps/kesslerReach';
 export * from './crystals';
 export * from './bots';
 export * from './match';
+export * from './command';

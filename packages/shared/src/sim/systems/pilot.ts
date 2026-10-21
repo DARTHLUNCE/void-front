@@ -1,9 +1,13 @@
 import { BOT_TAG_RULES, type BotConditionId, DIRECTOR, PILOT } from '../../content/bots';
-import { Job, type BotBrain, type Ship, type World } from '../world';
+import type { AbilityTag } from '../../content/types';
+import { Job, type AbilityState, type BotBrain, type Ship, type World } from '../world';
+import { canCast } from './abilities';
 import { gunRange, leadAngle } from './combat';
+import { CHARGE } from './quirks';
 
 interface ThinkCtx {
   targetDist: number;
+  enemiesNear: number;
 }
 
 type BotCondition = (w: World, s: Ship, b: BotBrain, ctx: ThinkCtx) => boolean;
@@ -11,14 +15,18 @@ type BotCondition = (w: World, s: Ship, b: BotBrain, ctx: ThinkCtx) => boolean;
 /** Evaluated per ability tag (content/bots.ts BOT_TAG_RULES) to decide when bots use abilities. */
 export const BOT_CONDITIONS: Record<BotConditionId, BotCondition> = {
   retreatingUnderFire: (w, s, b) => b.retreating && w.time - s.lastDamageTime < 1.5,
-  closingGap: (_w, s, b, c) => b.targetShip >= 0 && c.targetDist > s.cls.botRange + 200 && c.targetDist < PILOT.engageRadius,
-  enemyClose: (_w, _s, b, c) => b.targetShip >= 0 && c.targetDist < 350,
+  closingGap: (_w, s, b, c) => hasEnemyTarget(b) && c.targetDist > s.cls.botRange + 200 && c.targetDist < PILOT.engageRadius,
+  enemyClose: (_w, _s, b, c) => hasEnemyTarget(b) && c.targetDist < 350,
   lowHull: (_w, s) => s.hull < 0.65 * s.maxHull,
   nearStructure: (_w, _s, b) => b.targetStructure >= 0,
-  engaged: (_w, s, b, c) => b.targetShip >= 0 && c.targetDist < gunRange(s),
+  engaged: (w, s, b, c) => hasEnemyTarget(b) && c.targetDist < gunRange(s, w),
 };
 
-const ctx: ThinkCtx = { targetDist: 0 };
+function hasEnemyTarget(b: BotBrain): boolean {
+  return b.targetShip >= 0 || b.targetDrone >= 0;
+}
+
+const ctx: ThinkCtx = { targetDist: 0, enemiesNear: 0 };
 
 /** Decision pass (every 0.3–0.45 s per bot): pick target, destination, cruise and ability use. */
 export function think(w: World, s: Ship): void {
@@ -38,12 +46,13 @@ export function think(w: World, s: Ship): void {
     }
   }
 
-  // Nearest visible enemy, and whether anything is close enough to forbid cruising.
+  // Nearest visible enemy ship, and whether anything is close enough to forbid cruising.
   const bit = 1 << s.team;
   const n = w.shipHash.query(s.x, s.y, PILOT.cruiseClearRadius, w.scratch);
   let nearest: Ship | null = null;
   let nd2 = Infinity;
   let anyNear = false;
+  let enemiesNear = 0;
   const clear2 = PILOT.cruiseClearRadius * PILOT.cruiseClearRadius;
   for (let i = 0; i < n; i++) {
     const o = w.ships[w.scratch[i]];
@@ -51,52 +60,93 @@ export function think(w: World, s: Ship): void {
     const d2 = (o.x - s.x) ** 2 + (o.y - s.y) ** 2;
     if (d2 > clear2) continue;
     anyNear = true;
+    if (d2 < 600 * 600) enemiesNear++;
     if (d2 < nd2 || (d2 === nd2 && nearest !== null && o.slot < nearest.slot)) {
       nd2 = d2;
       nearest = o;
     }
   }
-  // Assaulters only fight what's on top of them until they reach the target.
+  // Enemy drones (decoys included) count as targets when they're closer than any ship.
   const engage = b.job === Job.Assault ? PILOT.assaultEngageRadius : PILOT.engageRadius;
+  let droneTarget = -1;
+  const m = w.droneHash.query(s.x, s.y, engage, w.scratch);
+  for (let i = 0; i < m; i++) {
+    const d = w.drones.items[w.scratch[i]];
+    if (!d.active || d.team === s.team) continue;
+    const d2 = (d.x - s.x) ** 2 + (d.y - s.y) ** 2;
+    if (d2 < nd2) {
+      nd2 = d2;
+      droneTarget = d.index;
+      nearest = null;
+    }
+  }
   b.targetShip = nearest && nd2 <= engage * engage ? nearest.slot : -1;
+  b.targetDrone = droneTarget >= 0 && nd2 <= engage * engage ? droneTarget : -1;
   if (b.targetShip !== prevTarget) b.targetSince = w.time;
   b.targetStructure = -1;
 
   const enemyMs = w.enemyOf(s.team).mothership;
   if (b.job === Job.Assault && !b.retreating && enemyMs.alive) {
-    const reach = enemyMs.radius + gunRange(s) + 150;
-    if ((s.x - enemyMs.x) ** 2 + (s.y - enemyMs.y) ** 2 < reach * reach && (b.targetShip < 0 || nd2 > 450 * 450)) {
+    const reach = enemyMs.radius + gunRange(s, w) + 150;
+    if ((s.x - enemyMs.x) ** 2 + (s.y - enemyMs.y) ** 2 < reach * reach && (!hasEnemyTarget(b) || nd2 > 450 * 450)) {
       b.targetStructure = enemyMs.index;
       b.targetShip = -1;
+      b.targetDrone = -1;
     }
+  }
+
+  // Engineers with no fight nearby patch up a damaged ally instead.
+  if (!hasEnemyTarget(b) && b.targetStructure < 0 && s.cls.quirk === 'fieldEngineer') {
+    const ally = damagedAlly(w, s, 650);
+    if (ally) b.targetShip = ally.slot;
   }
 
   chooseDestination(w, s, b);
   const destD2 = (b.destX - s.x) ** 2 + (b.destY - s.y) ** 2;
   // Assaulters keep cruising past fights that aren't on top of them.
   const blocked = b.job === Job.Assault ? nd2 <= PILOT.assaultCruiseClear ** 2 : anyNear;
-  b.cruise = !blocked && b.targetShip < 0 && b.targetStructure < 0 && destD2 > PILOT.cruiseMinDistance ** 2;
+  b.cruise = !blocked && b.targetShip < 0 && b.targetDrone < 0 && b.targetStructure < 0 && destD2 > PILOT.cruiseMinDistance ** 2;
 
   if (w.time >= b.strafeUntil) {
     b.strafe = s.rng.sign();
     b.strafeUntil = w.time + s.rng.range(1, 2.5);
   }
 
-  ctx.targetDist = b.targetShip >= 0 ? Math.sqrt(nd2) : Infinity;
-  s.input.ability = wantsAbility(w, s, b, s.signature.def.botTags);
+  ctx.targetDist = hasEnemyTarget(b) ? Math.sqrt(nd2) : Infinity;
+  ctx.enemiesNear = enemiesNear;
+  s.input.ability = wants(w, s, b, s.signature);
+  s.input.ultimate = s.ultimate !== null && wants(w, s, b, s.ultimate) && (ctx.enemiesNear >= 2 || b.targetStructure >= 0 || s.hull < 0.4 * s.maxHull);
+  s.input.extra = s.extra !== null && wants(w, s, b, s.extra);
 }
 
-function wantsAbility(w: World, s: Ship, b: BotBrain, tags: readonly string[]): boolean {
-  for (const tag of tags) {
-    const rules = BOT_TAG_RULES[tag as keyof typeof BOT_TAG_RULES];
-    for (const c of rules) if (BOT_CONDITIONS[c](w, s, b, ctx)) return true;
+function wants(w: World, s: Ship, b: BotBrain, st: AbilityState): boolean {
+  if (!canCast(w, s, st)) return false;
+  for (const tag of st.def.botTags as readonly AbilityTag[]) {
+    for (const c of BOT_TAG_RULES[tag]) if (BOT_CONDITIONS[c](w, s, b, ctx)) return true;
   }
   return false;
 }
 
+function damagedAlly(w: World, s: Ship, range: number): Ship | null {
+  const n = w.shipHash.query(s.x, s.y, range, w.scratch);
+  let best: Ship | null = null;
+  let worst = 0.9;
+  for (let i = 0; i < n; i++) {
+    const o = w.ships[w.scratch[i]];
+    if (o === s || !o.alive || o.team !== s.team) continue;
+    const frac = o.hull / o.maxHull;
+    if (frac < worst && (o.x - s.x) ** 2 + (o.y - s.y) ** 2 <= range * range) {
+      worst = frac;
+      best = o;
+    }
+  }
+  return best;
+}
+
 function chooseDestination(w: World, s: Ship, b: BotBrain): void {
   const sign = w.teamSign(s.team);
-  const home = w.teams[s.team].mothership;
+  const team = w.teams[s.team];
+  const home = team.mothership;
   const enemy = w.enemyOf(s.team).mothership;
   if (b.retreating) {
     b.destX = home.x + sign * (home.radius + 200);
@@ -109,15 +159,20 @@ function chooseDestination(w: World, s: Ship, b: BotBrain): void {
       b.destY = home.y + sign * b.offsetY * 2;
       return;
     case Job.Assault: {
-      const staging = w.time < w.teams[s.team].pushGatherUntil;
+      const staging = w.time < team.pushGatherUntil;
       b.destX = enemy.x - sign * (staging ? DIRECTOR.pushStageDistance : enemy.radius + 250);
       b.destY = enemy.y + sign * b.offsetY * (staging ? 2 : 1);
       return;
     }
+    case Job.Rally:
+      b.destX = team.rallyX + b.offsetX * 0.6;
+      b.destY = team.rallyY + b.offsetY * 0.6;
+      return;
     case Job.Skirmish: {
       const p = w.map.points[b.jobPoint].pos;
-      b.destX = p.x + sign * b.offsetX;
-      b.destY = p.y + sign * b.offsetY;
+      // Sit inside the capture radius so the bot actually pushes the meter.
+      b.destX = p.x + sign * b.offsetX * 0.8;
+      b.destY = p.y + sign * b.offsetY * 0.8;
       return;
     }
     case Job.Farm: {
@@ -160,17 +215,27 @@ export function steer(w: World, s: Ship): void {
   const b = s.bot!;
   const inp = s.input;
   inp.cruise = b.cruise;
-  inp.fire = false;
+  let wantFire = false;
 
   let tx = 0;
   let ty = 0;
   let engaging = false;
+  let healing = false;
   if (b.targetShip >= 0) {
     const t = w.ships[b.targetShip];
     if (!t.alive) b.targetShip = -1;
     else {
       tx = t.x;
       ty = t.y;
+      engaging = true;
+      healing = t.team === s.team;
+    }
+  } else if (b.targetDrone >= 0) {
+    const d = w.drones.items[b.targetDrone];
+    if (!d.active) b.targetDrone = -1;
+    else {
+      tx = d.x;
+      ty = d.y;
       engaging = true;
     }
   } else if (b.targetStructure >= 0) {
@@ -192,9 +257,9 @@ export function steer(w: World, s: Ship): void {
     const ux = dx / d;
     const uy = dy / d;
     const surface = b.targetStructure >= 0 ? w.structures[b.targetStructure].radius : 0;
-    const range = gunRange(s);
-    const want = b.targetStructure >= 0 ? surface + range * 0.75 : s.cls.botRange;
-    if (b.job === Job.Assault && b.targetShip >= 0 && !b.retreating) {
+    const range = gunRange(s, w);
+    const want = b.targetStructure >= 0 ? surface + range * 0.75 : healing ? range * 0.6 : s.cls.botRange;
+    if (b.job === Job.Assault && hasEnemyTarget(b) && !b.retreating) {
       // Shoot back without stopping: keep flying toward the objective.
       const ddx = b.destX - s.x;
       const ddy = b.destY - s.y;
@@ -204,10 +269,11 @@ export function steer(w: World, s: Ship): void {
     } else {
       let radial = d > want + 60 ? 1 : d < want - 60 ? -1 : 0;
       if (b.retreating) radial = -1;
-      mx = radial * ux - uy * b.strafe * 0.8;
-      my = radial * uy + ux * b.strafe * 0.8;
+      const strafe = healing ? 0.3 : 0.8;
+      mx = radial * ux - uy * b.strafe * strafe;
+      my = radial * uy + ux * b.strafe * strafe;
     }
-    inp.fire = d - surface <= range * 1.02 && triggerReady(w, b);
+    wantFire = d - surface <= range * 1.02 && triggerReady(w, b);
     inp.cursorX = tx;
     inp.cursorY = ty;
   } else {
@@ -231,14 +297,16 @@ export function steer(w: World, s: Ship): void {
       if (d < PILOT.enemyBaseAvoid + ms.radius) {
         mx = dx / d;
         my = dy / d;
-        inp.fire = false;
+        wantFire = false;
         inp.cruise = false;
       }
     }
   }
   inp.moveX = mx;
   inp.moveY = my;
-  if (inp.fire) inp.cruise = false;
+  // Lancers hold the trigger to charge and let go at full charge.
+  inp.fire = s.cls.quirk === 'chargeShot' ? wantFire && s.quirk[CHARGE] < 1 : wantFire;
+  if (wantFire) inp.cruise = false;
 }
 
 /** Skill gates on the trigger: wait out the reaction time on a new target, then fire in bursts. */
@@ -253,10 +321,14 @@ function triggerReady(w: World, b: BotBrain): boolean {
 export function botAim(w: World, s: Ship): void {
   const b = s.bot!;
   const inp = s.input;
+  const speed = s.cls.gun.projectileSpeed;
+  const lead = b.skill.leadAccuracy;
   if (b.targetShip >= 0) {
     const t = w.ships[b.targetShip];
-    const lead = b.skill.leadAccuracy;
-    inp.aim = leadAngle(s.x, s.y, t.x, t.y, t.vx * lead, t.vy * lead, s.cls.gun.projectileSpeed) + b.aimOffset;
+    inp.aim = leadAngle(s.x, s.y, t.x, t.y, t.vx * lead, t.vy * lead, speed) + b.aimOffset;
+  } else if (b.targetDrone >= 0) {
+    const d = w.drones.items[b.targetDrone];
+    inp.aim = leadAngle(s.x, s.y, d.x, d.y, d.vx * lead, d.vy * lead, speed) + b.aimOffset;
   } else if (b.targetStructure >= 0) {
     const st = w.structures[b.targetStructure];
     inp.aim = Math.atan2(st.y - s.y, st.x - s.x) + b.aimOffset * 0.5;

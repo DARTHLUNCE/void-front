@@ -25,6 +25,8 @@ export interface Textures {
   shell: PerTeam<ArtTexture>;
   crystal: ArtTexture;
   crystalBig: ArtTexture;
+  /** Small white dart, tinted per team, for drones. */
+  drone: Texture;
   glow: Texture;
   particle: Texture;
   disc: Texture;
@@ -91,6 +93,10 @@ export function makeTextures(renderer: Renderer): Textures {
   const hulls: Record<string, LitArt> = {};
   for (const h of HULLS) hulls[h.id] = litArt(h.shapes, 3);
   const particle = new Graphics().circle(0, 0, 3).fill({ color: 0xffffff });
+  const drone = new Graphics()
+    .poly([12, 0, -7, -7, -3, 0, -7, 7])
+    .fill({ color: 0xffffff })
+    .stroke({ width: 1.5, color: 0x0b1020, alpha: 0.8 });
   return {
     hulls,
     mothership: litArt(MOTHERSHIP_ART, 1.2, 5),
@@ -99,6 +105,7 @@ export function makeTextures(renderer: Renderer): Textures {
     crystal: bakeArt(renderer, CRYSTAL_ART[0], CRYSTAL_PALETTES[0]),
     crystalBig: bakeArt(renderer, CRYSTAL_ART[1], CRYSTAL_PALETTES[1]),
     particle: renderer.generateTexture({ target: particle, resolution: 2 }),
+    drone: renderer.generateTexture({ target: drone, resolution: 3 }),
     disc: discTexture(32),
     glow: radialTexture(128, [
       [0, 'rgba(255,255,255,0.9)'],

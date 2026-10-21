@@ -15,10 +15,13 @@ export interface MatchResult {
   comeback: boolean;
   mothershipHullPct: [number, number];
   killsByClass: Record<string, number>;
-  /** nodeId → times picked by bots (Phase 1+). */
+  /** nodeId → times picked by bots. */
   tierPicks: Record<string, number>;
   pointFlips: number;
-  avgLevelAtEnd: [number, number];
+  /** Tiers owned on average at the end. */
+  avgRankAtEnd: [number, number];
+  /** Ships per class across both fleets. */
+  classCounts: Record<string, number>;
   tickMsMean: number;
   tickMsP99: number;
   tickMsMax: number;
@@ -55,7 +58,8 @@ export class TickTimer {
   }
 }
 
-export function runMatch(index: number, seed: number, fleet: number, classId: ClassId = 'interceptor'): MatchResult {
+/** Bots roll their classes unless `classId` forces one. */
+export function runMatch(index: number, seed: number, fleet: number, classId?: ClassId): MatchResult {
   const w = createWorld({ seed, fleetSize: fleet, classId });
   const timer = new TickTimer();
   while (!w.match.over) {
@@ -80,9 +84,10 @@ export function runMatch(index: number, seed: number, fleet: number, classId: Cl
     comeback,
     mothershipHullPct: [hullPct(w, 0), hullPct(w, 1)],
     killsByClass: { ...w.stats.killsByClass },
-    tierPicks: {},
-    pointFlips: 0,
-    avgLevelAtEnd: [avgLevel(w, 0), avgLevel(w, 1)],
+    tierPicks: { ...w.stats.tierPicks },
+    pointFlips: w.stats.pointFlips,
+    avgRankAtEnd: [avgRank(w, 0), avgRank(w, 1)],
+    classCounts: classCounts(w),
     tickMsMean: timer.mean,
     tickMsP99: timer.percentile(0.99),
     tickMsMax: timer.max,
@@ -96,11 +101,17 @@ function hullPct(w: World, team: 0 | 1): number {
   return (ms.hull / ms.maxHull) * 100;
 }
 
-function avgLevel(w: World, team: 0 | 1): number {
+function avgRank(w: World, team: 0 | 1): number {
   const t = w.teams[team];
   let sum = 0;
-  for (let i = t.firstSlot; i <= t.lastSlot; i++) sum += w.ships[i].level;
+  for (let i = t.firstSlot; i <= t.lastSlot; i++) sum += w.ships[i].rank;
   return sum / w.fleetSize;
+}
+
+function classCounts(w: World): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of w.ships) out[s.classId] = (out[s.classId] ?? 0) + 1;
+  return out;
 }
 
 export interface BenchResult {

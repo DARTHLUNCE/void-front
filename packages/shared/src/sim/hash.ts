@@ -22,8 +22,9 @@ export function hashWorld(w: World): string {
     mix(s.vy);
     mix(s.angle);
     mix(s.hull);
-    mix(s.totalXp);
-    mix(s.level);
+    mix(s.xp);
+    mix(s.shards);
+    mix(s.tiersOwned);
     mix(s.kills);
     mix(s.deaths);
     for (const p of s.statPoints) mix(p);
@@ -36,6 +37,16 @@ export function hashWorld(w: World): string {
     mix(p.y);
   }
   mix(w.crystals.count);
+  mix(w.drones.count);
+  for (let i = 0; i < w.drones.count; i++) {
+    const d = w.drones.at(i);
+    mix(d.x);
+    mix(d.y);
+  }
+  mix(w.deployables.count);
+  mix(w.zones.count);
+  for (const p of w.points) mix(p.meter);
+  for (const t of w.teams) for (const r of t.resources) mix(r);
   for (const r of w.rng.state()) mix(r);
   mix(w.teams[0].kills);
   mix(w.teams[1].kills);

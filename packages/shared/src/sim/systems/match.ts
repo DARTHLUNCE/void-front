@@ -3,9 +3,8 @@ import type { TeamId } from '../../content/types';
 import { EventType, type World } from '../world';
 
 /**
- * Step 7: win and time-limit checks.
- * Phase 0 has no FOBs or capture points, so motherships are never shielded (the Aegis Grid
- * arrives with FOBs in Phase 1) and VP only counts mothership damage.
+ * Step 7: win and time-limit checks. VP = mothership damage dealt plus capture points held.
+ * (Motherships are never shielded yet: the Aegis Grid arrives with FOBs.)
  */
 export function updateMatch(w: World): void {
   const m = w.match;
@@ -30,7 +29,7 @@ export function computeVp(w: World): void {
   for (const team of w.teams) {
     const enemyMs = w.enemyOf(team.id).mothership;
     const removedPct = (1 - enemyMs.hull / enemyMs.maxHull) * 100;
-    w.match.vp[team.id] = removedPct * MATCH.vpPerMothershipPercent;
+    w.match.vp[team.id] = removedPct * MATCH.vpPerMothershipPercent + team.pointsHeld * MATCH.vpPerPoint;
   }
 }
 

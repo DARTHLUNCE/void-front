@@ -2,9 +2,8 @@ import { DIRECTOR } from '../../content/bots';
 import { EventType, Job, type Ship, type TeamState, type World } from '../world';
 
 /**
- * Fleet Director: one per team, every 2 s, assigns each bot a job.
- * Phase 0 objectives are the two motherships plus the capture point positions as skirmish
- * waypoints (points aren't capturable until Phase 1, but fights should happen where they will be).
+ * Fleet Director: one per team, every 2 s, assigns each bot a job: farm, take or hold a capture
+ * point, defend the mothership, push the enemy mothership, or answer the commander's rally.
  */
 export function runDirectors(w: World): void {
   for (const team of w.teams) {
@@ -44,12 +43,12 @@ function direct(w: World, team: TeamState): void {
     const s = w.ships[slot];
     const b = s.bot;
     if (!b) continue;
-    if (b.farmer && s.level < DIRECTOR.farmBelowLevel && farmers < farmCap) {
+    if (b.farmer && s.rank < DIRECTOR.farmBelowRank && farmers < farmCap) {
       b.job = Job.Farm;
       farmers++;
       continue;
     }
-    if (b.job === Job.Farm) setSkirmish(w, s, -1);
+    if (b.job === Job.Farm || (b.job === Job.Rally && w.time >= team.rallyUntil)) setSkirmish(w, s, -1);
     // The push window only governs recruiting: crossing the map takes longer than 30 s, so
     // assaulters stay committed until they die or retreat (see respawnShip / think).
     if (b.job === Job.Defend) defenders++;
@@ -77,12 +76,25 @@ function direct(w: World, team: TeamState): void {
       w,
       team,
       (b) => b.job === Job.Skirmish && !b.retreating,
-      (s) => (s.alive ? sign * (s.x - home.x) + s.level * 300 : -Infinity),
+      (s) => (s.alive ? sign * (s.x - home.x) + s.rank * 300 : -Infinity),
     );
     if (s && !s.alive) break;
     if (!s) break;
     s.bot!.job = Job.Assault;
     assaulters++;
+  }
+
+  // Rally Order: the skirmishers closest to the rally point drop what they're doing and go.
+  if (w.time < team.rallyUntil) {
+    let rallying = 0;
+    for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) if (w.ships[slot].bot?.job === Job.Rally) rallying++;
+    const want = Math.ceil(DIRECTOR.rallyFrac * n);
+    while (rallying < want) {
+      const s = pickBot(w, team, (b) => b.job === Job.Skirmish, (s) => -dist2(s.x, s.y, team.rallyX, team.rallyY));
+      if (!s) break;
+      s.bot!.job = Job.Rally;
+      rallying++;
+    }
   }
 
   // Skirmishers: keep their point until their job timer runs out or the point is over cap.
@@ -123,7 +135,7 @@ function choosePoint(w: World, team: TeamState, s: Ship, cap: number): number {
     const dOwn = Math.sqrt(dist2(p.x, p.y, home.x, home.y));
     const dEnemy = Math.sqrt(dist2(p.x, p.y, enemy.x, enemy.y));
     const side = Math.abs(dOwn - dEnemy) < 1500 ? DIRECTOR.sideWeight.middle : dOwn < dEnemy ? DIRECTOR.sideWeight.own : DIRECTOR.sideWeight.enemy;
-    const wgt = pointCount[i] >= cap ? 0 : points[i].botValue * side;
+    const wgt = pointCount[i] >= cap ? 0 : points[i].botValue * side * ownerWeight(w, team, i);
     pointWeight[k] = wgt;
     total += wgt;
   }
@@ -134,6 +146,13 @@ function choosePoint(w: World, team: TeamState, s: Ship, cap: number): number {
     if (r < 0) return w.teamPoint(team.id, k);
   }
   return w.teamPoint(team.id, points.length - 1);
+}
+
+function ownerWeight(w: World, team: TeamState, i: number): number {
+  const p = w.points[i];
+  const o = DIRECTOR.ownerWeight;
+  if (p.owner === team.id) return p.contested ? o.contestedOurs : o.ours;
+  return p.owner < 0 ? o.neutral : o.theirs;
 }
 
 /** The bot on `team` matching `filter` with the highest `score` (lowest team slot on ties). */

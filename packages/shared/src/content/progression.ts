@@ -1,11 +1,47 @@
 import type { ModifierDef } from './types';
 
-export const MAX_LEVEL = 30;
-
-/** XP needed to go from `level` to `level + 1` (same curve as the prototype). */
-export function xpToNext(level: number): number {
-  return 14 + 8 * level;
-}
+/**
+ * The economy. Two currencies:
+ * - Shards (from crystals and wreck loot) buy stat upgrades. Costs climb per level, and the
+ *   upgrades reset when tier 3 swaps your hull. On death you keep 60% of unspent shards; the rest
+ *   spills as loot. Spent shards are never lost.
+ * - XP (from kills, damage, healing, capturing and defending points) buys tiers. XP is never lost.
+ */
+export const ECONOMY = {
+  /** Shards to buy level n+1 of a stat (index n). Climbs per level, per stat. */
+  statCosts: [12, 18, 26, 36, 50, 68, 90] as readonly number[],
+  /** XP to buy tier n+1 (index n). */
+  tierCosts: [150, 350, 650, 1050, 1600] as readonly number[],
+  /** The tier that swaps the hull and resets stat upgrades. */
+  hullTier: 3,
+  deathShardKeep: 0.6,
+  /** Spilled shards drop as loot crystals worth this many shards each (the last one takes the rest). */
+  lootCrystalValue: 12,
+  xp: {
+    kill: 40,
+    killPerRank: 15,
+    /** Killing a ship this many tiers above you multiplies kill XP. */
+    bountyRankGap: 2,
+    bountyMul: 1.6,
+    damageToShips: 0.08,
+    damageToStructures: 0.12,
+    healing: 0.2,
+    captureFlip: 40,
+    capturePerSecond: 1.5,
+    defendPerSecond: 3,
+    defendKillBonus: 20,
+  },
+  trailingMaxBonus: 0.6,
+  trailingFullGap: 160,
+  /** Kill credit expires if the last hit was longer ago than this. */
+  killCreditWindow: 10,
+  respawnBase: 5,
+  respawnPerRank: 1.2,
+  respawnMax: 11,
+  /** Passive repair, fraction of max hull per second, after `regenDelay` s without damage. */
+  hullRegen: 0.01,
+  regenDelay: 4,
+} as const;
 
 export type StatPointId = 'weapons' | 'hull' | 'engines' | 'reactor';
 
@@ -13,7 +49,7 @@ export interface StatPointDef {
   id: StatPointId;
   name: string;
   short: string;
-  /** Applied once per point spent. */
+  /** Applied once per level bought. */
   perPoint: ModifierDef[];
 }
 
@@ -34,30 +70,15 @@ export const STAT_POINTS: readonly StatPointDef[] = [
 
 export const STAT_POINT_MAX = 7;
 
-export const PROGRESSION = {
-  killXpBase: 30,
-  killXpPerLevel: 10,
-  /** Killing a ship this many levels above you multiplies kill XP. */
-  bountyLevelGap: 3,
-  bountyMul: 1.6,
-  structureXpPerDamage: 0.12,
-  /** Kill credit expires if the last hit was longer ago than this. */
-  killCreditWindow: 10,
+export function statCost(level: number): number {
+  return ECONOMY.statCosts[Math.min(level, ECONOMY.statCosts.length - 1)];
+}
 
-  deathXpKeep: 0.6,
-  respawnFloorOfEnemyAvg: 0.8,
-  respawnBase: 5,
-  respawnPerLevel: 0.2,
-  respawnMax: 11,
+/** XP to buy the next tier, or Infinity once all five are owned. */
+export function tierCost(tiersOwned: number): number {
+  return tiersOwned >= ECONOMY.tierCosts.length ? Infinity : ECONOMY.tierCosts[tiersOwned];
+}
 
-  trailingXpMaxBonus: 0.6,
-  trailingXpFullGap: 160,
-
-  /** Passive repair, fraction of max hull per second, after `regenDelay` s without damage. */
-  hullRegen: 0.01,
-  regenDelay: 4,
-} as const;
-
-export function respawnTime(level: number): number {
-  return Math.min(PROGRESSION.respawnMax, PROGRESSION.respawnBase + PROGRESSION.respawnPerLevel * level);
+export function respawnTime(rank: number): number {
+  return Math.min(ECONOMY.respawnMax, ECONOMY.respawnBase + ECONOMY.respawnPerRank * rank);
 }

@@ -39,11 +39,14 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 ## Tick order (30 Hz, `sim/step.ts`)
 
 1. Inputs + Fleet Director + pilot brains (bots write the same `ShipInput` humans do)
+   (shop picks `statPick`/`tierPick` apply first; Fleet Command orders are applied by the host
+   between ticks with `issueCommand`)
 2. Move every ship, collisions, separation
-3. Aim, fire, abilities — **only after every ship has moved** (fairness rule)
-4. Projectiles and hits
-5. Damage, statuses, deaths, XP, level-ups, crystals
-6. Structures, (later: points, FOBs, shields, resources, Fleet Command)
+3. Aim, fire, abilities (signature, ultimate, extra) — **only after every ship has moved** (fairness rule)
+4. Projectiles, drones, zones and orbital strikes (deployables fire in step 3)
+5. Statuses and bleed, regen, cooldowns, quirk ticks, auras, crystals, deaths (shard loss, kill
+   XP), respawns
+6. Structures, capture points and resources, crystal field
 7. Match state: pushes, win and time-limit checks
 8. Events for clients
 

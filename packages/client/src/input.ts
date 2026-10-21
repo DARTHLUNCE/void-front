@@ -10,9 +10,15 @@ const AUTOFIRE_KEY: Record<ControlScheme, string> = { mouse: 'KeyX', wasd: 'KeyF
 
 export interface InputHandlers {
   stat(index: number): void;
+  /** Number row 1–9 (tier picks for pilots, orders for the commander). */
+  digit(n: number): void;
   scoreboard(show: boolean): void;
   bigMap(): void;
   autofire(on: boolean): void;
+  /** Mouse press on the game view (not on HUD controls), in screen pixels. */
+  press(x: number, y: number, button: number): void;
+  wheel(deltaY: number, x: number, y: number): void;
+  escape(): void;
 }
 
 /** Turns mouse and keyboard state into one InputFrame per animation frame. */
@@ -36,10 +42,12 @@ export class Input {
       this.mouseY = e.clientY;
     });
     this.on(window, 'mousedown', (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('button')) return;
+      if ((e.target as HTMLElement).closest('button, .panel, .overlay:not(.passive)')) return;
       if (e.button === 0) this.left = true;
       if (e.button === 2) this.right = true;
+      this.h.press(e.clientX, e.clientY, e.button);
     });
+    this.on(window, 'wheel', (e: WheelEvent) => this.h.wheel(e.deltaY, e.clientX, e.clientY));
     this.on(window, 'mouseup', (e: MouseEvent) => {
       if (e.button === 0) this.left = false;
       if (e.button === 2) this.right = false;
@@ -55,6 +63,8 @@ export class Input {
         if (!e.repeat) this.h.scoreboard(true);
         return;
       }
+      // Space is the ultimate: never let it scroll or re-click a focused HUD button.
+      if (e.code === 'Space') e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
       const stat = STAT_KEYS[this.scheme].indexOf(e.code);
@@ -64,6 +74,8 @@ export class Input {
         this.h.autofire(this.autofire);
       }
       if (e.code === 'KeyM') this.h.bigMap();
+      if (e.code === 'Escape') this.h.escape();
+      if (/^Digit[1-9]$/.test(e.code)) this.h.digit(Number(e.code.slice(5)));
     });
     this.on(window, 'keyup', (e: KeyboardEvent) => {
       if (e.code === 'Tab') {
@@ -116,8 +128,19 @@ export class Input {
       cursorY: cursor.y,
       fire: this.left || this.autofire,
       ability: this.right,
+      ultimate: this.keys.has('Space'),
+      extra: this.keys.has('KeyG'),
       cruise: this.keys.has('ShiftLeft') || this.keys.has('ShiftRight'),
     };
+  }
+
+  /** Held-key test for the commander camera. */
+  held(code: string): boolean {
+    return this.keys.has(code);
+  }
+
+  get mouse(): { x: number; y: number } {
+    return { x: this.mouseX, y: this.mouseY };
   }
 
   dispose(): void {

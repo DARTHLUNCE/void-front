@@ -1,7 +1,7 @@
 import { CRYSTALS } from '../../content/crystals';
 import { CRYSTAL_CAPACITY, DT, type Ship, type World } from '../world';
 import { MAX_SHIP_RADIUS } from './combat';
-import { grantXp } from './progression';
+import { grantShards } from './progression';
 
 export function crystalTarget(w: World): number {
   const t = Math.min(CRYSTAL_CAPACITY - 2, CRYSTALS.base + CRYSTALS.perShip * w.ships.length);
@@ -57,8 +57,9 @@ function place(w: World, x: number, y: number, kind: number): void {
   c.x = x;
   c.y = y;
   c.kind = kind;
-  c.xp = def.xp;
+  c.shards = def.shards;
   c.radius = def.radius;
+  c.expires = Infinity;
 }
 
 /** Step 5: each crystal goes to the closest ship touching it (team-relative slot breaks ties). */
@@ -67,6 +68,10 @@ export function collectCrystals(w: World): void {
   const pad = CRYSTALS.pickupPadding;
   for (let i = pool.count - 1; i >= 0; i--) {
     const c = pool.at(i);
+    if (w.time >= c.expires) {
+      pool.release(c);
+      continue;
+    }
     const n = w.shipHash.query(c.x, c.y, c.radius + MAX_SHIP_RADIUS + pad, w.scratch);
     let best: Ship | null = null;
     let bestD = Infinity;
@@ -82,7 +87,7 @@ export function collectCrystals(w: World): void {
       }
     }
     if (best) {
-      grantXp(w, best, c.xp);
+      grantShards(w, best, c.shards);
       w.stats.crystalsCollected++;
       pool.release(c);
     }

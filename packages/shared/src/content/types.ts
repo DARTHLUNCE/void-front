@@ -9,6 +9,10 @@ export type ClassId = 'interceptor' | 'phantom' | 'dreadnought' | 'lancer' | 'ca
 export type QuirkId = 'momentum' | 'ghostDrive' | 'heat' | 'chargeShot' | 'droneBay' | 'fieldEngineer';
 export type TeamId = 0 | 1;
 
+/**
+ * Every tunable number a node, stat upgrade or status can touch. Flags are stats too: a value
+ * above zero switches the behavior on (e.g. `stealthMinimap`).
+ */
 export type StatId =
   | 'damage'
   | 'fireRate'
@@ -20,43 +24,81 @@ export type StatId =
   | 'vision'
   | 'range'
   | 'damageTaken'
-  | 'structureDamage';
+  | 'structureDamage'
+  // ext: gun shape and weapon behavior
+  | 'gunCount'
+  | 'spread'
+  | 'pierce'
+  | 'splash'
+  | 'chargeTime'
+  | 'heatRate'
+  | 'critChance'
+  | 'critMul'
+  | 'pierceBonus'
+  | 'recoil'
+  | 'revealOnHit'
+  // ext: abilities
+  | 'dashCharges'
+  | 'dashMark'
+  | 'castCost'
+  // ext: drones
+  | 'droneCount'
+  | 'droneSpeed'
+  | 'droneDamage'
+  | 'droneSplash'
+  | 'droneStructure'
+  | 'droneLifesteal'
+  | 'droneRegen'
+  | 'droneCursor'
+  | 'dronePointDefense'
+  // ext: stealth, support and misc flags
+  | 'cloakShots'
+  | 'stealthMinimap'
+  | 'knockbackImmune'
+  | 'healPower'
+  | 'rebuildSpeed';
 
 export type ConditionId =
   | 'cloaked'
   | 'targetBelow35'
   | 'nearAlly300'
   | 'notMoving'
-  | 'recentlyDashed';
+  | 'recentlyDashed'
+  | 'afterCloak'
+  | 'fullCharge'
+  | 'fullChargeVsHigherRank'
+  | 'sieged'
+  | 'overdrive'
+  | 'stormRun';
 
 export type StatusId =
   | 'slow'
+  | 'haste'
   | 'silence'
   | 'stun'
+  | 'rooted'
   | 'cloak'
   | 'shield'
   | 'reflect'
   | 'mark'
   | 'bleed'
   | 'overdrive'
-  | 'heat'
+  | 'siege'
+  | 'stormRun'
+  | 'ambush'
+  | 'rapid'
   | 'invulnerable'
-  | 'revealed';
+  | 'revealed'
+  | 'blinded';
 
-export type AbilityTag = 'move' | 'heal' | 'guard' | 'stealth' | 'hit' | 'closeRange' | 'structure';
+export type AbilityTag = 'move' | 'heal' | 'guard' | 'stealth' | 'hit' | 'closeRange' | 'structure' | 'area';
 export type Affects = 'enemies' | 'allies' | 'self' | 'drones' | 'structures';
 export type ResourceId = 'alloy' | 'energy' | 'intel';
 
 export interface StatusApply {
   status: StatusId;
   duration: number;
-  magnitude?: number; // slow %, shield %, mark %, bleed dps...
-}
-
-export interface Effect {
-  damage: number;
-  heal: number; // fraction of max hull
-  status: StatusApply;
+  magnitude?: number; // slow %, shield %, mark %, bleed dps, haste %...
 }
 
 export interface ModifierDef {
@@ -83,23 +125,69 @@ export interface GunDef {
   barrelGap?: number; // ext: parallel barrels (twin guns) spaced this far apart, instead of a fan
 }
 
+/** ext: how summoned drones fly and fight. */
+export type DroneBehavior = 'orbit' | 'swarm' | 'guard' | 'decoy';
+
+export interface DroneStats {
+  hull: number;
+  damage: number;
+  fireInterval: number;
+  speed: number;
+  range: number;
+  splash: number;
+  structureMul: number;
+  lifesteal: number;
+}
+
+/** ext: deployable structures (engineer kit, commander call-ins). */
+export type DeployKind = 'turret' | 'mine' | 'emitter' | 'beacon' | 'platform';
+
 export type PrimitiveDef =
-  | { kind: 'dash'; speedMul: number; duration: number; invulnerable?: boolean; charges?: number }
-  | { kind: 'teleport'; maxDistance: number; target: 'cursor' | 'behindTarget' }
-  | { kind: 'projectiles'; gun: Partial<GunDef> }
-  | { kind: 'beam'; length: number; width: number; count: number; spread: number; damage: number; delay?: number }
-  | { kind: 'pulse'; radius: number; damage?: number; heal?: number; status?: StatusApply; affects: Affects[] }
-  | { kind: 'zone'; radius: number; duration: number; perSecond: Partial<Effect>; pull?: number }
-  | { kind: 'summon'; unit: 'drone' | 'decoy'; count: number; life: number; params: Record<string, number> }
   | {
-      kind: 'deploy';
-      structure: 'turret' | 'mine' | 'emitter' | 'beacon';
-      count: number;
-      cap: number;
-      life: number;
-      hull: number;
+      kind: 'dash';
+      speedMul: number;
+      duration: number;
+      invulnerable?: boolean;
+      charges?: number;
+      ramDamage?: number; // ext: Ram Charge
+      knockback?: number;
     }
-  | { kind: 'selfStatus'; status: StatusId; duration: number; params?: Record<string, number> };
+  | { kind: 'teleport'; maxDistance: number; target: 'cursor' | 'behindTarget' }
+  | { kind: 'projectiles'; gun: Partial<GunDef>; missile?: boolean }
+  | { kind: 'beam'; length: number; width: number; count: number; spread: number; damage: number; delay?: number }
+  | {
+      kind: 'pulse';
+      radius: number;
+      damage?: number;
+      heal?: number;
+      selfHeal?: number; // ext: Repair Pulse heals the caster by a different amount
+      status?: StatusApply[];
+      affects: Affects[];
+      pullToCenter?: number; // ext: fraction of the way targets are dragged to the center
+      at?: 'self' | 'cursor';
+    }
+  | {
+      kind: 'zone';
+      radius: number;
+      duration: number;
+      at: 'self' | 'cursor';
+      follow?: boolean;
+      perSecond?: { damage?: number; heal?: number; status?: StatusApply };
+      pull?: number;
+      blocksProjectiles?: boolean;
+      reveal?: boolean;
+      affects: Affects[];
+    }
+  | { kind: 'strike'; delay: number; radius: number; damage: number; structureDamage?: number } // ext: delayed AoE at cursor
+  | { kind: 'summon'; unit: 'drone' | 'decoy'; count: number; life: number; behavior: DroneBehavior; params?: Partial<DroneStats> }
+  | { kind: 'deploy'; structure: DeployKind; count: number; cap: number; life: number; hull?: number; at?: 'self' | 'cursor' }
+  | { kind: 'selfStatus'; status: StatusId; duration: number; magnitude?: number }
+  | { kind: 'tether'; duration: number; range: number; healPerSecond: number } // ext: Warden heal beam
+  | { kind: 'droneOrder'; order: 'kamikaze'; damage: number; radius: number } // ext: Kamikaze Wing
+  // ext: team-level effects used by Fleet Command
+  | { kind: 'teamBuff'; buff: 'overcharge' | 'jam'; duration: number }
+  | { kind: 'rally'; duration: number }
+  | { kind: 'repairMothership'; fraction: number };
 
 export type PrimitiveKind = PrimitiveDef['kind'];
 
@@ -109,6 +197,14 @@ export interface AbilityDef {
   cooldown: number;
   steps: PrimitiveDef[];
   botTags: AbilityTag[]; // ext: signatures need bot tags too, not only nodes
+  /** ext: the ability only works while the caster has this status (Ghost Step needs cloak). */
+  requires?: StatusId;
+}
+
+export interface KillEffect {
+  resources?: Partial<Record<ResourceId, number>>;
+  ventHeat?: boolean;
+  signatureCooldownMul?: number;
 }
 
 export interface NodeDef {
@@ -121,10 +217,17 @@ export interface NodeDef {
   extraAbility?: AbilityDef;
   hullModel?: string;
   botTags: AbilityTag[];
+  // ext: data-driven passive hooks
+  onHit?: StatusApply[];
+  onCritHit?: StatusApply[];
+  onKill?: KillEffect;
+  onHealAlly?: StatusApply;
+  /** Allies near you (optionally only those behind you) get this status, refreshed every tick. */
+  aura?: { radius: number; behind?: boolean; status: StatusApply };
 }
 
 export interface TierDef {
-  level: 3 | 7 | 12 | 18 | 25;
+  tier: 1 | 2 | 3 | 4 | 5; // ext: tiers are bought with XP (ECONOMY.tierCosts), not unlocked by level
   options: [NodeDef, NodeDef];
 }
 
@@ -140,12 +243,11 @@ export interface ShipClass {
   quirk: QuirkId;
   signature: AbilityDef;
   hullModel: string;
-  /**
-   * SPEC types this as a 5-tuple. Phase 0 ships Interceptor base only, so classes may have no
-   * tiers yet; Phase 1 tightens this back to exactly five once node content exists.
-   */
-  tiers: TierDef[];
+  tiers: [TierDef, TierDef, TierDef, TierDef, TierDef];
   botRange: number; // ext: preferred engagement distance for the pilot brain
+  /** ext: base stat values beyond hull/speed/gun (crit chance, heal power...). */
+  baseStats?: Partial<Record<StatId, number>>;
+  summary: string; // ext: one-line pitch for the class picker
 }
 
 export interface TurretDef {

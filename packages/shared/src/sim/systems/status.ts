@@ -15,6 +15,7 @@ export function statusMagnitude(ship: Ship, id: StatusId): number {
 
 /** Apply a status using its stacking rule. Returns false if blocked (e.g. stun immunity). */
 export function applyStatus(w: World, ship: Ship, apply: StatusApply): boolean {
+  if (!ship.alive) return false;
   const def = STATUSES[apply.status];
   const i = STATUS_INDEX[apply.status];
   if (apply.status === 'stun' && w.time < ship.stunImmuneUntil) return false;
@@ -45,7 +46,14 @@ export function applyStatus(w: World, ship: Ship, apply: StatusApply): boolean {
   return true;
 }
 
-/** Count down statuses; bleed deals its damage through `onBleed`. */
+export function removeStatus(ship: Ship, id: StatusId): void {
+  const i = STATUS_INDEX[id];
+  ship.statusTime[i] = 0;
+  ship.statusMag[i] = 0;
+  ship.statusStacks[i] = 0;
+}
+
+/** Count down statuses (bleed damage is dealt by the caller from statusMagnitude). */
 export function tickStatuses(w: World, ship: Ship, dt: number): void {
   for (let i = 0; i < ship.statusTime.length; i++) {
     const t = ship.statusTime[i];
@@ -68,4 +76,9 @@ export function clearStatuses(ship: Ship): void {
   ship.statusMag.fill(0);
   ship.statusStacks.fill(0);
   ship.stunImmuneUntil = 0;
+}
+
+/** Can this ship act (fire, cast)? */
+export function canAct(ship: Ship): boolean {
+  return ship.alive && !hasStatus(ship, 'stun') && !hasStatus(ship, 'silence');
 }

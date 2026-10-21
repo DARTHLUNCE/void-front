@@ -1,10 +1,11 @@
 import { createWorld } from './sim/step';
 import { rebuildShipHash } from './sim/systems/movement';
 import type { Ship, World } from './sim/world';
+import type { ClassId } from './content/types';
 
 /** A 1 v 1 world where both ships are "human" (no bot brain), parked mid-map facing each other. */
-export function duelWorld(seed = 1): { w: World; a: Ship; b: Ship } {
-  const w = createWorld({ seed, fleetSize: 1, humanSlots: [0, 1] });
+export function duelWorld(seed = 1, classId: ClassId = 'interceptor'): { w: World; a: Ship; b: Ship } {
+  const w = createWorld({ seed, fleetSize: 1, humanSlots: [0, 1], classId });
   w.crystals.clear();
   const a = w.ships[0];
   const b = w.ships[1];

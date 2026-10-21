@@ -1,101 +1,167 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_LEVEL, PROGRESSION, respawnTime, STAT_POINT_MAX, xpToNext } from '../content/progression';
+import { ECONOMY, respawnTime, STAT_POINT_MAX, statCost, tierCost } from '../content/progression';
 import { duelWorld } from '../test-utils';
-import { createWorld } from './step';
-import { statValue } from './stats';
-import { grantXp, killShip, respawnShip, setTotalXp, spendStatPoint, totalXpForLevel, trailingBonus } from './systems/progression';
+import { createWorld, step } from './step';
+import { damageShip } from './systems/combat';
+import { buyStat, buyTier, grantShards, grantXp, killShip, pickClass } from './systems/progression';
 
-describe('levels and XP', () => {
-  it('uses the prototype curve: 14 + 8 × level, ~4,000 XP to Lv 30', () => {
-    expect(xpToNext(1)).toBe(22);
-    expect(xpToNext(10)).toBe(94);
-    const total = totalXpForLevel(MAX_LEVEL);
-    expect(total).toBeGreaterThan(3_800);
-    expect(total).toBeLessThan(4_100);
-  });
-
-  it('levels up, grants a stat point per level and caps at 30', () => {
+describe('stat upgrades (shards)', () => {
+  it('cost climbs per level and caps at 7', () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map(statCost)).toEqual(ECONOMY.statCosts);
     const { w, a } = duelWorld();
-    grantXp(w, a, totalXpForLevel(5));
-    expect(a.level).toBe(5);
-    expect(a.unspent).toBe(4);
-    grantXp(w, a, 100_000);
-    expect(a.level).toBe(MAX_LEVEL);
-    expect(a.xp).toBe(0);
-  });
-});
-
-describe('stat points', () => {
-  it('apply the prototype effects per point and cap at 7', () => {
-    const { w, a } = duelWorld();
-    grantXp(w, a, totalXpForLevel(MAX_LEVEL));
-    for (let i = 0; i < 7; i++) {
-      expect(spendStatPoint(a, 0)).toBe(true); // weapons
-      expect(spendStatPoint(a, 1)).toBe(true); // hull
-      expect(spendStatPoint(a, 2)).toBe(true); // engines
-      expect(spendStatPoint(a, 3)).toBe(true); // reactor
+    grantShards(w, a, 10_000);
+    let spent = 0;
+    for (let i = 0; i < STAT_POINT_MAX; i++) {
+      const before = a.shards;
+      expect(buyStat(a, 0)).toBe(true);
+      expect(before - a.shards).toBe(ECONOMY.statCosts[i]);
+      spent += ECONOMY.statCosts[i];
     }
-    expect(spendStatPoint(a, 0)).toBe(false);
-    expect(a.statPoints[0]).toBe(STAT_POINT_MAX);
-    expect(statValue(a, 'damage', 1)).toBeCloseTo(1 + 0.12 * 7);
-    expect(a.maxHull).toBeCloseTo(140 * (1 + 0.15 * 7));
-    expect(statValue(a, 'speed', 320)).toBeCloseTo(320 * (1 + 0.07 * 7));
-    expect(statValue(a, 'fireRate', 1)).toBeCloseTo(1 + 0.06 * 7);
-    expect(statValue(a, 'cooldown', 1)).toBeCloseTo(1 - 0.05 * 7);
+    expect(buyStat(a, 0)).toBe(false);
+    expect(a.shards).toBe(10_000 - spent);
   });
 
-  it('respawn replays the earliest picks for the levels you kept', () => {
+  it('each stat climbs on its own and buying fails without the shards', () => {
     const { w, a } = duelWorld();
-    grantXp(w, a, totalXpForLevel(6));
-    for (const p of [2, 2, 0, 1, 3]) spendStatPoint(a, p);
-    setTotalXp(a, totalXpForLevel(4));
-    expect(a.level).toBe(4);
-    expect(Array.from(a.statPoints)).toEqual([0, 0, 2, 0].map((v, i) => (i === 0 ? 1 : v)));
-    expect(a.unspent).toBe(0);
+    grantShards(w, a, ECONOMY.statCosts[0] * 2);
+    expect(buyStat(a, 0)).toBe(true);
+    expect(buyStat(a, 1)).toBe(true); // first level of a different stat is cheap again
+    expect(buyStat(a, 2)).toBe(false);
+    expect(a.statPoints[0]).toBe(1);
+    expect(a.statPoints[1]).toBe(1);
+  });
+
+  it('apply their effects: weapons +12% damage, hull +15% max hull', () => {
+    const { w, a } = duelWorld();
+    const hull0 = a.maxHull;
+    grantShards(w, a, 1_000);
+    buyStat(a, 1);
+    buyStat(a, 1);
+    expect(a.maxHull).toBeCloseTo(hull0 * 1.3);
   });
 });
 
-describe('death and snowball controls', () => {
-  it('death keeps 60% of XP and respawn time grows with level (5–11 s)', () => {
+describe('tiers (XP)', () => {
+  it('cost XP in the published curve and need the XP', () => {
+    expect([0, 1, 2, 3, 4].map(tierCost)).toEqual(ECONOMY.tierCosts);
+    const { w, a } = duelWorld();
+    expect(buyTier(w, a, 0)).toBe(false);
+    grantXp(w, a, tierCost(0));
+    expect(buyTier(w, a, 1)).toBe(true);
+    expect(a.picks[0]).toBe(1);
+    expect(a.rank).toBe(1);
+    expect(a.xp).toBeCloseTo(0);
+  });
+
+  it('tier 3 swaps the hull and resets stat upgrades (tiers 1–2 do not)', () => {
+    const { w, a } = duelWorld();
+    grantShards(w, a, 1_000);
+    buyStat(a, 0);
+    buyStat(a, 0);
+    grantXp(w, a, tierCost(0) + tierCost(1) + tierCost(2));
+    buyTier(w, a, 0);
+    buyTier(w, a, 0);
+    expect(a.statPoints[0]).toBe(2);
+    const hull = a.hullModel;
+    buyTier(w, a, 0);
+    expect(a.hullModel).not.toBe(hull);
+    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
+    // Fresh hull, fresh costs: the next weapons level costs the level-1 price again.
+    const before = a.shards;
+    buyStat(a, 0);
+    expect(before - a.shards).toBe(ECONOMY.statCosts[0]);
+  });
+
+  it('the input path buys tiers and stats during a step', () => {
+    const { w, a } = duelWorld();
+    grantXp(w, a, tierCost(0));
+    grantShards(w, a, 100);
+    a.input.tierPick = 0;
+    a.input.statPick = 2;
+    step(w);
+    expect(a.tiersOwned).toBe(1);
+    expect(a.statPoints[2]).toBe(1);
+    expect(a.input.tierPick).toBe(-1);
+  });
+});
+
+describe('death', () => {
+  it('keeps 60% of unspent shards, spills the rest as loot, keeps spent upgrades and all XP', () => {
     const { w, a, b } = duelWorld();
-    grantXp(w, a, 1000);
-    const before = a.totalXp;
+    grantShards(w, a, 200);
+    buyStat(a, 0); // 12 spent
+    grantXp(w, a, 300);
+    const xp = a.xp;
+    const unspent = a.shards;
     a.lastHitBy = b.slot;
     a.lastHitTime = w.time;
     killShip(w, a);
-    expect(a.totalXp).toBeCloseTo(before * PROGRESSION.deathXpKeep);
-    expect(respawnTime(1)).toBeCloseTo(5.2);
-    expect(respawnTime(30)).toBe(11);
+    expect(a.shards).toBeCloseTo(unspent * ECONOMY.deathShardKeep);
+    expect(a.shardsLost).toBeCloseTo(unspent * (1 - ECONOMY.deathShardKeep));
+    expect(a.statPoints[0]).toBe(1);
+    expect(a.xp).toBe(xp);
+    let loot = 0;
+    for (let i = 0; i < w.crystals.count; i++) if (w.crystals.at(i).kind === 2) loot += w.crystals.at(i).shards;
+    expect(loot).toBe(Math.floor(unspent * (1 - ECONOMY.deathShardKeep)));
   });
 
-  it('kill XP is 30 + 10 × victim level, ×1.6 bounty for 3+ levels above', () => {
+  it('respawn time grows with rank: 5 s + 1.2 s per tier, max 11 s', () => {
+    expect(respawnTime(0)).toBe(5);
+    expect(respawnTime(2)).toBeCloseTo(7.4);
+    expect(respawnTime(5)).toBe(11);
+  });
+});
+
+describe('XP sources', () => {
+  it('kills pay 40 + 15 × victim rank, ×1.6 for a bounty two ranks up', () => {
     const { w, a, b } = duelWorld();
-    setTotalXp(b, totalXpForLevel(5));
-    const before = a.totalXp;
+    grantXp(w, b, tierCost(0) + tierCost(1));
+    buyTier(w, b, 0);
+    buyTier(w, b, 0);
+    const before = a.xp;
     b.lastHitBy = a.slot;
     b.lastHitTime = w.time;
     killShip(w, b);
-    // a is Lv 1, b was Lv 5 → bounty; trailing bonus is 0 because a's team leads.
-    expect(a.totalXp - before).toBeCloseTo((30 + 10 * 5) * 1.6);
-    expect(a.kills).toBe(1);
-    expect(w.teams[0].kills).toBe(1);
+    const x = ECONOMY.xp;
+    expect(a.xp - before).toBeCloseTo((x.kill + x.killPerRank * 2) * x.bountyMul);
   });
 
-  it('respawn never drops below 80% of the enemy average level', () => {
-    const w = createWorld({ seed: 2, fleetSize: 4, humanSlots: [0, 1, 2, 3, 4, 5, 6, 7] });
-    for (let i = 4; i < 8; i++) setTotalXp(w.ships[i], totalXpForLevel(10));
+  it('damage earns XP', () => {
+    const { w, a, b } = duelWorld();
+    damageShip(w, b, 100, a.slot);
+    expect(a.xp).toBeCloseTo(100 * ECONOMY.xp.damageToShips);
+  });
+
+  it('commanders never earn XP', () => {
+    const w = createWorld({ seed: 3, fleetSize: 2, humanSlots: [0], humansPickClass: true });
     const s = w.ships[0];
-    s.alive = false;
-    respawnShip(w, s);
-    expect(s.level).toBe(8);
+    s.commander = true;
+    grantXp(w, s, 500);
+    expect(s.xp).toBe(0);
   });
+});
 
-  it('trailing team earns up to +60% XP, full at 160 kills behind', () => {
-    const { w } = duelWorld();
-    w.teams[1].kills = 80;
-    expect(trailingBonus(w, w.teams[0])).toBeCloseTo(0.3);
-    w.teams[1].kills = 500;
-    expect(trailingBonus(w, w.teams[0])).toBeCloseTo(0.6);
-    expect(trailingBonus(w, w.teams[1])).toBe(0);
+describe('class picker', () => {
+  it('humans start docked until they pick; picking launches them in that class', () => {
+    const w = createWorld({ seed: 4, fleetSize: 2, humanSlots: [0], humansPickClass: true });
+    const s = w.ships[0];
+    expect(s.awaitingClass).toBe(true);
+    expect(s.alive).toBe(false);
+    for (let i = 0; i < 30 * 12; i++) step(w);
+    expect(s.alive).toBe(false);
+    pickClass(w, s, 'lancer');
+    expect(s.alive).toBe(true);
+    expect(s.classId).toBe('lancer');
+    expect(s.hullModel).toBe('lancer');
+  });
+});
+
+describe('regen', () => {
+  it('never revives a ship at 0 hull', () => {
+    const { w, a } = duelWorld(1, 'carrier');
+    for (let i = 0; i < 30 * 5; i++) step(w);
+    a.hull = 0;
+    step(w);
+    expect(a.alive).toBe(false);
   });
 });

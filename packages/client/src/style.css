@@ -558,7 +558,425 @@ button.primary:hover {
   font-weight: 700;
 }
 
+/* Capture point strip under the clock */
+.pointstrip {
+  display: flex;
+  gap: 4px;
+}
+
+.pointstrip span {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: var(--panel);
+  overflow: hidden;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.pointstrip span i {
+  position: absolute;
+  inset: auto auto 0 0;
+  height: 3px;
+  width: 0;
+}
+
+.pointstrip span.c {
+  border-color: var(--cobalt);
+  color: var(--cobalt);
+}
+
+.pointstrip span.e {
+  border-color: var(--ember);
+  color: var(--ember);
+}
+
+.pointstrip span.contested {
+  animation: blink 0.8s steps(2) infinite;
+}
+
+.pointstrip span.hot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 8px #ffd166;
+}
+
+@keyframes blink {
+  50% {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.who {
+  font-size: 0.9rem;
+  color: var(--dim);
+}
+
+.who b {
+  color: var(--ink);
+}
+
+.shards {
+  color: var(--dim);
+}
+
+.shards b,
+.gem {
+  color: #6ff3ff;
+}
+
+.shards small {
+  font-size: 0.72rem;
+}
+
+.stat .cost {
+  justify-self: end;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.stat.can .cost {
+  color: #6ff3ff;
+}
+
+.stat {
+  grid-template-columns: 26px 70px 1fr auto;
+}
+
+.stat em {
+  grid-column: 2 / 5;
+}
+
+.stat.can {
+  border-color: #6ff3ff;
+}
+
+.ability.locked {
+  opacity: 0.4;
+}
+
+.bar.mom.hot i {
+  background: linear-gradient(90deg, #ffb84a, #ff5c3c);
+}
+
+.toast {
+  top: 22%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 18px;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--good);
+  color: var(--good);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.toast.bad {
+  border-color: #ff5c6c;
+  color: #ff5c6c;
+}
+
+/* Tier pop-up */
+.tierpop {
+  right: 12px;
+  bottom: 34px;
+  width: 300px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #b48cff;
+  border-radius: 10px;
+  background: var(--panel);
+  box-shadow: 0 0 24px rgba(180, 140, 255, 0.25);
+  pointer-events: auto;
+  animation: popin 0.25s ease-out;
+}
+
+.tierpop h3 {
+  margin: 0;
+  color: var(--xp);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tierpop .hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--dim);
+}
+
+.tierpop .opt {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  column-gap: 8px;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.tierpop .opt:hover {
+  border-color: var(--xp);
+}
+
+.tierpop .opt small {
+  color: var(--xp);
+  font-size: 0.72rem;
+}
+
+.tierpop .opt em {
+  grid-column: 2 / 4;
+  font-style: normal;
+  font-size: 0.82rem;
+  color: var(--dim);
+}
+
+@keyframes popin {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+/* Death card */
+.overlay.death .card {
+  padding: 18px 26px;
+  border: 1px solid rgba(255, 92, 108, 0.35);
+  border-radius: 12px;
+  background: var(--panel);
+  pointer-events: auto;
+}
+
+.overlay.death .lost {
+  color: #6ff3ff;
+  font-weight: 600;
+}
+
+.spawns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  color: var(--dim);
+}
+
+.spawns button,
+.command .order {
+  padding: 4px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.spawns button.on {
+  border-color: var(--good);
+  color: var(--good);
+}
+
+/* Class picker */
+.overlay.picker {
+  background: rgba(2, 4, 10, 0.78);
+  overflow: auto;
+  padding: 16px;
+}
+
+.picker .card {
+  max-width: 1100px;
+}
+
+.picker h2 {
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.cls {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 12px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: var(--panel);
+  text-align: left;
+}
+
+.cls:hover {
+  border-color: var(--cobalt);
+  box-shadow: 0 0 18px rgba(74, 168, 255, 0.25);
+}
+
+.cls kbd {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.cls b {
+  font-size: 1.3rem;
+}
+
+.cls small {
+  color: var(--cobalt);
+  font-weight: 600;
+}
+
+.cls em {
+  font-style: normal;
+  font-size: 0.88rem;
+  color: var(--dim);
+}
+
+.cls .kv {
+  display: flex;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--dim);
+}
+
+.cls .kv b {
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+
+.cls .sig {
+  font-size: 0.82rem;
+  color: #ffd166;
+}
+
+.cls.commander {
+  border-color: rgba(92, 255, 157, 0.4);
+}
+
+.cls.commander small {
+  color: var(--good);
+}
+
+.cls .taken {
+  color: #ff5c6c;
+  font-weight: 700;
+}
+
+/* Fleet Command panel */
+.command {
+  right: 12px;
+  top: 190px;
+  bottom: 40px;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(92, 255, 157, 0.35);
+  border-radius: 10px;
+  background: var(--panel);
+  pointer-events: auto;
+  overflow: auto;
+}
+
+.command h3 {
+  margin: 0;
+  color: var(--good);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.command .res {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.command .note {
+  min-height: 1.2em;
+  color: #ffd166;
+  font-size: 0.88rem;
+}
+
+.command .orders {
+  display: grid;
+  gap: 5px;
+}
+
+.command .order {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  column-gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  text-align: left;
+  opacity: 0.55;
+}
+
+.command .order.can {
+  opacity: 1;
+}
+
+.command .order.armed {
+  border-color: var(--good);
+  box-shadow: 0 0 12px rgba(92, 255, 157, 0.3);
+}
+
+.command .order .cost {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.command .order em {
+  grid-column: 2 / 4;
+  font-style: normal;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.command .order .cd {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+  font-style: normal;
+  color: #ff5c6c;
+  font-weight: 700;
+}
+
+.command .hint {
+  margin-top: auto;
+  font-size: 0.78rem;
+  color: var(--dim);
+}
+
 @media (max-width: 700px) {
+  .command,
+  .tierpop {
+    width: calc(100vw - 24px);
+    right: 12px;
+  }
   .pilot {
     width: calc(100vw - 24px);
   }
