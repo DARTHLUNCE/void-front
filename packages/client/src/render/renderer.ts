@@ -30,8 +30,8 @@ import { Lighting, litGeometry } from './lighting';
 import { makeTextures, type LitArt, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
-const VIEW_W = 2200;
-const VIEW_H = 1250;
+const VIEW_W = 1650;
+const VIEW_H = 937.5;
 const LABEL_RANGE = 1200;
 const PARTICLE_CAP = 2000;
 const TICK_MS = 1000 / 30;
@@ -84,8 +84,7 @@ class MeshPool {
   used = 0;
   constructor(
     private readonly layer: Container,
-    private readonly geometry: MeshGeometry,
-    private readonly shader: Shader,
+    private readonly createMesh: () => Mesh<MeshGeometry, Shader>,
   ) {}
 
   begin(): void {
@@ -95,7 +94,7 @@ class MeshPool {
   next(): Mesh<MeshGeometry, Shader> {
     let m = this.meshes[this.used];
     if (!m) {
-      m = new Mesh({ geometry: this.geometry, shader: this.shader });
+      m = this.createMesh();
       this.layer.addChild(m);
       this.meshes.push(m);
     }
@@ -181,6 +180,8 @@ export class Renderer {
   private lighting!: Lighting;
   private lightOverlay!: Sprite;
   private lights!: SpritePool;
+  private readonly occluderLayer = new Container();
+  private shipOccluders!: SpritePool;
   private readonly hullPools = new Map<string, MeshPool>();
   private readonly crystalLayer = new Container();
   private readonly glowLayer = new Container();
@@ -225,6 +226,7 @@ export class Renderer {
     this.lightOverlay.blendMode = 'add';
     this.lightOverlay.alpha = 0.32;
     this.app.stage.addChild(this.stars, this.lightOverlay, this.world);
+    this.lighting.occluders.addChild(this.occluderLayer);
     const shipyard = new Container();
     const msArt = this.tex.mothership;
     const msGeom = litGeometry(msArt.widthWorld, msArt.heightWorld, msArt.anchorX, msArt.anchorY);
@@ -234,6 +236,7 @@ export class Renderer {
       ms.rotation = team === 0 ? 0 : Math.PI; // each mothership faces the enemy
       shipyard.addChild(ms);
       this.motherships.push(ms);
+      this.lighting.trackReceiver(ms);
       // In the light pass the mothership is a solid occluder (black, opaque).
       const occ = new Sprite(msArt.albedo[team]);
       occ.anchor.set(msArt.anchorX, msArt.anchorY);
@@ -242,7 +245,7 @@ export class Renderer {
       occ.position.set(pos.x, pos.y);
       occ.rotation = ms.rotation;
       occ.tint = 0x000000;
-      this.lighting.scene.addChild(occ);
+      this.occluderLayer.addChild(occ);
       this.msOccluders.push(occ);
     });
     const fobArt = this.tex.fob;
@@ -253,6 +256,7 @@ export class Renderer {
       m.rotation = f.team === 0 ? 0 : Math.PI;
       shipyard.addChild(m);
       this.fobMeshes.push(m);
+      this.lighting.trackReceiver(m);
       const occ = new Sprite(fobArt.albedo[f.team]);
       occ.anchor.set(fobArt.anchorX, fobArt.anchorY);
       occ.width = fobArt.widthWorld;
@@ -260,7 +264,7 @@ export class Renderer {
       occ.position.set(f.pos.x, f.pos.y);
       occ.rotation = m.rotation;
       occ.tint = 0x000000;
-      this.lighting.scene.addChild(occ);
+      this.occluderLayer.addChild(occ);
       this.fobOccluders.push(occ);
     }
     for (const p of KESSLER_REACH.points) {
@@ -271,10 +275,12 @@ export class Renderer {
         m.position.set(p.pos.x, p.pos.y);
         m.visible = false;
         shipyard.addChild(m);
+        this.lighting.trackReceiver(m);
         return m;
       });
       this.nodeMeshes.push(states);
     }
+    this.shipOccluders = new SpritePool(this.occluderLayer, this.tex.disc);
     this.lights = new SpritePool(this.lighting.scene, this.tex.disc, 'add');
     this.world.addChild(
       this.staticLayer,
@@ -449,7 +455,9 @@ export class Renderer {
     const cy = this.camera.y;
     const inView = (x: number, y: number) => Math.abs(x - cx) < halfW && Math.abs(y - cy) < halfH;
 
+    this.lighting.beginFrame();
     this.lights.begin();
+    this.shipOccluders.begin();
     this.drawStructures(curr, now);
 
     // Crystals
@@ -565,6 +573,14 @@ export class Renderer {
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
       s.scale.set(isMe ? 1.15 : 1);
+      const baked = this.tex.hulls[art.id];
+      const occ = this.shipOccluders.next(baked.albedo[team]);
+      occ.anchor.set(baked.anchorX, baked.anchorY);
+      occ.position.set(x, y);
+      occ.rotation = rot;
+      occ.width = baked.widthWorld * s.scale.x;
+      occ.height = baked.heightWorld * s.scale.y;
+      occ.tint = 0x000000;
       if (cloaked) glow.alpha *= 0.3;
       this.statusFx(bars, x, y, status, now);
 
@@ -642,6 +658,7 @@ export class Renderer {
     this.drawRings(dt);
     if (this.commander && this.pendingOrder) this.drawOrderPreview(z);
     this.lights.end();
+    this.shipOccluders.end();
 
     this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
     this.lightOverlay.visible = this.lighting.enabled;
@@ -920,6 +937,7 @@ export class Renderer {
   /** Add a light emitter (a solid disc in the light pass) at a world position. */
   private light(x: number, y: number, radius: number, color: number): void {
     if (!this.lighting.enabled) return;
+    this.lighting.addEmitter(x, y, radius, color);
     const l = this.lights.next();
     l.position.set(x, y);
     l.scale.set((radius * 2) / 32);
@@ -943,7 +961,11 @@ export class Renderer {
     if (!pool) {
       const art: LitArt = this.tex.hulls[id];
       const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
-      pool = new MeshPool(this.shipLayer, geom, this.lighting.litShader(art.albedo[team].source, art.normal.source));
+      pool = new MeshPool(this.shipLayer, () => {
+        const mesh = new Mesh({ geometry: geom, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source) });
+        this.lighting.trackReceiver(mesh);
+        return mesh;
+      });
       this.hullPools.set(key, pool);
     }
     return pool;
