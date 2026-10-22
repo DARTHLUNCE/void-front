@@ -45,7 +45,12 @@ export const QUIRK_PARAMS = {
     powerShields: 0.4,
     /** Drone hull and damage grow this much per tier owned. */
     perRank: 0.15,
-    orbitRadius: 70,
+    /**
+     * Idle escorts circle this far outside the carrier's hull edge, evenly spaced on one ring so you can
+     * count them; other ship drones use four staggered lanes this far apart.
+     */
+    orbitClearance: 125,
+    orbitLane: 26,
   },
   fieldEngineer: {
     captureMul: 2,

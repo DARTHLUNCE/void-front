@@ -4,7 +4,7 @@ import type { GunDef, PrimitiveDef, PrimitiveKind, StatusApply, TeamId } from '.
 import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
 import { apHit, damageDeployable, damageShip, damageStructure, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
-import { damageDrone, spawnDrone } from './drones';
+import { damageDrone, launchFromBow, spawnDrone } from './drones';
 import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
 import { apPowerBonus } from './power';
@@ -241,7 +241,9 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       const atTarget = !s;
       const x = atTarget ? c.cursorX + Math.cos(a * 3) * 80 : c.x;
       const y = atTarget ? c.cursorY + Math.sin(a * 3) * 80 : c.y;
-      spawnDrone(w, c.team, c.slot, step.behavior, x, y, step.life, s, step.params, c.cursorX, c.cursorY);
+      const d = spawnDrone(w, c.team, c.slot, step.behavior, x, y, step.life, s, step.params, c.cursorX, c.cursorY);
+      // Ship drones (Carrier scrambles) take off down the bow runway in alternating lanes.
+      if (d && s) launchFromBow(w, d, s, (k % 3) - 1);
     }
   },
 
