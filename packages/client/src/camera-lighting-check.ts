@@ -12,8 +12,8 @@ const receiver=new Mesh({geometry:litGeometry(80,80,.5,.5),shader:lighting.litSh
 const samples=Array.from({length:64},(_,i)=>({x:310+(i%8)*10,y:120+Math.floor(i/8)*12}));
 function bilinear(p:Uint8Array|Uint8ClampedArray,w:number,h:number,x:number,y:number){x=Math.max(0,Math.min(w-1.001,x-.5));y=Math.max(0,Math.min(h-1.001,y-.5));const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;let v=0;for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){const index=((iy+dy)*w+ix+dx)*4;v+=(p[index]+p[index+1]+p[index+2])/3*(dx?fx:1-fx)*(dy?fy:1-fy);}return v;}
 async function sequence(stable:boolean){lighting.cameraStability=stable;lighting.temporal.weight=stable?.9:0;lighting.temporal.reset();const values:number[][]=[];const hull:number[]=[];
-for(let warmup=0;warmup<12;warmup++){sources();lighting.update(320,180,1,640,360);}
-for(let frame=0;frame<24;frame++){const cameraX=320+frame*.65;world.x=320-cameraX;sources();lighting.update(cameraX,180,1,640,360);
+for(let warmup=0;warmup<48;warmup++){sources();lighting.update(320,180,1,640,360);}
+for(let frame=0;frame<48;frame++){const cameraX=320+frame*2.7;world.x=320-cameraX;sources();lighting.update(cameraX,180,1,640,360);
 const spill=new Sprite(lighting.irradiance),data=app.renderer.extract.pixels(spill);spill.destroy();const offset=lighting.lightUniforms.uniforms.uBufferOffset,viewport=lighting.lightUniforms.uniforms.uLightViewport;
 values.push(samples.map(p=>bilinear(data.pixels,data.width,data.height,viewport[0]/2+(p.x-cameraX)*viewport[0]/640+offset[0],viewport[1]/2+(p.y-180)*viewport[1]/360+offset[1])));
 const actual=app.renderer.extract.pixels(app.stage);hull.push(bilinear(actual.pixels,actual.width,actual.height,350+320-cameraX,180));
@@ -24,5 +24,3 @@ const raw=await sequence(false),stable=await sequence(true);
 sources(false);lighting.update(335,180,1,640,360);const emptySprite=new Sprite(lighting.irradiance),empty=app.renderer.extract.pixels(emptySprite).pixels;emptySprite.destroy();let lingering=0;for(let i=0;i<empty.length;i+=4)lingering=Math.max(lingering,empty[i],empty[i+1],empty[i+2]);
 document.querySelector('pre')!.textContent=[`${stable.cascade<raw.cascade*.8?'PASS':'FAIL'} camera-pan cascade variation: ${raw.cascade.toFixed(3)} unanchored / ${stable.cascade.toFixed(3)} stabilized`,`${stable.surface<=raw.surface+.1?'PASS':'FAIL'} camera-pan hull variation: ${raw.surface.toFixed(3)} / ${stable.surface.toFixed(3)}`,`${lingering===0?'PASS':'FAIL'} removed emitters leave no history glow: max ${lingering}`].join('\n');
 sources();lighting.update(320,180,1,640,360);world.x=0;const show=new Sprite(lighting.irradiance);show.width=lighting.displaySize[0];show.height=lighting.displaySize[1];show.position.set(lighting.screenOffset[0],lighting.screenOffset[1]);app.stage.addChildAt(show,1);app.renderer.render(app.stage);
-
-

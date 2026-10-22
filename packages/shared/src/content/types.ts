@@ -128,7 +128,7 @@ export interface GunDef {
 }
 
 /** ext: how summoned drones fly and fight. */
-export type DroneBehavior = 'orbit' | 'swarm' | 'guard' | 'decoy' | 'bomber' | 'interceptor' | 'recon';
+export type DroneBehavior = 'orbit' | 'swarm' | 'guard' | 'decoy' | 'bomber' | 'interceptor' | 'recon' | 'fighter';
 
 export interface DroneStats {
   hull: number;
@@ -189,7 +189,9 @@ export type PrimitiveDef =
   | { kind: 'tether'; duration: number; range: number; healPerSecond: number } // ext: Warden heal beam
   | { kind: 'droneOrder'; order: 'kamikaze'; damage: number; radius: number } // ext: Kamikaze Wing
   // ext: team-level effects used by Fleet Command
-  | { kind: 'teamBuff'; buff: 'overcharge' | 'jam' | 'reinforce'; duration: number }
+  | { kind: 'teamBuff'; buff: 'overcharge' | 'jam' | 'reinforce' | 'breakthrough'; duration: number }
+  /** EMP: enemy structure and deployable turrets in the radius go dark, enemy drones there are destroyed. */
+  | { kind: 'emp'; radius: number; duration: number }
   | { kind: 'rally'; duration: number }
   | { kind: 'repairMothership'; fraction: number };
 

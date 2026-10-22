@@ -10,3 +10,4 @@ export * from './bots';
 export * from './match';
 export * from './command';
 export * from './thrusters';
+export * from './upgrades';

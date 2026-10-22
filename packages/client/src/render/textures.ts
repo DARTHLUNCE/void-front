@@ -71,11 +71,27 @@ function starTexture(size: number): Texture {
   const c = document.createElement('canvas');
   c.width = c.height = size;
   const g = c.getContext('2d')!;
-  // Client-only cosmetic randomness; the sim never sees it.
-  for (let i = 0; i < 260; i++) {
+  // Subtle industrial sector telemetry sub-grid ticks
+  g.strokeStyle = 'rgba(70, 105, 165, 0.08)';
+  g.lineWidth = 1;
+  for (const p of [128, 256, 384]) {
+    for (const q of [128, 256, 384]) {
+      g.beginPath();
+      g.moveTo(p - 5, q);
+      g.lineTo(p + 5, q);
+      g.moveTo(p, q - 5);
+      g.lineTo(p, q + 5);
+      g.stroke();
+    }
+  }
+  // Client-only cosmetic starfield; the sim never sees it.
+  for (let i = 0; i < 320; i++) {
     const r = Math.random();
-    g.fillStyle = `rgba(${200 + r * 55}, ${210 + r * 45}, 255, ${0.15 + r * 0.6})`;
-    const s = r > 0.97 ? 2 : 1;
+    const warm = Math.random() > 0.78;
+    g.fillStyle = warm
+      ? `rgba(255, ${210 + r * 35}, ${175 + r * 50}, ${0.12 + r * 0.55})`
+      : `rgba(${185 + r * 65}, ${210 + r * 45}, 255, ${0.14 + r * 0.65})`;
+    const s = r > 0.96 ? 2 : 1;
     g.fillRect(Math.random() * size, Math.random() * size, s, s);
   }
   return Texture.from(c);
@@ -126,9 +142,11 @@ export function makeTextures(renderer: Renderer, replacements: Record<string, Li
   };
   const particle = new Graphics().circle(0, 0, 3).fill({ color: 0xffffff });
   const drone = new Graphics()
-    .poly([12, 0, -7, -7, -3, 0, -7, 7])
+    .poly([14, 0, 5, -3.5, -4, -8.5, -8, -6.5, -5, -2.5, -9, 0, -5, 2.5, -8, 6.5, -4, 8.5, 5, 3.5])
     .fill({ color: 0xffffff })
-    .stroke({ width: 1.5, color: 0x0b1020, alpha: 0.8 });
+    .stroke({ width: 1.5, color: 0x080c18, alpha: 0.9 })
+    .poly([7, 0, 2, -2, -2, 0, 2, 2])
+    .fill({ color: 0x0b1224, alpha: 0.65 });
   return {
     hulls,
     assets: replacements,

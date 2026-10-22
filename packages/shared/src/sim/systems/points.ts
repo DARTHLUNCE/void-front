@@ -1,3 +1,4 @@
+import { COMMAND_RULES } from '../../content/command';
 import { POINTS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY } from '../../content/progression';
 import { QUIRK_PARAMS } from '../../content/quirks';
@@ -28,10 +29,11 @@ export function updatePoints(w: World): void {
   for (const team of w.teams) {
     let held = 0;
     const res = team.resources;
+    const breakthrough = w.time < team.breakthroughUntil ? COMMAND_RULES.breakthroughIncomeMul : 1;
     for (const p of w.points) {
       if (p.owner !== team.id) continue;
       held++;
-      if (pulse && p.def.resource) res[RESOURCE_INDEX[p.def.resource]] += p.def.income * (w.time < p.hotUntil ? POINTS.hotZoneIncomeMul : 1);
+      if (pulse && p.def.resource) res[RESOURCE_INDEX[p.def.resource]] += p.def.income * breakthrough * (w.time < p.hotUntil ? POINTS.hotZoneIncomeMul : 1);
     }
     if (pulse) {
       for (const f of team.fobs) if (f.alive) for (let r = 0; r < 3; r++) res[r] += POINTS.fobIncome;

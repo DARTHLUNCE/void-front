@@ -108,7 +108,7 @@ export function stepDeployables(w: World): void {
     const def = d.def;
     if (def.turret) {
       d.cooldown -= DT;
-      if (d.cooldown > 0) continue;
+      if (d.cooldown > 0 || w.time < d.empUntil) continue;
       const t = def.turret;
       const n = w.shipHash.query(d.x, d.y, t.range, w.scratch);
       let best = -1;

@@ -5,7 +5,7 @@ export const CRUISER: ShipClass = {
   name: 'Cruiser',
   role: 'All-rounder',
   summary: 'Triple turrets that lock on: keep firing and every volley hits harder. Shield Battery tanks a burst.',
-  hull: 360,
+  hull: 450,
   speed: 245,
   radius: 30,
   turnRate: 3.4,

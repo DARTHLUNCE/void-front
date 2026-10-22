@@ -8,7 +8,8 @@ export const MATCH = {
   shipVision: 1_800,
   /** Max ships per team, sizes the entity pools. */
   maxFleet: 100,
-  cruise: { spool: 1, speedMul: 2.5 },
+  /** Sub-Light drive (Shift): charges for `spool` s, then runs at `speedMul`× top speed. */
+  cruise: { spool: 1.5, speedMul: 2.5 },
   /** Ship acceleration responsiveness (1/s). */
   accel: 5,
   movement: {

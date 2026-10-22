@@ -24,11 +24,25 @@ export interface Palette {
 }
 
 export const PALETTES: [Palette, Palette] = [
-  // Cobalt
-  { hull: 0x3f7fd9, dark: 0x1b345e, accent: 0x8fe3ff, trim: 0xc9d4e8, metal: 0x5c6880, cockpit: 0x7fd0ec, engine: 0x7df9ff, void: 0x05070f },
-  // Ember
-  { hull: 0xd9622b, dark: 0x5e2410, accent: 0xffc27a, trim: 0xe8d8cc, metal: 0x7a6560, cockpit: 0xf5c48e, engine: 0xffd166, void: 0x0f0705 },
+  // Cobalt: industrial naval steel-blue, gunmetal chassis, cryo-cyan plasma & telemetry
+  { hull: 0x356ec4, dark: 0x152746, accent: 0x5ce6ff, trim: 0xbacae0, metal: 0x526078, cockpit: 0x8cf4ff, engine: 0x7df9ff, void: 0x04060d },
+  // Ember: heavy foundry oxide-orange, scorched iron recesses, hazard-amber plasma
+  { hull: 0xc85424, dark: 0x4a1b0d, accent: 0xffb84d, trim: 0xdccab8, metal: 0x6b5852, cockpit: 0xffe082, engine: 0xffcf5c, void: 0x0d0604 },
 ];
+
+/** Chamfered rectangle for industrial armor plates and bulkheads. */
+export function chamferRect(x0: number, y0: number, x1: number, y1: number, c: number): number[] {
+  return [
+    x0 + c, y0,
+    x1 - c, y0,
+    x1, y0 + c,
+    x1, y1 - c,
+    x1 - c, y1,
+    x0 + c, y1,
+    x0, y1 - c,
+    x0, y0 + c,
+  ];
+}
 
 /** Upper-side outline from the nose to the tail; returns the closed outline mirrored across y = 0. */
 export function sym(upper: number[]): number[] {

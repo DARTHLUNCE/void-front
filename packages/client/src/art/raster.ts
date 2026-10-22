@@ -20,14 +20,14 @@ export interface BakedArt {
 }
 
 const HEIGHT: Record<Paint, number> = {
-  hull: 0.5,
-  dark: 0.72,
-  trim: 0.8,
+  hull: 0.56,
+  dark: 0.32,
+  trim: 0.78,
   metal: 0.88,
-  accent: 0.6,
-  cockpit: 0.7,
+  accent: 0.66,
+  cockpit: 0.74,
   engine: 0.12,
-  void: 0.18,
+  void: 0.08,
 };
 
 const EMISSIVE: Record<Paint, number> = {
@@ -35,14 +35,14 @@ const EMISSIVE: Record<Paint, number> = {
   dark: 0,
   trim: 0,
   metal: 0,
-  accent: 0.7,
-  cockpit: 0.18,
+  accent: 0.78,
+  cockpit: 0.28,
   engine: 1,
   void: 0,
 };
 
 /** Domed paints get a radial height bump on circles and ellipses. */
-const DOMED: Partial<Record<Paint, number>> = { cockpit: 0.3, metal: 0.18, accent: 0.12, trim: 0.15 };
+const DOMED: Partial<Record<Paint, number>> = { cockpit: 0.28, metal: 0.22, accent: 0.14, trim: 0.16 };
 
 const css = (n: number, a = 1) => `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
 const gray = (v: number, a = 1) => {

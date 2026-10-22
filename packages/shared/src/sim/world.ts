@@ -1,11 +1,12 @@
 import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
 import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
-import type { CommandId } from '../content/command';
+import type { CommandId, SeatId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import { MATCH, POINTS } from '../content/match';
 import { STAT_POINTS } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
 import { DEPLOYABLES, FOB, MOTHERSHIP, NODE, type DeployableDef } from '../content/structures';
+import { HIGH_COMMAND, type TurretType, type UpgradeTrack } from '../content/upgrades';
 import type {
   AbilityDef,
   Affects,
@@ -128,8 +129,10 @@ export class Ship {
   classId: ClassId;
   radius: number;
   isBot = true;
-  /** A human who chose Commander: never spawns a ship. */
+  /** A human in a command seat (Admiral or FOB Commander): never spawns a ship. */
   commander = false;
+  /** Command seat (SeatId) when `commander`, else -1. */
+  seat = -1;
   /** A human who hasn't picked a class yet: stays docked. */
   awaitingClass = false;
   name = '';
@@ -240,6 +243,12 @@ export class Structure {
   lastDamageTime = -99;
   readonly turretCooldown: Float64Array;
   readonly radius: number;
+  /** High Command upgrades (content/upgrades.ts). */
+  turretType: TurretType = 'standard';
+  shipyard = 0;
+  plating = 0;
+  /** Turrets stay dark until this time (enemy EMP Bomb). */
+  empUntil = -1;
 
   constructor(
     readonly index: number,
@@ -353,6 +362,8 @@ export class Deployable implements Pooled {
   maxHull = 0;
   expires = Infinity;
   cooldown = 0;
+  /** Turret stays dark until this time (enemy EMP Bomb). */
+  empUntil = -1;
   constructor(readonly index: number) {}
 }
 
@@ -468,11 +479,16 @@ export class TeamState {
   nextPush: number;
   readonly firstSlot: number;
   readonly lastSlot: number;
-  /** Banked alloy, energy, intel. */
+  /** Banked munitions, fuel, manpower. */
   readonly resources = new Float64Array(3);
-  /** Human commander's slot, or -1. */
-  commanderSlot = -1;
+  /** High Command Credits from the kill tax, spent on base upgrades. */
+  credits: number = HIGH_COMMAND.startingCredits;
+  /** Ship slot in each command seat (SeatId order: Admiral, FOB North, FOB South), or -1. */
+  readonly seats = new Int32Array(3).fill(-1);
+  /** Order cooldowns, keyed `${seat}:${id}`. */
   readonly commandReady: Record<string, number> = {};
+  /** Breakthrough: nodes pay double until this time. */
+  breakthroughUntil = -1;
   overchargeUntil = -1;
   jamUntil = -1;
   rallyX = 0;
@@ -508,8 +524,18 @@ export class TeamState {
     this.defendTarget = mothership.index;
   }
 
-  commandReadyAt(id: CommandId): number {
-    return this.commandReady[id] ?? 0;
+  /** The Admiral's slot, or -1. */
+  get commanderSlot(): number {
+    return this.seats[0];
+  }
+
+  /** Any command seat is taken. */
+  get hasCommand(): boolean {
+    return this.seats[0] >= 0 || this.seats[1] >= 0 || this.seats[2] >= 0;
+  }
+
+  commandReadyAt(id: CommandId, seat: SeatId = 0): number {
+    return this.commandReady[`${seat}:${id}`] ?? 0;
   }
 }
 
@@ -585,8 +611,9 @@ export class World {
    * Fleet Command orders and pings from hosts, carried out in step 1 of the next tick (so their
    * events land in that tick's snapshot). See systems/command.ts.
    */
-  readonly pendingOrders: { team: TeamId; id: CommandId; x: number; y: number; point: number }[] = [];
+  readonly pendingOrders: { team: TeamId; id: CommandId; x: number; y: number; point: number; seat?: SeatId }[] = [];
   readonly pendingPings: { team: TeamId; x: number; y: number }[] = [];
+  readonly pendingUpgrades: { team: TeamId; seat: SeatId; base: number; track: UpgradeTrack; option: TurretType }[] = [];
   /** Fractional crystal pairs owed by the spawner. */
   crystalSpawnAcc = 0;
   readonly match: MatchState = { over: false, winner: -1, endReason: '', endTime: 0, killsAtCheck: null, vp: [0, 0] };

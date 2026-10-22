@@ -14,7 +14,7 @@ export const DREADNOUGHT: ShipClass = {
   name: 'Dreadnought',
   role: 'Capital gun platform',
   summary: 'The biggest gun in the fleet: a charged spinal cannon. Slow to turn, slow to die.',
-  hull: 700,
+  hull: 1050,
   speed: 170,
   radius: 48,
   turnRate: 1.4,

@@ -1,10 +1,11 @@
 import { CLASS_ORDER, HULL_INDEX } from '../content/classes/index';
-import { COMMAND_RULES, COMMANDS } from '../content/command';
+import { COMMAND_RULES, COMMANDS, type SeatId } from '../content/command';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
 import type { DeployKind, DroneBehavior } from '../content/types';
+import { TURRET_TYPES } from '../content/upgrades';
 import { abilityCooldown } from '../sim/systems/abilities';
-import { commandCost } from '../sim/systems/command';
+import { commandCost, seatCanIssue } from '../sim/systems/command';
 import { nextIncomeIn } from '../sim/systems/points';
 import { quirkGauge } from '../sim/systems/quirks';
 import { type AbilityState, type Ship, TIERS, type World } from '../sim/world';
@@ -15,14 +16,15 @@ import { type AbilityState, type Ship, TIERS, type World } from '../sim/world';
  * section layout here is the starting point for that protocol.
  */
 export const SNAP = {
-  header: 48,
+  header: 64,
   self: 64,
-  command: COMMANDS.length * 2,
+  /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
+  command: COMMANDS.length * 3,
   ship: 18,
   projectile: 8, // x, y, vx, vy, team, radius, flags, remaining lifetime
   crystal: 3,
   point: 8,
-  structure: 4,
+  structure: 8,
   drone: 7,
   deployable: 6,
   zone: 6,
@@ -69,7 +71,7 @@ export const H = {
   rallyLeft: 32,
   rallyX: 33,
   rallyY: 34,
-  /** Slot of the viewer team's commander, or -1. */
+  /** Slot of the viewer team's Admiral, or -1 (FOB Commander seats: seat1, seat2). */
   commanderSlot: 35,
   pointsHeld0: 36,
   pointsHeld1: 37,
@@ -83,10 +85,18 @@ export const H = {
   pingKind: 43,
   pingPoint: 44,
   structureCount: 45,
+  seat1: 46,
+  seat2: 47,
+  /** The viewer team's High Command Credits and seconds left on its Breakthrough. */
+  credits: 48,
+  breakthrough: 49,
 } as const;
 
-/** Per structure (motherships 0–1, then FOBs in map order): hull, max hull, alive, shielded. */
-export const STRUCT = { hull: 0, maxHull: 1, alive: 2, shielded: 3 } as const;
+/**
+ * Per structure (motherships 0–1, then FOBs in map order): hull, max hull, alive, shielded, turret
+ * refit (TURRET_TYPES index), Shipyard and Plating levels, seconds left on an enemy EMP.
+ */
+export const STRUCT = { hull: 0, maxHull: 1, alive: 2, shielded: 3, turretType: 4, shipyard: 5, plating: 6, emp: 7 } as const;
 /** Per node: meter, owner, contested, hot seconds left, pushing ×2, hull fraction, lockout seconds left. */
 export const POINT = { meter: 0, owner: 1, contested: 2, hot: 3, push0: 4, push1: 5, hull: 6, locked: 7 } as const;
 
@@ -119,6 +129,8 @@ export const SELF = {
   shardsLost: 38,
   xpEarned: 39,
   alive: 40,
+  /** Command seat (SeatId) or -1. */
+  seat: 41,
 } as const;
 
 export const SHIP = {
@@ -146,7 +158,7 @@ export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visib
 
 export const PROJ_FLAG = { structure: 1, crit: 2, missile: 4, heal: 8, drone: 16, fullCharge: 32 } as const;
 
-export const DRONE_BEHAVIORS: readonly DroneBehavior[] = ['orbit', 'swarm', 'guard', 'decoy'];
+export const DRONE_BEHAVIORS: readonly DroneBehavior[] = ['orbit', 'swarm', 'guard', 'decoy', 'bomber', 'interceptor', 'recon', 'fighter'];
 export const DEPLOY_KINDS: readonly DeployKind[] = ['turret', 'mine', 'emitter', 'beacon', 'platform'];
 export const ZONE_FLAG = { damage: 1, heal: 2, blocks: 4, reveal: 8, pull: 16, status: 32 } as const;
 
@@ -286,12 +298,20 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
   b[H.pingKind] = myTeam.pingKind;
   b[H.pingPoint] = myTeam.pingPoint;
   b[H.structureCount] = w.structures.length;
+  b[H.seat1] = myTeam.seats[1];
+  b[H.seat2] = myTeam.seats[2];
+  b[H.credits] = myTeam.credits;
+  b[H.breakthrough] = Math.max(0, myTeam.breakthroughUntil - w.time);
   for (let i = 0, k = o.structures; i < w.structures.length; i++, k += SNAP.structure) {
     const st = w.structures[i];
     b[k + STRUCT.hull] = st.hull;
     b[k + STRUCT.maxHull] = st.maxHull;
     b[k + STRUCT.alive] = st.alive ? 1 : 0;
     b[k + STRUCT.shielded] = st.shielded ? 1 : 0;
+    b[k + STRUCT.turretType] = TURRET_TYPES.indexOf(st.turretType);
+    b[k + STRUCT.shipyard] = st.shipyard;
+    b[k + STRUCT.plating] = st.plating;
+    b[k + STRUCT.emp] = Math.max(0, st.empUntil - w.time);
   }
   b[H.overcharge] = Math.max(0, myTeam.overchargeUntil - w.time);
   b[H.jammed] = Math.max(0, w.enemyOf(myTeam.id).jamUntil - w.time);
@@ -328,13 +348,17 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[s + SELF.shardsLost] = me.shardsLost;
     b[s + SELF.xpEarned] = me.xpEarned;
     b[s + SELF.alive] = me.alive ? 1 : 0;
+    b[s + SELF.seat] = me.commander ? me.seat : -1;
 
-    // Fleet Command: per order, seconds until ready and the current (possibly discounted) cost.
+    // Fleet Command: per order, seconds until ready for our seat, the current (possibly
+    // discounted) cost, and whether our seat may issue it.
+    const seat = (me.commander ? me.seat : 0) as SeatId;
     let c = o.command;
     for (const def of COMMANDS) {
-      b[c] = Math.max(0, myTeam.commandReadyAt(def.id) - w.time);
+      b[c] = Math.max(0, myTeam.commandReadyAt(def.id, seat) - w.time);
       b[c + 1] = commandCost(w, myTeam.id, def.id);
-      c += 2;
+      b[c + 2] = me.commander && seatCanIssue(myTeam, seat, def.id) ? 1 : 0;
+      c += 3;
     }
   }
 

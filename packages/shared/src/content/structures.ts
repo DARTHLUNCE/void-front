@@ -62,11 +62,16 @@ export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
   swarm: { hull: 30, damage: 6, fireInterval: 0.25, speed: 420, range: 380, splash: 0, structureMul: 1, lifesteal: 0, radius: 7 },
   guard: { hull: 140, damage: 9, fireInterval: 0.3, speed: 300, range: 650, splash: 0, structureMul: 1, lifesteal: 0, radius: 11 },
   decoy: { hull: 30, damage: 0, fireInterval: 1, speed: 330, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 17 },
-  // Commander wings: bombers hit structures and nodes, interceptors hunt ships and drones, recon spots.
+  // Commander wings: bombers hit structures and nodes, interceptors hunt drones then ships, fighters
+  // dogfight ships, defenders (guard) hold a spot, recon spots.
   bomber: { hull: 160, damage: 45, fireInterval: 1.4, speed: 250, range: 480, splash: 140, structureMul: 3, lifesteal: 0, radius: 13 },
   interceptor: { hull: 80, damage: 8, fireInterval: 0.2, speed: 540, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 9 },
   recon: { hull: 60, damage: 0, fireInterval: 1, speed: 420, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 9, vision: 1_600 },
+  fighter: { hull: 120, damage: 11, fireInterval: 0.28, speed: 430, range: 520, splash: 0, structureMul: 1, lifesteal: 0, radius: 10 },
 };
+
+/** Commander wings launch from a base and fly to their target; their timer runs only once they arrive. */
+export const WING_LAUNCH = { spread: 70 } as const;
 
 /**
  * A mothership whose FOBs are both down is exposed: its heal aura runs at reduced power and its

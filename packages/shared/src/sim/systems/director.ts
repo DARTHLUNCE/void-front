@@ -74,7 +74,7 @@ function direct(w: World, team: TeamState): void {
       continue;
     }
     if (b.job === Job.Farm || (b.job === Job.Rally && w.time >= team.rallyUntil)) setSkirmish(w, s, -1);
-    // The push window only governs recruiting: crossing the map takes longer than 30 s, so
+    // The push timer only governs recruiting: crossing the map takes longer than 30 s, so
     // assaulters stay committed until they die or retreat (see respawnShip / think).
     if (b.job === Job.Defend) defenders++;
     if (b.job === Job.Assault) assaulters++;

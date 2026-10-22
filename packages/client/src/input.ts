@@ -1,23 +1,32 @@
 import type { InputFrame } from './protocol';
 
 export type ControlScheme = 'mouse' | 'wasd';
+/** How the pilot sets the throttle: arrow keys (the wheel zooms) or the wheel (Ctrl+wheel zooms). */
+export type ThrottleMode = 'keys' | 'wheel';
+
+/** Throttle steps: 10% to 100%, in tenths. */
+const THROTTLE_STEP = 0.1;
+const THROTTLE_MIN = 0.1;
 
 const STAT_KEYS: Record<ControlScheme, string[]> = {
   mouse: ['KeyQ', 'KeyW', 'KeyE', 'KeyR'],
   wasd: ['KeyZ', 'KeyX', 'KeyC', 'KeyV'],
 };
 const AUTOFIRE_KEY: Record<ControlScheme, string> = { mouse: 'KeyX', wasd: 'KeyF' };
+/** Extra commander order keys after the number row (digits 13–18). */
+const ORDER_LETTERS = ['KeyZ', 'KeyX', 'KeyC', 'KeyV', 'KeyB', 'KeyN'];
 
 export interface InputHandlers {
   stat(index: number): void;
-  /** Number row 1–9, then 0, -, = as 10–12 (tier picks for pilots, orders for the commander). */
+  /** Number row 1–9, then 0, -, = as 10–12, then Z X C V B N as 13–18 (tier picks, seat picks, commander orders). */
   digit(n: number): void;
   scoreboard(show: boolean): void;
   bigMap(): void;
   autofire(on: boolean): void;
   /** Mouse press on the game view (not on HUD controls), in screen pixels. */
   press(x: number, y: number, button: number): void;
-  wheel(deltaY: number, x: number, y: number): void;
+  /** `zoom` is true when this wheel turn should zoom (always, or with Ctrl in wheel-throttle mode). */
+  wheel(deltaY: number, x: number, y: number, zoom: boolean): void;
   escape(): void;
 }
 
@@ -29,10 +38,13 @@ export class Input {
   private right = false;
   private readonly keys = new Set<string>();
   autofire = false;
+  /** Share of top speed the engines drive toward (W/A/S/D or the mouse thrust direction). */
+  throttle = 1;
   private readonly off: (() => void)[] = [];
 
   constructor(
     readonly scheme: ControlScheme,
+    readonly throttleMode: ThrottleMode,
     private readonly h: InputHandlers,
   ) {
     this.mouseX = window.innerWidth / 2;
@@ -47,7 +59,16 @@ export class Input {
       if (e.button === 2) this.right = true;
       this.h.press(e.clientX, e.clientY, e.button);
     });
-    this.on(window, 'wheel', (e: WheelEvent) => this.h.wheel(e.deltaY, e.clientX, e.clientY));
+    this.on(
+      window,
+      'wheel',
+      (e: WheelEvent) => {
+        // Ctrl+wheel would zoom the whole page.
+        if (e.ctrlKey) e.preventDefault();
+        this.h.wheel(e.deltaY, e.clientX, e.clientY, this.throttleMode === 'keys' || e.ctrlKey);
+      },
+      { passive: false },
+    );
     this.on(window, 'mouseup', (e: MouseEvent) => {
       if (e.button === 0) this.left = false;
       if (e.button === 2) this.right = false;
@@ -63,8 +84,9 @@ export class Input {
         if (!e.repeat) this.h.scoreboard(true);
         return;
       }
-      // Space is the brake: never let it scroll or re-click a focused HUD button.
-      if (e.code === 'Space') e.preventDefault();
+      // Space is the brake and the arrows set the throttle: never let them scroll or re-click a focused HUD button.
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') e.preventDefault();
+      if (this.throttleMode === 'keys' && (e.code === 'ArrowUp' || e.code === 'ArrowDown')) this.stepThrottle(e.code === 'ArrowUp' ? 1 : -1);
       if (e.repeat) return;
       this.keys.add(e.code);
       const stat = STAT_KEYS[this.scheme].indexOf(e.code);
@@ -80,6 +102,7 @@ export class Input {
       else if (e.code === 'Digit0') this.h.digit(10);
       else if (e.code === 'Minus') this.h.digit(11);
       else if (e.code === 'Equal') this.h.digit(12);
+      else if (ORDER_LETTERS.includes(e.code)) this.h.digit(13 + ORDER_LETTERS.indexOf(e.code));
     });
     this.on(window, 'keyup', (e: KeyboardEvent) => {
       if (e.code === 'Space') e.preventDefault();
@@ -91,9 +114,14 @@ export class Input {
     });
   }
 
-  private on<E extends Event>(target: Window, type: string, fn: (e: E) => void): void {
-    target.addEventListener(type, fn as EventListener);
+  private on<E extends Event>(target: Window, type: string, fn: (e: E) => void, opts?: AddEventListenerOptions): void {
+    target.addEventListener(type, fn as EventListener, opts);
     this.off.push(() => target.removeEventListener(type, fn as EventListener));
+  }
+
+  /** Move the throttle up (+1) or down (-1) one 10% step. */
+  stepThrottle(dir: number): void {
+    this.throttle = Math.min(1, Math.max(THROTTLE_MIN, Math.round((this.throttle + dir * THROTTLE_STEP) * 10) / 10));
   }
 
   /**
@@ -127,8 +155,8 @@ export class Input {
     const cursor = toWorld(this.mouseX, this.mouseY);
     const braking = this.braking;
     return {
-      moveX: braking ? 0 : moveX,
-      moveY: braking ? 0 : moveY,
+      moveX: braking ? 0 : moveX * this.throttle,
+      moveY: braking ? 0 : moveY * this.throttle,
       aim,
       cursorX: cursor.x,
       cursorY: cursor.y,

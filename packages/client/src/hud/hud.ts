@@ -1,5 +1,6 @@
 import {
   ABILITY,
+  BASE_UPGRADES,
   CLASS_ORDER,
   CLASSES,
   COMMANDS,
@@ -24,14 +25,19 @@ import {
   SPAWN_AT_STRUCTURE,
   teamCap,
   TIERS,
+  TURRET_REFITS,
+  TURRET_TYPES,
   type ClassId,
   type CommandId,
   type MatchInfo,
+  type SeatId,
   type ShipClass,
+  type TurretType,
+  type UpgradeTrack,
 } from '@void-front/shared';
 import { HULL_BY_ID } from '../art/hulls';
 import { bounds, type Shape } from '../art/shapes';
-import { autofireKeyLabel, statKeyLabels, type ControlScheme } from '../input';
+import { autofireKeyLabel, statKeyLabels, type ControlScheme, type ThrottleMode } from '../input';
 import type { Snap } from '../snap';
 
 const TEAM_NAMES = ['Cobalt', 'Ember'];
@@ -41,13 +47,14 @@ const RESOURCES = [
   { id: 'fuel', name: 'Fuel', css: '#ffd166', use: 'starship wings' },
   { id: 'manpower', name: 'Manpower', css: '#8cf0b0', use: 'spawns and reinforcements' },
 ] as const;
-/** Commander hotkeys, in COMMANDS order. */
-export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
+/** Commander hotkeys, handed out in order to the orders your seat can issue (Input sends these as digits 1–18). */
+export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Z', 'X', 'C', 'V', 'B', 'N'];
 const PING_NAMES = ['Move here', 'Attack', 'Defend'];
 const PING_CSS = ['#6ff3ff', '#ff7a4d', '#5cff9d'];
 const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge', lockOn: 'Lock-On' };
-/** Picker key for the commander seat: the key after the last class (0 on the number row). */
-const COMMANDER_KEY = CLASS_ORDER.length + 1 === 10 ? '0' : String(CLASS_ORDER.length + 1);
+/** Picker keys for the command seats (Admiral, FOB 1, FOB 2): 0, -, = after the nine classes. */
+const SEAT_KEYS = ['0', '-', '='];
+const TURRET_NAMES: Record<TurretType, string> = { standard: 'Standard turrets', rocket: 'Rocket turrets', laser: 'Laser turrets' };
 const BEACON = DEPLOY_KINDS.indexOf('beacon');
 
 interface FeedEntry {
@@ -58,7 +65,10 @@ interface FeedEntry {
 export interface HudHandlers {
   stat(index: number): void;
   tier(option: number): void;
-  pickClass(choice: ClassId | 'commander'): void;
+  pickClass(choice: ClassId): void;
+  pickSeat(seat: SeatId): void;
+  /** Spend Credits on base `base` (0 Titan, 1–2 our FOBs). */
+  upgrade(base: number, track: UpgradeTrack, option: TurretType): void;
   spawn(choice: number): void;
   /** Commander picked an order from the panel. */
   order(id: CommandId): void;
@@ -87,10 +97,13 @@ export class Hud {
   scoreboardOpen = false;
   /** Order waiting for a map click, highlighted in the panel. */
   pendingOrder: CommandId | null = null;
+  /** Orders our seat can issue, in panel order: ORDER_KEYS[i] fires visibleOrders[i]. */
+  visibleOrders: CommandId[] = [];
 
   constructor(
     private readonly root: HTMLElement,
     scheme: ControlScheme,
+    throttleMode: ThrottleMode,
     private readonly h: HudHandlers,
   ) {
     const keys = statKeyLabels(scheme);
@@ -113,7 +126,6 @@ export class Hud {
           <div class="bars">
             <div class="who"><b data-k="cname"></b> <span data-k="hname"></span></div>
             <div class="bar xp"><i data-k="xp"></i><span data-k="xptext"></span></div>
-            <div class="bar hull"><i data-k="hull"></i><span data-k="hulltext"></span></div>
           </div>
         </div>
         <div class="shards"><span class="gem">◆</span> <b data-k="shards">0</b> shards <small>· buy upgrades, costs climb per level</small></div>
@@ -123,30 +135,56 @@ export class Hud {
           ).join('')}
         </div>
       </div>
-      <div data-k="abilities" class="abilities panel hidden">
-        ${['RMB', 'T', 'G']
-          .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
-          .join('')}
-        <div class="meters">
-          <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
-          <div class="chips"><span data-k="brake" class="chip">Brake · Space</span><span data-k="cruise" class="chip">Cruise · Shift</span><span data-k="auto" class="chip">Auto-fire · ${autofireKeyLabel(scheme)}</span></div>
+      <div data-k="abilities" class="cockpit hidden">
+        <div class="dash">
+          <div class="strip">
+            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
+            <span class="tag"><i data-k="brake" class="led red"></i>BRK <kbd>Space</kbd></span>
+            <span class="tag"><i data-k="auto" class="led green"></i>AUTO <kbd>${autofireKeyLabel(scheme)}</kbd></span>
+            <span class="tag"><i data-k="slLed" class="led amber"></i>SUB-L</span>
+            <span class="tag"><i data-k="dmgLed" class="led red"></i>DMG</span>
+            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
+          </div>
+          <div data-k="hullScope" class="scope hullscope">
+            <div data-k="hullDial" class="dial"></div>
+            <div class="glass"><span data-k="hullPic" class="wire"></span><b data-k="hullPct">100%</b><small>HULL</small><em data-k="hulltext"></em></div>
+          </div>
+          <div class="crt">
+            <div class="crt-head"><b data-k="crtName"></b><span data-k="crtTier"></span></div>
+            <div class="crt-abilities">
+              ${['RMB', 'T', 'G']
+                .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
+                .join('')}
+            </div>
+            <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
+          </div>
+          <div class="lever">
+            <label>THR</label>
+            <div data-k="thrStack" class="stack">${'<i></i>'.repeat(10)}</div>
+            <b data-k="thrText">100%</b>
+            <kbd>${throttleMode === 'keys' ? '&uarr;&darr;' : 'Wheel'}</kbd>
+          </div>
+          <div data-k="sublight" class="scope slscope">
+            <div data-k="slDial" class="dial"></div>
+            <div class="glass"><span class="chevrons">&#x25B2;&#x25B2;</span><b data-k="slText">READY</b><small>SUB-LIGHT</small><kbd>Shift</kbd></div>
+          </div>
         </div>
       </div>
       <div data-k="tierPop" class="tierpop panel hidden"></div>
       <div data-k="command" class="command panel hidden">
-        <h3>Fleet Command</h3>
+        <h3 data-k="cmdTitle">Fleet Command</h3>
         <div data-k="res" class="res"></div>
         <div data-k="cmdNote" class="note"></div>
         <div class="orders">
           ${RESOURCES.map(
             (r) =>
-              `<h4 style="color:${r.css}">${r.name} <small>${r.use}</small></h4>` +
-              COMMANDS.map((c, i) => [c, i] as const)
-                .filter(([c]) => c.resource === r.id)
-                .map(([c, i]) => `<button class="order" data-order="${c.id}" title="${c.description}"><kbd>${ORDER_KEYS[i]}</kbd><b>${c.name}</b><span class="cost"></span><em>${c.description}</em><i class="cd"></i></button>`)
+              `<h4 data-group="${r.id}" style="color:${r.css}">${r.name} <small>${r.use}</small></h4>` +
+              COMMANDS.filter((c) => c.resource === r.id)
+                .map((c) => `<button class="order" data-order="${c.id}" title="${c.description}"><kbd></kbd><b>${c.name}</b><span class="cost"></span><em>${c.description}</em><i class="cd"></i></button>`)
                 .join(''),
           ).join('')}
         </div>
+        <div data-k="upgrades" class="upgrades"></div>
         <div class="hint">Right-click the map to ping (free) · WASD / arrows / screen edge pan · wheel zoom · Esc cancels an order</div>
       </div>
       <div data-k="perf" class="perf"></div>
@@ -160,9 +198,16 @@ export class Hud {
         <p class="hint">Nine hull classes, smallest to largest, five tiers each. Bigger hulls hit harder and take more punishment, but turn and accelerate slowly, respawn slower, and are limited per team.</p>
         <div class="classes">
           ${CLASS_ORDER.map((id, i) => classCard(CLASSES[id], i)).join('')}
-          <button class="cls commander" data-pick="commander"><kbd>${COMMANDER_KEY}</kbd><b>Fleet Commander</b><small>Strategist · commands from the Titan</small>
-            <em>Watch the whole war map, ping targets for free, and spend the Munitions, Fuel and Manpower your nodes and FOBs pay each minute: strikes, starship wings, spawn beacons, reinforcements.</em>
-            <span data-k="cmdTaken" class="taken"></span></button>
+          <button class="cls commander" data-seat="0"><kbd>${SEAT_KEYS[0]}</kbd><b>Admiral</b><small>High Command · on the Titan</small>
+            <em>Watch the whole war map, ping targets for free, spend Munitions on bombs, strikes and recon and Manpower on spawns, reinforcements and Breakthrough. Buys the Titan's upgrades with Credits, and runs any FOB nobody commands.</em>
+            <span data-k="seatTaken0" class="taken"></span></button>
+          ${[1, 2]
+            .map(
+              (seat) => `<button class="cls commander" data-seat="${seat}"><kbd>${SEAT_KEYS[seat]}</kbd><b data-k="seatName${seat}">FOB Commander</b><small>Station command · on the FOB</small>
+            <em>Launch Fuel wings from your FOB (fighters, interceptors, bombers, recon, defenders) and buy its turret, shipyard and armor upgrades with Credits.</em>
+            <span data-k="seatTaken${seat}" class="taken"></span></button>`,
+            )
+            .join('')}
         </div>
       </div></div>
       <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><button data-k="again" class="primary">Play again</button></div></div>
@@ -178,7 +223,14 @@ export class Hud {
       this.orderRows.push(b);
       b.addEventListener('click', () => this.h.order(b.dataset.order as CommandId));
     });
-    root.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => this.h.pickClass(b.dataset.pick as ClassId | 'commander')));
+    root.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => this.h.pickClass(b.dataset.pick as ClassId)));
+    root.querySelectorAll<HTMLButtonElement>('[data-seat]').forEach((b) => b.addEventListener('click', () => this.h.pickSeat(Number(b.dataset.seat) as SeatId)));
+    this.$.upgrades.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-up]');
+      if (!btn) return;
+      const [base, track, option] = btn.dataset.up!.split(':');
+      this.h.upgrade(Number(base), track as UpgradeTrack, option as TurretType);
+    });
     CLASS_ORDER.forEach((id, i) => (this.capEls[i] = root.querySelector<HTMLElement>(`[data-cap="${id}"]`)!));
     this.$.tierPop.addEventListener('click', (e) => {
       const opt = (e.target as HTMLElement).closest<HTMLElement>('[data-opt]');
@@ -216,6 +268,24 @@ export class Hud {
   }
 
   setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
+
+  setThrottle(t: number): void {
+    const lit = Math.round(t * 10);
+    this.set('thrText', `${Math.round(t * 100)}%`);
+    if (this.cache.get('thrLit') === String(lit)) return;
+    this.cache.set('thrLit', String(lit));
+    // Segments fill bottom-up (the stack is laid out top-down, so count from the end).
+    const segs = this.$.thrStack.children;
+    for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', segs.length - 1 - i < lit);
+  }
+
+  /** Set a CSS custom property, only when it changed. */
+  private setVar(key: string, name: string, value: string): void {
+    const ck = `${key}${name}`;
+    if (this.cache.get(ck) === value) return;
+    this.cache.set(ck, value);
+    this.$[key].style.setProperty(name, value);
+  }
 
   setAutofire(on: boolean): void {
     this.$.auto.classList.toggle('on', on);
@@ -279,7 +349,12 @@ export class Hud {
 
     this.show('picker', docked && !over);
     if (docked) {
-      this.set('cmdTaken', b[H.commanderSlot] >= 0 ? 'Seat taken' : '');
+      [H.commanderSlot, H.seat1, H.seat2].forEach((h, seat) => {
+        this.set(`seatTaken${seat}`, b[h] >= 0 ? 'Seat taken' : '');
+        this.$[`seatTaken${seat}`].closest('.cls')!.classList.toggle('full', b[h] >= 0);
+      });
+      this.set('seatName1', `FOB Commander · ${fobName(myTeam, 0)}`);
+      this.set('seatName2', `FOB Commander · ${fobName(myTeam, 1)}`);
       this.updateCaps(snap, myTeam);
     }
     this.show('pilot', !commander && !docked);
@@ -324,7 +399,7 @@ export class Hud {
           const where = point >= 0 ? KESSLER_REACH.points[point].name : 'marked spot';
           this.pushFeed(`<div><b style="color:${PING_CSS[b[k + 2]]}">Commander:</b> ${PING_NAMES[b[k + 2]]} · ${where}</div>`, now);
         } else if (type === EventType.Command && b[k + 1] !== myTeam) {
-          this.pushFeed(`<div><span style="color:${TEAM_CSS[b[k + 1]]}">Enemy command:</span> ${COMMANDS[b[k + 2]]?.name ?? ''}</div>`, now);
+          this.pushFeed(`<div><span style="color:${TEAM_CSS[b[k + 1]]}">Enemy ${b[k + 5] === 0 ? 'Admiral' : 'FOB Commander'}:</span> ${COMMANDS[b[k + 2]]?.name ?? ''}</div>`, now);
         } else if (type === EventType.TierBought && b[k + 1] === info.selfSlot) {
           this.toast(`Tier ${b[k + 2]} unlocked`, now);
         }
@@ -391,8 +466,26 @@ export class Hud {
     this.set('xptext', next < 0 ? 'All tiers owned' : `${Math.floor(xp)} / ${next} XP → tier ${tiers + 1}`);
     const hull = b[me + SHIP.hull];
     const maxHull = b[me + SHIP.maxHull];
-    this.set('hull', `${(100 * Math.max(0, hull)) / Math.max(1, maxHull)}%`, 'width');
+    // Cockpit hull scope: dial, wireframe of the current hull, and warning states.
+    const frac = Math.max(0, hull) / Math.max(1, maxHull);
+    this.setVar('hullDial', '--p', `${(frac * 360).toFixed(1)}deg`);
+    this.set('hullPct', `${Math.round(frac * 100)}%`);
     this.set('hulltext', `${Math.ceil(Math.max(0, hull))} / ${Math.round(maxHull)}`);
+    const state = frac < 0.25 ? 'crit' : frac < 0.5 ? 'warn' : '';
+    if (this.cache.get('hullState') !== state) {
+      this.cache.set('hullState', state);
+      this.$.hullScope.classList.toggle('warn', state === 'warn');
+      this.$.hullScope.classList.toggle('crit', state === 'crit');
+      this.$.dmgLed.classList.toggle('on', state === 'crit');
+    }
+    const model = hullNode?.hullModel ?? cls.hullModel;
+    if (this.cache.get('hullPic') !== model) {
+      this.cache.set('hullPic', model);
+      const art = HULL_BY_ID[model];
+      this.$.hullPic.innerHTML = art ? hullSvg(art.shapes) : '';
+    }
+    this.set('crtName', cls.name.toUpperCase());
+    this.set('crtTier', `TIER ${tiers} · ${cls.role.toUpperCase()}`);
     const shards = b[s + SELF.shards];
     this.set('shards', String(Math.floor(shards)));
     for (let i = 0; i < this.statRows.length; i++) {
@@ -453,11 +546,16 @@ export class Hud {
       this.set('gauge', `${Math.min(1, b[s + SELF.quirkGauge]) * 100}%`, 'width');
       this.$.gauge.parentElement!.classList.toggle('hot', cls.quirk === 'heat' && b[s + SELF.quirkGauge] >= 0.5);
     }
+    // Sub-Light: the scope's ring fills while Shift charges the drive, then the jump engages.
     const spool = b[s + SELF.cruiseSpool];
-    this.$.cruise.classList.toggle('on', spool >= 1);
-    this.$.cruise.classList.toggle('spool', spool > 0 && spool < 1);
+    this.setVar('slDial', '--p', `${(Math.min(1, spool) * 360).toFixed(1)}deg`);
+    this.set('slText', spool >= 1 ? 'ENGAGED' : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
+    this.$.sublight.classList.toggle('on', spool >= 1);
+    this.$.sublight.classList.toggle('spool', spool > 0 && spool < 1);
+    this.$.slLed.classList.toggle('on', spool > 0);
+    this.$.slLed.classList.toggle('blink', spool > 0 && spool < 1);
 
-    // Tier pop-up: which key picks which option.
+    // Tier pop-up: industrial module schematic cards with keybindings and hull SVG preview at Tier 3.
     if (this.tierReady(snap)) {
       const t = b[s + SELF.tiersOwned];
       const key = `pop:${cls.id}:${t}`;
@@ -465,13 +563,23 @@ export class Hud {
         this.cache.set('tierPop', key);
         const tier = cls.tiers[t];
         const hullTier = t + 1 === ECONOMY.hullTier;
+        const kindLabel = hullTier ? 'CHASSIS RETROFIT' : t === 4 ? 'ULTIMATE SYSTEM' : t === 0 ? 'ORDNANCE MOD' : t === 1 ? 'DEFENSE / THRUST' : 'TACTICAL CORE';
         this.$.tierPop.innerHTML = `
-          <h3>Tier ${t + 1} ready</h3>
-          <p class="hint">Press <kbd>1</kbd> or <kbd>2</kbd> (or click) to choose.${hullTier ? ' <b>New hull:</b> your stat upgrades reset and their costs start over.' : ''}</p>
+          <div class="tier-head"><h3>TIER ${t + 1} // ${kindLabel}</h3><span class="tcode">SYS-0${t + 1}</span></div>
+          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>Hull Retrofit:</b> swaps ship chassis and resets shard stat upgrades.' : ''}</p>
           ${tier.options
-            .map(
-              (o, i) => `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><b>${o.name}</b>${o.hullModel ? '<small>hull change</small>' : o.ultimate ? '<small>ultimate · T</small>' : o.extraAbility ? '<small>extra ability · G</small>' : ''}<em>${o.description}</em></button>`,
-            )
+            .map((o, i) => {
+              const code = `T${t + 1}-${i === 0 ? 'A' : 'B'}`;
+              const badge = o.hullModel
+                ? '<small class="badge hull">CHASSIS SWAP</small>'
+                : o.ultimate
+                  ? '<small class="badge ult">ULTIMATE · T</small>'
+                  : o.extraAbility
+                    ? '<small class="badge aux">AUXILIARY · G</small>'
+                    : '<small class="badge mod">PASSIVE MOD</small>';
+              const preview = o.hullModel && HULL_BY_ID[o.hullModel] ? `<span class="opt-hull">${hullSvg(HULL_BY_ID[o.hullModel].shapes)}</span>` : '';
+              return `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><span class="opt-top"><b>${o.name}</b><u class="ncode">${code}</u></span>${badge}${preview}<em>${o.description}</em></button>`;
+            })
             .join('')}`;
       }
     } else {
@@ -525,12 +633,16 @@ export class Hud {
 
   private updateCommand(snap: Snap): void {
     const b = snap.buf;
+    const seat = b[snap.o.self + SELF.seat] as SeatId;
+    const myTeam = b[snap.ship(this.info!.selfSlot) + SHIP.team];
+    this.set('cmdTitle', seat === 0 ? 'Admiral · Fleet Command' : `FOB Commander · ${fobName(myTeam, seat - 1)}`);
     const res = [b[H.munitions], b[H.fuel], b[H.manpower]];
     const income = incomePerMinute(snap);
+    const surge = b[H.breakthrough];
     this.set(
       'res',
       RESOURCES.map((r, i) => `<span style="color:${r.css}">${r.name} <b>${Math.floor(res[i])}</b><small>+${income[i]}/min</small></span>`).join('') +
-        `<span class="pulse">next pay ${Math.ceil(b[H.nextIncome])}s</span>`,
+        `<span class="pulse">next pay ${Math.ceil(b[H.nextIncome])}s${surge > 0 ? ` · <b style="color:#8cf0b0">Breakthrough ${Math.floor(surge / 60)}:${String(Math.floor(surge % 60)).padStart(2, '0')}</b>` : ''}</span>`,
       'html',
     );
     const held = b[myTeamHeld(snap)];
@@ -545,22 +657,76 @@ export class Hud {
           ? 'Holding 2 or fewer nodes: orders cost 30% less'
           : `Holding ${held} nodes`,
     );
-    COMMANDS.forEach((c, i) => {
-      const row = this.orderRows[i];
-      const k = snap.o.command + i * 2;
+    // Only the orders our seat can issue are shown; hotkeys go to them in panel order.
+    const visible: CommandId[] = [];
+    this.orderRows.forEach((row) => {
+      const i = COMMANDS.findIndex((c) => c.id === row.dataset.order);
+      const c = COMMANDS[i];
+      const k = snap.o.command + i * 3;
       const cd = b[k];
       const cost = b[k + 1];
+      const allowed = b[k + 2] === 1;
+      const key = allowed ? ORDER_KEYS[visible.length] ?? '' : '';
+      if (allowed) visible.push(c.id);
       const ri = RESOURCES.findIndex((r) => r.id === c.resource);
       const can = cd <= 0 && res[ri] >= cost;
-      const v = `${Math.ceil(cd)}:${cost}:${can}:${this.pendingOrder === c.id}`;
+      const v = `${Math.ceil(cd)}:${cost}:${can}:${this.pendingOrder === c.id}:${allowed}:${key}`;
       if (this.cache.get(`order${i}`) === v) return;
       this.cache.set(`order${i}`, v);
+      row.classList.toggle('hidden', !allowed);
       row.classList.toggle('can', can);
       row.classList.toggle('armed', this.pendingOrder === c.id);
+      row.querySelector('kbd')!.textContent = key;
       row.querySelector('.cost')!.innerHTML = `<span style="color:${RESOURCES[ri].css}">${cost} ${RESOURCES[ri].name}</span>`;
       const cdEl = row.querySelector<HTMLElement>('.cd')!;
       cdEl.textContent = cd > 0 ? `${Math.ceil(cd)}s` : '';
     });
+    this.visibleOrders = visible;
+    this.root.querySelectorAll<HTMLElement>('.orders h4').forEach((h) => {
+      h.classList.toggle('hidden', !COMMANDS.some((c) => c.resource === h.dataset.group && visible.includes(c.id)));
+    });
+    this.updateUpgrades(snap, seat, myTeam);
+  }
+
+  /** High Command: Credits and the upgrade buttons for each base our seat looks after. */
+  private updateUpgrades(snap: Snap, seat: SeatId, myTeam: number): void {
+    const b = snap.buf;
+    const credits = b[H.credits];
+    const seatSlots = [b[H.commanderSlot], b[H.seat1], b[H.seat2]];
+    const bases = [0, 1, 2].filter((base) => base === seat || (seat === 0 && seatSlots[base] < 0));
+    const fobIdx = KESSLER_REACH.fobs.map((f, i) => (f.team === myTeam ? 2 + i : -1)).filter((i) => i >= 0);
+    const structOf = (base: number) => (base === 0 ? myTeam : fobIdx[base - 1]);
+    const state = bases
+      .map((base) => {
+        const k = snap.o.structures + structOf(base) * SNAP.structure;
+        return [b[k + STRUCT.alive], b[k + STRUCT.turretType], b[k + STRUCT.shipyard], b[k + STRUCT.plating], b[k + STRUCT.emp] > 0 ? 1 : 0].join(',');
+      })
+      .join('|');
+    const key = `${Math.floor(credits)}|${state}`;
+    if (this.cache.get('upgrades') === key) return;
+    this.cache.set('upgrades', key);
+    const btn = (base: number, track: UpgradeTrack, option: string, label: string, cost: number) =>
+      `<button class="up ${credits >= cost ? 'can' : ''}" data-up="${base}:${track}:${option}">${label} <b>◆ ${cost}</b></button>`;
+    const rows = bases.map((base) => {
+      const k = snap.o.structures + structOf(base) * SNAP.structure;
+      const name = base === 0 ? 'Titan' : `FOB ${fobName(myTeam, base - 1)}`;
+      if (b[k + STRUCT.alive] !== 1) return `<div class="base dead"><b>${name}</b> <small>destroyed</small></div>`;
+      const turret = TURRET_TYPES[b[k + STRUCT.turretType]] ?? 'standard';
+      const shipyard = b[k + STRUCT.shipyard];
+      const plating = b[k + STRUCT.plating];
+      const refits = (['rocket', 'laser'] as const).filter((t) => t !== turret).map((t) => btn(base, 'turrets', t, TURRET_REFITS[t].name.replace(' turrets', ''), TURRET_REFITS[t].cost));
+      const level = (track: 'shipyard' | 'plating', n: number) => {
+        const def = BASE_UPGRADES[track];
+        return n < def.costs.length ? btn(base, track, 'rocket', `${def.name} ${'I'.repeat(n + 1)}`, def.costs[n]) : `<span class="maxed">${def.name} max</span>`;
+      };
+      return `<div class="base"><div class="bhead"><b>${name}</b> <small>${TURRET_NAMES[turret]} · Shipyard ${shipyard}/3 · Plating ${plating}/3${b[k + STRUCT.emp] > 0 ? ' · <span class="emp">EMP</span>' : ''}</small></div>
+        <div class="ups">${refits.join('')}${level('shipyard', shipyard)}${level('plating', plating)}</div></div>`;
+    });
+    this.set(
+      'upgrades',
+      `<h4>High Command <small>◆ <b>${Math.floor(credits)}</b> Credits · 10% of every kill's loot</small></h4>${rows.join('')}`,
+      'html',
+    );
   }
 
   private updatePoints(snap: Snap): void {
@@ -608,7 +774,7 @@ export class Hud {
         .slice(0, 20)
         .map(
           (r) =>
-            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${r.slot === info.selfSlot ? 'You' : info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Commander' : r.cls}</td><td>${r.rank}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`,
+            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${r.slot === info.selfSlot ? 'You' : info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.rank}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`,
         )
         .join('')}</table></div>`;
     });
@@ -625,21 +791,39 @@ export class Hud {
     const b = snap.buf;
     const colors = ['#4aa8ff', '#ff7a3d'];
     c.clearRect(0, 0, W, Hh);
-    c.fillStyle = 'rgba(6,10,22,0.85)';
+    c.fillStyle = 'rgba(5, 8, 18, 0.9)';
     c.fillRect(0, 0, W, Hh);
-    c.strokeStyle = 'rgba(80,100,160,0.5)';
+    // Industrial tactical radar grid & DMZ centerline
+    c.strokeStyle = 'rgba(65, 95, 155, 0.22)';
+    c.lineWidth = 1;
+    for (let gx = 1; gx < 4; gx++) {
+      c.beginPath();
+      c.moveTo((W * gx) / 4, 0);
+      c.lineTo((W * gx) / 4, Hh);
+      c.stroke();
+    }
+    c.beginPath();
+    c.moveTo(0, Hh / 2);
+    c.lineTo(W, Hh / 2);
+    c.stroke();
+    c.strokeStyle = 'rgba(95, 135, 210, 0.55)';
     c.strokeRect(0.5, 0.5, W - 1, Hh - 1);
     for (let i = 0, k = snap.o.points; i < b[H.pointCount]; i++, k += SNAP.point) {
       const p = map.points[i];
       const owner = b[k + 1];
-      c.fillStyle = b[k + POINT.locked] > 0 ? 'rgba(255,92,108,0.3)' : owner < 0 ? 'rgba(108,122,168,0.35)' : owner === 0 ? 'rgba(74,168,255,0.4)' : 'rgba(255,122,61,0.4)';
+      const px = p.pos.x * sx;
+      const py = p.pos.y * sy;
+      const r = Math.max(4, 480 * sx);
+      c.fillStyle = b[k + POINT.locked] > 0 ? 'rgba(255,92,108,0.35)' : owner < 0 ? 'rgba(108,122,168,0.38)' : owner === 0 ? 'rgba(74,168,255,0.48)' : 'rgba(255,122,61,0.48)';
       c.beginPath();
-      c.arc(p.pos.x * sx, p.pos.y * sy, Math.max(3, 450 * sx), 0, Math.PI * 2);
+      c.moveTo(px, py - r);
+      c.lineTo(px + r, py);
+      c.lineTo(px, py + r);
+      c.lineTo(px - r, py);
+      c.closePath();
       c.fill();
-      if (b[k + 2]) {
-        c.strokeStyle = '#fff';
-        c.stroke();
-      }
+      c.strokeStyle = b[k + 2] ? '#ffffff' : owner === 0 ? '#4aa8ff' : owner === 1 ? '#ff7a3d' : 'rgba(140,160,210,0.6)';
+      c.stroke();
     }
     map.motherships.forEach((m, team) => {
       c.fillStyle = colors[team];
@@ -711,6 +895,12 @@ function incomePerMinute(snap: Snap): number[] {
   return out;
 }
 
+/** "North" or "South" for a team's k-th FOB (map order). */
+function fobName(team: number, k: number): string {
+  const f = KESSLER_REACH.fobs.filter((fob) => fob.team === team)[k];
+  return f && f.pos.y < KESSLER_REACH.height / 2 ? 'North' : 'South';
+}
+
 function myTeamHeld(snap: Snap): number {
   const me = snap.ship(snap.buf[H.selfSlot]);
   return snap.buf[me + SHIP.team] === 0 ? H.pointsHeld0 : H.pointsHeld1;
@@ -719,24 +909,38 @@ function myTeamHeld(snap: Snap): number {
 function classCard(cls: ShipClass, i: number): string {
   const art = HULL_BY_ID[cls.hullModel];
   const preview = art ? `<span class="hullpic" style="--k:${(cls.radius / 48).toFixed(2)}">${hullSvg(art.shapes)}</span>` : '';
-  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd>${preview}<b>${cls.name}</b><small>${cls.role}</small>
+  const code = `CLS-0${i + 1}`;
+  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd><span class="cls-code">${code}</span>${preview}<b>${cls.name}</b><small>${cls.role}</small>
     <em>${cls.summary}</em>
-    <span class="kv"><span>Hull <b>${cls.hull}</b></span><span>Speed <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>Respawn <b>×${cls.respawnMul}</b></span></span>
-    <span class="sig">RMB · ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
+    <span class="kv"><span>HULL <b>${cls.hull}</b></span><span>SPD <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>RSP <b>×${cls.respawnMul}</b></span></span>
+    <span class="sig">RMB // ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
 }
 
-/** Tiny team-neutral silhouette for the picker card, scaled by hull size. */
+const SVG_FILL: Record<string, string> = {
+  hull: '#3b78d4',
+  dark: '#162848',
+  metal: '#5c6b84',
+  trim: '#c4d2e6',
+  accent: '#62e8ff',
+  cockpit: '#94f6ff',
+  engine: '#7df9ff',
+  void: '#050811',
+};
+
+/** Multi-layer industrial blueprint SVG for the picker card & tier-3 upgrade node card. */
 function hullSvg(shapes: Shape[]): string {
   const b = bounds(shapes);
   const parts = shapes
-    .filter((s) => s.t === 'poly' || s.t === 'circle')
-    .map((s) =>
-      s.t === 'poly'
-        ? `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}"/>`
-        : s.t === 'circle'
-          ? `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}"/>`
-          : '',
-    )
+    .map((s) => {
+      const fill = 'fill' in s && s.fill ? SVG_FILL[s.fill] ?? '#3b78d4' : 'none';
+      const stroke = 'stroke' in s && s.stroke ? SVG_FILL[s.stroke] ?? '#050811' : s.t === 'poly' && s.fill === 'hull' ? '#050811' : 'none';
+      const sw = 'w' in s && s.w ? s.w : s.t === 'poly' && s.fill === 'hull' ? 1 : 0;
+      if (s.t === 'poly') return `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      if (s.t === 'circle') return `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+      if (s.t === 'ellipse') return `<ellipse cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" rx="${s.rx.toFixed(1)}" ry="${s.ry.toFixed(1)}" fill="${fill}"/>`;
+      if (s.t === 'line') return `<polyline points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="none" stroke="${SVG_FILL[s.stroke] ?? '#62e8ff'}" stroke-width="${s.w}"/>`;
+      return '';
+    })
     .join('');
-  return `<svg viewBox="${b.x0.toFixed(0)} ${b.y0.toFixed(0)} ${(b.x1 - b.x0).toFixed(0)} ${(b.y1 - b.y0).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
+  return `<svg viewBox="${(b.x0 - 2).toFixed(0)} ${(b.y0 - 2).toFixed(0)} ${(b.x1 - b.x0 + 4).toFixed(0)} ${(b.y1 - b.y0 + 4).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
 }

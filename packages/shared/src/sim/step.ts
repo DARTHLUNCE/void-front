@@ -1,6 +1,6 @@
 import { tickAbility, tryCast } from './systems/abilities';
 import { aimAndFire, damageShip, stepProjectiles } from './systems/combat';
-import { issueCommand, issuePing } from './systems/command';
+import { buyUpgrade, issueCommand, issuePing } from './systems/command';
 import { collectCrystals, rebuildCrystalHash, seedCrystals, spawnCrystals } from './systems/crystals';
 import { runDirectors } from './systems/director';
 import { countOwnedDrones, rebuildDroneHash, stepDrones } from './systems/drones';
@@ -50,6 +50,7 @@ export function step(w: World): void {
   }
   for (const order of w.pendingOrders.splice(0)) issueCommand(w, order);
   for (const ping of w.pendingPings.splice(0)) issuePing(w, ping.team, ping.x, ping.y);
+  for (const u of w.pendingUpgrades.splice(0)) buyUpgrade(w, u.team, u.seat, u.base, u.track, u.option);
   runDirectors(w);
   for (const s of w.ships) {
     if (!s.alive || !s.bot) continue;
