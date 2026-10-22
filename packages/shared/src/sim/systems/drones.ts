@@ -211,12 +211,15 @@ export function stepDrones(w: World): void {
     d.cooldown -= DT;
     if (engaged && d.damage > 0 && d.cooldown <= 0 && (tx - d.x) ** 2 + (ty - d.y) ** 2 <= d.range * d.range) {
       const jitter = ((w.tick * 7919 + d.index * 104729) % 1000) / 1000 - 0.5;
-      const a = leadAngle(d.x, d.y, tx, ty, tvx, tvy, DRONE_GUN.projectileSpeed) + jitter * 2 * d.aimError;
-      const gun = { ...DRONE_GUN, damage: d.damage, life: (d.range / DRONE_GUN.projectileSpeed) * 1.15 };
+      const def = DRONES[d.behavior];
+      const speed = def.gun?.projectileSpeed ?? DRONE_GUN.projectileSpeed;
+      const a = leadAngle(d.x, d.y, tx, ty, tvx, tvy, speed) + jitter * 2 * d.aimError;
+      const gun = { ...DRONE_GUN, ...def.gun, damage: d.damage, life: (d.range / speed) * 1.15 };
       spawnPattern(w, d.owner, d.team, d.x, d.y, a, gun, 1, 1, 0);
       const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
       if (p) {
         p.fromDrone = true;
+        p.missile = def.missile === true;
         p.ap = d.ap;
         p.splash = d.splash;
         p.structureMul = d.structureMul;

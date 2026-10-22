@@ -30,7 +30,7 @@ export const DESTROYER: ShipClass = {
   radius: 52,
   turnRate: 210 * DEG,
   // Dual 50mm heavy autocannons: 2 × 12.75 every 0.25 s = 102 DPS, 52 AP, 780 u.
-  gun: { name: 'Dual 50mm Heavy Autocannons', damage: 12.75, fireInterval: 0.25, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 18, size: 5, life: 0.709, ap: 52 },
+  gun: { name: 'Dual 50mm Heavy Autocannons', damage: 12.75, fireInterval: 0.25, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 18, size: 5.5, life: 0.709, ap: 52 },
   secondary: { name: 'Twin 25mm Flak Auto-Turrets', count: 2, damage: 4.5, fireInterval: 0.25, ap: 24, range: 560, jitterDeg: 16, projectileSpeed: 1250, size: 3, ciws: true },
   quirk: 'pointDefense',
   accel: 4,
@@ -186,7 +186,7 @@ export const DESTROYER: ShipClass = {
           id: 'destroyer.t5.torpedoBarrage',
           name: 'Sequential Tube Salvo',
           tag: 'ULTIMATE',
-          description: 'Ripple-fire 5 heavy torpedoes (95 damage, 115 AP) in a tight hunting pack over 1.2 s.',
+          description: 'Ripple-fire 5 heavy torpedoes (95 damage, 120 AP) in a tight hunting pack over 1.2 s.',
           ultimate: {
             id: 'destroyer.tubeSalvo',
             name: 'Tube Salvo',
@@ -198,7 +198,7 @@ export const DESTROYER: ShipClass = {
                 structureMul: 1.5,
                 repeat: 5,
                 repeatInterval: 0.24,
-                gun: { count: 1, spread: 0, damage: 95, projectileSpeed: 680, life: 2.6, homingTurn: 2.4, size: 7, barrelGap: 0, ap: 115 },
+                gun: { count: 1, spread: 0, damage: 95, projectileSpeed: 680, life: 2.6, homingTurn: 2.4, size: 7, barrelGap: 0, ap: 120 },
               },
             ],
             botTags: ['hit', 'structure'],

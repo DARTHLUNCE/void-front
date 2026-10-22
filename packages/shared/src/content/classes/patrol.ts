@@ -7,18 +7,27 @@ export const PATROL_CRAFT: ShipClass = {
   name: 'Patrol Craft',
   role: 'Light interceptor / scout',
   summary: 'The smallest, most agile frame. Thin 15 armor lets heavy shells overpenetrate; its pulse lasers shred light craft and exposed sterns.',
-  hull: 220,
-  shield: 70,
+  hull: 320,
+  shield: 120,
   armor: 15,
   speed: 360,
   radius: 22,
   turnRate: 360 * DEG,
   // Twin 20mm pulse lasers: 2 × 8.8 every 0.2 s = 88 DPS, 22 AP, 720 u.
-  gun: { name: 'Twin 20mm Pulse Lasers', damage: 8.8, fireInterval: 0.2, projectileSpeed: 1000, count: 2, spread: 0, barrelGap: 12, size: 4, life: 0.72, ap: 22 },
+  gun: { name: 'Twin 20mm Pulse Lasers', damage: 8.8, fireInterval: 0.2, projectileSpeed: 1000, count: 2, spread: 0, barrelGap: 12, size: 3.5, life: 0.72, ap: 22 },
   quirk: 'momentum',
   quirkTuning: { buildTime: 1.8, damageBonus: 0, fireRateBonus: 0.25 },
   accel: 6,
-  respawnMul: 0.8,
+  respawnMul: 0.55,
+  // v2.1: the smallest, fastest-jinking hull: enemy auto-turrets scatter 2.5× as wide against it.
+  baseStats: { jitterOnMe: 1.5 },
+  // Evasion: jinking at speed (55%+ of top speed) shrugs off 45% of every hit and cycles the guns
+  // 40% faster; its pulse lasers find the gaps in an Armored hull's belt (+20 AP vs Cruisers and up).
+  modifiers: [
+    { stat: 'damageTaken', op: 'add', value: -0.45, when: 'jinking' },
+    { stat: 'fireRate', op: 'mul', value: 0.4, when: 'jinking' },
+    { stat: 'ap', op: 'add', value: 20, when: 'targetArmored' },
+  ],
   quirkInfo: {
     name: 'Slipstream Momentum',
     text: 'Flying within 30° of straight for 1.8 s builds +15% speed and +25% fire rate. Power on SPEED (←) doubles the buildup. A sharp turn or a hit resets it.',

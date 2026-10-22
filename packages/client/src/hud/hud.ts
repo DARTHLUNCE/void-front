@@ -25,7 +25,6 @@ import {
   STATUS_BIT,
   STRUCT,
   SPAWN_AT_STRUCTURE,
-  teamCap,
   TIERS,
   TURRET_REFITS,
   TURRET_TYPES,
@@ -37,10 +36,11 @@ import {
   type TurretType,
   type UpgradeTrack,
 } from '@void-front/shared';
-import { HULL_BY_ID } from '../art/hulls';
-import { bounds, type Shape } from '../art/shapes';
+import { hullThumb } from '../art/hullThumbs';
 import { autofireKeyLabel, statKeyLabels, type ControlScheme } from '../input';
 import type { Snap } from '../snap';
+import { Hangar } from './hangar';
+import { fobName, RADAR_SCOPES } from './hudData';
 
 const TEAM_NAMES = ['Cobalt', 'Ember'];
 const TEAM_CSS = ['var(--cobalt)', 'var(--ember)'];
@@ -54,22 +54,8 @@ export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-'
 const PING_NAMES = ['Move here', 'Attack', 'Defend'];
 const PING_CSS = ['#6ff3ff', '#ff7a4d', '#5cff9d'];
 const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge', lockOn: 'Lock-On' };
-/** Picker keys for the command seats (Admiral, FOB 1, FOB 2): 0, -, = after the nine classes. */
-const SEAT_KEYS = ['0', '-', '='];
 const TURRET_NAMES: Record<TurretType, string> = { standard: 'Standard turrets', rocket: 'Rocket turrets', laser: 'Laser turrets' };
 const BEACON = DEPLOY_KINDS.indexOf('beacon');
-/** Ship-scoped radar: base scope (world units, before vision modifiers) and bezel size per class. */
-const RADAR_SCOPES: Record<ClassId, { range: number; px: number }> = {
-  patrol: { range: 1800, px: 146 },
-  corvette: { range: 1900, px: 148 },
-  frigate: { range: 2100, px: 154 },
-  destroyer: { range: 2200, px: 158 },
-  cruiser: { range: 2400, px: 164 },
-  battlecruiser: { range: 2700, px: 170 },
-  battleship: { range: 2900, px: 176 },
-  dreadnought: { range: 3200, px: 182 },
-  carrier: { range: 3600, px: 190 },
-};
 /** Hull screen states: above 50%, 25–50%, below 25% (with the pulse alarm). */
 const HULL_STATES = [
   { color: '#3ce68a', label: 'HULL OKAY' },
@@ -132,8 +118,8 @@ export class Hud {
   private deckKey = '';
   private deck: ReturnType<typeof loadoutDeck> | null = null;
   private readonly orderRows: HTMLElement[] = [];
-  /** Picker cap labels, by CLASS_ORDER index. */
-  private readonly capEls: HTMLElement[] = [];
+  /** "Choose your ship": the Orbital Hangar roster and dossier. */
+  readonly hangar: Hangar;
   private readonly mini: HTMLCanvasElement;
   private readonly miniCtx: CanvasRenderingContext2D;
   private bigMap = false;
@@ -265,23 +251,7 @@ export class Hud {
         <p class="hint">XP and everything you bought are kept. Only unspent shards spill.</p>
         <div data-k="spawns" class="spawns"></div>
       </div></div>
-      <div data-k="picker" class="overlay picker hidden"><div class="card">
-        <h2>Choose your ship</h2>
-        <p class="hint">Nine hull classes, smallest to largest, five tiers each. Bigger hulls hit harder and take more punishment, but turn and accelerate slowly, respawn slower, and are limited per team.</p>
-        <div class="classes">
-          ${CLASS_ORDER.map((id, i) => classCard(CLASSES[id], i)).join('')}
-          <button class="cls commander" data-seat="0"><kbd>${SEAT_KEYS[0]}</kbd><b>Admiral</b><small>High Command · on the Titan</small>
-            <em>Watch the whole war map, ping targets for free, spend Munitions on bombs, strikes and recon and Manpower on spawns, reinforcements and Breakthrough. Buys the Titan's upgrades with Credits, and runs any FOB nobody commands.</em>
-            <span data-k="seatTaken0" class="taken"></span></button>
-          ${[1, 2]
-            .map(
-              (seat) => `<button class="cls commander" data-seat="${seat}"><kbd>${SEAT_KEYS[seat]}</kbd><b data-k="seatName${seat}">FOB Commander</b><small>Station command · on the FOB</small>
-            <em>Launch Fuel wings from your FOB (fighters, interceptors, bombers, recon, defenders) and buy its turret, shipyard and armor upgrades with Credits.</em>
-            <span data-k="seatTaken${seat}" class="taken"></span></button>`,
-            )
-            .join('')}
-        </div>
-      </div></div>
+      <div data-k="picker" class="overlay picker hidden"></div>
       <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><button data-k="again" class="primary">Play again</button></div></div>
       <div data-k="board" class="overlay board passive hidden"></div>
     `;
@@ -296,15 +266,13 @@ export class Hud {
       this.orderRows.push(b);
       b.addEventListener('click', () => this.h.order(b.dataset.order as CommandId));
     });
-    root.querySelectorAll<HTMLButtonElement>('[data-pick]').forEach((b) => b.addEventListener('click', () => this.h.pickClass(b.dataset.pick as ClassId)));
-    root.querySelectorAll<HTMLButtonElement>('[data-seat]').forEach((b) => b.addEventListener('click', () => this.h.pickSeat(Number(b.dataset.seat) as SeatId)));
+    this.hangar = new Hangar(this.$.picker, { pickClass: (c) => this.h.pickClass(c), pickSeat: (seat) => this.h.pickSeat(seat) });
     this.$.upgrades.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-up]');
       if (!btn) return;
       const [base, track, option] = btn.dataset.up!.split(':');
       this.h.upgrade(Number(base), track as UpgradeTrack, option as TurretType);
     });
-    CLASS_ORDER.forEach((id, i) => (this.capEls[i] = root.querySelector<HTMLElement>(`[data-cap="${id}"]`)!));
     this.$.tierPop.addEventListener('click', (e) => {
       const opt = (e.target as HTMLElement).closest<HTMLElement>('[data-opt]');
       if (opt) this.h.tier(Number(opt.dataset.opt));
@@ -448,15 +416,7 @@ export class Hud {
     this.$.banner.className = `banner ${ourPush > 0 || rally > 0 ? 'ours' : theirPush > 0 ? 'theirs' : ''}`;
 
     this.show('picker', docked && !over);
-    if (docked) {
-      [H.commanderSlot, H.seat1, H.seat2].forEach((h, seat) => {
-        this.set(`seatTaken${seat}`, b[h] >= 0 ? 'Seat taken' : '');
-        this.$[`seatTaken${seat}`].closest('.cls')!.classList.toggle('full', b[h] >= 0);
-      });
-      this.set('seatName1', `FOB Commander · ${fobName(myTeam, 0)}`);
-      this.set('seatName2', `FOB Commander · ${fobName(myTeam, 1)}`);
-      this.updateCaps(snap, myTeam);
-    }
+    if (docked && !over) this.hangar.update(snap, info, myTeam);
     const pilot = !commander && !docked;
     this.show('vhud', pilot);
     this.show('command', commander && !over);
@@ -591,13 +551,14 @@ export class Hud {
     this.set('hullState', HULL_STATES[state].label);
     this.set('hullPct', `${Math.ceil(frac * 100)}%`);
     this.set('shdText', `SHD ${Math.ceil(shield)} / ${Math.round(maxShield)}`);
+    // The ship as it flies: its team-painted reference sprite (vector SVG with Original art).
     const model = hullNode?.hullModel ?? cls.hullModel;
-    if (this.cache.get('hullPic') !== model) {
-      this.cache.set('hullPic', model);
-      const art = HULL_BY_ID[model];
-      const svg = art ? hullSvg(art.shapes) : '';
-      this.$.shipBg.innerHTML = svg;
-      this.$.shipFill.innerHTML = svg;
+    const team = b[me + SHIP.team];
+    if (this.cache.get('hullPic') !== `${model}:${team}`) {
+      this.cache.set('hullPic', `${model}:${team}`);
+      const pic = hullThumb(model, team);
+      this.$.shipBg.innerHTML = pic;
+      this.$.shipFill.innerHTML = pic;
     }
     this.set(
       'armorArcs',
@@ -726,7 +687,7 @@ export class Hud {
                   : o.extraAbility
                     ? '<small class="badge aux">AUXILIARY · G</small>'
                     : '<small class="badge mod">PASSIVE MOD</small>';
-              const preview = o.hullModel && HULL_BY_ID[o.hullModel] ? `<span class="opt-hull">${hullSvg(HULL_BY_ID[o.hullModel].shapes)}</span>` : '';
+              const preview = o.hullModel ? `<span class="opt-hull">${hullThumb(o.hullModel, b[me + SHIP.team])}</span>` : '';
               return `<button class="opt" data-opt="${i}"><kbd>${i + 1}</kbd><span class="opt-top"><b>${o.name}</b><u class="ncode">${code}</u></span>${badge}${preview}<em>${o.description}</em></button>`;
             })
             .join('')}`;
@@ -734,26 +695,6 @@ export class Hud {
     } else {
       this.cache.delete('tierPop');
     }
-  }
-
-  /** Picker: team count against the cap for each capped class; full classes can't be picked. */
-  private updateCaps(snap: Snap, myTeam: number): void {
-    const b = snap.buf;
-    const counts = new Array(CLASS_ORDER.length).fill(0);
-    for (let slot = 0; slot < b[H.shipCount]; slot++) {
-      const k = snap.ship(slot);
-      if (b[k + SHIP.team] !== myTeam || b[k + SHIP.flags] & (SHIP_FLAG.commander | SHIP_FLAG.docked)) continue;
-      counts[b[k + SHIP.classIndex]]++;
-    }
-    CLASS_ORDER.forEach((id, i) => {
-      const cap = teamCap(CLASSES[id], this.info!.fleetSize);
-      const el = this.capEls[i];
-      if (!el || cap === Infinity) return;
-      const full = counts[i] >= cap;
-      const text = `${counts[i]}/${cap} on your team${full ? ' · full' : ''}`;
-      if (el.textContent !== text) el.textContent = text;
-      el.closest('.cls')!.classList.toggle('full', full);
-    });
   }
 
   private updateDeath(snap: Snap, myTeam: number): void {
@@ -900,7 +841,7 @@ export class Hud {
 
   private name(slot: number, team: number): string {
     const n = this.info!.names[slot];
-    return `<span style="color:${TEAM_CSS[team]}">${slot === this.info!.selfSlot ? '<b>You</b>' : n}</span>`;
+    return `<span style="color:${TEAM_CSS[team]}">${slot === this.info!.selfSlot ? `<b>${n}</b>` : n}</span>`;
   }
 
   showScoreboard(show: boolean, snap: Snap | null): void {
@@ -923,7 +864,7 @@ export class Hud {
         .slice(0, 20)
         .map(
           (r) =>
-            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${r.slot === info.selfSlot ? 'You' : info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.rank}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`,
+            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.rank}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`,
         )
         .join('')}</table></div>`;
     });
@@ -1158,52 +1099,7 @@ function incomePerMinute(snap: Snap): number[] {
   return out;
 }
 
-/** "North" or "South" for a team's k-th FOB (map order). */
-function fobName(team: number, k: number): string {
-  const f = KESSLER_REACH.fobs.filter((fob) => fob.team === team)[k];
-  return f && f.pos.y < KESSLER_REACH.height / 2 ? 'North' : 'South';
-}
-
 function myTeamHeld(snap: Snap): number {
   const me = snap.ship(snap.buf[H.selfSlot]);
   return snap.buf[me + SHIP.team] === 0 ? H.pointsHeld0 : H.pointsHeld1;
-}
-
-function classCard(cls: ShipClass, i: number): string {
-  const art = HULL_BY_ID[cls.hullModel];
-  const preview = art ? `<span class="hullpic" style="--k:${(cls.radius / 48).toFixed(2)}">${hullSvg(art.shapes)}</span>` : '';
-  const code = `CLS-0${i + 1}`;
-  return `<button class="cls" data-pick="${cls.id}"><kbd>${i + 1}</kbd><span class="cls-code">${code}</span>${preview}<b>${cls.name}</b><small>${cls.role}</small>
-    <em>${cls.summary}</em>
-    <span class="kv"><span>HULL <b>${cls.hull}</b></span><span>SPD <b>${cls.speed}</b></span><span>DPS <b>${Math.round((cls.gun.damage * cls.gun.count) / cls.gun.fireInterval)}</b></span><span>RSP <b>×${cls.respawnMul}</b></span></span>
-    <span class="sig">RMB // ${cls.signature.name}</span><span class="cap" data-cap="${cls.id}"></span></button>`;
-}
-
-const SVG_FILL: Record<string, string> = {
-  hull: '#3b78d4',
-  dark: '#162848',
-  metal: '#5c6b84',
-  trim: '#c4d2e6',
-  accent: '#62e8ff',
-  cockpit: '#94f6ff',
-  engine: '#7df9ff',
-  void: '#050811',
-};
-
-/** Multi-layer industrial blueprint SVG for the picker card & tier-3 upgrade node card. */
-function hullSvg(shapes: Shape[]): string {
-  const b = bounds(shapes);
-  const parts = shapes
-    .map((s) => {
-      const fill = 'fill' in s && s.fill ? SVG_FILL[s.fill] ?? '#3b78d4' : 'none';
-      const stroke = 'stroke' in s && s.stroke ? SVG_FILL[s.stroke] ?? '#050811' : s.t === 'poly' && s.fill === 'hull' ? '#050811' : 'none';
-      const sw = 'w' in s && s.w ? s.w : s.t === 'poly' && s.fill === 'hull' ? 1 : 0;
-      if (s.t === 'poly') return `<polygon points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-      if (s.t === 'circle') return `<circle cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" r="${s.r.toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-      if (s.t === 'ellipse') return `<ellipse cx="${s.x.toFixed(1)}" cy="${s.y.toFixed(1)}" rx="${s.rx.toFixed(1)}" ry="${s.ry.toFixed(1)}" fill="${fill}"/>`;
-      if (s.t === 'line') return `<polyline points="${s.pts.map((v) => v.toFixed(1)).join(' ')}" fill="none" stroke="${SVG_FILL[s.stroke] ?? '#62e8ff'}" stroke-width="${s.w}"/>`;
-      return '';
-    })
-    .join('');
-  return `<svg viewBox="${(b.x0 - 2).toFixed(0)} ${(b.y0 - 2).toFixed(0)} ${(b.x1 - b.x0 + 4).toFixed(0)} ${(b.y1 - b.y0 + 4).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
 }

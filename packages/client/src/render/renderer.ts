@@ -28,6 +28,8 @@ import {
   type MatchInfo,
 } from '@void-front/shared';
 import { loadReferenceShips, type ShipArtMode } from '../art/referenceShips';
+import { setHullThumbArt } from '../art/hullThumbs';
+import { CRAFT, type CraftId } from '../art/craft';
 import { loadCosmetics } from '../cosmetics';
 import { HULL_BY_ID, type HullArt } from '../art/hulls';
 import type { ArtTexture } from '../art/pixiArt';
@@ -154,11 +156,27 @@ interface BeamFx {
 }
 
 const DECOY = DRONE_BEHAVIORS.indexOf('decoy');
-const DRONE_SCALE = DRONE_BEHAVIORS.map((d) => ({ guard: 1.5, bomber: 1.8, fighter: 1.4, interceptor: 1.25, recon: 1.2 })[d as string] ?? 1);
+/** Carrier escorts (orbit / swarm) draw the reference drone at 22 u; strike craft art is authored at world size. */
+const ESCORT_SIZE = 22;
 /** Ping colors by PingKind: move, attack, defend. */
 export const PING_COLORS = [0x6ff3ff, 0xff7a4d, 0x5cff9d];
 const TEAM_ACCENT = [0x5fc8ff, 0xff9a4a];
 const KIND = Object.fromEntries(DEPLOY_KINDS.map((k, i) => [k, i])) as Record<(typeof DEPLOY_KINDS)[number], number>;
+
+/** Fallback bolt sprite size (BOLT_ART) in world units, and the glow texture's width in pixels. */
+const BOLT_TEX = { length: 20, width: 5.2 };
+const GLOW_PX = 128;
+
+/**
+ * v2.1 laser bolt shape from the snapshot: caliber factor C = clamp((AP - 18) / 125, 0, 1.35) and
+ * the gun's bore (projectile radius). Patrol 20mm is about 20 x 3 u, Cruiser 75mm 42 x 7 u,
+ * Dreadnought 240mm 80 x 14 u. Drone and secondary-turret tracers stay needle-thin.
+ */
+export function boltShape(radius: number, ap: number, flags: number): { length: number; width: number; caliber: number } {
+  const caliber = Math.min(1.35, Math.max(0, ((ap > 0 ? ap : 40) - 18) / 125));
+  if (flags & (PROJ_FLAG.drone | PROJ_FLAG.secondary)) return { length: 13 + caliber * 10, width: 1.8 + caliber * 2, caliber: Math.min(caliber, 0.2) };
+  return { length: 14 + caliber * 55 + radius * 1.2, width: 1.6 + caliber * 9 + radius * 0.35, caliber };
+}
 
 interface Particle {
   x: number;
@@ -218,6 +236,12 @@ export class Renderer {
   private glows!: SpritePool;
   private sparks!: SpritePool;
   private flares!: SpritePool;
+  /** Plasma sheaths, cores and wakes of heavy-caliber bolts. */
+  private boltGlows!: SpritePool;
+  /** Fresh-shot detection: the snapshot last checked and the projectiles in it that were new. */
+  private shotSnap: Snap | null = null;
+  private readonly freshSet = new Set<number>();
+  private readonly shotKeys = new Set<number>();
   private readonly labels: (Text | undefined)[] = [];
   private readonly labelText: string[] = [];
   private readonly particles: Particle[] = [];
@@ -246,7 +270,10 @@ export class Renderer {
     // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
     await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
-    this.tex = makeTextures(this.app.renderer, await loadReferenceShips(this.shipArt, this.derivedNormals));
+    const reference = await loadReferenceShips(this.shipArt, this.derivedNormals);
+    // The HUD (picker, tier pop-up, ship screen) shows the same team-painted sprites.
+    setHullThumbArt(reference);
+    this.tex = makeTextures(this.app.renderer, reference);
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
     this.lighting = new Lighting(this.app.renderer, this.lightingOn);
     // Faint light spill on space itself; ships get their lighting from the lit shader instead.
@@ -324,6 +351,7 @@ export class Renderer {
     this.crystals = new SpritePool(this.crystalLayer, this.tex.crystal);
     this.crystalsBig = new SpritePool(this.crystalLayer, this.tex.crystalBig);
     this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add');
+    this.boltGlows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
@@ -562,8 +590,10 @@ export class Renderer {
     this.crystals.end();
     this.crystalsBig.end();
 
-    // Projectiles
+    // Projectiles (a shot not continuing one from the last snapshot just left its barrel).
+    const fresh = this.freshShots(prev, curr);
     this.shots.begin();
+    this.boltGlows.begin();
     for (let i = 0, k = curr.o.projectiles; i < b[H.projectileCount]; i++, k += SNAP.projectile) {
       const x = b[k] - b[k + 2] * back;
       const y = b[k + 1] - b[k + 3] * back;
@@ -572,22 +602,65 @@ export class Renderer {
       const f = b[k + 6];
       const heavy = (f & (PROJ_FLAG.structure | PROJ_FLAG.missile)) !== 0;
       const id = heavy ? 'shell' : 'bolt';
-      const s = this.tex.assets[id] ? this.assetPool(id, team, this.shotLayer).next() : this.shots.next(heavy ? this.tex.shell[team] : this.tex.bolt[team]);
+      const asset = this.tex.assets[id];
+      const s = asset ? this.assetPool(id, team, this.shotLayer).next() : this.shots.next(heavy ? this.tex.shell[team] : this.tex.bolt[team]);
+      const angle = Math.atan2(b[k + 3], b[k + 2]);
       s.position.set(x, y);
-      s.rotation = Math.atan2(b[k + 3], b[k + 2]);
+      s.rotation = angle;
       // Nanite rounds read green; your own bolts take the Drydock color; crits and full-charge rail
-      // shots are bigger and white-hot; secondary-turret tracers are small.
+      // shots are bigger and white-hot.
       const ownTint = f & PROJ_FLAG.own && this.cosmetics.bolt >= 0 && !(f & PROJ_FLAG.heal) ? this.cosmetics.bolt : -1;
       s.tint = f & PROJ_FLAG.heal ? 0x8dffc0 : ownTint >= 0 ? ownTint : 0xffffff;
-      const size = f & PROJ_FLAG.fullCharge ? 2.2 : f & PROJ_FLAG.crit ? 1.5 : f & (PROJ_FLAG.drone | PROJ_FLAG.secondary) ? 0.65 : Math.max(0.8, b[k + 5] / 5);
+      const boost = f & PROJ_FLAG.fullCharge ? 1.6 : f & PROJ_FLAG.crit ? 1.25 : 1;
       // Match lifetime to the interpolated position, then burn out over the last 220 ms.
       const remaining = Math.max(0, b[k + 7] + back);
       const burn = Math.min(1, remaining / 0.22);
       const fade = burn * burn * (3 - 2 * burn);
       const color = f & PROJ_FLAG.heal ? 0x3fd08a : ownTint >= 0 ? ownTint : LIGHT.bolt[team];
       s.alpha = fade;
-      s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
-      this.light(x, y, heavy ? 12 : 8 * size, color, fade);
+      const radius = b[k + 5];
+      const { length, width, caliber } = boltShape(radius, b[k + 8], f);
+      if (heavy) {
+        // Missiles, torpedoes and structure shells keep their warhead sprite, sized by radius.
+        const size = Math.max(0.8, radius / 5) * boost;
+        s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
+      } else {
+        // v2.1 laser bolts: length and thickness follow the caliber (AP, which grows with WEAPONS
+        // power and calibration) and the gun's bore, from 20 AP needles to 135 AP capital lances.
+        const baseL = asset ? asset.widthWorld : BOLT_TEX.length;
+        const baseW = asset ? asset.heightWorld : BOLT_TEX.width;
+        s.scale.set(((length * boost) / baseL) * (0.55 + 0.45 * fade), ((width * boost) / baseW) * (0.3 + 0.7 * fade));
+        if (caliber > 0.3) {
+          // Heavy line and capital calibers: a team-colored plasma sheath, a white-hot core and a wake.
+          const sheath = this.boltGlows.next();
+          sheath.position.set(x, y);
+          sheath.rotation = angle;
+          sheath.tint = color;
+          sheath.alpha = Math.min(0.55, caliber * 0.42) * fade;
+          sheath.scale.set((length * boost * 1.7) / GLOW_PX, (width * boost * 3.2) / GLOW_PX);
+          const core = this.boltGlows.next();
+          core.position.set(x, y);
+          core.rotation = angle;
+          core.tint = 0xffffff;
+          core.alpha = Math.min(0.8, caliber * 0.55) * fade;
+          core.scale.set((length * boost * 0.9) / GLOW_PX, (width * boost * 0.7) / GLOW_PX);
+          if (caliber > 0.55) {
+            const wake = this.boltGlows.next();
+            wake.position.set(x - Math.cos(angle) * length * 0.85, y - Math.sin(angle) * length * 0.85);
+            wake.rotation = angle;
+            wake.tint = color;
+            wake.alpha = 0.3 * fade;
+            wake.scale.set((length * boost * 1.6) / GLOW_PX, (width * boost * 1.1) / GLOW_PX);
+          }
+        }
+      }
+      if (fresh.has(i) && this.particles.length < PARTICLE_CAP) {
+        // Muzzle flash where the shot left the barrel, sized by its caliber.
+        const life = 0.07 + caliber * 0.05;
+        this.particles.push({ x: x - b[k + 2] / 30, y: y - b[k + 3] / 30, vx: 0, vy: 0, life, max: life, color, size: heavy ? 1.6 : 0.6 + width * 0.32 });
+      }
+      const size = width / 4;
+      this.light(x, y, heavy ? 12 : 4 + width * 1.6, color, fade);
       if (burn < 1 && this.particles.length < PARTICLE_CAP && Math.random() < 1 - Math.exp(-35 * dt)) {
         const life = 0.12 + Math.random() * 0.1;
         this.particles.push({
@@ -598,6 +671,7 @@ export class Renderer {
       }
     }
     this.shots.end();
+    this.boltGlows.end();
 
     // Ships, glows, bars, labels (decoy drones borrow hull meshes, so pools start first).
     for (const pool of this.hullPools.values()) pool.begin();
@@ -1052,12 +1126,50 @@ export class Renderer {
         m.scale.set(1);
         continue;
       }
+      // v2.1: fighters, interceptors, bombers, recon and defenders each have their own lit hull
+      // and thruster layout; carrier escorts keep the reference drone.
+      const behavior = DRONE_BEHAVIORS[b[k + 5]] as CraftId;
+      const craft = this.tex.craft[behavior];
+      if (craft) {
+        const m = this.craftPool(behavior, team).next();
+        m.position.set(x, y);
+        m.rotation = rot;
+        m.alpha = 1;
+        m.scale.set(1);
+        const cos = Math.cos(rot);
+        const sin = Math.sin(rot);
+        const engine = team === 0 ? 0x7df9ff : 0xffc061;
+        craft.engines!.forEach((e, n) => {
+          const f = this.flares.next();
+          f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
+          f.rotation = rot;
+          f.tint = engine;
+          f.alpha = 0.85;
+          f.scale.set((e.r / 14) * 2.4, (e.r / 18) * (1 + 0.25 * Math.sin(now * 0.05 + i + n)));
+          // Light from the nozzles (behind the hull), not the hull's center, or it washes the paint out.
+          this.light(f.position.x - cos * e.r, f.position.y - sin * e.r, e.r * 1.6, LIGHT.engine[team]);
+        });
+        const dome = CRAFT[behavior].dome;
+        if (dome) {
+          // Recon rotodome: a sweeping bar and a sensor pulse alternating cyan and violet.
+          const dx = x + dome.x * cos - dome.y * sin;
+          const dy = y + dome.x * sin + dome.y * cos;
+          const a = now * 0.006 + i;
+          const phase = ((now / 1400 + i * 0.37) % 1 + 1) % 1;
+          const pulse = Math.floor(now / 1400 + i * 0.37) % 2 === 0 ? 0x6ff3ff : 0xb48cff;
+          g.moveTo(dx - Math.cos(a) * dome.r, dy - Math.sin(a) * dome.r)
+            .lineTo(dx + Math.cos(a) * dome.r, dy + Math.sin(a) * dome.r)
+            .stroke({ width: 1.4, color: pulse, alpha: 0.9 });
+          g.circle(dx, dy, dome.r * (1 + phase * 5)).stroke({ width: 1, color: pulse, alpha: 0.6 * (1 - phase) });
+        }
+        if (this.commander && z < 0.2) this.warLayer.circle(x, y, 3 / z).fill({ color: TEAM_COLORS[team], alpha: 0.8 });
+        continue;
+      }
       const s = this.tex.assets.drone ? this.assetPool('drone', team).next() : this.drones.next();
       s.position.set(x, y);
       s.rotation = rot;
       s.tint = this.tex.assets.drone ? 0xffffff : TEAM_COLORS[team];
-      // Commander starships read bigger than ship-launched drones.
-      s.scale.set(DRONE_SCALE[b[k + 5]] ?? 1);
+      s.scale.set(this.tex.assets.drone ? ESCORT_SIZE / Math.max(this.tex.assets.drone.widthWorld, this.tex.assets.drone.heightWorld) : 1);
       this.light(x, y, 5, LIGHT.engine[team]);
       if (this.commander && z < 0.2) this.warLayer.circle(x, y, 3 / z).fill({ color: TEAM_COLORS[team], alpha: 0.8 });
     }
@@ -1171,6 +1283,48 @@ export class Renderer {
     this.light(x + sign * 250, y, 22, accent);
     for (const ty of [-92, -46, 0, 46, 92]) this.light(x - sign * 300, y + sign * ty, 18, LIGHT.engine[team]);
     for (const tx of [-170, 170]) for (const tyy of [-170, 170]) this.light(x + sign * (tx + 8), y + sign * tyy, 7, accent);
+  }
+
+  /**
+   * Projectiles in `curr` that don't continue one from `prev` (matched on where each old shot
+   * would be one tick later, to a 48 u cell): those just fired and get a muzzle flash. Once per snapshot.
+   */
+  private freshShots(prev: Snap | null, curr: Snap): Set<number> {
+    if (this.shotSnap === curr) return this.freshSet;
+    this.shotSnap = curr;
+    this.freshSet.clear();
+    if (!prev) return this.freshSet;
+    const cell = (x: number, y: number) => Math.round(x / 48) * 100_003 + Math.round(y / 48);
+    const keys = this.shotKeys;
+    keys.clear();
+    const pb = prev.buf;
+    for (let i = 0, k = prev.o.projectiles; i < pb[H.projectileCount]; i++, k += SNAP.projectile) keys.add(cell(pb[k] + pb[k + 2] / 30, pb[k + 1] + pb[k + 3] / 30));
+    const b = curr.buf;
+    for (let i = 0, k = curr.o.projectiles; i < b[H.projectileCount]; i++, k += SNAP.projectile) {
+      const cx = Math.round(b[k] / 48);
+      const cy = Math.round(b[k + 1] / 48);
+      let seen = false;
+      for (let dx = -1; dx <= 1 && !seen; dx++) for (let dy = -1; dy <= 1 && !seen; dy++) seen = keys.has((cx + dx) * 100_003 + cy + dy);
+      if (!seen) this.freshSet.add(i);
+    }
+    return this.freshSet;
+  }
+
+  /** Lit mesh pool for one strike craft and team. */
+  private craftPool(id: CraftId, team: number): MeshPool {
+    const key = `craft:${id}:${team}`;
+    let pool = this.assetPools.get(key);
+    if (!pool) {
+      const art = this.tex.craft[id];
+      const geometry = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
+      pool = new MeshPool(this.shipLayer, () => {
+        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
+        this.lighting.trackReceiver(mesh);
+        return mesh;
+      });
+      this.assetPools.set(key, pool);
+    }
+    return pool;
   }
 
   private assetPool(id: string, team: number, layer: Container = this.shipLayer): MeshPool {

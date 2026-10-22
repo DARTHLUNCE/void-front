@@ -35,9 +35,9 @@ function post(msg: FromWorker, transfer: Transferable[] = []): void {
 let humanSlot = 0;
 
 /** Difficulty sets the enemy fleet's skill; your allies always fly at Normal. You start docked until you pick a class. */
-function start(seed: number, fleet: number, difficulty: BotDifficulty, team: 0 | 1): void {
+function start(seed: number, fleet: number, difficulty: BotDifficulty, team: 0 | 1, callsign?: string): void {
   humanSlot = team === 1 ? fleet : 0;
-  world = createWorld({ seed, fleetSize: fleet, humanSlots: [humanSlot], humansPickClass: true, botSkill: team === 1 ? [difficulty, 'normal'] : ['normal', difficulty] });
+  world = createWorld({ seed, fleetSize: fleet, humanSlots: [humanSlot], humansPickClass: true, playerCallsign: callsign, botSkill: team === 1 ? [difficulty, 'normal'] : ['normal', difficulty] });
   latest = null;
   statQueue.length = tierQueue.length = commandQueue.length = 0;
   post({ type: 'info', info: matchInfo(world, humanSlot) });
@@ -112,7 +112,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
   const w = world;
   switch (msg.type) {
     case 'start':
-      start(msg.seed, msg.fleet, msg.difficulty, msg.team ?? 0);
+      start(msg.seed, msg.fleet, msg.difficulty, msg.team ?? 0, msg.callsign);
       break;
     case 'input':
       latest = msg.input;

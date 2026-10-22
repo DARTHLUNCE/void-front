@@ -38,7 +38,9 @@ export class TemporalRadiance {
   resolve(renderer:Renderer,current:RenderTexture,x:number,y:number,zoom:number,screenW:number,screenH:number):RenderTexture {
     const width=current.width,height=current.height;
     if(width!==this.width||height!==this.height){
-      this.mesh?.shader?.destroy();this.mesh?.destroy();for(const t of this.targets)t.destroy(true);
+      // Drop the old shader rather than destroy it: its bind group still points at the light field
+      // textures Lighting.resize already freed, and destroying it throws (killing the frame loop).
+      this.mesh?.destroy();for(const t of this.targets)t.destroy(true);
       this.width=width;this.height=height;this.valid=false;this.index=0;
       this.targets=[0,1].map(()=>new RenderTexture({source:new BufferImageSource({resource:new Uint16Array(width*height*4),width,height,format:'rgba16float',scaleMode:'linear'})}));
       this.mesh=new Mesh({geometry:new MeshGeometry({positions:new Float32Array([0,0,width,0,width,height,0,height]),uvs:new Float32Array([0,0,1,0,1,1,0,1]),indices:new Uint32Array([0,1,2,0,2,3])}),shader:new Shader({glProgram:GlProgram.from({vertex,fragment,name:'temporal-radiance'}),resources:{uCurrent:current.source,uHistory:this.targets[0].source,u:new UniformGroup({uTexel:{value:new Float32Array([1/width,1/height]),type:'vec2<f32>'},uHistoryShift:{value:new Float32Array(2),type:'vec2<f32>'},uWeight:{value:0,type:'f32'}})}})});

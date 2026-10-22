@@ -2,7 +2,7 @@ import './style.css';
 import type { ShipArtMode } from './art/referenceShips';
 import { BOLT_COLORS, ENGINE_TINTS } from './cosmetics';
 import { Game } from './game';
-import type { BotDifficulty } from '@void-front/shared';
+import { CALLSIGN, sanitizeCallsign, type BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
 
 const menu = document.getElementById('menu')!;
@@ -45,10 +45,13 @@ const key = (...k: string[]) => k.map((x) => `<kbd>${x}</kbd>`).join(' ');
 menu.innerHTML = `
   <div class="terminal">
     <aside class="dock">
-      <div class="sys-tag">ORB-COM // VOID FRONT v2.0</div>
+      <div class="sys-tag">ORB-COM // VOID FRONT v2.1</div>
       <h1>VOID <span>FRONT</span></h1>
       <p class="sub">Sector command terminal · 9 hull classes · 90 nodes</p>
       <div class="opts">
+        <label>Pilot call sign
+          <span class="callsign"><input id="callsign" type="text" maxlength="${CALLSIGN.maxLength}" spellcheck="false" autocomplete="off" placeholder="${CALLSIGN.default}" /><button type="button" id="callsign-roll" title="Random call sign">🎲</button></span>
+        </label>
         <label>Fleet size
           <select id="fleet">
             <option value="20">20 v 20</option>
@@ -178,6 +181,18 @@ menu.innerHTML = `
       <section class="pane notes" data-pane="notes">
         <h2>Patch Notes</h2>
         <article>
+          <h3>v2.1 · Hangar, strike craft &amp; calibers</h3>
+          <ul>
+            <li>New Orbital Hangar ship picker: echelon tabs, a 3×3 roster and a dossier with combat figures and both Tier-3 hulls. 1–9 select, Enter launches.</li>
+            <li>The picker, Tier-3 pop-up and HUD ship screen now show the detailed team-painted ship sprites.</li>
+            <li>Fighters, interceptors, bombers, recon and defenders each have their own model, size and thrusters.</li>
+            <li>Laser bolts scale with caliber: needle tracers on scouts up to capital lances on Dreadnoughts, and they grow when you shunt power to Weapons.</li>
+            <li>Missiles and torpedoes use your live caliber (Weapons calibration, nodes, Weapons power) and never overpenetrate; bombers fire real 95 AP torpedoes that point defense can shoot down.</li>
+            <li>Pilot call sign on the Launch Dock, shown on your nameplate, the kill feed and the scoreboard.</li>
+            <li>Balance: Patrol Craft, Corvettes and Frigates are tougher and evade while flying fast (less damage taken, faster guns, wider enemy turret scatter, extra AP against Armored hulls); capital guns deal less to Light hulls; lighter Dreadnought and Battleship main guns.</li>
+          </ul>
+        </article>
+        <article>
           <h3>v2.0 · Gameplay &amp; UI overhaul</h3>
           <ul>
             <li>Energy shields over every hull, Armor Rating with +25% bow and −25% stern arcs, and weapon calibers (AP): glancing ricochets on heavy armor, overpenetration through thin scouts.</li>
@@ -215,6 +230,21 @@ const schemeSel = sel('scheme');
 const lightingSel = sel('lighting');
 const normalSel = sel('normal-maps');
 const perfSel = sel('perf');
+// Pilot call sign: uppercase A–Z, 0–9, - and _, up to 16; saved as you type, cleaned up on blur.
+const callsignIn = document.getElementById('callsign') as HTMLInputElement;
+callsignIn.value = sanitizeCallsign(saved('vf.callsign', CALLSIGN.default));
+callsignIn.addEventListener('input', () => {
+  const pos = callsignIn.selectionStart;
+  callsignIn.value = callsignIn.value.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, CALLSIGN.maxLength);
+  if (pos !== null) callsignIn.setSelectionRange(pos, pos);
+  save('vf.callsign', sanitizeCallsign(callsignIn.value));
+});
+callsignIn.addEventListener('blur', () => (callsignIn.value = sanitizeCallsign(callsignIn.value)));
+document.getElementById('callsign-roll')!.addEventListener('click', () => {
+  const options = CALLSIGN.presets.filter((c) => c !== callsignIn.value);
+  callsignIn.value = options[Math.floor(Math.random() * options.length)];
+  save('vf.callsign', callsignIn.value);
+});
 fleetSel.value = saved('vf.fleet', '60');
 difficultySel.value = saved('vf.difficulty', 'normal');
 teamSel.value = saved('vf.team', '0');
@@ -269,6 +299,7 @@ document.getElementById('play')!.addEventListener('click', async () => {
     shipArt: art as ShipArtMode,
     derivedNormals: normalSel.value === 'derived',
     team: teamSel.value === '1' ? 1 : 0,
+    callsign: sanitizeCallsign(callsignIn.value),
   });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   try {

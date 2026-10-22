@@ -35,5 +35,7 @@ export const SECONDARY_MOUNT_RING = 0.62;
 export const PAINTED_JITTER_MUL = 0.65;
 /** Ships at or below this base Armor Rating count as Light (Patrol Craft, Corvettes). */
 export const LIGHT_ARMOR_MAX = 20;
+/** v2.1: a ship is "jinking" (light-hull evasion) at this share of its class top speed or faster. */
+export const JINK_SPEED = 0.55;
 /** Ships at or above this Armor Rating count as Armored (Cruisers and up). */
 export const ARMORED_MIN = 60;

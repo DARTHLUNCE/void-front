@@ -122,7 +122,9 @@ export type ConditionId =
   | 'targetArmored'
   | 'fullChargeVsArmored'
   | 'targetStern'
-  | 'targetPainted';
+  | 'targetPainted'
+  // ext (v2.1): flying at 55%+ of class top speed (light-hull evasion)
+  | 'jinking';
 
 /** ext (v2): Reactor Power Shunting (content/power.ts). */
 export type PowerMode = 'balanced' | 'speed' | 'weapons' | 'shields';
@@ -237,6 +239,10 @@ export interface DroneStats {
   vision?: number;
   /** ext (v2): caliber of the drone's gun. */
   ap?: number;
+  /** ext (v2.1): the wing's own weapon (bomber torpedoes); absent = the standard drone gun. */
+  gun?: Partial<GunDef>;
+  /** ext (v2.1): its shots are missiles (point defense can shoot them down). */
+  missile?: boolean;
 }
 
 /** ext: deployable structures (engineer kit, commander call-ins). */
@@ -446,6 +452,8 @@ export interface ShipClass {
   botRange: number; // ext: preferred engagement distance for the pilot brain
   /** ext: base stat values beyond hull/speed/gun (crit chance, heal power...). */
   baseStats?: Partial<Record<StatId, number>>;
+  /** ext (v2.1): class-wide passives, conditional ones included (light-hull evasion while jinking). */
+  modifiers?: ModifierDef[];
   summary: string; // ext: one-line pitch for the class picker
 }
 

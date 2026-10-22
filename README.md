@@ -7,11 +7,11 @@ Titan.
 
 ![All ship hulls at true relative scale](docs/art/ship-lineup.png)
 
-**Status: offline prototype, v2.0.** Nine hull classes with full five-tier trees (90 nodes), energy
+**Status: offline prototype, v2.1.** Nine hull classes with full five-tier trees (90 nodes), energy
 shields, Armor Rating with bow and stern arcs, weapon calibers, Reactor Power Shunting, reverse throttle,
 secondary auto-turrets, solid asteroid nodes, the shard/XP economy, FOBs, the command seats (Admiral and
 FOB Commanders) and High Command base upgrades are playable offline against bots, with detailed sprite
-art and a cockpit-style HUD. Multiplayer comes later. The v2.0 rework is specified in
+art, distinct strike craft and a cockpit-style HUD. Multiplayer comes later. The v2.0 / v2.1 rework is specified in
 [rework-concept/CLAUDE_REWORK_SPEC.md](rework-concept/CLAUDE_REWORK_SPEC.md). See [docs/SPEC.md](docs/SPEC.md) for the full design and the phase
 notes in [docs/](docs/) for what's built so far.
 
@@ -26,10 +26,11 @@ npx --yes pnpm@9.15.0 install
 npx --yes pnpm@9.15.0 dev
 ```
 
-Open http://localhost:5173. The Launch Dock on the left sets fleet size, enemy difficulty and which team
-you fly for; the terminal on the right has the Tech Tree & Armory, Cosmetic Drydock, How to Play,
-Settings and Patch Notes. Press **Launch to sector**, then choose a hull class (keys 1–9) or a command
-seat: Admiral (0), FOB Commander North (-) or South (=). Bigger hulls hit harder, carry more armor and
+Open http://localhost:5173. The Launch Dock on the left sets your pilot call sign, fleet size, enemy
+difficulty and which team you fly for; the terminal on the right has the Tech Tree & Armory, Cosmetic
+Drydock, How to Play, Settings and Patch Notes. Press **Launch to sector**, then pick a hull class
+(keys 1–9) or a command seat (Admiral 0, FOB Commander North - or South =) in the Orbital Hangar and
+launch with Enter or a double-click. Bigger hulls hit harder, carry more armor and
 secondary turrets, but turn and accelerate slowly, respawn slower, and are capped per team.
 
 If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` and `pnpm dev` work too.
@@ -38,7 +39,7 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 
 | Where | Options |
 |---|---|
-| Launch Dock | Fleet size, enemy difficulty, team palette (fly for Cobalt or Ember) |
+| Launch Dock | Pilot call sign, fleet size, enemy difficulty, team palette (fly for Cobalt or Ember) |
 | Settings tab | Steering (mouse gimbal or WASD), radiance-cascades lighting (L toggles in game), derived normal maps, performance readout |
 | Cosmetic Drydock tab | Hull paint finish (reference team paint, neutral gray, original vector), engine plume tint, weapon bolt color |
 

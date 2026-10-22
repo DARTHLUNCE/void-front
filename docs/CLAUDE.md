@@ -22,6 +22,8 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
   the primitive registry in `sim/systems/abilities.ts`. If a node can't be expressed, add or
   extend a *primitive* (with a test), never a special case keyed on an ability id.
 - Passives are `ModifierDef`s; conditions are `ConditionId`s resolved by one registry.
+  Class-wide passives (light-hull evasion while `jinking`, capital tracking vs `targetLight`) go
+  in `ShipClass.modifiers`, never in combat code.
 - Quirks (one per class) are the only per-class code: `sim/systems/quirks.ts`, numbers from
   `content/quirks.ts`.
 - The schema types in `content/types.ts` follow the SPEC contract. Extending them is fine;
@@ -56,6 +58,10 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 - Ship and structure art is vector data in `packages/client/src/art` (`hulls.ts`, `props.ts`). The game
   bakes it to per-team albedo plus a generated normal map (`raster.ts`); the tech tree renders the
   same data to SVG (`pnpm tech-tree`).
+- Commander and carrier strike craft (fighter, interceptor, bomber, recon, defender) are vector art in
+  `art/craft.ts`, drawn at final world size and baked like the hulls; carrier escorts keep the reference
+  drone sprite. HUD ship pictures come from `art/hullThumbs.ts` (the renderer's baked team-painted
+  sprites, SVG only with Original vector art).
 - Hull art is drawn at a working size and scaled per class by `CLASS_SCALE` in `art/hulls.ts` so the
   classes read as a size ladder; the line hulls in `art/lineHulls.ts` are drawn at final size.
 - Hull rules, enforced by `art/art.test.ts`: one connected silhouette (no floating parts), no fully

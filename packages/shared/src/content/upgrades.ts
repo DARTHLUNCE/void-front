@@ -26,6 +26,8 @@ export interface TurretRefit {
   sizeMul: number;
   splash: number;
   missile: boolean;
+  /** ext (v2.1): caliber of the refit's rounds; absent = the structure's own turret caliber. */
+  ap?: number;
 }
 
 export const TURRET_REFITS: Record<Exclude<TurretType, 'standard'>, TurretRefit> = {
@@ -40,6 +42,7 @@ export const TURRET_REFITS: Record<Exclude<TurretType, 'standard'>, TurretRefit>
     sizeMul: 1.4,
     splash: 130,
     missile: true,
+    ap: 85,
   },
   laser: {
     name: 'Laser turrets',

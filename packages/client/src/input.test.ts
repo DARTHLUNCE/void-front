@@ -22,7 +22,7 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
     target = new EventTarget();
     Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
     vi.stubGlobal('window', target);
-    input = new Input(scheme, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+    input = new Input(scheme, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), confirm: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
     event('mousemove', { clientX: 700, clientY: 300 });
     event('keydown', { code: 'KeyD' });
     event('keydown', { code: 'ShiftLeft' });
@@ -97,7 +97,7 @@ describe('v2 throttle and Reactor Power', () => {
     target = new EventTarget();
     Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
     vi.stubGlobal('window', target);
-    return new Input('wasd', { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel, escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+    return new Input('wasd', { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel, escape: vi.fn(), confirm: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
   }
 
   function key(code: string): Event {

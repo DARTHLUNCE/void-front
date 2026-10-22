@@ -22,7 +22,8 @@ export interface InputFrame {
 
 export type ToWorker =
   /** `team`: which side the player flies for (Team Palette; Cobalt when omitted). */
-  | { type: 'start'; seed: number; fleet: number; difficulty: BotDifficulty; team?: 0 | 1 }
+  /** `callsign`: the pilot's name in the feed, scoreboard and nameplate. */
+  | { type: 'start'; seed: number; fleet: number; difficulty: BotDifficulty; team?: 0 | 1; callsign?: string }
   | { type: 'input'; input: InputFrame }
   /** Class picker: a ship class. */
   | { type: 'pickClass'; choice: ClassId }

@@ -21,17 +21,17 @@ export const CORVETTE: ShipClass = {
   name: 'Corvette',
   role: 'Stealth assassin / saboteur',
   summary: 'A cloaked striker. Opens from stealth with a heavy, armor-piercing volley; ignored by enemy secondary turrets while cloaked.',
-  hull: 260,
-  shield: 90,
+  hull: 360,
+  shield: 140,
   armor: 20,
   speed: 335,
   radius: 28,
   turnRate: 310 * DEG,
-  // Twin 30mm phase repeaters: 2 × 14.4 every 0.3 s = 96 DPS, 34 AP, 800 u.
-  gun: { name: 'Twin 30mm Phase Repeaters', damage: 14.4, fireInterval: 0.3, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 14, size: 4, life: 0.727, ap: 34 },
+  // Twin 30mm phase repeaters: 2 × 19 every 0.3 s = 127 DPS, 34 AP, 800 u.
+  gun: { name: 'Twin 30mm Phase Repeaters', damage: 19, fireInterval: 0.3, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 14, size: 4, life: 0.727, ap: 34 },
   quirk: 'ghostDrive',
   accel: 5.5,
-  respawnMul: 0.9,
+  respawnMul: 0.55,
   quirkInfo: {
     name: 'Ghost Drive',
     text: 'Cloaks automatically after 3 s without firing or taking damage. Cloaked ships are ignored by enemy secondary auto-turrets. Firing breaks it.',
@@ -39,7 +39,15 @@ export const CORVETTE: ShipClass = {
   signature: ambush('corvette.ambush', 'Ambush Cloak', 4.5, 2),
   hullModel: 'corvette',
   botRange: 480,
-  baseStats: { ambushAp: 45 },
+  // v2.1: a small, jinking hull: enemy auto-turrets scatter twice as wide against it.
+  baseStats: { ambushAp: 45, jitterOnMe: 1 },
+  // Evasion: jinking at speed shrugs off 40% of every hit and cycles the guns 30% faster; +15 AP
+  // against Armored hulls (Cruisers and up).
+  modifiers: [
+    { stat: 'damageTaken', op: 'add', value: -0.4, when: 'jinking' },
+    { stat: 'fireRate', op: 'mul', value: 0.3, when: 'jinking' },
+    { stat: 'ap', op: 'add', value: 15, when: 'targetArmored' },
+  ],
   tiers: [
     {
       tier: 1,

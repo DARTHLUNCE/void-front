@@ -26,7 +26,9 @@ function turretGun(def: StructureDef, type: TurretType): GunDef {
       life: ((t.range * (refit?.rangeMul ?? 1)) / speed) * 1.15,
       splash: refit?.splash ?? 0,
       homingTurn: refit?.missile ? 2.5 : 0,
-      ap: t.ap,
+      ap: refit?.ap ?? t.ap,
+      // Rocket warheads never overpenetrate.
+      noOverpen: refit?.missile === true,
     };
     turretGuns.set(key, g);
   }

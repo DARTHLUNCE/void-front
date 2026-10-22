@@ -2,7 +2,7 @@ import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, 
 import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
 import type { CommandId, SeatId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
-import { MATCH, POINTS } from '../content/match';
+import { MATCH, POINTS, sanitizeCallsign } from '../content/match';
 import { STAT_POINTS } from '../content/progression';
 import { STATUS_IDS } from '../content/statuses';
 import { DEPLOYABLES, FOB, MOTHERSHIP, NODE, type DeployableDef } from '../content/structures';
@@ -629,6 +629,8 @@ export interface WorldOptions {
   /** Force every ship to one class (tests). Otherwise bots roll from BOT_CLASS_WEIGHTS. */
   classId?: ClassId;
   timeLimit?: number;
+  /** v2.1: the human pilot's call sign (their name in the feed, scoreboard and nameplate). */
+  playerCallsign?: string;
   /** Bot skill per team; defaults to the SPEC spread ('hard') for both. */
   botSkill?: [BotDifficulty, BotDifficulty];
 }
@@ -637,6 +639,8 @@ export class World {
   readonly map: MapDef;
   readonly fleetSize: number;
   readonly timeLimit: number;
+  /** v2.1: name shown for human pilots. */
+  readonly playerCallsign: string;
   tick = 0;
   time = 0;
   readonly rng: Rng;
@@ -693,6 +697,7 @@ export class World {
     this.map = opts.map ?? KESSLER_REACH;
     this.fleetSize = Math.min(opts.fleetSize, MATCH.maxFleet);
     this.timeLimit = opts.timeLimit ?? MATCH.timeLimit;
+    this.playerCallsign = opts.playerCallsign ? sanitizeCallsign(opts.playerCallsign) : 'You';
     const seed = opts.seed >>> 0;
     this.rng = new Rng(hashSeed(seed, 0x5eed));
 
@@ -729,7 +734,7 @@ export class World {
       const ship = new Ship(slot, team, classId, shipRng);
       ship.isBot = !humans.has(slot);
       ship.awaitingClass = !ship.isBot && opts.humansPickClass === true;
-      ship.name = ship.isBot ? `${BOT_NAMES[(teamSlot * 7 + team * 23) % BOT_NAMES.length]}-${teamSlot + 1}` : 'You';
+      ship.name = ship.isBot ? `${BOT_NAMES[(teamSlot * 7 + team * 23) % BOT_NAMES.length]}-${teamSlot + 1}` : this.playerCallsign;
       if (ship.isBot) ship.bot = makeBrain(shipRng, BOT_SKILL[opts.botSkill?.[team] ?? 'hard']);
       this.ships.push(ship);
     }

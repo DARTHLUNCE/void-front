@@ -154,6 +154,35 @@ button.primary:hover {
   font-weight: 600;
 }
 
+#menu .callsign {
+  display: flex;
+  gap: 6px;
+}
+
+#menu .callsign input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: #0b1020;
+  color: #6ff3ff;
+  font: 700 0.95rem var(--mono);
+  letter-spacing: 0.12em;
+}
+
+#menu .callsign button {
+  width: 40px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: #0b1020;
+  font-size: 1.05rem;
+}
+
+#menu .callsign button:hover {
+  border-color: #6ff3ff;
+}
+
 #menu select {
   padding: 8px;
   border: 1px solid var(--edge);
@@ -789,9 +818,11 @@ button.primary:hover {
     rgba(4, 8, 18, 0.65);
 }
 
-.tierpop .opt-hull svg {
+.tierpop .opt-hull svg,
+.tierpop .opt-hull .hull-thumb {
   height: 36px;
   max-width: 100%;
+  object-fit: contain;
 }
 
 .tierpop .opt em {
@@ -842,109 +873,6 @@ button.primary:hover {
 .spawns button.on {
   border-color: var(--good);
   color: var(--good);
-}
-
-/* Class picker */
-.overlay.picker {
-  background: rgba(2, 4, 10, 0.78);
-  overflow: auto;
-  padding: 16px;
-}
-
-.picker .card {
-  max-width: 1100px;
-}
-
-.picker h2 {
-  margin: 0;
-  font-size: 2rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.classes {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
-  margin-top: 12px;
-}
-
-.cls {
-  position: relative;
-  display: grid;
-  gap: 4px;
-  align-content: start;
-  padding: 12px;
-  border: 1px solid var(--edge);
-  border-top: 2px solid rgba(74, 168, 255, 0.55);
-  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
-  background:
-    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.01) 3px 4px),
-    var(--panel);
-  text-align: left;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.cls .cls-code {
-  font: 600 0.68rem/1 var(--mono);
-  letter-spacing: 0.14em;
-  color: var(--dim);
-}
-
-.cls:hover {
-  border-color: var(--cobalt);
-  box-shadow: 0 0 18px rgba(74, 168, 255, 0.25);
-}
-
-.cls kbd {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-
-.cls b {
-  font-size: 1.3rem;
-}
-
-.cls small {
-  color: var(--cobalt);
-  font-weight: 600;
-}
-
-.cls em {
-  font-style: normal;
-  font-size: 0.88rem;
-  color: var(--dim);
-}
-
-.cls .kv {
-  display: flex;
-  gap: 10px;
-  font-size: 0.85rem;
-  color: var(--dim);
-}
-
-.cls .kv b {
-  font-size: 0.95rem;
-  color: var(--ink);
-}
-
-.cls .sig {
-  font-size: 0.82rem;
-  color: #ffd166;
-}
-
-.cls.commander {
-  border-color: rgba(92, 255, 157, 0.4);
-}
-
-.cls.commander small {
-  color: var(--good);
-}
-
-.cls .taken {
-  color: #ff5c6c;
-  font-weight: 700;
 }
 
 /* Fleet Command panel */
@@ -1095,10 +1023,6 @@ button.primary:hover {
   align-self: center;
 }
 
-.cls.commander.full {
-  opacity: 0.45;
-}
-
 .command .hint {
   margin-top: auto;
   font-size: 0.78rem;
@@ -1110,12 +1034,6 @@ button.primary:hover {
   .tierpop {
     width: calc(100vw - 24px);
     right: 12px;
-  }
-  .pilot {
-    width: calc(100vw - 24px);
-  }
-  .cockpit {
-    display: none;
   }
 }
 
@@ -1199,181 +1117,6 @@ button.primary:hover {
   left: 10px;
   top: 60px;
   justify-items: start;
-}
-
-/* Picker: industrial hull blueprint schematic scaled by class size, team cap counter */
-.cls .hullpic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 54px;
-  padding: 4px 8px;
-  border: 1px solid rgba(90, 125, 195, 0.22);
-  background:
-    repeating-linear-gradient(0deg, transparent 0 11px, rgba(74, 168, 255, 0.04) 11px 12px),
-    repeating-linear-gradient(90deg, transparent 0 11px, rgba(74, 168, 255, 0.04) 11px 12px),
-    rgba(4, 7, 15, 0.72);
-}
-
-.cls .hullpic svg {
-  height: calc(48px * var(--k));
-  min-height: 18px;
-  max-width: 100%;
-  filter: drop-shadow(0 0 6px rgba(92, 230, 255, 0.22));
-}
-
-.cls .cap {
-  font-size: 0.8rem;
-  color: var(--dim);
-}
-
-.cls.full {
-  opacity: 0.45;
-  pointer-events: none;
-}
-
-.cls.full .cap {
-  color: #ff5c6c;
-}
-
-/* v2: shield ring (outer, cyan) around the hull dial, shield bar and armor readout on the CRT. */
-.cockpit .scope .dial.shieldring {
-  inset: 3px;
-  background: conic-gradient(#6ff3ff var(--p), rgba(111, 243, 255, 0.08) 0);
-  mask: radial-gradient(circle, transparent 59px, #000 60px);
-  filter: drop-shadow(0 0 4px #6ff3ff);
-}
-
-.cockpit .crt-shield {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 6px;
-  align-items: center;
-  font-size: 0.66rem;
-}
-
-.cockpit .crt-shield .bar.shd {
-  height: 7px;
-  border-color: rgba(111, 243, 255, 0.45);
-}
-
-.cockpit .crt-shield .bar.shd i {
-  background: linear-gradient(90deg, #2a8fb0, #6ff3ff);
-}
-
-.cockpit .crt-armor {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.62rem;
-  opacity: 0.85;
-  white-space: nowrap;
-}
-
-/* v2: Reactor Power indicator, three channel bars. */
-.cockpit .power {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  margin-bottom: 6px;
-  font-family: var(--mono);
-  color: #9fb0d6;
-}
-
-.cockpit .power label {
-  font-size: 0.62rem;
-  letter-spacing: 0.15em;
-}
-
-.cockpit .power .chans {
-  display: flex;
-  gap: 5px;
-  padding: 4px 5px;
-  border: 2px solid #3c475d;
-  border-radius: 4px;
-  background: #07090f;
-}
-
-.cockpit .power .chan {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.cockpit .power .pbar {
-  position: relative;
-  width: 12px;
-  height: 64px;
-  background: #1a2230;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-/* The fill grows from the bottom: width carries the level, rotated into height. */
-.cockpit .power .pbar i {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 12px;
-  height: 0;
-  max-height: 100%;
-}
-
-.cockpit .power .chan small {
-  font-size: 0.55rem;
-}
-
-.cockpit .power .chan kbd {
-  font-size: 0.55rem;
-  padding: 0 2px;
-}
-
-.cockpit .power .c0 .pbar i {
-  background: linear-gradient(0deg, #2a6fbf, #9fd4ff);
-}
-
-.cockpit .power .c1 .pbar i {
-  background: linear-gradient(0deg, #b8661a, #ffb347);
-}
-
-.cockpit .power .c2 .pbar i {
-  background: linear-gradient(0deg, #2a8fb0, #6ff3ff);
-}
-
-.cockpit .power b {
-  font-size: 0.66rem;
-  color: var(--ink);
-}
-
-.cockpit .power kbd {
-  font-size: 0.55rem;
-  padding: 0 3px;
-}
-
-.cockpit .power[data-mode='1'] .c0 .pbar,
-.cockpit .power[data-mode='2'] .c1 .pbar,
-.cockpit .power[data-mode='3'] .c2 .pbar {
-  box-shadow: 0 0 8px rgba(140, 244, 255, 0.7);
-}
-
-/* v2: reverse segments below the zero line, red when lit; dark past the ship's reverse ceiling. */
-.cockpit .lever .stack hr {
-  margin: 1px -2px;
-  border: 0;
-  border-top: 2px solid #8a99bf;
-}
-
-.cockpit .lever .stack i.rev.on {
-  background: #ff4b4b;
-  box-shadow: 0 0 5px rgba(255, 75, 75, 0.8);
-}
-
-.cockpit .lever .stack i.rev.na {
-  opacity: 0.15;
-}
-
-.cockpit .lever.reverse b {
-  color: #ff6b6b;
 }
 
 /*
@@ -1522,13 +1265,22 @@ button.primary:hover {
 }
 
 .ship-silhouette-bg svg,
-.ship-silhouette-fill svg {
+.ship-silhouette-fill svg,
+.ship-silhouette-bg .hull-thumb,
+.ship-silhouette-fill .hull-thumb {
   width: 82%;
   height: 82%;
+  object-fit: contain;
 }
 
 .ship-silhouette-bg svg {
   opacity: 0.22;
+}
+
+/* Reference sprite: a dim, desaturated ghost behind the live hull. */
+.ship-silhouette-bg .hull-thumb {
+  opacity: 0.25;
+  filter: grayscale(1) brightness(0.8);
 }
 
 .ship-silhouette-bg svg * {
@@ -1542,6 +1294,10 @@ button.primary:hover {
   clip-path: inset(0 calc(100% - var(--hull-pct)) 0 0);
   transition: clip-path 0.15s ease-out;
   filter: drop-shadow(0 0 8px var(--hull-color));
+}
+
+.ship-silhouette-fill .hull-thumb {
+  filter: drop-shadow(0 0 4px var(--hull-color));
 }
 
 .ship-silhouette-fill svg * {
@@ -2215,5 +1971,433 @@ button.primary:hover {
     grid-template-columns: 1.3fr 1fr 1fr 1fr;
     padding: 7px 8px;
     gap: 6px;
+  }
+}
+
+/*
+ * v2.1 "Choose your ship": the Orbital Hangar. Echelon tabs across the top, a 3×3 roster on the
+ * left and the selected hull's dossier (combat figures, Tier-3 hulls, launch button) on the right.
+ */
+.overlay.picker {
+  place-items: stretch;
+  padding: 26px;
+  background:
+    radial-gradient(ellipse at 70% 40%, rgba(40, 80, 150, 0.22), transparent 60%),
+    rgba(2, 4, 10, 0.86);
+  text-align: left;
+}
+
+.hangar {
+  --shard: #6ff3ff;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 14px;
+  width: min(1380px, 100%);
+  max-height: calc(100vh - 52px);
+  margin: 0 auto;
+  min-height: 0;
+}
+
+.hangar-bar {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 20px;
+  align-items: end;
+  padding: 12px 16px;
+  border: 1px solid rgba(92, 138, 215, 0.42);
+  border-top: 2px solid var(--shard);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    rgba(6, 10, 20, 0.94);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px);
+}
+
+.hb-tag {
+  font: 700 0.68rem var(--mono);
+  letter-spacing: 0.18em;
+  color: var(--shard);
+}
+
+.hangar-bar h2 {
+  margin: 2px 0 0;
+  font-size: 1.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hb-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 14px;
+  font: 600 0.74rem var(--mono);
+  color: var(--dim);
+  letter-spacing: 0.06em;
+}
+
+.hb-pilot b {
+  margin-left: 4px;
+  padding: 1px 8px;
+  border: 1px solid rgba(111, 243, 255, 0.5);
+  background: rgba(111, 243, 255, 0.1);
+  color: var(--shard);
+  letter-spacing: 0.12em;
+}
+
+.hb-keep {
+  color: #f5b841;
+}
+
+.hb-tabs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.hb-tabs button {
+  padding: 5px 12px;
+  border: 1px solid rgba(92, 138, 215, 0.35);
+  background: rgba(11, 18, 34, 0.9);
+  color: var(--dim);
+  font: 700 0.74rem var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hb-tabs button:hover {
+  color: var(--ink);
+  border-color: var(--shard);
+}
+
+.hb-tabs button.on {
+  color: #04121a;
+  background: var(--shard);
+  border-color: var(--shard);
+}
+
+.hangar-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr);
+  gap: 14px;
+  min-height: 0;
+}
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, max-content);
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.rcard {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 8px 10px 9px;
+  border: 1px solid rgba(92, 138, 215, 0.32);
+  background:
+    linear-gradient(180deg, rgba(16, 25, 46, 0.95), rgba(6, 10, 20, 0.96));
+  text-align: left;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.rcard:hover {
+  border-color: rgba(111, 243, 255, 0.6);
+}
+
+.rcard.on {
+  border-color: var(--shard);
+  box-shadow: 0 0 0 1px var(--shard), 0 0 18px rgba(111, 243, 255, 0.25);
+}
+
+.rcard.full {
+  opacity: 0.45;
+}
+
+.rc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rc-badge {
+  font: 700 0.64rem var(--mono);
+  color: #f5b841;
+  letter-spacing: 0.04em;
+}
+
+.rc-art {
+  display: grid;
+  place-items: center;
+  height: 70px;
+  border: 1px solid rgba(90, 125, 195, 0.18);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 11px, rgba(74, 168, 255, 0.05) 11px 12px),
+    repeating-linear-gradient(90deg, transparent 0 11px, rgba(74, 168, 255, 0.05) 11px 12px),
+    radial-gradient(ellipse at 50% 60%, rgba(74, 168, 255, 0.14), transparent 70%),
+    rgba(3, 6, 14, 0.85);
+}
+
+.rc-art .hull-thumb,
+.rc-art svg {
+  max-width: 90%;
+  max-height: 62px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.7));
+}
+
+.rcard b {
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rcard small {
+  font-size: 0.74rem;
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-cap {
+  font: 600 0.7rem var(--mono);
+  color: var(--dim);
+}
+
+.rcard.full .rc-cap {
+  color: #ff5c6c;
+}
+
+.rc-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  font: 700 0.6rem var(--mono);
+  color: var(--dim);
+}
+
+.rc-stats span {
+  display: grid;
+  gap: 2px;
+}
+
+.rc-stats i {
+  height: 4px;
+  background: linear-gradient(90deg, var(--shard) calc(var(--v) * 100%), #172238 0);
+}
+
+.dossier {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(92, 138, 215, 0.42);
+  border-right: 3px solid var(--cobalt);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    rgba(6, 10, 20, 0.95);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.dz-bay {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 190px;
+  flex: none;
+  border: 1px solid rgba(92, 138, 215, 0.3);
+  background:
+    linear-gradient(180deg, transparent 70%, rgba(111, 243, 255, 0.08)),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(74, 168, 255, 0.06) 23px 24px),
+    radial-gradient(ellipse at 50% 55%, rgba(74, 168, 255, 0.28), transparent 65%),
+    #03060e;
+  overflow: hidden;
+}
+
+.dz-bay::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 22px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(111, 243, 255, 0.6), transparent);
+}
+
+.dz-art {
+  display: grid;
+  place-items: center;
+  width: calc(92% * var(--k));
+  height: calc(160px * var(--k));
+}
+
+.dz-art .hull-thumb,
+.dz-art svg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(74, 168, 255, 0.35)) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.8));
+}
+
+.dz-scale {
+  position: absolute;
+  left: 10px;
+  bottom: 6px;
+  font: 600 0.66rem var(--mono);
+  color: var(--dim);
+  letter-spacing: 0.08em;
+}
+
+.dz-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dz-head h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dz-head small {
+  color: var(--dim);
+}
+
+.dz-cap {
+  margin-left: auto;
+  font: 700 0.72rem var(--mono);
+  color: var(--good);
+  white-space: nowrap;
+}
+
+.dz-cap.full {
+  color: #ff5c6c;
+}
+
+.dz-sum {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: #b9c6e4;
+}
+
+.dz-sum em {
+  font-style: normal;
+  font-weight: 700;
+  color: #f5b841;
+}
+
+.dz-specs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.dz-specs .spec {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: 6px 8px;
+  border: 1px solid #2b3c5e;
+  background: rgba(5, 8, 16, 0.85);
+}
+
+.dz-specs label {
+  font: 700 0.6rem var(--mono);
+  letter-spacing: 0.08em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.dz-specs b {
+  font-size: 0.9rem;
+  line-height: 1.15;
+}
+
+.dz-specs small {
+  font: 0.66rem var(--mono);
+  color: var(--shard);
+}
+
+.dz-t3 h4 {
+  margin: 0 0 6px;
+  font: 700 0.66rem var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--xp);
+  text-transform: uppercase;
+}
+
+.t3s {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.t3 {
+  display: grid;
+  gap: 4px;
+  padding: 6px 8px;
+  border: 1px dashed rgba(180, 140, 255, 0.4);
+  background: rgba(20, 12, 40, 0.4);
+  font-size: 0.8rem;
+}
+
+.t3-art {
+  display: grid;
+  place-items: center;
+  height: 54px;
+}
+
+.t3-art .hull-thumb,
+.t3-art svg {
+  max-width: 90%;
+  max-height: 50px;
+  object-fit: contain;
+}
+
+.t3 u {
+  text-decoration: none;
+  font: 700 0.66rem var(--mono);
+  color: var(--xp);
+}
+
+.dz-launch {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid var(--good);
+  background: linear-gradient(180deg, rgba(92, 255, 157, 0.22), rgba(92, 255, 157, 0.08));
+  color: var(--good);
+  font: 700 1.05rem 'Rajdhani', sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.dz-launch:hover:not(:disabled) {
+  background: rgba(92, 255, 157, 0.3);
+  box-shadow: 0 0 18px rgba(92, 255, 157, 0.3);
+}
+
+.dz-launch:disabled {
+  border-color: #ff5c6c;
+  background: rgba(255, 92, 108, 0.08);
+  color: #ff5c6c;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  .hangar-body {
+    grid-template-columns: 1fr;
+  }
+  .roster {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-height: 40vh;
   }
 }

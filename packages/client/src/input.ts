@@ -28,6 +28,8 @@ export interface InputHandlers {
   /** `zoom` is true for Ctrl + wheel (the bare wheel moves the throttle while flying). */
   wheel(deltaY: number, x: number, y: number, zoom: boolean): void;
   escape(): void;
+  /** Enter or Space: launch from the hangar. */
+  confirm(): void;
 }
 
 /** Turns mouse and keyboard state into one InputFrame per animation frame. */
@@ -112,6 +114,7 @@ export class Input {
       }
       if (e.code === 'KeyM') this.h.bigMap();
       if (e.code === 'Escape') this.h.escape();
+      if (e.code === 'Enter' || e.code === 'NumpadEnter' || e.code === 'Space') this.h.confirm();
       if (/^Digit[1-9]$/.test(e.code)) this.h.digit(Number(e.code.slice(5)));
       // 0, -, = continue the number row (commander orders 10–12).
       else if (e.code === 'Digit0') this.h.digit(10);

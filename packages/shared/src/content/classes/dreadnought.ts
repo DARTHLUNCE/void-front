@@ -19,19 +19,21 @@ export const DREADNOUGHT: ShipClass = {
   name: 'Dreadnought',
   role: 'Super-heavy spinal siege platform',
   summary: 'The biggest gun in the fleet: a charged 240mm spinal rail that slips through scouts and guts capital ships. Slow to turn, slow to die.',
-  hull: 1850,
+  hull: 1600,
   shield: 620,
   armor: 110,
   speed: 165,
   radius: 155,
   turnRate: 75 * DEG,
-  // 240mm spinal rail: a full 1.4 s charge fires a 260-damage slug (×3) at 135 AP, 1,450 u: ~148 DPS cycled.
-  gun: { name: '240mm Spinal Rail Cannon', damage: 87, fireInterval: 0.36, projectileSpeed: 1900, count: 1, spread: 0, size: 9, life: 0.763, chargeMax: 1.4, ap: 135 },
+  // 240mm spinal rail: a full 1.4 s charge fires a 132-damage slug (×3) at 135 AP, 1,450 u: ~75 DPS cycled.
+  gun: { name: '240mm Spinal Rail Cannon', damage: 44, fireInterval: 0.36, projectileSpeed: 1900, count: 1, spread: 0, size: 11, life: 0.763, chargeMax: 1.4, ap: 135 },
   secondary: { name: '25mm Point-Defense Blisters', count: 8, damage: 3.6, fireInterval: 0.3, ap: 28, range: 600, jitterDeg: 20, projectileSpeed: 1300, size: 3 },
   quirk: 'chargeShot',
   accel: 2.4,
   respawnMul: 1.6,
   teamCapFrac: 0.05,
+  // v2.1: big guns track nimble Light hulls (Patrol Craft, Corvettes) poorly: −50% damage against them.
+  modifiers: [{ stat: 'damage', op: 'mul', value: -0.5, when: 'targetLight' }],
   quirkInfo: {
     name: 'Spinal Capacitor & Overpenetration',
     text: 'Hold fire 1.4 s for a ×3 full-charge slug (135 AP) that pierces 2 more ships. Unmodified slugs overpenetrate Patrol Craft and Corvettes for 65% damage but hit medium and capital hulls at full force.',

@@ -95,6 +95,7 @@ const CONDITION_WORDS: Record<ConditionId, string> = {
   fullChargeVsArmored: 'on full-charge hits vs Armored hulls',
   targetStern: 'on stern hits',
   targetPainted: 'vs painted targets',
+  jinking: 'while flying fast',
 };
 
 export function describeModifier(m: ModifierDef): string {

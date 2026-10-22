@@ -7,6 +7,7 @@ import { apHit, damageDeployable, damageShip, damageStructure, fireSecondaries, 
 import { damageDrone, spawnDrone } from './drones';
 import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
+import { apPowerBonus } from './power';
 import { applyStatus, canAct, hasStatus } from './status';
 
 /** Who is casting: a ship, or the Fleet Commander (no ship) acting at a map position. */
@@ -323,6 +324,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
         if (p) {
           p.missile = true;
+          p.noOverpen = true;
           p.fromDrone = true;
           p.ap = step.ap ?? Infinity;
           p.splash = step.radius;
@@ -542,14 +544,27 @@ export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): v
 /** The `projectiles` primitive's pattern, fired once from the ship's bow. */
 function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>): void {
   const first = w.projectiles.count;
-  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, mergedGun(s.cls.gun, step.gun), outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), s.radius);
+  const gun = mergedGun(s.cls.gun, step.gun);
+  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), s.radius);
   const structureMul = (step.structureMul ?? 1) * liveStat(w, s, 'structureDamage', 1);
+  // v2.1: ordnance takes the ship's live caliber (Weapons calibration, node +AP, WEAPONS power) like
+  // its gun does, and warheads (missiles, anything with splash) never overpenetrate.
+  const ap = ordnanceAp(w, s, gun.ap);
+  const warhead = step.missile === true || (gun.splash ?? 0) > 0;
   for (let i = first; i < w.projectiles.count; i++) {
     const p = w.projectiles.at(i);
     if (step.missile) p.missile = true;
+    p.ap = ap;
+    if (warhead) p.noOverpen = true;
     p.statuses = step.onHit ?? null;
     p.structureMul = structureMul;
   }
+}
+
+/** Live caliber of ability ordnance: (base + calibration and node AP) × the WEAPONS power bonus. */
+export function ordnanceAp(w: World, s: Ship, base: number | undefined): number {
+  if (base === undefined || !Number.isFinite(base)) return Infinity;
+  return Math.round(liveStat(w, s, 'ap', base) * (1 + apPowerBonus(w, s)));
 }
 
 /** Step 3: fire the next shots of a rippling salvo (Sequential Tube Salvo). */

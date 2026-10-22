@@ -1,5 +1,5 @@
 import { pickedNodes } from '../content/classes/index';
-import { ARMORED_MIN, LIGHT_ARMOR_MAX } from '../content/combat';
+import { ARMORED_MIN, JINK_SPEED, LIGHT_ARMOR_MAX } from '../content/combat';
 import { POWER_INDEX } from '../content/power';
 import { STAT_POINTS } from '../content/progression';
 import { QUIRK_PARAMS } from '../content/quirks';
@@ -90,6 +90,7 @@ export function applyLoadout(ship: Ship): void {
   ship.conditional = [];
   const cls = ship.cls;
   if (cls.baseStats) for (const [stat, v] of Object.entries(cls.baseStats)) ship.modAdd[STAT_INDEX[stat as StatId]] += v;
+  if (cls.modifiers) for (const m of cls.modifiers) addModifier(ship, m, 1);
   for (let p = 0; p < STAT_POINTS.length; p++) {
     const n = ship.statPoints[p];
     if (n > 0) for (const m of STAT_POINTS[p].perPoint) addModifier(ship, m, n);
@@ -250,6 +251,7 @@ export const CONDITIONS: Record<ConditionId, ConditionFn> = {
   fullChargeVsArmored: (_w, _s, h) => h.fullCharge && h.target !== null && h.target.cls.armor >= ARMORED_MIN,
   targetStern: (_w, _s, h) => h.stern,
   targetPainted: (_w, _s, h) => h.target !== null && has(h.target, 'painted'),
+  jinking: (_w, s) => s.vx * s.vx + s.vy * s.vy >= (JINK_SPEED * s.cls.speed) ** 2,
 };
 
 /** ship.quirk slot where Ghost Drive records when cloak last ended (shared with systems/quirks.ts). */

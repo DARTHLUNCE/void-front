@@ -1,4 +1,5 @@
 import { CanvasSource, Graphics, Texture, type Renderer } from 'pixi.js';
+import { CRAFT, CRAFT_PALETTES, type CraftId } from '../art/craft';
 import { HULLS } from '../art/hulls';
 import { bakeArt, type ArtTexture } from '../art/pixiArt';
 import { BOLT_ART, CRYSTAL_ART, CRYSTAL_PALETTES, MOTHERSHIP_ART, SHELL_ART } from '../art/props';
@@ -49,6 +50,8 @@ export interface Textures {
   crystalBig: ArtTexture;
   /** Small white dart, tinted per team, for drones. */
   drone: Texture;
+  /** v2.1 strike craft by drone behavior (fighter, interceptor, bomber, recon, defender), world-size. */
+  craft: Record<CraftId, LitArt>;
   glow: Texture;
   particle: Texture;
   disc: Texture;
@@ -164,6 +167,12 @@ export function makeTextures(renderer: Renderer, replacements: Record<string, Li
     crystalBig: bakeArt(renderer, CRYSTAL_ART[1], CRYSTAL_PALETTES[1]),
     particle: renderer.generateTexture({ target: particle, resolution: 2 }),
     drone: renderer.generateTexture({ target: drone, resolution: 3 }),
+    craft: Object.fromEntries(
+      (Object.keys(CRAFT) as CraftId[]).map((id) => {
+        const art = litStates(CRAFT[id].shapes, 5, 1, CRAFT_PALETTES);
+        return [id, { ...art, albedo: [art.albedo[0], art.albedo[1]], engines: CRAFT[id].engines }];
+      }),
+    ) as Record<CraftId, LitArt>,
     disc: discTexture(32),
     glow: radialTexture(128, [
       [0, 'rgba(255,255,255,0.9)'],

@@ -24,7 +24,7 @@ export const SNAP = {
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
   ship: 21,
-  projectile: 8, // x, y, vx, vy, team, radius, flags, remaining lifetime
+  projectile: 9, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none)
   crystal: 3,
   point: 10,
   structure: 8,
@@ -456,6 +456,7 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     if (p.owner === selfSlot && selfSlot >= 0) f |= PROJ_FLAG.own;
     b[k + 6] = f;
     b[k + 7] = p.life;
+    b[k + 8] = Number.isFinite(p.ap) ? p.ap : 0;
     k += SNAP.projectile;
   }
 

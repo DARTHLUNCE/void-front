@@ -72,3 +72,16 @@ export const RESOURCE_INFO = {
   fuel: { name: 'Fuel', building: 'Fuel refinery', use: 'starship wings' },
   manpower: { name: 'Manpower', building: 'Training camp', use: 'spawn points and reinforcements' },
 } as const;
+
+/** v2.1 pilot call signs: 1–16 of A–Z, 0–9, '-' and '_'; the Launch Dock dice rolls the presets. */
+export const CALLSIGN = {
+  default: 'COMMANDER',
+  maxLength: 16,
+  presets: ['STARHOUND', 'VOID-01', 'IRON-LANCE', 'VALKYRIE-7', 'APEX-WOLF', 'NOVA-ACTUAL', 'KESTREL-9', 'REAPER-SIX', 'AEGIS-PRIME'],
+} as const;
+
+/** Uppercase and strip a typed call sign to the allowed characters; empty input gives the default. */
+export function sanitizeCallsign(raw: string): string {
+  const clean = raw.toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, CALLSIGN.maxLength);
+  return clean || CALLSIGN.default;
+}

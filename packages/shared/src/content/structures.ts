@@ -1,4 +1,4 @@
-import type { DeployKind, DroneBehavior, DroneStats, StatusApply, StructureDef } from './types';
+import type { DeployKind, DroneBehavior, DroneStats, GunDef, StatusApply, StructureDef } from './types';
 
 /**
  * Capture-point nodes: an asteroid with a building. A held node has hull; the enemy must destroy
@@ -69,6 +69,12 @@ export const DEPLOYABLES: Record<DeployKind, DeployableDef> = {
   platform: { hull: 2500, radius: 48, turret: { range: 850, damage: 18, interval: 0.3, projectileSpeed: 1400, size: 6, ap: 70 }, vision: 1_400 },
 };
 
+/**
+ * v2.1: Heavy Assault Bomber torpedo: a slow 400mm warhead (95 AP, 140 u splash, 3× vs structures)
+ * that never overpenetrates and that CIWS flak can shoot down.
+ */
+export const BOMBER_TORPEDO_GUN: Partial<GunDef> = { projectileSpeed: 680, size: 8, noOverpen: true };
+
 /** Drone stats by behavior. Orbit drones (Drone Bay) also scale with the owner's tier. */
 export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
   orbit: { hull: 60, damage: 7, fireInterval: 0.3, speed: 380, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 10, ap: 25 },
@@ -77,7 +83,7 @@ export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
   decoy: { hull: 40, damage: 0, fireInterval: 1, speed: 330, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 28 },
   // Commander wings: bombers hit structures and nodes, interceptors hunt drones then ships, fighters
   // dogfight ships, defenders (guard) hold a spot, recon spots.
-  bomber: { hull: 160, damage: 45, fireInterval: 1.4, speed: 250, range: 480, splash: 140, structureMul: 3, lifesteal: 0, radius: 15, ap: 90 },
+  bomber: { hull: 160, damage: 45, fireInterval: 2.2, speed: 250, range: 620, splash: 140, structureMul: 3, lifesteal: 0, radius: 15, ap: 95, gun: BOMBER_TORPEDO_GUN, missile: true },
   interceptor: { hull: 80, damage: 8, fireInterval: 0.2, speed: 540, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 11, ap: 30 },
   recon: { hull: 60, damage: 0, fireInterval: 1, speed: 420, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 11, vision: 1_600 },
   fighter: { hull: 120, damage: 11, fireInterval: 0.28, speed: 430, range: 520, splash: 0, structureMul: 1, lifesteal: 0, radius: 12, ap: 35 },

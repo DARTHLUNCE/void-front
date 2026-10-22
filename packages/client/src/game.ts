@@ -1,4 +1,4 @@
-import { CLASS_ORDER, COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo, type SeatId } from '@void-front/shared';
+import { COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
 import type { ShipArtMode } from './art/referenceShips';
 import { Hud } from './hud/hud';
 import { Input, type ControlScheme } from './input';
@@ -15,6 +15,8 @@ export interface GameOptions {
   derivedNormals?: boolean;
   /** Team Palette: fly for Cobalt (0, west) or Ember (1, east). */
   team?: 0 | 1;
+  /** v2.1: pilot call sign from the Launch Dock. */
+  callsign?: string;
 }
 
 /** Commander camera pan speed in screen pixels per second, and the screen-edge pan band. */
@@ -72,6 +74,7 @@ export class Game {
         else this.input.stepThrottle(dy < 0 ? 1 : -1);
       },
       escape: () => this.armOrder(null),
+      confirm: () => this.mode() === 'picker' && this.hud.hangar.launch(),
     });
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
     let lit = this.opts.lighting;
@@ -107,7 +110,7 @@ export class Game {
     this.prev = this.curr = null;
     this.hud.pendingOrder = null;
     // Client-side seed choice is fine: the sim itself only ever sees the number.
-    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty, team: this.opts.team ?? 0 });
+    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty, team: this.opts.team ?? 0, callsign: this.opts.callsign });
   }
 
   /** What the local player is doing right now. */
@@ -123,9 +126,8 @@ export class Game {
   private onDigit(n: number): void {
     const mode = this.mode();
     if (mode === 'picker') {
-      // 1–9 pick a class; 0, -, = take a command seat (Admiral, FOB 1, FOB 2).
-      if (n <= CLASS_ORDER.length) this.send({ type: 'pickClass', choice: CLASS_ORDER[n - 1] });
-      else if (n >= 10 && n <= 12) this.send({ type: 'pickSeat', seat: (n - 10) as SeatId });
+      // 1–9 select a class, 0, -, = a command seat (Admiral, FOB 1, FOB 2); Enter / Space launches.
+      this.hud.hangar.selectKey(n);
     } else if (mode === 'pilot') {
       if ((n === 1 || n === 2) && this.curr && this.hud.tierReady(this.curr)) this.send({ type: 'tier', option: n - 1 });
       // - and = zoom the camera out and in.

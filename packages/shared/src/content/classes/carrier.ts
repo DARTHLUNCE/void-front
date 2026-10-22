@@ -20,6 +20,8 @@ export const CARRIER: ShipClass = {
   accel: 2.6,
   respawnMul: 1.5,
   teamCapFrac: 0.1,
+  // v2.1: big guns track nimble Light hulls (Patrol Craft, Corvettes) poorly: −50% damage against them.
+  modifiers: [{ stat: 'damage', op: 'mul', value: -0.5, when: 'targetLight' }],
   quirkInfo: {
     name: 'Armored Flight Deck',
     text: '2 permanent escort starships (relaunch 7 s) inherit your Reactor Power: ← +30% speed, ↑ +25% damage and AP, → +40% hull.',

@@ -14,13 +14,15 @@ export const BATTLECRUISER: ShipClass = {
   radius: 90,
   turnRate: 140 * DEG,
   // Twin 105mm siege plasma cannons: 2 × 19.8 every 0.3 s = 132 DPS, 88 AP, 840 u.
-  gun: { name: 'Twin 105mm Siege Plasma Cannons', damage: 19.8, fireInterval: 0.3, projectileSpeed: 1150, count: 2, spread: 0, barrelGap: 24, size: 6, life: 0.73, ap: 88 },
+  gun: { name: 'Twin 105mm Siege Plasma Cannons', damage: 19.8, fireInterval: 0.3, projectileSpeed: 1150, count: 2, spread: 0, barrelGap: 24, size: 7.5, life: 0.73, ap: 88 },
   secondary: { name: 'Broadside Casemate Turrets', count: 4, damage: 5.4, fireInterval: 0.3, ap: 42, range: 640, jitterDeg: 16, projectileSpeed: 1300, size: 3 },
   quirk: 'momentum',
   quirkTuning: { damageBonus: 0.25, fireRateBonus: 0 },
   accel: 3.2,
   respawnMul: 1.25,
   teamCapFrac: 0.12,
+  // v2.1: big guns track nimble Light hulls (Patrol Craft, Corvettes) poorly: −50% damage against them.
+  modifiers: [{ stat: 'damage', op: 'mul', value: -0.5, when: 'targetLight' }],
   quirkInfo: {
     name: 'Heavy Momentum & Bow Wedge',
     text: 'Flying straight builds +15% speed and +25% primary damage. The front 90° bow arc gets +30% armor (94 bow armor).',
