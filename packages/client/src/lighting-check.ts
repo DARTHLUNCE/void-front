@@ -81,8 +81,86 @@ function run() {
     `${clearSpill > 0 && blockedSpill < clearSpill * 0.4 ? 'PASS' : 'FAIL'} cascade shadow: clear ${clearSpill}, blocked ${blockedSpill}`,
     `${maxChange === 0 ? 'PASS' : 'FAIL'} static stability: maximum byte change ${maxChange}`,
   ];
+  lines.push(...selfShadowChecks());
   results.textContent = lines.join('\n');
   draw(false, 320, true);
+}
+/** Actual GPU comparisons: a flat receiver behind a raised height-map ridge. */
+function selfShadowChecks(): string[] {
+  const uniforms = lighting.lightUniforms.uniforms;
+  const savedKey = Array.from(uniforms.uKey);
+  const savedPower = uniforms.uKeyPower;
+  const shader = receiver.shader!;
+  const savedNormal = shader.resources.uNormal;
+  const savedRelief = shader.resources.uRelief;
+  const savedHasRelief = shader.resources.surface.uniforms.uHasRelief;
+  shader.resources.surface.uniforms.uHasRelief = 1;
+  const savedStrength = uniforms.uSelfShadowStrength;
+  const savedEnabled = uniforms.uLightingEnabled;
+  const savedSpill = spill.visible;
+  spill.visible = false;
+  uniforms.uLightingEnabled = 0;
+  uniforms.uKeyPower = 1;
+  uniforms.uKey.set([1, 0, 0.2]);
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d')!;
+  const textures: Texture[] = [];
+  function normal(ridge: boolean, gap = false) {
+    g.clearRect(0, 0, 32, 32);
+    g.fillStyle = 'rgb(128,128,0)'; g.fillRect(0, 0, 32, 32);
+
+    const copy = document.createElement('canvas'); copy.width = copy.height = 32;
+    copy.getContext('2d')!.drawImage(c, 0, 0);
+    const t = Texture.from(copy); textures.push(t); shader.resources.uNormal = t.source;
+    const relief = document.createElement('canvas'); relief.width = relief.height = 32;
+    const r = relief.getContext('2d')!;
+    const data = r.createImageData(32,32);
+    for (let y=0;y<32;y++) for(let x=0;x<32;x++) {
+      const raised = ridge && x>=17 && x<22;
+      const value = raised ? Math.round(10/128*65535) : 0;
+      const i=(y*32+x)*4;
+      data.data[i]=value>>8; data.data[i+1]=value&255;
+      data.data[i+3]=gap && raised ? 0 : 255;
+    }
+    r.putImageData(data,0,0);
+    const rt = Texture.from(relief); textures.push(rt); shader.resources.uRelief=rt.source;
+  }
+  function sample(strength: number): number {
+    uniforms.uSelfShadowStrength = strength;
+    const pixels = app.renderer.extract.pixels(app.stage).pixels;
+    let sum = 0;
+    // Sample the flat patch behind the ridge; rotate the probe with the hull.
+    for (let y = -20; y < 20; y++) for (let x = -10; x < -3; x++) {
+      const rx = Math.round(420 + x * Math.cos(receiver.rotation) - y * Math.sin(receiver.rotation));
+      const ry = Math.round(130 + x * Math.sin(receiver.rotation) + y * Math.cos(receiver.rotation));
+      const i = (ry * 640 + rx) * 4;
+      sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+    }
+    return sum / (40 * 7 * 3);
+  }
+  normal(false); const flatOff = sample(0); const flatOn = sample(0.85);
+  normal(true); const ridgeOff = sample(0); const ridgeOn = sample(0.85); const repeated = sample(0.85);
+  receiver.rotation = Math.PI / 2; uniforms.uKey.set([0, 1, 0.2]);
+  const rotatedOff = sample(0); const rotatedOn = sample(0.85);
+  receiver.rotation = 0; uniforms.uKey.set([0, 0, 1]);
+  const overheadOff = sample(0); const overheadOn = sample(0.85);
+  uniforms.uKey.set([1, 0, 0.2]); normal(true, true);
+  const gapOff = sample(0); const gapOn = sample(0.85);
+  shader.resources.uNormal = savedNormal;
+  shader.resources.uRelief = savedRelief;
+  shader.resources.surface.uniforms.uHasRelief = savedHasRelief;
+  uniforms.uKey.set(savedKey); uniforms.uKeyPower = savedPower;
+  uniforms.uSelfShadowStrength = savedStrength; uniforms.uLightingEnabled = savedEnabled;
+  spill.visible = savedSpill;
+  for (const t of textures) t.destroy(true);
+  return [
+    `${Math.abs(flatOn - flatOff) < 1 ? 'PASS' : 'FAIL'} flat relief stays lit: ${flatOff.toFixed(2)} / ${flatOn.toFixed(2)}`,
+    `${ridgeOff > 5 && ridgeOn < ridgeOff * 0.7 ? 'PASS' : 'FAIL'} ridge casts surface shadow: ${ridgeOff.toFixed(2)} / ${ridgeOn.toFixed(2)}`,
+    `${Math.abs(rotatedOn / rotatedOff - ridgeOn / ridgeOff) < 0.06 ? 'PASS' : 'FAIL'} surface shadow rotates with hull: ${(rotatedOn / rotatedOff).toFixed(3)}`,
+    `${Math.abs(overheadOn - overheadOff) < 1 ? 'PASS' : 'FAIL'} overhead light stays clear: ${overheadOff.toFixed(2)} / ${overheadOn.toFixed(2)}`,
+    `${Math.abs(gapOn - gapOff) < 1 ? 'PASS' : 'FAIL'} transparent height does not occlude: ${gapOff.toFixed(2)} / ${gapOn.toFixed(2)}`,
+    `${ridgeOn === repeated ? 'PASS' : 'FAIL'} surface shadow static stability`,
+  ];
 }
 document.querySelector('#run')!.addEventListener('click', run);
 document.querySelector('#blocker')!.addEventListener('click', () => draw(!blocker.visible, 320, true));

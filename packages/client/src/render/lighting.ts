@@ -11,40 +11,17 @@ import {
   type Renderer,
   type TextureSource,
 } from 'pixi.js';
+import { TemporalRadiance } from './temporalRadiance';
+import { LightGrid } from './lightGrid';
+import { EMISSIVE_LIGHT_RADIUS_SCALE, EMISSIVE_LIGHT_STRENGTH, EMISSIVE_STRENGTH, emissiveSource, type EmissiveSource } from './emissiveSources';
 import { AMBIENT, KEY_LIGHT, KEY_POWER } from '../art/raster';
-
-/**
- * Cost knobs. At the settings PR #1 shipped with (half-resolution buffer, 16 shadowed lights per
- * hull pixel, 64-step marches) a frame took ~120 ms on a typical GPU, ~9× the earlier lighting.
- * These keep the same approach at a playable cost; raise them for quality on a fast GPU.
- */
-export const LIGHT_QUALITY = {
-  /** Light buffer = screen size / this (2 = half resolution, 4 = quarter). */
-  bufferDivisor: 4,
-  /** Steps per cascade ray march. */
-  marchSteps: 28,
-  /**
-   * PR #1's leak-proof cascade merge: each ray re-traces toward the 4 upper probes before
-   * interpolating (4× the marching). Off = the cheaper single-trace merge, where light can leak a
-   * little through thin blockers as probes cross silhouette edges.
-   */
-  bilinearMerge: false,
-  /**
-   * Hulls shadow each other from point lights (PR #1). Costs two extra distance fields per frame
-   * plus a shadow trace per light per hull pixel; off = lights reach hulls unshadowed.
-   */
-  hullShadows: false,
-  /** Lights each hull pixel considers, strongest first. */
-  surfaceLights: 6,
-  /** Steps per shadow trace toward a surface light. */
-  shadowSteps: 16,
-} as const;
 
 /**
  * 2D radiance cascades (after Sannikov; layout as in jason.today's "Radiance Cascades" write-up):
  *   emitters → seed → jump flood → distance field → cascades N-1..0 (each merges the one above)
- * Output: `irradiance` (rgb light arriving in space, averaged over directions), at
- * screen / LIGHT_QUALITY.bufferDivisor resolution. Hull normals use per-emitter, shadowed surface lighting; a faint overlay of the
+ * Output: `irradiance` (rgb light arriving in space, averaged over directions) and
+ * `direction` (xy = luminance-weighted direction toward the light, z = total luminance), both at a
+ * half of screen resolution. Hull normals use per-emitter, shadowed surface lighting; a faint overlay of the
  * irradiance lights space itself.
  */
 
@@ -108,57 +85,8 @@ uniform vec2 uRes;
 void main() {
   vec4 s = texture(uSeed, vUv);
   float d = s.a > 0.0 ? distance(s.xy, vUv * uRes) : 1e4;
-  fragColor = vec4(d, 0.0, 0.0, 1.0);
+  fragColor = vec4(d, s.xy, 1.0);
 }`;
-
-/** Ray-march step paired with the bilinear merge (PR #1): creep past pixel footprints, stop on solids. */
-const PRECISE_STEP = /* glsl */ `
-    vec4 surface = texture(uScene, uv);
-    if (d < 1.0 && surface.a > 0.25) return vec4(surface.rgb, 0.0);
-    // Distance is to a pixel center; leave room for its footprint.
-    float stepLength = max(0.35, d - 0.75);
-    p += dir * stepLength;
-    t += stepLength;`;
-
-/** Ray-march step paired with the single merge: stop at the first surface, step the full distance. */
-const FAST_STEP = /* glsl */ `
-    if (d < 0.75) return vec4(texture(uScene, uv).rgb, 0.0);
-    p += dir * d;
-    t += d;`;
-
-/** Cascade merge, one trace per ray (see LIGHT_QUALITY.bilinearMerge). */
-const SINGLE_MERGE = /* glsl */ `
-    vec4 r = march(center + dir * start, dir, len);
-    if (r.a > 0.0 && uCascade < uCount - 1.0) {
-      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
-      vec2 upperProbe = clamp((probe + 0.5) / 2.0, vec2(0.5), upperSize - 0.5);
-      vec4 up = texture(uUpper, (upperTile + upperProbe) / uRes);
-      r.rgb += r.a * up.rgb;
-      r.a *= up.a;
-    }`;
-
-/** Cascade merge, re-traced toward each of the 4 upper probes (PR #1). */
-const BILINEAR_MERGE = /* glsl */ `
-    vec4 r = vec4(0.0);
-    if (uCascade < uCount - 1.0) {
-      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
-      // Merge each connected interval BEFORE interpolation. Interpolating visibility first
-      // lets radiance jump through blockers as probes cross silhouette edges.
-      for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) {
-        vec2 corner = vec2(float(x), float(y));
-        vec2 q = clamp(upperBase + corner, vec2(0.0), upperSize - 1.0);
-        vec2 endpoint = (q + 0.5) * upperSpacing + dir * (start + len);
-        vec2 rayStart = center + dir * start;
-        vec2 delta = endpoint - rayStart;
-        float distanceToEnd = length(delta);
-        vec4 nearLight = march(rayStart, delta / max(distanceToEnd, 1e-4), distanceToEnd);
-        vec4 farLight = texture(uUpper, (upperTile + q + 0.5) / uRes);
-        vec2 weight = mix(1.0 - weights, weights, corner);
-        r += vec4(nearLight.rgb + nearLight.a * farLight.rgb, nearLight.a * farLight.a) * weight.x * weight.y;
-      }
-    } else {
-      r = march(center + dir * start, dir, len);
-    }`;
 
 const CASCADE_FRAG = /* glsl */ `#version 300 es
 precision highp float;
@@ -171,17 +99,23 @@ uniform vec2 uRes;
 uniform float uCascade;
 uniform float uCount;
 uniform float uInterval;
+uniform vec2 uProbeOrigin;
 uniform float uMode;   // 0: average radiance, 1: luminance-weighted direction
 const float TAU = 6.2831853;
 
 vec4 march(vec2 start, vec2 dir, float len) {
   vec2 p = start;
   float t = 0.0;
-  for (int i = 0; i < ${LIGHT_QUALITY.marchSteps}; i++) {
+  for (int i = 0; i < 64; i++) {
     vec2 uv = p / uRes;
     if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) break;
     float d = texture(uDist, uv).r;
-${LIGHT_QUALITY.bilinearMerge ? PRECISE_STEP : FAST_STEP}
+    vec4 surface = texture(uScene, uv);
+    if (d < 1.0 && surface.a > 0.25) return vec4(surface.rgb, 0.0);
+    // Distance is to a pixel center; leave room for its footprint.
+    float stepLength = max(0.35, d - 0.75);
+    p += dir * stepLength;
+    t += stepLength;
     if (t >= len) break;
   }
   return vec4(0.0, 0.0, 0.0, 1.0);
@@ -195,13 +129,16 @@ void main() {
   vec2 tile = floor(coord / size);
   float rayCount = pow(4.0, uCascade + 1.0);
   float group = tile.x + tile.y * spacing;
-  vec2 center = (probe + 0.5) * spacing;
+  // Higher cascade probes stay anchored to world space while the camera pans.
+  vec2 offset=uCascade<0.5?vec2(0.0):mod(uProbeOrigin,vec2(spacing));
+  vec2 center = (probe + 0.5) * spacing + offset;
   float start = uInterval * (pow(4.0, uCascade) - 1.0) / 3.0;
   float len = uInterval * pow(4.0, uCascade);
 
   float upperSpacing = spacing * 2.0;
   vec2 upperSize = floor(uRes / upperSpacing);
-  vec2 upperPosition = center / upperSpacing - 0.5;
+  vec2 upperOffset=mod(uProbeOrigin,vec2(upperSpacing));
+  vec2 upperPosition = (center-upperOffset) / upperSpacing - 0.5;
   vec2 upperBase = floor(upperPosition);
   vec2 weights = fract(upperPosition);
 
@@ -213,7 +150,26 @@ void main() {
     float index = group * 4.0 + float(i);
     float angle = (index + 0.5) * TAU / rayCount;
     vec2 dir = vec2(cos(angle), sin(angle));
-${LIGHT_QUALITY.bilinearMerge ? BILINEAR_MERGE : SINGLE_MERGE}
+    vec4 r = vec4(0.0);
+    if (uCascade < uCount - 1.0) {
+      vec2 upperTile = vec2(mod(index, upperSpacing), floor(index / upperSpacing)) * upperSize;
+      // Merge each connected interval BEFORE interpolation. Interpolating visibility first
+      // lets radiance jump through blockers as probes cross silhouette edges.
+      for (int y = 0; y < 2; y++) for (int x = 0; x < 2; x++) {
+        vec2 corner = vec2(float(x), float(y));
+        vec2 q = clamp(upperBase + corner, vec2(0.0), upperSize - 1.0);
+        vec2 endpoint = (q + 0.5) * upperSpacing + upperOffset + dir * (start + len);
+        vec2 rayStart = center + dir * start;
+        vec2 delta = endpoint - rayStart;
+        float distanceToEnd = length(delta);
+        vec4 nearLight = march(rayStart, delta / max(distanceToEnd, 1e-4), distanceToEnd);
+        vec4 farLight = texture(uUpper, (upperTile + q + 0.5) / uRes);
+        vec2 weight = mix(1.0 - weights, weights, corner);
+        r += vec4(nearLight.rgb + nearLight.a * farLight.rgb, nearLight.a * farLight.a) * weight.x * weight.y;
+      }
+    } else {
+      r = march(center + dir * start, dir, len);
+    }
     visibility += r.a;
     total += r.rgb;
     float l = dot(r.rgb, vec3(0.3, 0.5, 0.2));
@@ -233,6 +189,8 @@ out vec2 vScreen;
 out vec2 vAxis;
 uniform vec2 uLightRes;
 uniform vec2 uBufferToScreen;
+uniform vec2 uBufferOffset;
+uniform vec2 uLightViewport;
 uniform mat3 uProjectionMatrix;
 uniform mat3 uWorldTransformMatrix;
 uniform mat3 uTransformMatrix;
@@ -242,7 +200,7 @@ void main() {
   gl_Position = vec4(clip, 0.0, 1.0);
   vUv = aUV;
   // Model coordinates remain screen pixels when an offscreen target flips clip-space Y.
-  vScreen = (model * vec3(aPosition, 1.0)).xy / (uLightRes * uBufferToScreen);
+  vScreen = (model * vec3(aPosition, 1.0)).xy / (uLightRes * uBufferToScreen) + uBufferOffset/uLightRes;
   vAxis = normalize(vec2(model[0][0], model[0][1]));
 }`;
 
@@ -254,13 +212,22 @@ in vec2 vAxis;
 out vec4 fragColor;
 uniform sampler2D uAlbedo;
 uniform sampler2D uNormal;
+uniform sampler2D uRelief;
+uniform float uHasRelief;
+uniform float uReliefRange;
+uniform sampler2D uMaterial;
+uniform float uHasMaterial;
 uniform sampler2D uOcclusion;
 uniform sampler2D uShadowDist;
 uniform sampler2D uInterior;
 uniform vec2 uLightRes;
 uniform vec2 uBufferToScreen;
-uniform vec4 uLights[${LIGHT_QUALITY.surfaceLights}]; // buffer x/y, radius in screen pixels, unused
-uniform vec4 uLightColors[${LIGHT_QUALITY.surfaceLights}];
+uniform vec2 uBufferOffset;
+uniform vec2 uLightViewport;
+uniform sampler2D uLightData;
+uniform sampler2D uLightTiles;
+uniform sampler2D uLightIndices;
+uniform vec2 uLightGridSize;
 uniform float uLightingEnabled;
 uniform vec4 uColor;
 uniform vec3 uKey;
@@ -269,58 +236,151 @@ uniform float uKeyPower;
 uniform float uGI;
 uniform float uFlash;
 uniform float uNormalStrength;
-// Skip the receiver's own solid interior, then trace toward the known area emitter.
-// This avoids both self-blackening and the sparse angular hits that formed blue bands.
-float visibility(vec2 start, vec2 end, float radius) {
-  if (${LIGHT_QUALITY.hullShadows ? 'false' : 'true'}) return 1.0;
+uniform float uSelfShadowStrength;
+
+// Metallic/roughness BRDF: GGX distribution, correlated Smith visibility,
+// Schlick Fresnel, Lambert diffuse. Atlas maps are linear material data.
+vec3 materialResponse(vec3 N, vec3 L, vec3 base, float roughness, float metallic) {
+  const float PI = 3.14159265;
+  vec3 V = vec3(0.0, 0.0, 1.0);
+  vec3 H = normalize(V + L);
+  float nv = max(N.z, 0.001), nl = max(dot(N, L), 0.0);
+  float nh = max(dot(N, H), 0.0), vh = max(dot(V, H), 0.0);
+  float a = roughness * roughness, a2 = a * a;
+  float denominator = nh * nh * (a2 - 1.0) + 1.0;
+  float distribution = a2 / max(PI * denominator * denominator, 0.000001);
+  float visibility = 0.5 / max(nl * sqrt(nv * nv * (1.0 - a2) + a2)
+                           + nv * sqrt(nl * nl * (1.0 - a2) + a2), 0.0001);
+  vec3 f0 = mix(vec3(0.04), base, metallic);
+  vec3 fresnel = f0 + (1.0 - f0) * pow(1.0 - vh, 5.0);
+  vec3 diffuse = (1.0 - fresnel) * (1.0 - metallic) * base / PI;
+  return (diffuse + fresnel * distribution * visibility) * nl * PI;
+}
+// Height in source-texel units, packed linearly in RG; alpha is coverage.
+float reliefHeight(vec4 packed) {
+  return dot(packed.rg / max(packed.a, 0.001), vec2(256.0, 1.0)) * (uReliefRange / 257.0);
+}
+float surfaceVisibility(vec3 L, vec2 normalSize, float footprint) {
+  float planar = length(L.xy);
+  if (uSelfShadowStrength <= 0.0 || planar < 0.001 || uHasRelief < 0.5) return 1.0;
+  vec2 direction = vec2(dot(L.xy, vAxis), dot(L.xy, vec2(-vAxis.y, vAxis.x))) / planar;
+  float raySlope = max(0.0, L.z) / planar;
+  if (uHasRelief > 0.5) {
+    // Consistent height differences allow a raised part to shadow distant flat plating.
+    // Unlike the short normal trace, this preserves broad relief when sprites shrink.
+    float lod = max(0.0, log2(max(footprint, 1.0)));
+    float startHeight = reliefHeight(textureLod(uRelief, vUv, lod));
+    float reach = min(96.0, max(normalSize.x, normalSize.y) * 0.45);
+    float shadow = 0.0;
+    for (int i = 0; i < 24; i++) {
+      float fraction = (float(i) + 1.0) / 24.0;
+      float distance = 1.0 + fraction * fraction * reach;
+      vec2 uv = vUv + direction * distance / normalSize;
+      if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) break;
+      vec4 relief = textureLod(uRelief, uv, lod);
+      // A cutout is empty space; a wing beyond it may still block the light.
+      if (relief.a < 0.9) continue;
+      float horizon = (reliefHeight(relief) - startHeight - 0.45) / distance;
+      shadow = max(shadow, smoothstep(raySlope - 0.01, raySlope + 0.045, horizon));
+    }
+    return 1.0 - shadow * uSelfShadowStrength;
+  }
+  return 1.0;
+}
+// Identify the receiver by its actual texture, including disconnected parts. A
+// union-mask "inside" flag mistakes a ship's own wings for another occluder.
+float receiverCoverage(vec2 offset, mat2 bufferToUv) {
+  vec2 uv = vUv + bufferToUv * offset;
+  vec2 pad = abs(bufferToUv[0]) + abs(bufferToUv[1]);
+  if (any(lessThan(uv, -pad)) || any(greaterThan(uv, vec2(1.0) + pad))) return 0.0;
+  float a = textureLod(uAlbedo, uv, 0.0).a;
+  // Conservative coverage matches the half-resolution occluder raster footprint.
+  a = max(a, textureLod(uAlbedo, uv + bufferToUv[0] * 0.75, 0.0).a);
+  a = max(a, textureLod(uAlbedo, uv - bufferToUv[0] * 0.75, 0.0).a);
+  a = max(a, textureLod(uAlbedo, uv + bufferToUv[1] * 0.75, 0.0).a);
+  a = max(a, textureLod(uAlbedo, uv - bufferToUv[1] * 0.75, 0.0).a);
+  return a;
+}
+float visibility(vec2 start, vec2 end, float radius, mat2 bufferToUv) {
   vec2 delta = end - start;
   float lengthToLight = length(delta);
   vec2 dir = delta / max(lengthToLight, 0.001);
   float t = 0.0;
-  bool insideReceiver = texture(uOcclusion, start / uLightRes).a > 0.25;
   float result = 1.0;
-  for (int step = 0; step < ${LIGHT_QUALITY.shadowSteps}; step++) {
+  for (int step = 0; step < 96; step++) {
     if (t >= lengthToLight - radius) return result;
-    vec2 uv = (start + dir * t) / uLightRes;
+    vec2 offset = dir * t;
+    vec2 uv = (start + offset) / uLightRes;
     if (any(lessThan(uv, vec2(0.0))) || any(greaterThan(uv, vec2(1.0)))) return result;
     bool solid = texture(uOcclusion, uv).a > 0.25;
-    if (!solid) insideReceiver = false;
-    if (solid && !insideReceiver) return 0.0;
-    float d = insideReceiver ? texture(uInterior, uv).r : texture(uShadowDist, uv).r;
-    if (!insideReceiver && t > 2.0) result = min(result, clamp((d + 0.5) * lengthToLight / max(radius * t, 1.0), 0.0, 1.0));
+    if (solid && receiverCoverage(offset, bufferToUv) < 0.01) return 0.0;
+    vec3 field = texture(uShadowDist, uv).rgb;
+    float d = solid ? texture(uInterior, uv).r : field.r;
+    // The nearest silhouette may be the receiver itself. It must not create a
+    // false penumbra immediately after the ray exits its own hull.
+    if (!solid && t > 2.0 && receiverCoverage(field.gb - start, bufferToUv) < 0.01) {
+      result = min(result, clamp((d + 0.5) * lengthToLight / max(radius * t, 1.0), 0.0, 1.0));
+    }
     t += max(0.5, d - 0.75);
   }
   return 0.0;
 }
 void main() {
+  vec2 normalSize = vec2(textureSize(uNormal, 0));
+  mat2 bufferBasis = mat2(dFdx(vScreen * uLightRes), dFdy(vScreen * uLightRes));
+  mat2 bufferToUv = mat2(dFdx(vUv), dFdy(vUv)) * inverse(bufferBasis);
+  // Derivatives are evaluated before divergent branches and reused by every light.
+  float footprint = max(length(dFdx(vUv) * normalSize), length(dFdy(vUv) * normalSize));
   vec4 albedo = texture(uAlbedo, vUv);
-  if (albedo.a < 0.004) discard;
-  vec3 nm = texture(uNormal, vUv).rgb;
+  vec4 normalSample = texture(uNormal, vUv);
+  vec3 nm = normalSample.rgb / max(normalSample.a, 0.001);
   vec2 n2 = nm.rg * 2.0 - 1.0;
   float emissive = nm.b;
   // Normal map is in hull space (nose = +x); rotate it into screen space with the sprite.
   vec2 nxy = vec2(vAxis.x * n2.x - vAxis.y * n2.y, vAxis.y * n2.x + vAxis.x * n2.y);
   vec3 N = normalize(vec3(nxy * uNormalStrength, sqrt(max(0.02, 1.0 - dot(n2, n2)))));
 
+  vec3 material = texture(uMaterial, vUv).rgb / max(albedo.a, 0.001);
+  vec3 surfaceColor = albedo.rgb / max(albedo.a, 0.001);
+  float normalVariance = dot(dFdx(N), dFdx(N)) + dot(dFdy(N), dFdy(N));
+  float roughness = sqrt(clamp(material.r * material.r + min(normalVariance * 0.25, 0.2), 0.0064, 1.0));
+  if (albedo.a < 0.004) discard;
+  float metallic = clamp(material.g, 0.0, 1.0);
+  if (uHasMaterial > 0.5) emissive = clamp(material.b, 0.0, 1.0);
   vec3 K = normalize(uKey);
   float kd = max(dot(N, K), 0.0);
   float ks = pow(max(dot(reflect(-K, N), vec3(0.0, 0.0, 1.0)), 0.0), 20.0) * 0.18;
 
-  vec3 light = vec3(uAmbient) + uKeyPower * kd * vec3(0.96, 0.98, 1.05);
-  vec3 highlights = vec3(ks);
   vec2 point = vScreen * uLightRes;
-  for (int i = 0; i < ${LIGHT_QUALITY.surfaceLights}; i++) {
-    if (uLightingEnabled < 0.5 || uLights[i].z <= 0.0) continue;
-    vec2 delta = (uLights[i].xy - point) * uBufferToScreen;
-    float radius = uLights[i].z;
+  float keyVisibility = surfaceVisibility(K, normalSize, footprint);
+  vec3 light = vec3(uAmbient) + uKeyPower * kd * keyVisibility * vec3(0.96, 0.98, 1.05);
+  vec3 highlights = vec3(ks * keyVisibility);
+  // The existing ambient fill remains an inexpensive uniform environment approximation.
+  vec3 pbr = surfaceColor * uAmbient + materialResponse(N, K, surfaceColor, roughness, metallic)
+    * uKeyPower * keyVisibility * vec3(0.96, 0.98, 1.05);
+  ivec2 tile=ivec2(clamp(floor((vScreen*uLightRes-uBufferOffset)/uLightViewport*uLightGridSize),vec2(0.0),uLightGridSize-vec2(1.0)));
+  vec2 list=texelFetch(uLightTiles,tile,0).rg;
+  int lightCount=uLightingEnabled>0.5 ? int(list.y) : 0;
+  for (int slot=0; slot<lightCount; slot++) {
+    int address=int(list.x)+slot;
+    vec4 ids=texelFetch(uLightIndices,ivec2(address%256,address/256),0);
+    int index=int(ids.r);
+    vec4 source=texelFetch(uLightData,ivec2(0,index),0);
+    vec3 sourceColor=texelFetch(uLightData,ivec2(1,index),0).rgb;
+    vec2 delta = (source.xy - point) * uBufferToScreen;
+    float radius = source.z;
     float distanceToLight = length(delta);
     float range = radius * 20.0;
     if (distanceToLight >= range) continue;
     float fade = 1.0 - smoothstep(range * 0.65, range, distanceToLight);
     float attenuation = radius * radius / (radius * radius + distanceToLight * distanceToLight * 0.35);
-    float visible = visibility(point, uLights[i].xy, radius / max(uBufferToScreen.x, uBufferToScreen.y));
+    float visible = visibility(point, source.xy, radius / max(uBufferToScreen.x, uBufferToScreen.y), bufferToUv);
     vec3 L = normalize(vec3(delta, radius * 0.7 + 2.0));
-    vec3 radiance = uLightColors[i].rgb * attenuation * fade * visible * uGI;
+    // Skip fully blocked lights before paying for local relief samples.
+    if (visible <= 0.0) continue;
+    float relief = surfaceVisibility(L, normalSize, footprint);
+    vec3 radiance = sourceColor * attenuation * fade * visible * relief * uGI;
+    if (uHasMaterial > 0.5) pbr += radiance * materialResponse(N, L, surfaceColor, roughness, metallic);
     light += radiance * max(dot(N, L), 0.0);
     vec3 halfway = normalize(L + vec3(0.0, 0.0, 1.0));
     highlights += radiance * pow(max(dot(N, halfway), 0.0), 28.0) * 0.25;
@@ -328,6 +388,7 @@ void main() {
   vec3 base = albedo.rgb;  // premultiplied
   vec3 lit = base * light * (1.0 - emissive) + base * emissive * 1.3;
   lit += highlights * albedo.a;
+  if (uHasMaterial > 0.5) lit = (pbr * (1.0 - emissive) + (vec3(1.0) - exp(-surfaceColor * emissive * ${EMISSIVE_STRENGTH.toFixed(1)}))) * albedo.a;
   lit = mix(lit, vec3(albedo.a), uFlash);
   fragColor = vec4(lit, albedo.a) * uColor;
 }`;
@@ -357,7 +418,10 @@ export class Lighting {
   /** Emitters and occluders, drawn by the renderer each frame in world coordinates. */
   readonly scene = new Container();
   readonly occluders = new Container();
-  private readonly emitters: { x: number; y: number; radius: number; color: number }[] = [];
+  private readonly grid = new LightGrid();
+  private readonly emitters: { x: number; y: number; radius: number; color: number; intensity: number }[] = [];
+  private readonly materialSources = new WeakMap<Shader, EmissiveSource>();
+  private readonly surfaceEmitters: { receiver: Mesh<MeshGeometry, Shader>; sprite: Mesh<MeshGeometry, Shader>; source: EmissiveSource }[] = [];
   private readonly receivers: Mesh<MeshGeometry, Shader>[] = [];
   /** Wraps `scene` with the camera transform scaled down to the light-buffer resolution. */
   private readonly root = new Container();
@@ -367,14 +431,25 @@ export class Lighting {
     uKeyPower: { value: KEY_POWER * 0.65, type: 'f32' },
     uGI: { value: 3.2, type: 'f32' },
     uNormalStrength: { value: 2.0, type: 'f32' },
+    uSelfShadowStrength: { value: 0.98, type: 'f32' },
     uLightRes: { value: new Float32Array([1, 1]), type: 'vec2<f32>' },
     uBufferToScreen: { value: new Float32Array([1, 1]), type: 'vec2<f32>' },
+    uBufferOffset:{value:new Float32Array(2),type:'vec2<f32>'},
+    uLightViewport:{value:new Float32Array([1,1]),type:'vec2<f32>'},
     uLightingEnabled: { value: 1, type: 'f32' },
   });
+  cameraStability=true;
+  readonly screenOffset=new Float32Array(2);
+  readonly displaySize=new Float32Array(2);
+  private viewW=0;private viewH=0;
   w = 0;
   h = 0;
   private sceneRT!: RenderTexture;
   irradiance!: RenderTexture;
+  private rawIrradiance!: RenderTexture;
+  readonly temporal = new TemporalRadiance();
+  private readonly probeOrigin=new Float32Array(2);
+  direction!: RenderTexture;
   private occlusionRT!: RenderTexture;
   private shadowDist!: RenderTexture;
   private interiorRT!: RenderTexture;
@@ -401,11 +476,13 @@ export class Lighting {
     this.lightUniforms.uniforms.uLightingEnabled = enabled ? 1 : 0;
   }
 
-  /** Light buffer sized to screen / LIGHT_QUALITY.bufferDivisor, snapped to the top cascade's probe spacing. */
+  /** Light buffer sized to half of the screen, snapped to the top cascade's probe spacing. */
   resize(screenW: number, screenH: number): void {
     const snap = 32;
-    const w = Math.max(snap, Math.round(screenW / LIGHT_QUALITY.bufferDivisor / snap) * snap);
-    const h = Math.max(snap, Math.round(screenH / LIGHT_QUALITY.bufferDivisor / snap) * snap);
+    this.viewW=Math.max(snap, Math.round(screenW / 2 / snap) * snap);
+    const w=this.viewW+64;
+    this.viewH=Math.max(snap, Math.round(screenH / 2 / snap) * snap);
+    const h=this.viewH+64;
     if (w === this.w && h === this.h) return;
     this.w = w;
     this.h = h;
@@ -437,7 +514,10 @@ export class Lighting {
     const distRT = make(false);
     const casA = make(true);
     const casB = make(true);
-    this.irradiance = make(true);
+    this.rawIrradiance = make(true);
+    this.irradiance = this.rawIrradiance;
+    this.temporal.reset();
+    this.direction = make(true);
     this.occlusionRT = make(true);
     this.shadowDist = make(false);
     this.interiorRT = make(false);
@@ -465,10 +545,8 @@ export class Lighting {
       add(this.programs.dist, { uSeed: src.source }, { uRes: vec2 }, target);
     };
     distanceField(this.sceneRT, 0, distRT);
-    if (LIGHT_QUALITY.hullShadows) {
-      distanceField(this.occlusionRT, 0, this.shadowDist);
-      distanceField(this.occlusionRT, 1, this.interiorRT);
-    }
+    distanceField(this.occlusionRT, 0, this.shadowDist);
+    distanceField(this.occlusionRT, 1, this.interiorRT);
 
     // Enough cascades that the top interval reaches across the buffer: Σ 4^n ≥ diagonal.
     const count = Math.min(6, Math.ceil(Math.log(Math.hypot(w, h) * 3 + 1) / Math.log(4)));
@@ -482,6 +560,7 @@ export class Lighting {
           uCount: { value: count, type: 'f32' },
           uInterval: { value: 1, type: 'f32' },
           uMode: { value: mode, type: 'f32' },
+          uProbeOrigin:{value:this.probeOrigin,type:'vec2<f32>'},
         },
         target,
       );
@@ -491,29 +570,41 @@ export class Lighting {
       cascade(n, upper, 0, out);
       [upper, out] = [out, upper];
     }
-    cascade(0, upper, 0, this.irradiance);
+    cascade(0, upper, 0, this.rawIrradiance);
+    cascade(0, upper, 1, this.direction);
     this.chain = chain;
     for (const s of this.litShaders) this.bindLightTextures(s);
   }
 
   /** Shader for a lit sprite (ship hull or structure). Shares the light uniforms and GI textures. */
-  litShader(albedo: TextureSource, normal: TextureSource): Shader {
+  litShader(albedo: TextureSource, normal: TextureSource, relief?: TextureSource, reliefRange = 128, material?: TextureSource): Shader {
     const shader = new Shader({
       glProgram: litProgram(),
       resources: {
         uAlbedo: albedo,
+        uLightData:this.grid.lights.source,
+        uLightTiles:this.grid.tiles.source,
+        uLightIndices:this.grid.indices.source,
+        uMaterial: material ?? this.black.source,
         uNormal: normal,
+        uRelief: relief ?? this.black.source,
         uOcclusion: this.black.source,
         uShadowDist: this.black.source,
         uInterior: this.black.source,
         surface: new UniformGroup({
-          uLights: { value: new Float32Array(LIGHT_QUALITY.surfaceLights * 4), type: 'vec4<f32>', size: LIGHT_QUALITY.surfaceLights },
-          uLightColors: { value: new Float32Array(LIGHT_QUALITY.surfaceLights * 4), type: 'vec4<f32>', size: LIGHT_QUALITY.surfaceLights },
+          uHasRelief: { value: relief ? 1 : 0, type: 'f32' },
+          uHasMaterial: { value: material ? 1 : 0, type: 'f32' },
+          uReliefRange: { value: reliefRange, type: 'f32' },
+          uLightGridSize:{value:this.grid.size,type:'vec2<f32>'},
         }),
         lightUniforms: this.lightUniforms,
         flash: new UniformGroup({ uFlash: { value: 0, type: 'f32' } }),
       },
     });
+    if (material) {
+      const source = emissiveSource(albedo, material);
+      if (source?.patches.length) this.materialSources.set(shader, source);
+    }
     this.litShaders.push(shader);
     this.bindLightTextures(shader);
     return shader;
@@ -528,16 +619,51 @@ export class Lighting {
 
   setEnabled(on: boolean): void {
     this.enabled = on;
+    this.temporal.reset();
     this.lightUniforms.uniforms.uLightingEnabled = on ? 1 : 0;
     for (const s of this.litShaders) this.bindLightTextures(s);
   }
 
-  trackReceiver(mesh: Mesh<MeshGeometry, Shader>): void { this.receivers.push(mesh); }
+  trackReceiver(mesh: Mesh<MeshGeometry, Shader>): void {
+    this.receivers.push(mesh);
+    const source = mesh.shader ? this.materialSources.get(mesh.shader) : undefined;
+    if (!source) return;
+    const sprite = new Mesh({geometry:mesh.geometry,shader:new Shader({
+      glProgram:emissionProgram(),resources:{uEmission:source.texture.source},
+    })}); sprite.blendMode='add';
+    this.scene.addChild(sprite);
+    this.surfaceEmitters.push({receiver:mesh,sprite,source});
+  }
+
+  /** Full emission silhouettes seed RC; matching bounded light patches drive the
+   * directional BRDF and both environmental and height-map visibility tests. */
+  private updateSurfaceEmitters(camX: number, camY: number, zoom: number, screenW: number, screenH: number): void {
+    for (const {receiver:mesh,sprite,source} of this.surfaceEmitters) {
+      sprite.visible = mesh.visible && mesh.renderable && mesh.alpha > 0;
+      if (!sprite.visible) continue;
+      const p=mesh.geometry.positions, width=p[2]-p[0], height=p[5]-p[1];
+      const scaleX=width/source.width*mesh.scale.x, scaleY=height/source.height*mesh.scale.y;
+      const radiusScale=Math.sqrt(Math.abs(scaleX*scaleY));
+      const reach=Math.max(...source.patches.map(patch=>patch.radius))*radiusScale*EMISSIVE_LIGHT_RADIUS_SCALE*20;
+      if (Math.abs(mesh.x-camX)>screenW/zoom/2+Math.abs(width*mesh.scale.x)/2+reach ||
+          Math.abs(mesh.y-camY)>screenH/zoom/2+Math.abs(height*mesh.scale.y)/2+reach) { sprite.visible=false;continue; }
+      sprite.position.copyFrom(mesh.position);sprite.rotation=mesh.rotation;
+      sprite.scale.copyFrom(mesh.scale);sprite.pivot.copyFrom(mesh.pivot);sprite.tint=mesh.tint;sprite.alpha=mesh.alpha;
+      const cos=Math.cos(mesh.rotation),sin=Math.sin(mesh.rotation);
+      for (const patch of source.patches) {
+        const x=(p[0]+patch.u*width)*mesh.scale.x, y=(p[1]+patch.v*height)*mesh.scale.y;
+        const tint=mesh.tint;
+        const channel=(shift:number)=>Math.round(((patch.color>>>shift)&255)*((tint>>>shift)&255)/255*mesh.alpha);
+        const color=(channel(16)<<16)|(channel(8)<<8)|channel(0);
+        if (color) this.addEmitter(mesh.x+cos*x-sin*y,mesh.y+sin*x+cos*y,patch.radius*radiusScale*EMISSIVE_LIGHT_RADIUS_SCALE,color,EMISSIVE_LIGHT_STRENGTH/(EMISSIVE_LIGHT_RADIUS_SCALE*EMISSIVE_LIGHT_RADIUS_SCALE));
+      }
+    }
+  }
 
   beginFrame(): void { this.emitters.length = 0; }
 
-  addEmitter(x: number, y: number, radius: number, color: number): void {
-    this.emitters.push({ x, y, radius, color });
+  addEmitter(x: number, y: number, radius: number, color: number, intensity = 1): void {
+    this.emitters.push({ x, y, radius, color, intensity });
   }
 
   /**
@@ -547,37 +673,34 @@ export class Lighting {
   update(camX: number, camY: number, zoom: number, screenW: number, screenH: number): void {
     if (!this.enabled) return;
     this.resize(screenW, screenH);
-    const sx = (this.w / screenW) * zoom;
-    const sy = (this.h / screenH) * zoom;
+    const sx = (this.viewW / screenW) * zoom;
+    const sy = (this.viewH / screenH) * zoom;
     this.root.scale.set(sx, sy);
-    this.root.position.set(this.w / 2 - camX * sx, this.h / 2 - camY * sy);
+    const idealX=this.w/2-camX*sx,idealY=this.h/2-camY*sy;
+    this.root.position.set(this.cameraStability?Math.round(idealX/32)*32:idealX,this.cameraStability?Math.round(idealY/32)*32:idealY);
+    const offsetX=32+this.root.x-idealX,offsetY=32+this.root.y-idealY;
+    this.lightUniforms.uniforms.uBufferOffset.set([offsetX,offsetY]);
+    this.screenOffset.set([-offsetX*screenW/this.viewW,-offsetY*screenH/this.viewH]);
+    this.displaySize.set([this.w*screenW/this.viewW,this.h*screenH/this.viewH]);
+    this.lightUniforms.uniforms.uLightViewport.set([this.viewW,this.viewH]);
+    this.probeOrigin.set(this.cameraStability?[this.root.x,this.root.y]:[0,0]);
     this.lightUniforms.uniforms.uLightRes.set([this.w, this.h]);
-    this.lightUniforms.uniforms.uBufferToScreen.set([screenW / this.w, screenH / this.h]);
+    this.lightUniforms.uniforms.uBufferToScreen.set([screenW / this.viewW, screenH / this.viewH]);
     this.lightUniforms.uniforms.uLightingEnabled = 1;
-    for (const mesh of this.receivers) {
-      if (!mesh.visible || !mesh.shader) continue;
-      // Rank by contribution to the receiver bounds, not a changing global camera list.
-      const extent = Math.hypot(mesh.width, mesh.height) * 0.5;
-      const ranked = this.emitters.map((light) => ({ light, score: light.radius / Math.max(light.radius,
-        Math.hypot(light.x - mesh.x, light.y - mesh.y) - extent) })).sort((a, b) => b.score - a.score);
-      const uniforms = mesh.shader.resources.surface.uniforms;
-      const positions = uniforms.uLights as Float32Array;
-      const colors = uniforms.uLightColors as Float32Array;
-      positions.fill(0);
-      for (let i = 0; i < Math.min(LIGHT_QUALITY.surfaceLights, ranked.length); i++) {
-        const e = ranked[i].light;
-        positions.set([this.w / 2 + (e.x - camX) * sx, this.h / 2 + (e.y - camY) * sy, e.radius * zoom, 0], i * 4);
-        colors.set([((e.color >> 16) & 255) / 255, ((e.color >> 8) & 255) / 255, (e.color & 255) / 255, 1], i * 4);
-      }
+    this.updateSurfaceEmitters(camX,camY,zoom,screenW,screenH);
+    this.grid.update(this.emitters,camX,camY,zoom,screenW,screenH,this.viewW,this.viewH,offsetX,offsetY);
+    for (const shader of this.litShaders) {
+      shader.resources.uLightData=this.grid.lights.source;
+      shader.resources.uLightTiles=this.grid.tiles.source;
+      shader.resources.uLightIndices=this.grid.indices.source;
     }
     const r = this.renderer;
-    if (LIGHT_QUALITY.hullShadows) {
-      this.scene.visible = false;
-      r.render({ container: this.root, target: this.occlusionRT, clear: true, clearColor: [0, 0, 0, 0] });
-      this.scene.visible = true;
-    }
+    this.scene.visible = false;
+    r.render({ container: this.root, target: this.occlusionRT, clear: true, clearColor: [0, 0, 0, 0] });
+    this.scene.visible = true;
     r.render({ container: this.root, target: this.sceneRT, clear: true, clearColor: [0, 0, 0, 0] });
     for (const p of this.chain) r.render({ container: p.mesh, target: p.target, clear: true, clearColor: [0, 0, 0, 0] });
+    this.irradiance=this.temporal.resolve(r,this.rawIrradiance,(this.w/2-this.root.x)/sx,(this.h/2-this.root.y)/sy,zoom,this.displaySize[0],this.displaySize[1]);
   }
 }
 
@@ -594,4 +717,20 @@ function blackCanvas(): HTMLCanvasElement {
   g.fillStyle = '#000';
   g.fillRect(0, 0, 2, 2);
   return c;
+}
+
+
+let emissionProgramCache: GlProgram | null = null;
+function emissionProgram(): GlProgram {
+  emissionProgramCache ??= GlProgram.from({vertex:PASS_VERT,fragment:`#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uEmission;
+uniform vec4 uColor;
+out vec4 fragColor;
+void main() {
+  vec4 e=texture(uEmission,vUv);
+  fragColor=vec4(e.rgb * ${EMISSIVE_LIGHT_STRENGTH.toFixed(2)},e.a)*uColor;
+}`,name:'material-emission'});
+  return emissionProgramCache;
 }

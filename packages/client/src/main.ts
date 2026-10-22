@@ -1,4 +1,5 @@
 import './style.css';
+import type { ShipArtMode } from './art/referenceShips';
 import { Game } from './game';
 import type { BotDifficulty } from '@void-front/shared';
 import type { ControlScheme, ThrottleMode } from './input';
@@ -54,6 +55,20 @@ menu.innerHTML = `
         <option value="wasd">WASD</option>
       </select>
     </label>
+    <label>Sprite surface lighting
+      <select id="normal-maps">
+        <option value="derived">Derived normal maps</option>
+        <option value="flat">Flat surfaces</option>
+      </select>
+    </label>
+    <label>Ship artwork
+      <select id="ship-art">
+        <option value="reference">Reference sprites · team colors</option>
+        <option value="neutral">Reference sprites · neutral gray</option>
+        <option value="original">Original hulls</option>
+      </select>
+    </label>
+    <p class="note">27 ship sprites plus the Titan, with panel paint and normal-derived surface shadows. <a href="/ship-test.html" target="_blank" rel="noopener">Preview all sprites</a></p>
     <label>Throttle
       <select id="throttle">
         <option value="keys">Arrow keys &uarr; &darr; (wheel zooms)</option>
@@ -70,6 +85,10 @@ menu.innerHTML = `
     <p class="note">You fight for Cobalt (blue). Pick a hull class (or a command seat: Admiral or FOB Commander) when you drop in. Take nodes, break the Ember FOBs and then the Ember Titan on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
   </div>`;
 
+const normalSel = document.getElementById('normal-maps') as HTMLSelectElement;
+normalSel.value = saved('vf.spriteNormals', 'derived');
+const shipArtSel = document.getElementById('ship-art') as HTMLSelectElement;
+shipArtSel.value = saved('vf.shipArt', 'reference');
 const fleetSel = document.getElementById('fleet') as HTMLSelectElement;
 const schemeSel = document.getElementById('scheme') as HTMLSelectElement;
 const difficultySel = document.getElementById('difficulty') as HTMLSelectElement;
@@ -82,6 +101,8 @@ lightingSel.value = saved('vf.lighting', 'on');
 throttleSel.value = saved('vf.throttle', 'keys');
 
 document.getElementById('play')!.addEventListener('click', async () => {
+  save('vf.spriteNormals', normalSel.value);
+  save('vf.shipArt', shipArtSel.value);
   save('vf.fleet', fleetSel.value);
   save('vf.scheme', schemeSel.value);
   save('vf.difficulty', difficultySel.value);
@@ -89,7 +110,19 @@ document.getElementById('play')!.addEventListener('click', async () => {
   save('vf.throttle', throttleSel.value);
   menu.classList.add('hidden');
   hud.classList.remove('hidden');
-  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty, lighting: lightingSel.value === 'on', throttle: throttleSel.value as ThrottleMode });
+  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty, lighting: lightingSel.value === 'on', shipArt: shipArtSel.value as ShipArtMode, derivedNormals: normalSel.value === 'derived', throttle: throttleSel.value as ThrottleMode });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
-  await game.start(stage, hud);
+  try { await game.start(stage, hud); }
+  catch (error) {
+    console.error(error);
+    const message = document.createElement('p'); message.className = 'note';
+    message.textContent = error instanceof Error ? error.message : 'Game failed to start.';
+    menu.querySelector('.card')!.appendChild(message);
+    menu.classList.remove('hidden'); hud.classList.add('hidden');
+    // Reload before retrying so any partially initialized renderer and worker are released.
+    const play = document.getElementById('play') as HTMLButtonElement;
+    play.disabled = true;
+    const retry = document.createElement('button'); retry.textContent = 'Reload';
+    retry.onclick = () => location.reload(); menu.querySelector('.card')!.appendChild(retry);
+  }
 });

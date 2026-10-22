@@ -1,0 +1,58 @@
+[
+  {
+    "relativeResidual": 9.814621744874906e-06,
+    "iterations": 473,
+    "gradientFitRMSE": 0.844694822048012,
+    "heightSpanTexels": 129.7400620708052,
+    "id": "shard0"
+  },
+  {
+    "relativeResidual": 9.926184320344438e-06,
+    "iterations": 488,
+    "gradientFitRMSE": 0.9278593404899813,
+    "heightSpanTexels": 127.44093454044102,
+    "id": "shard1"
+  },
+  {
+    "relativeResidual": 9.767529541760527e-06,
+    "iterations": 471,
+    "gradientFitRMSE": 0.8846278725913327,
+    "heightSpanTexels": 129.34465436413407,
+    "id": "shard2"
+  },
+  {
+    "relativeResidual": 9.569112249502129e-06,
+    "iterations": 482,
+    "gradientFitRMSE": 0.8791704545022728,
+    "heightSpanTexels": 153.33812817668831,
+    "id": "shard3"
+  },
+  {
+    "relativeResidual": 9.8913141732449e-06,
+    "iterations": 464,
+    "gradientFitRMSE": 0.9535206285894429,
+    "heightSpanTexels": 126.04961965186456,
+    "id": "shard4"
+  },
+  {
+    "relativeResidual": 9.889054442463527e-06,
+    "iterations": 458,
+    "gradientFitRMSE": 0.8932033785124245,
+    "heightSpanTexels": 125.46499809801969,
+    "id": "shard5"
+  },
+  {
+    "relativeResidual": 9.8005939540138e-06,
+    "iterations": 461,
+    "gradientFitRMSE": 0.8754843927185668,
+    "heightSpanTexels": 126.90531465841926,
+    "id": "shard6"
+  },
+  {
+    "relativeResidual": 9.951271726423053e-06,
+    "iterations": 455,
+    "gradientFitRMSE": 0.8936696154040535,
+    "heightSpanTexels": 97.37855599614423,
+    "id": "shard7"
+  }
+]
