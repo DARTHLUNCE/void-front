@@ -39,5 +39,3 @@ export function emissiveSource(albedo: TextureSource, material: TextureSource): 
     color:(Math.round(c.r/c.weight)<<16)|(Math.round(c.g/c.weight)<<8)|Math.round(c.b/c.weight)}));
   const source={texture:new Texture({source:new CanvasSource({resource:canvas,autoGenerateMipmaps:true,scaleMode:'linear',mipmapFilter:'linear'})}),patches,width,height};variants.set(albedo,source);return source;
 }
-
-

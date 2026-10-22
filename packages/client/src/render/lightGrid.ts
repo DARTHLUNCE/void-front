@@ -38,5 +38,3 @@ export class LightGrid {
     this.lights.source.update();this.tiles.source.update();this.indices.source.update();
   }
 }
-
-

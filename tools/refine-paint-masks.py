@@ -70,4 +70,3 @@ def protect_ship_fixtures():
 
 if __name__=='__main__':
     refine_props();protect_ship_fixtures();print('Refined 8 station masks and protected 3 ship fixture groups.')
-

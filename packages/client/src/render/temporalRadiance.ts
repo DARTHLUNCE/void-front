@@ -53,5 +53,3 @@ export class TemporalRadiance {
     this.previous={x,y,zoom};this.valid=true;return target;
   }
 }
-
-

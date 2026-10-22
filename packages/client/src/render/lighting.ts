@@ -734,7 +734,3 @@ void main() {
 }`,name:'material-emission'});
   return emissionProgramCache;
 }
-
-
-
-

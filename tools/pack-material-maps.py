@@ -41,4 +41,3 @@ def pack(folder: Path) -> dict:
 if __name__ == '__main__':
     root = Path(__file__).resolve().parents[1] / 'packages/client/public/ship-test'
     print(json.dumps([pack(root / folder) for folder in ('', 'remaining', 'props', 'shards')], indent=2))
-

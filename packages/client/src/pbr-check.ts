@@ -47,4 +47,3 @@ check('PBR receives raised-surface shadows',flat>2&&shadow<flat*.7,`${flat.toFix
 document.querySelector('pre')!.textContent=lines.join('\n');
 // Leave the textured emitter and its receiver visible after measurements.
 shader.resources.surface.uniforms.uHasRelief=0;shader.resources.uNormal=Texture.from(ncanvas).source;shader.resources.uAlbedo=texture(160,160,160).source;u.uKeyPower=0;u.uGI=3.2;lamp.visible=true;draw();
-
