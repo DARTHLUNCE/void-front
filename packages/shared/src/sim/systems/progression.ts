@@ -4,11 +4,11 @@ import { COMMAND_RULES } from '../../content/command';
 import { CRYSTALS } from '../../content/crystals';
 import { RESOURCE_IDS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../../content/progression';
-import { EXPOSED, FOB_SPAWN_BLOCK } from '../../content/structures';
+import { EXPOSED, FOB_SPAWN_BLOCK, NODE } from '../../content/structures';
 import { HIGH_COMMAND } from '../../content/upgrades';
 import type { ClassId, TeamId } from '../../content/types';
 import { applyLoadout, statValue } from '../stats';
-import { classCount, EventType, Job, SPAWN_AT_STRUCTURE, TIERS, type Ship, type Structure, type TeamState, type World } from '../world';
+import { classCount, EventType, Job, SPAWN_AT_NODE, SPAWN_AT_STRUCTURE, TIERS, type PointState, type Ship, type Structure, type TeamState, type World } from '../world';
 import { inOwnedPoint, pointBuff } from './points';
 import { pushTarget } from './director';
 import { quirkOf } from './quirks';
@@ -60,7 +60,7 @@ export function buyTier(w: World, ship: Ship, option: number): boolean {
   ship.xp -= tierCost(t);
   ship.picks[t] = option;
   ship.tiersOwned++;
-  if (ship.tiersOwned === ECONOMY.hullTier) ship.statPoints.fill(0);
+  // v2: a tier-3 hull retrofit keeps every Shard Calibration level.
   applyLoadout(ship);
   const node = ship.cls.tiers[t].options[option];
   w.stats.tierPicks[node.id] = (w.stats.tierPicks[node.id] ?? 0) + 1;
@@ -68,15 +68,15 @@ export function buyTier(w: World, ship: Ship, option: number): boolean {
   return true;
 }
 
-/** Switch class (picker or respawn screen): keeps shards and XP, clears tiers and stat upgrades. */
+/** Switch class (picker or respawn screen): keeps shards, XP and Shard Calibration levels; clears tiers. */
 export function setClass(ship: Ship, classId: ClassId): void {
   ship.classId = classId;
   ship.cls = getClass(classId);
   ship.radius = ship.cls.radius;
   ship.picks.fill(-1);
   ship.tiersOwned = 0;
-  ship.statPoints.fill(0);
   ship.maxHull = 0;
+  ship.maxShield = 0;
   ship.quirk.fill(0);
   applyLoadout(ship);
 }
@@ -207,23 +207,30 @@ export function respawnShip(w: World, s: Ship): void {
   const home = w.teams[s.team].mothership;
   const sign = w.teamSign(s.team);
   if (s.bot) s.spawnChoice = botSpawn(w, s);
-  const fob = s.spawnChoice >= SPAWN_AT_STRUCTURE ? w.structures[s.spawnChoice - SPAWN_AT_STRUCTURE] : null;
-  const beacon = s.spawnChoice >= 0 && !fob ? w.deployables.items[s.spawnChoice] : null;
-  if (fob && canSpawnAt(w, fob, s.team)) {
+  const node = s.spawnChoice >= SPAWN_AT_NODE ? w.points[s.spawnChoice - SPAWN_AT_NODE] : null;
+  const fob = !node && s.spawnChoice >= SPAWN_AT_STRUCTURE ? w.structures[s.spawnChoice - SPAWN_AT_STRUCTURE] : null;
+  const beacon = s.spawnChoice >= 0 && !fob && !node ? w.deployables.items[s.spawnChoice] : null;
+  if (node && canSpawnAtNode(w, node, s.team)) {
+    // Node Citadel: launch from around the fortified rock.
+    const a = s.rng.next() * Math.PI * 2;
+    const d = NODE.radius + s.radius + 40 + s.rng.next() * 120;
+    s.x = node.x + Math.cos(a) * d;
+    s.y = node.y + Math.sin(a) * d;
+  } else if (fob && canSpawnAt(w, fob, s.team)) {
     // FOBs launch ships from their enemy-facing side.
     const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
-    const d = fob.radius + 60 + s.rng.next() * 160;
+    const d = fob.radius + s.radius + 60 + s.rng.next() * 160;
     s.x = fob.x + sign * Math.cos(a) * d;
     s.y = fob.y + sign * Math.sin(a) * d;
   } else if (beacon && beacon.active && beacon.team === s.team && beacon.def.respawn) {
     const a = s.rng.next() * Math.PI * 2;
-    const d = beacon.def.radius + 40 + s.rng.next() * 120;
+    const d = beacon.def.radius + s.radius + 40 + s.rng.next() * 120;
     s.x = beacon.x + Math.cos(a) * d;
     s.y = beacon.y + Math.sin(a) * d;
   } else {
     // Spawn on the side of the mothership facing the enemy; offsets are mirrored per team.
     const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
-    const d = home.radius + 80 + s.rng.next() * 260;
+    const d = home.radius + s.radius + 80 + s.rng.next() * 260;
     s.x = home.x + sign * Math.cos(a) * d;
     s.y = home.y + sign * Math.sin(a) * d;
   }
@@ -238,6 +245,10 @@ export function respawnShip(w: World, s: Ship): void {
   s.input.aim = s.angle;
   applyLoadout(s);
   s.hull = s.maxHull;
+  s.shield = s.maxShield;
+  s.burstLeft = 0;
+  s.burstStep = null;
+  s.secondaryCd.fill(0);
   s.alive = true;
   s.fireCooldown = 0;
   s.dashTime = 0;
@@ -272,6 +283,11 @@ export function canSpawnAt(w: World, fob: Structure, team: TeamId): boolean {
   return fob.alive && fob.team === team && w.time - fob.lastDamageTime >= FOB_SPAWN_BLOCK;
 }
 
+/** v2: a friendly node fortified by a Node Citadel takes respawns while the citadel lasts. */
+export function canSpawnAtNode(w: World, p: PointState, team: TeamId): boolean {
+  return p.owner === team && w.time < p.respawnUntil;
+}
+
 /** Bots launch from the standing FOB nearest their job (defenders from the mothership). */
 function botSpawn(w: World, s: Ship): number {
   const b = s.bot!;
@@ -290,7 +306,15 @@ function botSpawn(w: World, s: Ship): number {
       best = SPAWN_AT_STRUCTURE + f.index;
     }
   }
-  // Beacons (salvage beacons, forward beacons) count too.
+  // Citadel nodes and beacons (salvage beacons, forward beacons) count too.
+  for (const n of w.points) {
+    if (!canSpawnAtNode(w, n, s.team)) continue;
+    const d = (n.x - p.x) ** 2 + (n.y - p.y) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = SPAWN_AT_NODE + n.index;
+    }
+  }
   const dep = w.deployables;
   for (let i = 0; i < dep.count; i++) {
     const d = dep.at(i);

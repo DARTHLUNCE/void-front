@@ -1,15 +1,22 @@
 import { THRUSTERS, HULL_CLASS_SCALE } from '../../content/thrusters';
 import { angleDelta, turnToward } from '../angles';
 import { MATCH } from '../../content/match';
-import { hasFlag, liveStat, statValue } from '../stats';
+import { NODE } from '../../content/structures';
+import { conditionsHold, HIT_NONE, hasFlag, liveStat, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
-import { damageShip, MAX_SHIP_RADIUS } from './combat';
+import { apHit, damageShip, MAX_SHIP_RADIUS } from './combat';
+import { accelPowerMul, speedPowerMul, spoolCut } from './power';
 import { quirkOf } from './quirks';
 import { applyStatus, hasStatus, statusMagnitude } from './status';
 
 export function baseSpeed(w: World, s: Ship): number {
   const quirk = quirkOf(s).speedBonus?.(s) ?? 0;
-  return liveStat(w, s, 'speed', s.cls.speed) * (1 + quirk + statusMagnitude(s, 'haste')) * (1 - statusMagnitude(s, 'slow'));
+  return liveStat(w, s, 'speed', s.cls.speed) * (1 + quirk + statusMagnitude(s, 'haste')) * (1 - statusMagnitude(s, 'slow')) * speedPowerMul(w, s);
+}
+
+/** v2: how far back the retro-thrusters may drive this ship (share of top speed). */
+export function reverseCeiling(w: World, s: Ship): number {
+  return liveStat(w, s, 'reverseMax', MATCH.reverseMax);
 }
 
 /** Step 2a: integrate every ship. No ship aims or fires here (fairness rule). */
@@ -20,14 +27,15 @@ export function moveShips(w: World): void {
   for (const s of w.ships) {
     if (!s.alive) continue;
     const inp = s.input;
-    // Big hulls answer the helm slowly.
-    const acceleration = tuning.acceleration * (s.cls.accel ?? MATCH.accel) / MATCH.accel;
+    // Big hulls answer the helm slowly; SPEED power answers it faster.
+    const acceleration = (tuning.acceleration * (s.cls.accel ?? MATCH.accel)) / MATCH.accel * accelPowerMul(w, s);
     s.engineTorque = 0;
     const stuck = hasStatus(s, 'stun') || hasStatus(s, 'rooted');
 
-    if (inp.cruise && !inp.brake && s.dashTime <= 0 && !stuck) {
+    // Sub-Light can't spool while backing up.
+    if (inp.cruise && !inp.brake && inp.throttle >= 0 && s.dashTime <= 0 && !stuck) {
       s.cruiseSpool += DT;
-      s.cruising = s.cruiseSpool >= MATCH.cruise.spool;
+      s.cruising = s.cruiseSpool >= Math.max(0.2, MATCH.cruise.spool - spoolCut(w, s));
     } else {
       s.cruiseSpool = 0;
       s.cruising = false;
@@ -54,7 +62,11 @@ export function moveShips(w: World): void {
       s.vx *= 0.8;
       s.vy *= 0.8;
     } else {
-      const throttle = inp.brake ? 0 : Math.min(1, Math.hypot(inp.moveX, inp.moveY));
+      // Signed throttle: forward scales the move intent; reverse drives the retro-thrusters
+      // along the stern (up to the ship's reverse ceiling) while the nose keeps tracking the aim.
+      const intent = Math.min(1, Math.hypot(inp.moveX, inp.moveY));
+      const reverse = inp.throttle < 0 && intent > 0 ? Math.min(-inp.throttle, reverseCeiling(w, s)) : 0;
+      const throttle = inp.brake ? 0 : reverse > 0 ? reverse : intent * Math.min(1, Math.max(0, inp.throttle));
       if (inp.brake) {
         s.engineForward = s.engineLateral = 0;
         s.ax = s.ay = 0;
@@ -68,7 +80,7 @@ export function moveShips(w: World): void {
       } else {
         let ax = -s.vx * tuning.coastDrag;
         let ay = -s.vy * tuning.coastDrag;
-        if (throttle > 0 && inp.steerWithAim) {
+        if (throttle > 0 && inp.steerWithAim && reverse === 0) {
           const cruiseMul = s.cruising ? MATCH.cruise.speedMul : 1;
           const maxForce = speed * cruiseMul * acceleration;
           const cos = Math.cos(s.angle);
@@ -104,7 +116,7 @@ export function moveShips(w: World): void {
         } else {
           s.engineForward = s.engineLateral = 0;
           if (throttle > 0) {
-            s.thrustAngle = turnToward(s.thrustAngle, Math.atan2(inp.moveY, inp.moveX),
+            s.thrustAngle = turnToward(s.thrustAngle, reverse > 0 ? s.angle + Math.PI : Math.atan2(inp.moveY, inp.moveX),
               tuning.thrustTurnRate * DT, 1 - Math.exp(-tuning.thrustResponse * DT));
             const cruiseMul = s.cruising ? MATCH.cruise.speedMul : 1;
             const top = speed * cruiseMul * throttle;
@@ -117,7 +129,7 @@ export function moveShips(w: World): void {
           }
         }
         // Ease the corrective force instead of landing exactly on target velocity in one tick.
-        const blend = throttle > 0 && inp.steerWithAim ? 1 : 1 - Math.exp(-tuning.accelerationResponse * DT);
+        const blend = throttle > 0 && inp.steerWithAim && reverse === 0 ? 1 : 1 - Math.exp(-tuning.accelerationResponse * DT);
         s.ax += (ax - s.ax) * blend;
         s.ay += (ay - s.ay) * blend;
         s.vx += s.ax * DT;
@@ -164,7 +176,8 @@ function dashContacts(w: World, s: Ship): void {
     s.dashHits[s.dashHitCount++] = o.slot;
     if (mark > 0) applyStatus(w, o, { status: 'mark', duration: 4, magnitude: mark });
     if (s.dashRam > 0) {
-      damageShip(w, o, s.dashRam, s.slot);
+      damageShip(w, o, s.dashRam, s.slot, apHit(s.dashRamAp));
+      if (s.dashRamStatus) for (const st of s.dashRamStatus) applyStatus(w, o, st);
       if (!hasFlag(o, 'knockbackImmune')) {
         o.vx += s.dashDx * s.dashKnock;
         o.vy += s.dashDy * s.dashKnock;
@@ -214,6 +227,25 @@ export function resolveCollisions(w: World): void {
       s.x = st.x + (dx / d) * min;
       s.y = st.y + (dy / d) * min;
     }
+    // v2: asteroid nodes are solid rock whoever holds them.
+    for (const p of w.points) {
+      const dx = s.x - p.x;
+      const dy = s.y - p.y;
+      const min = NODE.radius + s.radius;
+      const d2 = dx * dx + dy * dy;
+      if (d2 >= min * min) continue;
+      const d = Math.sqrt(d2);
+      const ux = d > 1e-6 ? dx / d : w.teamSign(s.team);
+      const uy = d > 1e-6 ? dy / d : 0;
+      s.x = p.x + ux * min;
+      s.y = p.y + uy * min;
+      // Kill the velocity into the rock so ships slide around it.
+      const into = s.vx * ux + s.vy * uy;
+      if (into < 0) {
+        s.vx -= into * ux;
+        s.vy -= into * uy;
+      }
+    }
   }
   rebuildShipHash(w);
 }
@@ -225,13 +257,14 @@ export function rebuildShipHash(w: World): void {
   h.end();
 }
 
-/** Step 5: aura nodes (Slipstream) refresh their status on nearby allies. */
+/** Step 5: aura nodes (Slipstream, Command Cruiser) refresh their statuses on nearby allies. */
 export function applyAuras(w: World): void {
   for (const s of w.ships) {
     if (!s.alive) continue;
     for (const node of s.nodes) {
       const aura = node.aura;
-      if (!aura) continue;
+      if (!aura || (aura.when && !conditionsHold(w, s, aura.when, HIT_NONE))) continue;
+      const statuses = Array.isArray(aura.status) ? aura.status : [aura.status];
       const fx = Math.cos(s.angle);
       const fy = Math.sin(s.angle);
       const n = w.shipHash.query(s.x, s.y, aura.radius, w.scratch2);
@@ -242,7 +275,7 @@ export function applyAuras(w: World): void {
         const dy = o.y - s.y;
         if (dx * dx + dy * dy > aura.radius * aura.radius) continue;
         if (aura.behind && dx * fx + dy * fy > 0) continue;
-        applyStatus(w, o, aura.status);
+        for (const st of statuses) applyStatus(w, o, st);
       }
     }
   }

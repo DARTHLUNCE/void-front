@@ -37,7 +37,7 @@ import {
 } from '@void-front/shared';
 import { HULL_BY_ID } from '../art/hulls';
 import { bounds, type Shape } from '../art/shapes';
-import { autofireKeyLabel, statKeyLabels, type ControlScheme, type ThrottleMode } from '../input';
+import { autofireKeyLabel, statKeyLabels, type ControlScheme } from '../input';
 import type { Snap } from '../snap';
 
 const TEAM_NAMES = ['Cobalt', 'Ember'];
@@ -103,7 +103,6 @@ export class Hud {
   constructor(
     private readonly root: HTMLElement,
     scheme: ControlScheme,
-    throttleMode: ThrottleMode,
     private readonly h: HudHandlers,
   ) {
     const keys = statKeyLabels(scheme);
@@ -143,14 +142,18 @@ export class Hud {
             <span class="tag"><i data-k="auto" class="led green"></i>AUTO <kbd>${autofireKeyLabel(scheme)}</kbd></span>
             <span class="tag"><i data-k="slLed" class="led amber"></i>SUB-L</span>
             <span class="tag"><i data-k="dmgLed" class="led red"></i>DMG</span>
+            <span class="tag"><i data-k="revLed" class="led red"></i>REV</span>
             <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
           </div>
           <div data-k="hullScope" class="scope hullscope">
             <div data-k="hullDial" class="dial"></div>
+            <div data-k="shieldDial" class="dial shieldring"></div>
             <div class="glass"><span data-k="hullPic" class="wire"></span><b data-k="hullPct">100%</b><small>HULL</small><em data-k="hulltext"></em></div>
           </div>
           <div class="crt">
             <div class="crt-head"><b data-k="crtName"></b><span data-k="crtTier"></span></div>
+            <div class="crt-shield"><label>SHD</label><div class="bar shd"><i data-k="shieldBar"></i></div><b data-k="shieldText"></b></div>
+            <div class="crt-armor"><span data-k="armorText"></span><span data-k="apText"></span></div>
             <div class="crt-abilities">
               ${['RMB', 'T', 'G']
                 .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
@@ -158,11 +161,19 @@ export class Hud {
             </div>
             <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
           </div>
+          <div data-k="power" class="power">
+            <label>POWER</label>
+            <div class="chans">
+              ${['SPD', 'WPN', 'SHD'].map((n, i) => `<div class="chan c${i}"><div class="pbar"><i data-k="pw${i}"></i></div><small>${n}</small><kbd>${['&larr;', '&uarr;', '&rarr;'][i]}</kbd></div>`).join('')}
+            </div>
+            <b data-k="powerMode">EQUAL</b>
+            <kbd>&darr; equalize</kbd>
+          </div>
           <div class="lever">
             <label>THR</label>
-            <div data-k="thrStack" class="stack">${'<i></i>'.repeat(10)}</div>
+            <div data-k="thrStack" class="stack">${'<i></i>'.repeat(10)}<hr />${'<i class="rev"></i>'.repeat(6)}</div>
             <b data-k="thrText">100%</b>
-            <kbd>${throttleMode === 'keys' ? '&uarr;&darr;' : 'Wheel'}</kbd>
+            <kbd>Wheel</kbd>
           </div>
           <div data-k="sublight" class="scope slscope">
             <div data-k="slDial" class="dial"></div>
@@ -269,14 +280,39 @@ export class Hud {
 
   setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
 
-  setThrottle(t: number): void {
+  /** Throttle lever: 10 forward segments fill up from the zero line, reverse segments fill down in red. */
+  setThrottle(t: number, reverseMax: number): void {
     const lit = Math.round(t * 10);
-    this.set('thrText', `${Math.round(t * 100)}%`);
-    if (this.cache.get('thrLit') === String(lit)) return;
-    this.cache.set('thrLit', String(lit));
-    // Segments fill bottom-up (the stack is laid out top-down, so count from the end).
-    const segs = this.$.thrStack.children;
-    for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', segs.length - 1 - i < lit);
+    const pct = Math.round(t * 100);
+    this.set('thrText', `${pct > 0 ? '' : pct < 0 ? '−' : ''}${Math.abs(pct)}%`);
+    const key = `${lit}:${reverseMax}`;
+    if (this.cache.get('thrLit') === key) return;
+    this.cache.set('thrLit', key);
+    const fwd = this.$.thrStack.querySelectorAll('i:not(.rev)');
+    const rev = this.$.thrStack.querySelectorAll('i.rev');
+    // Forward stack is laid out top-down (100% first), so count from the bottom.
+    fwd.forEach((seg, i) => seg.classList.toggle('on', fwd.length - 1 - i < lit));
+    // Reverse segments read down from the zero line; segments past this ship's ceiling stay dark.
+    const depth = Math.round(reverseMax * 10);
+    rev.forEach((seg, i) => {
+      seg.classList.toggle('on', i < -lit);
+      seg.classList.toggle('na', i >= depth);
+    });
+    this.$.revLed.classList.toggle('on', lit < 0);
+    this.$.thrStack.parentElement!.classList.toggle('reverse', lit < 0);
+  }
+
+  /** Reactor Power: three channel bars (0.33 / 0.5 / 1.0) and the mode name. */
+  setPower(mode: number, levels: readonly number[]): void {
+    const names = ['EQUAL', 'SPEED', 'WEAPONS', 'SHIELDS'];
+    this.set('powerMode', names[mode] ?? 'EQUAL');
+    for (let c = 0; c < 3; c++) {
+      const h = `${Math.round(Math.min(1, levels[c]) * 100)}%`;
+      if (this.cache.get(`pw${c}`) === h) continue;
+      this.cache.set(`pw${c}`, h);
+      this.$[`pw${c}`].style.height = h;
+    }
+    this.$.power.dataset.mode = String(mode);
   }
 
   /** Set a CSS custom property, only when it changed. */
@@ -486,6 +522,16 @@ export class Hud {
     }
     this.set('crtName', cls.name.toUpperCase());
     this.set('crtTier', `TIER ${tiers} · ${cls.role.toUpperCase()}`);
+    // Energy shield (outer ring + CRT bar), armor arcs and caliber.
+    const shield = b[me + SHIP.shield];
+    const maxShield = b[me + SHIP.maxShield];
+    const sfrac = maxShield > 0 ? Math.max(0, shield) / maxShield : 0;
+    this.setVar('shieldDial', '--p', `${(sfrac * 360).toFixed(1)}deg`);
+    this.set('shieldBar', `${sfrac * 100}%`, 'width');
+    this.set('shieldText', `${Math.ceil(Math.max(0, shield))} / ${Math.round(maxShield)}`);
+    this.set('armorText', `ARMOR ${Math.round(b[s + SELF.armorBow])} / ${Math.round(b[s + SELF.armorFlank])} / ${Math.round(b[s + SELF.armorStern])}`);
+    this.set('apText', `${Math.round(b[s + SELF.ap])} AP · ${b[s + SELF.turrets]} TURRETS`);
+    this.setPower(b[s + SELF.powerMode], [b[s + SELF.powerSpeed], b[s + SELF.powerWeapons], b[s + SELF.powerShields]]);
     const shards = b[s + SELF.shards];
     this.set('shards', String(Math.floor(shards)));
     for (let i = 0; i < this.statRows.length; i++) {
@@ -566,7 +612,7 @@ export class Hud {
         const kindLabel = hullTier ? 'CHASSIS RETROFIT' : t === 4 ? 'ULTIMATE SYSTEM' : t === 0 ? 'ORDNANCE MOD' : t === 1 ? 'DEFENSE / THRUST' : 'TACTICAL CORE';
         this.$.tierPop.innerHTML = `
           <div class="tier-head"><h3>TIER ${t + 1} // ${kindLabel}</h3><span class="tcode">SYS-0${t + 1}</span></div>
-          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>Hull Retrofit:</b> swaps ship chassis and resets shard stat upgrades.' : ''}</p>
+          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>Hull Retrofit:</b> swaps the ship chassis; your Shard Calibration levels carry over.' : ''}</p>
           ${tier.options
             .map((o, i) => {
               const code = `T${t + 1}-${i === 0 ? 'A' : 'B'}`;

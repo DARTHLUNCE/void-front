@@ -1,12 +1,12 @@
 import type { InputFrame } from './protocol';
 
 export type ControlScheme = 'mouse' | 'wasd';
-/** How the pilot sets the throttle: arrow keys (the wheel zooms) or the wheel (Ctrl+wheel zooms). */
-export type ThrottleMode = 'keys' | 'wheel';
 
-/** Throttle steps: 10% to 100%, in tenths. */
+/** v2 signed throttle: −reverse ceiling (−40% base) … +100%, in 10% steps on the mouse wheel. */
 const THROTTLE_STEP = 0.1;
-const THROTTLE_MIN = 0.1;
+
+/** v2 Reactor Power on the arrow keys (POWER_INDEX: balanced 0, speed 1, weapons 2, shields 3). */
+const POWER_KEYS: Readonly<Record<string, number>> = { ArrowDown: 0, ArrowLeft: 1, ArrowUp: 2, ArrowRight: 3 };
 
 const STAT_KEYS: Record<ControlScheme, string[]> = {
   mouse: ['KeyQ', 'KeyW', 'KeyE', 'KeyR'],
@@ -25,7 +25,7 @@ export interface InputHandlers {
   autofire(on: boolean): void;
   /** Mouse press on the game view (not on HUD controls), in screen pixels. */
   press(x: number, y: number, button: number): void;
-  /** `zoom` is true when this wheel turn should zoom (always, or with Ctrl in wheel-throttle mode). */
+  /** `zoom` is true for Ctrl + wheel (the bare wheel moves the throttle while flying). */
   wheel(deltaY: number, x: number, y: number, zoom: boolean): void;
   escape(): void;
 }
@@ -38,13 +38,18 @@ export class Input {
   private right = false;
   private readonly keys = new Set<string>();
   autofire = false;
-  /** Share of top speed the engines drive toward (W/A/S/D or the mouse thrust direction). */
+  /** Signed share of top speed: positive drives toward W/A/S/D or the mouse, negative backs up on the retro-thrusters. */
   throttle = 1;
+  /** Deepest reverse this ship allows (0.4 base; nodes raise it). Kept in sync from the snapshot. */
+  reverseMax = 0.4;
+  /** Reactor Power switch waiting to go out with the next frame (POWER_INDEX), or -1. */
+  private power = -1;
+  /** Last mode picked on the arrows, for the HUD before the sim confirms it. */
+  powerMode = 0;
   private readonly off: (() => void)[] = [];
 
   constructor(
     readonly scheme: ControlScheme,
-    readonly throttleMode: ThrottleMode,
     private readonly h: InputHandlers,
   ) {
     this.mouseX = window.innerWidth / 2;
@@ -65,7 +70,7 @@ export class Input {
       (e: WheelEvent) => {
         // Ctrl+wheel would zoom the whole page.
         if (e.ctrlKey) e.preventDefault();
-        this.h.wheel(e.deltaY, e.clientX, e.clientY, this.throttleMode === 'keys' || e.ctrlKey);
+        this.h.wheel(e.deltaY, e.clientX, e.clientY, e.ctrlKey);
       },
       { passive: false },
     );
@@ -84,10 +89,14 @@ export class Input {
         if (!e.repeat) this.h.scoreboard(true);
         return;
       }
-      // Space is the brake and the arrows set the throttle: never let them scroll or re-click a focused HUD button.
-      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'ArrowDown') e.preventDefault();
-      if (this.throttleMode === 'keys' && (e.code === 'ArrowUp' || e.code === 'ArrowDown')) this.stepThrottle(e.code === 'ArrowUp' ? 1 : -1);
+      // Space is the brake and the arrows shunt Reactor Power: never let them scroll or re-click a focused HUD button.
+      const power = POWER_KEYS[e.code];
+      if (e.code === 'Space' || power !== undefined) e.preventDefault();
       if (e.repeat) return;
+      if (power !== undefined) {
+        this.power = power;
+        this.powerMode = power;
+      }
       this.keys.add(e.code);
       const stat = STAT_KEYS[this.scheme].indexOf(e.code);
       if (stat >= 0) this.h.stat(stat);
@@ -119,9 +128,10 @@ export class Input {
     this.off.push(() => target.removeEventListener(type, fn as EventListener));
   }
 
-  /** Move the throttle up (+1) or down (-1) one 10% step. */
+  /** Move the throttle up (+1) or down (-1) one 10% step, through zero into reverse. */
   stepThrottle(dir: number): void {
-    this.throttle = Math.min(1, Math.max(THROTTLE_MIN, Math.round((this.throttle + dir * THROTTLE_STEP) * 10) / 10));
+    const min = -Math.round(this.reverseMax * 100) / 100;
+    this.throttle = Math.min(1, Math.max(min, Math.round((this.throttle + dir * THROTTLE_STEP) * 10) / 10));
   }
 
   /**
@@ -154,9 +164,13 @@ export class Input {
     }
     const cursor = toWorld(this.mouseX, this.mouseY);
     const braking = this.braking;
+    const power = this.power;
+    this.power = -1;
     return {
-      moveX: braking ? 0 : moveX * this.throttle,
-      moveY: braking ? 0 : moveY * this.throttle,
+      moveX: braking ? 0 : moveX,
+      moveY: braking ? 0 : moveY,
+      throttle: this.throttle,
+      power,
       aim,
       cursorX: cursor.x,
       cursorY: cursor.y,
@@ -164,7 +178,8 @@ export class Input {
       ability: this.right && !braking,
       ultimate: this.keys.has('KeyT'),
       extra: this.keys.has('KeyG'),
-      cruise: !braking && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')),
+      // Sub-Light can't spool in reverse.
+      cruise: !braking && this.throttle >= 0 && (this.keys.has('ShiftLeft') || this.keys.has('ShiftRight')),
       brake: braking,
       steerWithAim: this.scheme === 'mouse',
     };

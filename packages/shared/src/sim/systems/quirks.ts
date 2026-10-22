@@ -1,8 +1,10 @@
 import { QUIRK_PARAMS } from '../../content/quirks';
 import type { QuirkId } from '../../content/types';
+import { POWER_INDEX } from '../../content/power';
 import { liveStat, QUIRK_LEFT_CLOAK, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
 import { damageDrone, spawnDrone } from './drones';
+import { heatPowerMul } from './power';
 import { applyStatus, hasStatus, removeStatus } from './status';
 
 /**
@@ -18,6 +20,10 @@ export interface QuirkHooks {
   speedBonus?(ship: Ship): number;
   /** Extra outgoing damage as a fraction. */
   damageBonus?(ship: Ship): number;
+  /** v2: extra primary fire rate as a fraction (Slipstream Momentum). */
+  fireRateBonus?(ship: Ship): number;
+  /** v2: extra caliber (AP) on primary and secondary guns (Harmonic Lock, hot Heat). */
+  apBonus?(ship: Ship): number;
   onDamaged?(w: World, ship: Ship): void;
   /** False blocks the gun this tick (heat lock). */
   canFire?(w: World, ship: Ship): boolean;
@@ -35,9 +41,14 @@ const REF_Y = 1;
 const STRAIGHT = 2;
 const LEVEL = 3;
 
+/** A class's quirk numbers: QUIRK_PARAMS with its `quirkTuning` overrides. */
+function tuned<K extends keyof typeof QUIRK_PARAMS>(s: Ship, id: K): (typeof QUIRK_PARAMS)[K] {
+  return s.cls.quirkTuning ? { ...QUIRK_PARAMS[id], ...s.cls.quirkTuning } : QUIRK_PARAMS[id];
+}
+
 const momentum: QuirkHooks = {
   afterMove(_w, s) {
-    const p = QUIRK_PARAMS.momentum;
+    const p = tuned(s, 'momentum');
     const q = s.quirk;
     const speed = Math.hypot(s.vx, s.vy);
     if (speed < p.minSpeedFrac * s.cls.speed) {
@@ -51,7 +62,7 @@ const momentum: QuirkHooks = {
       q[REF_Y] = dy;
       q[STRAIGHT] = 0;
     } else if (dx * q[REF_X] + dy * q[REF_Y] >= Math.cos((p.straightAngleDeg * Math.PI) / 180)) {
-      q[STRAIGHT] += DT;
+      q[STRAIGHT] += DT * (s.powerMode === POWER_INDEX.speed ? p.speedPowerBuild : 1);
     } else {
       q[REF_X] = dx;
       q[REF_Y] = dy;
@@ -59,8 +70,9 @@ const momentum: QuirkHooks = {
     }
     q[LEVEL] = Math.min(1, Math.max(0, (q[STRAIGHT] - p.buildTime) / p.rampTime));
   },
-  speedBonus: (s) => s.quirk[LEVEL] * QUIRK_PARAMS.momentum.speedBonus,
-  damageBonus: (s) => s.quirk[LEVEL] * QUIRK_PARAMS.momentum.damageBonus,
+  speedBonus: (s) => s.quirk[LEVEL] * tuned(s, 'momentum').speedBonus,
+  damageBonus: (s) => s.quirk[LEVEL] * tuned(s, 'momentum').damageBonus,
+  fireRateBonus: (s) => s.quirk[LEVEL] * tuned(s, 'momentum').fireRateBonus,
   onDamaged(_w, s) {
     s.quirk[REF_X] = s.quirk[REF_Y] = s.quirk[STRAIGHT] = s.quirk[LEVEL] = 0;
   },
@@ -119,13 +131,14 @@ const heat: QuirkHooks = {
   onFire(w, s) {
     const p = QUIRK_PARAMS.heat;
     s.quirk[LAST_SHOT] = w.time;
-    s.quirk[HEAT] += (s.cls.gun.heatPerShot ?? 0) * liveStat(w, s, 'heatRate', 1);
+    s.quirk[HEAT] += (s.cls.gun.heatPerShot ?? 0) * liveStat(w, s, 'heatRate', 1) * heatPowerMul(w, s);
     if (s.quirk[HEAT] >= p.max) {
       s.quirk[HEAT] = p.max;
       s.quirk[LOCKED_UNTIL] = w.time + p.lockTime;
     }
   },
   damageBonus: (s) => (s.quirk[HEAT] >= QUIRK_PARAMS.heat.hotThreshold ? QUIRK_PARAMS.heat.hotDamageBonus : 0),
+  apBonus: (s) => (s.quirk[HEAT] >= QUIRK_PARAMS.heat.hotThreshold ? QUIRK_PARAMS.heat.hotAp : 0),
   vent(s) {
     s.quirk[HEAT] = 0;
     s.quirk[LOCKED_UNTIL] = 0;
@@ -219,6 +232,9 @@ const lockOn: QuirkHooks = {
   },
   damageBonus(s) {
     return s.quirk[LOCK] * QUIRK_PARAMS.lockOn.maxBonus;
+  },
+  apBonus(s) {
+    return s.quirk[LOCK] * QUIRK_PARAMS.lockOn.maxAp;
   },
   reset(_w, s) {
     s.quirk[LOCK] = 0;

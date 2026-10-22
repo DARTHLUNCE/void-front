@@ -1,9 +1,9 @@
 import { COMMAND_RULES } from '../../content/command';
 import { DEPLOYABLES, DRONES, NODE, WING_LAUNCH } from '../../content/structures';
-import type { GunDef, PrimitiveDef, PrimitiveKind, TeamId } from '../../content/types';
+import type { GunDef, PrimitiveDef, PrimitiveKind, StatusApply, TeamId } from '../../content/types';
 import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
-import { damageDeployable, damageShip, damageStructure, outgoingDamageMul, spawnPattern } from './combat';
+import { apHit, damageDeployable, damageShip, damageStructure, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
 import { damageDrone, spawnDrone } from './drones';
 import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
@@ -60,6 +60,8 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     s.dashMul = step.speedMul;
     s.dashRam = step.ramDamage ?? 0;
     s.dashKnock = step.knockback ?? 0;
+    s.dashRamAp = step.ramAp ?? Infinity;
+    s.dashRamStatus = step.ramStatus ?? null;
     s.dashHitCount = 0;
     s.cruising = false;
     s.cruiseSpool = 0;
@@ -96,17 +98,22 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
   projectiles(w, c, step) {
     const s = c.ship;
     if (!s) return;
-    const first = w.projectiles.count;
-    spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, mergedGun(s.cls.gun, step.gun), outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), s.radius);
-    if (step.missile) for (let i = first; i < w.projectiles.count; i++) w.projectiles.at(i).missile = true;
+    firePattern(w, s, step);
+    // Ripple salvos: the rest of the pattern follows `repeatInterval` s apart (systems/abilities tickBurst).
+    if (step.repeat && step.repeat > 1) {
+      s.burstStep = step;
+      s.burstLeft = step.repeat - 1;
+      s.burstTimer = step.repeatInterval ?? 0.25;
+    }
   },
 
   beam(w, c, step) {
     const mul = c.ship ? outgoingDamageMul(w, c.ship) : 1;
+    const hit = apHit(step.ap, true);
     for (let k = 0; k < step.count; k++) {
       const off = step.count > 1 ? (k / (step.count - 1) - 0.5) * step.spread : 0;
       const a = c.angle + off;
-      beamHits(w, c, c.x, c.y, Math.cos(a), Math.sin(a), step.length, step.width / 2, step.damage * mul);
+      beamHits(w, c, c.x, c.y, Math.cos(a), Math.sin(a), step.length, step.width / 2, step.damage * mul, hit, step.status);
       w.emit(EventType.Beam, c.team, c.slot, c.x, c.y, a, step.length);
     }
   },
@@ -115,27 +122,38 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     const cx = step.at === 'cursor' ? c.cursorX : c.x;
     const cy = step.at === 'cursor' ? c.cursorY : c.y;
     const r = step.radius;
+    // Graviton Wave drags targets to a point ahead of the bow rather than the center.
+    const ahead = step.pullTo === 'bow' ? (c.ship ? c.ship.radius : 0) + 160 : 0;
+    const px = cx + Math.cos(c.angle) * ahead;
+    const py = cy + Math.sin(c.angle) * ahead;
+    const hit = apHit(step.ap);
     const enemies = step.affects.includes('enemies');
     const allies = step.affects.includes('allies');
     const self = step.affects.includes('self');
     const drones = step.affects.includes('drones');
     const structures = step.affects.includes('structures');
     const mul = c.ship ? outgoingDamageMul(w, c.ship) : 1;
-    const n = w.shipHash.query(cx, cy, r + 40, w.scratch2);
+    const n = w.shipHash.query(cx, cy, r + MAX_SHIP_RADIUS, w.scratch2);
     for (let i = 0; i < n; i++) {
       const o = w.ships[w.scratch2[i]];
       if (o === c.ship || !o.alive || (o.x - cx) ** 2 + (o.y - cy) ** 2 > (r + o.radius) ** 2) continue;
       const friendly = o.team === c.team;
       if (friendly ? !allies : !enemies) continue;
-      if (!friendly && step.damage) damageShip(w, o, step.damage * mul, c.slot);
+      if (!friendly && step.shieldDrain) o.shield *= 1 - step.shieldDrain;
+      if (!friendly && step.damage) damageShip(w, o, step.damage * mul, c.slot, hit);
       if (friendly && step.heal) creditHealing(w, c.ship, o, heal(o, o.maxHull * step.heal));
+      if (friendly && step.shieldHeal) o.shield = Math.min(o.maxShield, o.shield + o.maxShield * step.shieldHeal);
       if (!friendly && step.pullToCenter && !hasFlag(o, 'knockbackImmune')) {
-        o.x += (cx - o.x) * step.pullToCenter;
-        o.y += (cy - o.y) * step.pullToCenter;
+        o.x += (px - o.x) * step.pullToCenter;
+        o.y += (py - o.y) * step.pullToCenter;
       }
       if (step.status && !friendly) for (const st of step.status) applyStatus(w, o, st);
     }
-    if (self && c.ship) heal(c.ship, c.ship.maxHull * (step.selfHeal ?? step.heal ?? 0));
+    if (self && c.ship) {
+      heal(c.ship, c.ship.maxHull * (step.selfHeal ?? step.heal ?? 0));
+      if (step.shieldHeal) c.ship.shield = Math.min(c.ship.maxShield, c.ship.shield + c.ship.maxShield * step.shieldHeal);
+    }
+    if (step.clearMissiles) while (shootDownMissile(w, c.team, cx, cy, r));
     if (drones && (step.damage || step.status)) {
       const m = w.droneHash.query(cx, cy, r + 20, w.scratch2);
       for (let i = 0; i < m; i++) {
@@ -146,13 +164,10 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         }
       }
     }
-    // Field Repairs: the pulse also patches up friendly nodes, FOBs and the mothership.
+    // Field Repairs: the pulse also patches up friendly asteroid nodes (v2: never FOBs or Titans).
     const repair = c.ship ? statValue(c.ship, 'structureRepair', 0) : 0;
     if (structures && repair > 0) {
       for (const p of w.points) if (p.owner === c.team && (p.x - cx) ** 2 + (p.y - cy) ** 2 <= (r + NODE.radius) ** 2) repairNode(p, p.maxHull * repair);
-      for (const st of w.structures) {
-        if (st.alive && st.team === c.team && (st.x - cx) ** 2 + (st.y - cy) ** 2 <= (r + st.radius) ** 2) st.hull = Math.min(st.maxHull, st.hull + st.maxHull * repair);
-      }
     }
     if (structures && step.heal) {
       const dep = w.deployables;
@@ -181,6 +196,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     z.blocksProjectiles = step.blocksProjectiles === true;
     z.reveal = step.reveal === true;
     z.affects = step.affects;
+    z.healNodes = step.healNodes === true;
   },
 
   strike(w, c, step) {
@@ -194,6 +210,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     st.landsAt = w.time + step.delay;
     st.damage = step.damage;
     st.structureDamage = step.structureDamage ?? step.damage;
+    st.ap = step.ap ?? Infinity;
   },
 
   summon(w, c, step) {
@@ -261,7 +278,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
   tether(w, c, step) {
     const s = c.ship;
     if (!s) return;
-    // Lock onto the damaged ally nearest the cursor.
+    // Lock onto the damaged ally nearest the cursor; with `nodes`, a damaged friendly node when no ally needs it.
     const n = w.shipHash.query(c.cursorX, c.cursorY, step.range, w.scratch2);
     let best: Ship | null = null;
     let bestD = Infinity;
@@ -275,13 +292,23 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         best = o;
       }
     }
+    let target = best ? best.slot : s.slot;
+    if ((!best || best.hull >= best.maxHull) && step.nodes) {
+      for (const p of w.points) {
+        if (p.owner !== s.team || p.hull >= p.maxHull || (p.x - s.x) ** 2 + (p.y - s.y) ** 2 > (step.range + NODE.radius) ** 2) continue;
+        target = -1 - p.index;
+        break;
+      }
+    }
     const t = w.tethers.alloc();
     if (!t) return;
     t.owner = s.slot;
-    t.target = best ? best.slot : s.slot;
+    t.target = target;
     t.expires = w.time + step.duration;
     t.range = step.range;
     t.healPerSecond = step.healPerSecond;
+    t.shieldPerSecond = step.shieldPerSecond ?? 0;
+    t.status = step.status ?? null;
   },
 
   droneOrder(w, c, step) {
@@ -289,11 +316,74 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     for (let i = 0; i < pool.count; i++) {
       const d = pool.at(i);
       if (d.owner !== c.slot || d.behavior === 'decoy') continue;
+      if (step.order === 'volley') {
+        // Valkyrie Run: each starship looses a homing micro-torpedo and stays in the fight.
+        const a = Math.atan2(c.cursorY - d.y, c.cursorX - d.x);
+        spawnPattern(w, c.slot, c.team, d.x, d.y, a, VOLLEY_GUN, step.damage / VOLLEY_GUN.damage, 1, d.radius);
+        const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
+        if (p) {
+          p.missile = true;
+          p.fromDrone = true;
+          p.ap = step.ap ?? Infinity;
+          p.splash = step.radius;
+        }
+        continue;
+      }
       d.kamikazeDamage = step.damage;
       d.kamikazeRadius = step.radius;
       d.kx = c.cursorX;
       d.ky = c.cursorY;
     }
+  },
+
+  fortifyNode(w, c, step) {
+    const s = c.ship;
+    const cx = step.at === 'cursor' ? c.cursorX : c.x;
+    const cy = step.at === 'cursor' ? c.cursorY : c.y;
+    const repair = (step.repair ?? 0) + (s ? statValue(s, 'nodeRepair', 0) : 0);
+    const armor = (step.armor ?? 0) + (s ? statValue(s, 'nodeArmor', 0) : 0);
+    const reach = step.radius + NODE.radius;
+    let only = -1;
+    if (step.at === 'cursor') {
+      // Targeted: the friendly node nearest the cursor.
+      let bestD = reach * reach;
+      for (const p of w.points) {
+        const d = (p.x - cx) ** 2 + (p.y - cy) ** 2;
+        if (p.owner === c.team && d <= bestD) {
+          bestD = d;
+          only = p.index;
+        }
+      }
+      if (only < 0) return;
+    }
+    for (const p of w.points) {
+      if ((only >= 0 && p.index !== only) || (p.x - cx) ** 2 + (p.y - cy) ** 2 > reach * reach) continue;
+      if (p.owner < 0 && step.lockoutCut && w.time < p.lockedUntil) {
+        p.lockedUntil = w.time + (p.lockedUntil - w.time) * (1 - step.lockoutCut);
+        continue;
+      }
+      if (p.owner !== c.team) continue;
+      const hold = Math.max(step.turretTime ?? 0, step.respawnTime ?? 0, step.armorTime ?? 8);
+      if (step.maxHullMul && step.maxHullMul > 1) {
+        p.maxHull = NODE.hull * step.maxHullMul;
+        p.fortifyUntil = Math.max(p.fortifyUntil, w.time + hold);
+      }
+      repairNode(p, p.maxHull * repair);
+      if (armor > 0) {
+        p.armorBonus = Math.max(w.time < p.armorUntil ? p.armorBonus : 0, armor);
+        p.armorUntil = Math.max(p.armorUntil, w.time + (step.armorTime ?? 8));
+      }
+      if (step.turrets) {
+        p.turrets = Math.max(w.time < p.turretUntil ? p.turrets : 0, Math.min(p.turretCd.length, step.turrets));
+        p.turretUntil = Math.max(p.turretUntil, w.time + (step.turretTime ?? 20));
+      }
+      if (step.respawnTime) p.respawnUntil = Math.max(p.respawnUntil, w.time + step.respawnTime);
+      w.emit(EventType.Explosion, c.team, 2, p.x, p.y, NODE.radius * 1.6);
+    }
+  },
+
+  turretVolley(w, c) {
+    if (c.ship) fireSecondaries(w, c.ship, true);
   },
 
   teamBuff(w, c, step) {
@@ -378,11 +468,11 @@ function nearestEnemyShip(w: World, c: Caster, range: number): Ship | null {
   return best;
 }
 
-/** Everything hostile within `halfWidth` of the beam segment takes the damage. */
-function beamHits(w: World, c: Caster, x: number, y: number, ux: number, uy: number, len: number, halfWidth: number, damage: number): void {
+/** Everything hostile within `halfWidth` of the beam segment takes the damage (and `status`). */
+function beamHits(w: World, c: Caster, x: number, y: number, ux: number, uy: number, len: number, halfWidth: number, damage: number, hit: HitInfo, status?: readonly StatusApply[]): void {
   const mx = x + (ux * len) / 2;
   const my = y + (uy * len) / 2;
-  const n = w.shipHash.query(mx, my, len / 2 + halfWidth + 40, w.scratch2);
+  const n = w.shipHash.query(mx, my, len / 2 + halfWidth + MAX_SHIP_RADIUS, w.scratch2);
   const onBeam = (px: number, py: number, r: number) => {
     const t = (px - x) * ux + (py - y) * uy;
     if (t < 0 || t > len) return false;
@@ -391,15 +481,17 @@ function beamHits(w: World, c: Caster, x: number, y: number, ux: number, uy: num
   };
   for (let i = 0; i < n; i++) {
     const s = w.ships[w.scratch2[i]];
-    if (s.alive && s.team !== c.team && onBeam(s.x, s.y, s.radius)) damageShip(w, s, damage, c.slot);
+    if (!s.alive || s.team === c.team || !onBeam(s.x, s.y, s.radius)) continue;
+    damageShip(w, s, damage, c.slot, hit);
+    if (status) for (const st of status) applyStatus(w, s, st);
   }
   const m = w.droneHash.query(mx, my, len / 2 + halfWidth + 20, w.scratch2);
   for (let i = 0; i < m; i++) {
     const d = w.drones.items[w.scratch2[i]];
     if (d.active && d.team !== c.team && onBeam(d.x, d.y, d.radius)) damageDrone(w, d, damage, c.slot);
   }
-  for (const st of w.structures) if (st.alive && st.team !== c.team && onBeam(st.x, st.y, st.radius)) damageStructure(w, st, damage, c.slot);
-  for (const p of w.points) if (p.owner >= 0 && p.owner !== c.team && onBeam(p.x, p.y, NODE.radius)) damageNode(w, p, damage, c.team, c.slot);
+  for (const st of w.structures) if (st.alive && st.team !== c.team && onBeam(st.x, st.y, st.radius)) damageStructure(w, st, damage, c.slot, hit.ap);
+  for (const p of w.points) if (p.owner >= 0 && p.owner !== c.team && onBeam(p.x, p.y, NODE.radius)) damageNode(w, p, damage, c.team, c.slot, hit.ap);
   const dep = w.deployables;
   for (let i = dep.count - 1; i >= 0; i--) {
     const d = dep.at(i);
@@ -446,6 +538,36 @@ export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number)
 export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): void {
   for (const step of steps) (PRIMITIVES[step.kind] as Handler<PrimitiveKind>)(w, c, step as never);
 }
+
+/** The `projectiles` primitive's pattern, fired once from the ship's bow. */
+function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>): void {
+  const first = w.projectiles.count;
+  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, mergedGun(s.cls.gun, step.gun), outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), s.radius);
+  const structureMul = (step.structureMul ?? 1) * liveStat(w, s, 'structureDamage', 1);
+  for (let i = first; i < w.projectiles.count; i++) {
+    const p = w.projectiles.at(i);
+    if (step.missile) p.missile = true;
+    p.statuses = step.onHit ?? null;
+    p.structureMul = structureMul;
+  }
+}
+
+/** Step 3: fire the next shots of a rippling salvo (Sequential Tube Salvo). */
+export function tickBurst(w: World, s: Ship): void {
+  if (s.burstLeft <= 0 || !s.burstStep) return;
+  s.burstTimer -= DT;
+  if (s.burstTimer > 0) return;
+  if (!canAct(s)) {
+    s.burstLeft = 0;
+    return;
+  }
+  firePattern(w, s, s.burstStep);
+  s.burstLeft--;
+  s.burstTimer += s.burstStep.repeatInterval ?? 0.25;
+}
+
+/** Valkyrie micro-torpedo; damage is scaled per order. */
+const VOLLEY_GUN: GunDef = { damage: 1, fireInterval: 1, projectileSpeed: 700, count: 1, spread: 0, size: 5, life: 2.4, homingTurn: 3.5 };
 
 export function tickAbility(w: World, s: Ship, st: AbilityState | null): void {
   if (!st || st.charges >= st.maxCharges) return;

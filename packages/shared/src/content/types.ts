@@ -57,7 +57,43 @@ export type StatId =
   | 'stealthMinimap'
   | 'knockbackImmune'
   | 'healPower'
-  | 'structureRepair';
+  | 'structureRepair'
+  // ext (v2): energy shield, armor and caliber (see content/combat.ts)
+  | 'maxShield'
+  | 'shieldRegen'
+  | 'shieldDR'
+  | 'armor'
+  | 'bowArmor'
+  | 'ap'
+  | 'noOverpen'
+  | 'shieldBypass'
+  | 'sternPierce'
+  | 'glanceThreshold'
+  | 'ambushAp'
+  // ext (v2): secondary auto-turrets
+  | 'secondaryCount'
+  | 'secondaryDamage'
+  | 'secondaryFireRate'
+  | 'secondaryJitter'
+  | 'secondaryAp'
+  | 'secondaryRange'
+  | 'secondaryPD'
+  | 'secondaryVsDrones'
+  /** Multiplies enemy secondary-turret jitter against this ship (Electronic Chaff). */
+  | 'jitterOnMe'
+  // ext (v2): helm and reactor
+  | 'reverseMax'
+  | 'turnRate'
+  /** Raises the off-channel power level above 33%. */
+  | 'powerFloor'
+  /** Raises every channel's level in EQUALIZED mode above 50%. */
+  | 'powerBalanced'
+  // ext (v2): node engineering and starships
+  | 'nodeRepair'
+  | 'nodeArmor'
+  | 'droneAp'
+  | 'droneRelaunch'
+  | 'droneShieldSteal';
 
 export type ConditionId =
   | 'cloaked'
@@ -70,7 +106,26 @@ export type ConditionId =
   | 'fullChargeVsHigherRank'
   | 'sieged'
   | 'overdrive'
-  | 'stormRun';
+  | 'stormRun'
+  // ext (v2): reactor power, helm and target state
+  | 'powerSpeed'
+  | 'powerWeapons'
+  | 'powerShields'
+  | 'powerBalanced'
+  | 'reversing'
+  | 'stationaryOrReversing'
+  | 'fullMomentum'
+  | 'hot'
+  | 'targetBelow40'
+  | 'targetBelow45'
+  | 'targetLight'
+  | 'targetArmored'
+  | 'fullChargeVsArmored'
+  | 'targetStern'
+  | 'targetPainted';
+
+/** ext (v2): Reactor Power Shunting (content/power.ts). */
+export type PowerMode = 'balanced' | 'speed' | 'weapons' | 'shields';
 
 export type StatusId =
   | 'slow'
@@ -90,7 +145,22 @@ export type StatusId =
   | 'rapid'
   | 'invulnerable'
   | 'revealed'
-  | 'blinded';
+  | 'blinded'
+  // ext (v2)
+  | 'sunder'
+  | 'armorUp'
+  | 'shieldsDown'
+  | 'shieldRegenUp'
+  | 'powerLock'
+  | 'powerSurge'
+  | 'powerMax'
+  | 'powerDrain'
+  | 'painted'
+  | 'turnSlow'
+  | 'turretLock'
+  | 'turretRapid'
+  | 'turretsOff'
+  | 'repair';
 
 export type AbilityTag = 'move' | 'heal' | 'guard' | 'stealth' | 'hit' | 'closeRange' | 'structure' | 'area';
 export type Affects = 'enemies' | 'allies' | 'self' | 'drones' | 'structures';
@@ -108,7 +178,8 @@ export interface ModifierDef {
   /** 'mul' values are summed and applied as (1 + Σ); 'add' values are summed onto the base. */
   op: 'add' | 'mul';
   value: number;
-  when?: ConditionId;
+  /** ext (v2): a list means every condition must hold. */
+  when?: ConditionId | readonly ConditionId[];
 }
 
 export interface GunDef {
@@ -125,6 +196,27 @@ export interface GunDef {
   chargeMax?: number; // Lancer
   heatPerShot?: number; // Dreadnought
   barrelGap?: number; // ext: parallel barrels (twin guns) spaced this far apart, instead of a fan
+  /** ext (v2): Armor Penetration (caliber). Absent = full penetration (area effects, commander strikes). */
+  ap?: number;
+  /** ext (v2): never overpenetrates light hulls (canister, fragmenting and frag shells). */
+  noOverpen?: boolean;
+}
+
+/** ext (v2): loose auto-aim secondary turrets mounted around the hull (content/combat.ts). */
+export interface SecondaryDef {
+  name: string;
+  count: number;
+  /** Damage per shot; DPS per turret = damage / fireInterval. */
+  damage: number;
+  fireInterval: number;
+  ap: number;
+  range: number;
+  /** ± aim jitter in degrees around the lead angle. */
+  jitterDeg: number;
+  projectileSpeed: number;
+  size: number;
+  /** CIWS/flak: shoot enemy starships before ships. */
+  ciws?: boolean;
 }
 
 /** ext: how summoned drones fly and fight. */
@@ -141,6 +233,8 @@ export interface DroneStats {
   lifesteal: number;
   /** ext: vision radius it gives its team (recon drones), 0 for none. */
   vision?: number;
+  /** ext (v2): caliber of the drone's gun. */
+  ap?: number;
 }
 
 /** ext: deployable structures (engineer kit, commander call-ins). */
@@ -155,10 +249,33 @@ export type PrimitiveDef =
       charges?: number;
       ramDamage?: number; // ext: Ram Charge
       knockback?: number;
+      ramAp?: number; // ext (v2): caliber of the ram impact
+      ramStatus?: StatusApply[]; // ext (v2): applied to rammed ships (Ironclad stun)
     }
   | { kind: 'teleport'; maxDistance: number; target: 'cursor' | 'behindTarget' }
-  | { kind: 'projectiles'; gun: Partial<GunDef>; missile?: boolean }
-  | { kind: 'beam'; length: number; width: number; count: number; spread: number; damage: number; delay?: number }
+  | {
+      kind: 'projectiles';
+      gun: Partial<GunDef>;
+      missile?: boolean;
+      /** ext (v2): statuses each projectile applies to the ship it hits (Armor-Stripper, Hunter-Killer). */
+      onHit?: StatusApply[];
+      /** ext (v2): ×structure/node damage. */
+      structureMul?: number;
+      /** ext (v2): fire the pattern this many times in all, `repeatInterval` s apart (ripple salvo). */
+      repeat?: number;
+      repeatInterval?: number;
+    }
+  | {
+      kind: 'beam';
+      length: number;
+      width: number;
+      count: number;
+      spread: number;
+      damage: number;
+      delay?: number;
+      ap?: number; // ext (v2)
+      status?: StatusApply[]; // ext (v2): applied to every ship in the line (Ion Lance)
+    }
   | {
       kind: 'pulse';
       radius: number;
@@ -169,6 +286,15 @@ export type PrimitiveDef =
       affects: Affects[];
       pullToCenter?: number; // ext: fraction of the way targets are dragged to the center
       at?: 'self' | 'cursor';
+      /** ext (v2): drag toward a point ahead of the bow instead of the center (Graviton Wave). */
+      pullTo?: 'center' | 'bow';
+      /** ext (v2): restores this fraction of max shield to allies (and self with 'self'). */
+      shieldHeal?: number;
+      /** ext (v2): removes this fraction of enemies' current shield. */
+      shieldDrain?: number;
+      /** ext (v2): destroys enemy missiles inside the radius (Flak Curtain). */
+      clearMissiles?: boolean;
+      ap?: number;
     }
   | {
       kind: 'zone';
@@ -181,13 +307,43 @@ export type PrimitiveDef =
       blocksProjectiles?: boolean;
       reveal?: boolean;
       affects: Affects[];
+      /** ext (v2): the per-second heal also repairs friendly nodes (never FOBs or Titans). */
+      healNodes?: boolean;
     }
-  | { kind: 'strike'; delay: number; radius: number; damage: number; structureDamage?: number } // ext: delayed AoE at cursor
+  | { kind: 'strike'; delay: number; radius: number; damage: number; structureDamage?: number; ap?: number } // ext: delayed AoE at cursor
   | { kind: 'summon'; unit: 'drone' | 'decoy'; count: number; life: number; behavior: DroneBehavior; params?: Partial<DroneStats> }
   | { kind: 'deploy'; structure: DeployKind; count: number; cap: number; life: number; hull?: number; at?: 'self' | 'cursor' }
   | { kind: 'selfStatus'; status: StatusId; duration: number; magnitude?: number }
-  | { kind: 'tether'; duration: number; range: number; healPerSecond: number } // ext: Warden heal beam
-  | { kind: 'droneOrder'; order: 'kamikaze'; damage: number; radius: number } // ext: Kamikaze Wing
+  | {
+      kind: 'tether'; // ext: Warden heal beam
+      duration: number;
+      range: number;
+      healPerSecond: number;
+      shieldPerSecond?: number; // ext (v2)
+      status?: StatusApply; // ext (v2): refreshed on the target while tethered
+      nodes?: boolean; // ext (v2): may lock onto a friendly node when no ally needs it
+    }
+  | { kind: 'droneOrder'; order: 'kamikaze' | 'volley'; damage: number; radius: number; ap?: number } // ext: Kamikaze Wing; v2 volley fires without losing drones
+  /**
+   * ext (v2): node engineering. Repairs and fortifies friendly nodes in the radius (or the one
+   * nearest the cursor): armor, defense turrets, a fleet spawn point, extra max hull.
+   */
+  | {
+      kind: 'fortifyNode';
+      at: 'self' | 'cursor';
+      radius: number;
+      repair?: number;
+      armor?: number;
+      armorTime?: number;
+      turrets?: number;
+      turretTime?: number;
+      respawnTime?: number;
+      maxHullMul?: number;
+      /** Cuts a locked-out node's remaining lockout by this fraction. */
+      lockoutCut?: number;
+    }
+  /** ext (v2): every secondary turret fires at once (Micro-Jump Strike). */
+  | { kind: 'turretVolley' }
   // ext: team-level effects used by Fleet Command
   | { kind: 'teamBuff'; buff: 'overcharge' | 'jam' | 'reinforce' | 'breakthrough'; duration: number }
   /** EMP: enemy structure and deployable turrets in the radius go dark, enemy drones there are destroyed. */
@@ -215,10 +371,21 @@ export interface KillEffect {
   signatureCooldownMul?: number;
 }
 
+/** ext (v2): an on-hit status with optional filters. */
+export interface OnHitApply extends StatusApply {
+  /** Which guns trigger it (default: primary). */
+  source?: 'primary' | 'secondary' | 'any';
+  when?: ConditionId | readonly ConditionId[];
+  /** Only hits on the target's rear arc. */
+  arc?: 'stern';
+}
+
 export interface NodeDef {
   id: string;
   name: string;
   description: string;
+  /** ext (v2): tree tag (CALIBER, WEAPON, POWER, ARMOR, TURRET, NODE, SPEC, ULTIMATE). */
+  tag?: string;
   modifiers?: ModifierDef[];
   replacesSignature?: AbilityDef;
   ultimate?: AbilityDef;
@@ -226,12 +393,18 @@ export interface NodeDef {
   hullModel?: string;
   botTags: AbilityTag[];
   // ext: data-driven passive hooks
-  onHit?: StatusApply[];
+  onHit?: OnHitApply[];
   onCritHit?: StatusApply[];
   onKill?: KillEffect;
   onHealAlly?: StatusApply;
-  /** Allies near you (optionally only those behind you) get this status, refreshed every tick. */
-  aura?: { radius: number; behind?: boolean; status: StatusApply };
+  /** Allies near you (optionally only those behind you) get these statuses, refreshed every tick. */
+  aura?: { radius: number; behind?: boolean; status: StatusApply | readonly StatusApply[]; when?: ConditionId | readonly ConditionId[] };
+  /** ext (v2): fires when the pilot switches Reactor Power (optionally only into one mode). */
+  onPowerSwitch?: { to?: PowerMode; status?: StatusApply[]; shield?: number; clear?: StatusId[] };
+  /** ext (v2): statuses gained the moment your energy shield breaks. */
+  onShieldBreak?: StatusApply[];
+  /** ext (v2): shield restored whenever a hit glances off your armor. */
+  onGlance?: { shield: number };
 }
 
 export interface TierDef {
@@ -244,6 +417,10 @@ export interface ShipClass {
   name: string;
   role: string;
   hull: number;
+  /** ext (v2): energy shield on top of the hull. */
+  shield: number;
+  /** ext (v2): flank Armor Rating; the bow and stern arcs scale it (content/combat.ts). */
+  armor: number;
   speed: number;
   radius: number;
   turnRate?: number;
@@ -254,7 +431,11 @@ export interface ShipClass {
   /** ext: most ships of this class a team may field, as a share of the fleet (min 1). Absent = no cap. */
   teamCapFrac?: number;
   gun: GunDef;
+  /** ext (v2): loose auto-aim secondary turrets (Frigate and up). */
+  secondary?: SecondaryDef;
   quirk: QuirkId;
+  /** ext (v2): per-class overrides of the quirk's QUIRK_PARAMS numbers. */
+  quirkTuning?: Readonly<Record<string, number>>;
   /** ext: the quirk's display name and rules text (picker, tech tree). */
   quirkInfo: { name: string; text: string };
   signature: AbilityDef;
@@ -273,6 +454,9 @@ export interface TurretDef {
   interval: number;
   projectileSpeed: number;
   size: number;
+  ap?: number; // ext (v2)
+  /** ext (v2): barrels per turret (twin capital turrets). */
+  barrels?: number;
 }
 
 /** ext: structures (mothership, FOB, later deployables) are data too. */
@@ -284,6 +468,8 @@ export interface StructureDef {
   healRadius: number;
   healPerSecond: number; // fraction of ally max hull
   vision: number;
+  /** ext (v2): Armor Rating against incoming calibers. */
+  armor: number;
 }
 
 export type TerrainDef =

@@ -70,9 +70,10 @@ describe('nodes', () => {
   });
 
   it('enemy guns can shoot a held node down', () => {
-    const { w, a } = duelWorld();
+    const { w, a, b } = duelWorld();
     own(w, 0, 1);
     const p = w.points[0];
+    place(w, b, 100, 100, 0);
     place(w, a, p.x - 400, p.y, 0);
     a.input.fire = true;
     for (let i = 0; i < 30 * 3; i++) step(w);

@@ -1,9 +1,10 @@
 import { BOT_TAG_RULES, type BotConditionId, DIRECTOR, PILOT } from '../../content/bots';
+import { POWER_INDEX } from '../../content/power';
 import { NODE } from '../../content/structures';
 import type { AbilityTag } from '../../content/types';
 import { Job, type AbilityState, type BotBrain, type Ship, type World } from '../world';
 import { canCast } from './abilities';
-import { gunRange, leadAngle } from './combat';
+import { armorMul, gunRange, leadAngle } from './combat';
 import { pushTarget } from './director';
 import { CHARGE } from './quirks';
 import { turretRange } from './structures';
@@ -46,14 +47,17 @@ export function think(w: World, s: Ship): void {
     b.retreating = true;
   }
 
-  // Nearest visible enemy ship, and whether anything is close enough to forbid cruising.
+  // Best visible enemy ship (v2: weighted toward hulls this bot's caliber can penetrate, so light
+  // guns hunt light ships and capital guns hunt capitals), and whether anything forbids cruising.
   const bit = 1 << s.team;
   const n = w.shipHash.query(s.x, s.y, PILOT.cruiseClearRadius, w.scratch);
   let nearest: Ship | null = null;
   let nd2 = Infinity;
+  let bestScore = Infinity;
   let anyNear = false;
   let enemiesNear = 0;
   const clear2 = PILOT.cruiseClearRadius * PILOT.cruiseClearRadius;
+  const ap = s.cls.gun.ap ?? Infinity;
   for (let i = 0; i < n; i++) {
     const o = w.ships[w.scratch[i]];
     if (!o.alive || o.team === s.team || !(o.visibleMask & bit)) continue;
@@ -61,7 +65,10 @@ export function think(w: World, s: Ship): void {
     if (d2 > clear2) continue;
     anyNear = true;
     if (d2 < 600 * 600) enemiesNear++;
-    if (d2 < nd2 || (d2 === nd2 && nearest !== null && o.slot < nearest.slot)) {
+    const pen = armorMul(ap, o.cls.armor, true);
+    const score = d2 / (pen * pen);
+    if (score < bestScore || (score === bestScore && nearest !== null && o.slot < nearest.slot)) {
+      bestScore = score;
       nd2 = d2;
       nearest = o;
     }
@@ -127,9 +134,28 @@ export function think(w: World, s: Ship): void {
 
   ctx.targetDist = hasEnemyTarget(b) ? Math.sqrt(nd2) : Infinity;
   ctx.enemiesNear = enemiesNear;
+  choosePower(w, s, b);
   s.input.ability = wants(w, s, b, s.signature);
   s.input.ultimate = s.ultimate !== null && wants(w, s, b, s.ultimate) && (ctx.enemiesNear >= 2 || b.targetStructure >= 0 || b.targetNode >= 0 || s.hull < 0.4 * s.maxHull);
   s.input.extra = s.extra !== null && wants(w, s, b, s.extra);
+}
+
+/**
+ * Reactor Power for bots: SPEED while travelling or retreating, SHIELDS under heavy focus fire
+ * (shield below half and still taking hits), WEAPONS against structures, nodes or a target whose
+ * shield is still up (above 60%), otherwise EQUALIZED.
+ */
+function choosePower(w: World, s: Ship, b: BotBrain): void {
+  let mode: number = POWER_INDEX.balanced;
+  const engaged = hasEnemyTarget(b) || b.targetStructure >= 0 || b.targetNode >= 0;
+  if (b.retreating || (!engaged && b.cruise)) mode = POWER_INDEX.speed;
+  else if (s.maxShield > 0 && s.shield < 0.5 * s.maxShield && w.time - s.lastDamageTime < 1.5) mode = POWER_INDEX.shields;
+  else if (b.targetStructure >= 0 || b.targetNode >= 0) mode = POWER_INDEX.weapons;
+  else if (b.targetShip >= 0) {
+    const t = w.ships[b.targetShip];
+    if (t.team !== s.team && t.maxShield > 0 && t.shield > 0.6 * t.maxShield) mode = POWER_INDEX.weapons;
+  }
+  if (mode !== s.powerMode) s.input.power = mode;
 }
 
 function wants(w: World, s: Ship, b: BotBrain, st: AbilityState): boolean {
@@ -186,9 +212,12 @@ function chooseDestination(w: World, s: Ship, b: BotBrain): void {
       return;
     case Job.Skirmish: {
       const p = w.map.points[b.jobPoint].pos;
-      // Sit inside the capture radius so the bot actually pushes the meter.
-      b.destX = p.x + sign * b.offsetX * 0.8;
-      b.destY = p.y + sign * b.offsetY * 0.8;
+      // Orbit inside the capture ring but outside the solid rock, so the bot pushes the meter
+      // without driving into the asteroid.
+      const ring = NODE.radius + s.radius + NODE.standOff;
+      const a = Math.atan2(sign * b.offsetY, sign * b.offsetX) + w.time * 0.12 * b.strafe;
+      b.destX = p.x + Math.cos(a) * ring;
+      b.destY = p.y + Math.sin(a) * ring;
       return;
     }
     case Job.Farm: {

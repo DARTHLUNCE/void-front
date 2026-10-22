@@ -30,6 +30,20 @@ export const STATUS_IDS: readonly StatusId[] = [
   'invulnerable',
   'revealed',
   'blinded',
+  'sunder',
+  'armorUp',
+  'shieldsDown',
+  'shieldRegenUp',
+  'powerLock',
+  'powerSurge',
+  'powerMax',
+  'powerDrain',
+  'painted',
+  'turnSlow',
+  'turretLock',
+  'turretRapid',
+  'turretsOff',
+  'repair',
 ];
 
 export const STATUSES: Record<StatusId, StatusDef> = {
@@ -51,4 +65,24 @@ export const STATUSES: Record<StatusId, StatusDef> = {
   invulnerable: { id: 'invulnerable', stacking: 'refresh' },
   revealed: { id: 'revealed', stacking: 'refresh' },
   blinded: { id: 'blinded', stacking: 'refresh' },
+  // v2: magnitude = Armor Rating removed / added
+  sunder: { id: 'sunder', stacking: 'strongest' },
+  armorUp: { id: 'armorUp', stacking: 'strongest' },
+  shieldsDown: { id: 'shieldsDown', stacking: 'refresh' },
+  /** magnitude = extra shield regen fraction (+0.2 = +20%). */
+  shieldRegenUp: { id: 'shieldRegenUp', stacking: 'strongest' },
+  powerLock: { id: 'powerLock', stacking: 'refresh' },
+  /** magnitude = bonus to all three channels' multipliers. */
+  powerSurge: { id: 'powerSurge', stacking: 'strongest' },
+  powerMax: { id: 'powerMax', stacking: 'refresh' },
+  powerDrain: { id: 'powerDrain', stacking: 'refresh' },
+  painted: { id: 'painted', stacking: 'refresh' },
+  /** magnitude = turn-rate reduction fraction. */
+  turnSlow: { id: 'turnSlow', stacking: 'strongest' },
+  turretLock: { id: 'turretLock', stacking: 'refresh' },
+  /** magnitude = extra secondary fire rate (1 = double). */
+  turretRapid: { id: 'turretRapid', stacking: 'strongest' },
+  turretsOff: { id: 'turretsOff', stacking: 'refresh' },
+  /** magnitude = hull restored per second as a fraction of max hull. */
+  repair: { id: 'repair', stacking: 'strongest' },
 };

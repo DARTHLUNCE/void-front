@@ -76,33 +76,45 @@ button.primary:hover {
   border-color: #8cf4ff;
 }
 
-/* Menu */
+/* Menu: the v2 orbital terminal. Launch Dock on the far left, a 5-tab viewport on the right. */
 #menu {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
   padding: 16px;
   background:
     repeating-linear-gradient(0deg, transparent 0 39px, rgba(74, 168, 255, 0.03) 39px 40px),
     repeating-linear-gradient(90deg, transparent 0 39px, rgba(74, 168, 255, 0.03) 39px 40px),
-    radial-gradient(ellipse at 30% 40%, rgba(53, 110, 196, 0.16), transparent 60%),
-    radial-gradient(ellipse at 75% 60%, rgba(200, 84, 36, 0.14), transparent 55%),
+    radial-gradient(ellipse at 20% 40%, rgba(53, 110, 196, 0.16), transparent 60%),
+    radial-gradient(ellipse at 80% 60%, rgba(200, 84, 36, 0.12), transparent 55%),
     #04060c;
+  overflow: auto;
 }
 
-#menu .card {
-  width: min(480px, 100%);
+#menu .terminal {
+  height: 100%;
+  min-height: 560px;
   display: grid;
-  gap: 14px;
-  padding: 28px;
+  grid-template-columns: 340px 1fr;
+  gap: 16px;
+}
+
+#menu .dock,
+#menu .viewport {
   border: 1px solid var(--edge);
-  border-top: 2px solid var(--cobalt);
-  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
   background:
     repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
     var(--panel);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+}
+
+#menu .dock {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px;
+  border-top: 2px solid var(--cobalt);
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
+  overflow: auto;
 }
 
 #menu .sys-tag {
@@ -115,7 +127,7 @@ button.primary:hover {
 
 #menu h1 {
   margin: 0;
-  font-size: 3rem;
+  font-size: 2.6rem;
   letter-spacing: 0.2em;
   line-height: 1;
 }
@@ -128,6 +140,11 @@ button.primary:hover {
 #menu .note {
   margin: 0;
   color: var(--dim);
+}
+
+#menu .opts {
+  display: grid;
+  gap: 10px;
 }
 
 #menu label {
@@ -146,11 +163,217 @@ button.primary:hover {
   font: inherit;
 }
 
-#menu .keys {
+#menu .quick {
   display: grid;
-  gap: 4px;
-  font-size: 0.95rem;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid rgba(74, 168, 255, 0.2);
+  background: rgba(4, 7, 15, 0.6);
+  font-size: 0.86rem;
+}
+
+#menu .quick h4 {
+  margin: 0 0 2px;
+  font: 600 0.72rem var(--mono);
+  letter-spacing: 0.16em;
+  color: var(--cobalt);
+  text-transform: uppercase;
+}
+
+#menu .quick .row {
+  display: grid;
+  grid-template-columns: 118px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+#menu .quick em {
+  font-style: normal;
   color: var(--dim);
+}
+
+#menu .launch {
+  margin-top: auto;
+  width: 100%;
+  padding: 0.9em 1em;
+}
+
+#menu .viewport {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  border-top: 2px solid var(--ember);
+}
+
+#menu .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--edge);
+}
+
+#menu .tabs button {
+  padding: 12px 18px;
+  border: 0;
+  border-right: 1px solid rgba(105, 138, 210, 0.2);
+  background: transparent;
+  color: var(--dim);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+#menu .tabs button.on {
+  color: var(--ink);
+  background: linear-gradient(180deg, rgba(74, 168, 255, 0.18), transparent);
+  box-shadow: inset 0 -2px 0 var(--cobalt);
+}
+
+#menu .pane {
+  display: none;
+  min-height: 0;
+  overflow: auto;
+  padding: 18px 22px;
+}
+
+#menu .pane.on {
+  display: block;
+}
+
+#menu .pane[data-pane='tree'] {
+  padding: 0;
+}
+
+#menu .pane iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  border: 0;
+  background: #04060c;
+}
+
+#menu .pane h2 {
+  margin: 0 0 6px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#menu .pane h3 {
+  margin: 0 0 8px;
+  color: var(--cobalt);
+  letter-spacing: 0.06em;
+}
+
+#menu .pane h3 small {
+  color: var(--dim);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+#menu .group {
+  display: grid;
+  gap: 10px;
+  max-width: 640px;
+  margin: 18px 0;
+}
+
+#menu .choice {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  color: var(--ink);
+}
+
+#menu .choice small {
+  color: var(--dim);
+  font-weight: 500;
+}
+
+#menu .preview {
+  color: #8cf4ff;
+}
+
+#menu .swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#menu .swatch {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+#menu .swatch input {
+  display: none;
+}
+
+#menu .swatch i {
+  width: 22px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--c);
+  box-shadow: 0 0 8px var(--c);
+}
+
+#menu .swatch:has(input:checked) {
+  border-color: #8cf4ff;
+  background: rgba(74, 168, 255, 0.12);
+}
+
+#menu .manual .cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+#menu .manual article,
+#menu .notes article {
+  padding: 14px 16px;
+  border: 1px solid rgba(105, 138, 210, 0.24);
+  background: rgba(4, 7, 15, 0.55);
+  line-height: 1.45;
+  color: #c9d6f2;
+}
+
+#menu .manual article p {
+  margin: 0;
+}
+
+#menu .notes article {
+  max-width: 820px;
+  margin-top: 12px;
+}
+
+#menu .notes ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+#menu code {
+  font-family: var(--mono);
+  color: #8cf4ff;
+}
+
+@media (max-width: 860px) {
+  #menu .terminal {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  #menu .pane iframe {
+    min-height: 70vh;
+  }
+}
+
+.no-perf .perf {
+  display: none;
 }
 
 /* HUD */
@@ -429,7 +652,7 @@ button.primary:hover {
  * an amber CRT with the abilities (center), the throttle lever and a Sub-Light scope (right).
  */
 .cockpit {
-  --dash-w: clamp(560px, calc(100vw - 690px), 880px);
+  --dash-w: clamp(620px, calc(100vw - 690px), 960px);
   --crt: #ffb347;
   --crt-dim: rgba(255, 179, 71, 0.45);
   --scope: #5cff9d;
@@ -443,7 +666,7 @@ button.primary:hover {
 .cockpit .dash {
   position: relative;
   display: grid;
-  grid-template-columns: 132px 1fr 58px 132px;
+  grid-template-columns: 132px 1fr auto 58px 132px;
   grid-template-rows: auto 1fr;
   column-gap: 12px;
   align-items: end;
@@ -1619,4 +1842,144 @@ button.primary:hover {
 
 .cls.full .cap {
   color: #ff5c6c;
+}
+
+/* v2: shield ring (outer, cyan) around the hull dial, shield bar and armor readout on the CRT. */
+.cockpit .scope .dial.shieldring {
+  inset: 3px;
+  background: conic-gradient(#6ff3ff var(--p), rgba(111, 243, 255, 0.08) 0);
+  mask: radial-gradient(circle, transparent 59px, #000 60px);
+  filter: drop-shadow(0 0 4px #6ff3ff);
+}
+
+.cockpit .crt-shield {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.66rem;
+}
+
+.cockpit .crt-shield .bar.shd {
+  height: 7px;
+  border-color: rgba(111, 243, 255, 0.45);
+}
+
+.cockpit .crt-shield .bar.shd i {
+  background: linear-gradient(90deg, #2a8fb0, #6ff3ff);
+}
+
+.cockpit .crt-armor {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.62rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+/* v2: Reactor Power indicator, three channel bars. */
+.cockpit .power {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  font-family: var(--mono);
+  color: #9fb0d6;
+}
+
+.cockpit .power label {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+}
+
+.cockpit .power .chans {
+  display: flex;
+  gap: 5px;
+  padding: 4px 5px;
+  border: 2px solid #3c475d;
+  border-radius: 4px;
+  background: #07090f;
+}
+
+.cockpit .power .chan {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.cockpit .power .pbar {
+  position: relative;
+  width: 12px;
+  height: 64px;
+  background: #1a2230;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* The fill grows from the bottom: width carries the level, rotated into height. */
+.cockpit .power .pbar i {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 12px;
+  height: 0;
+  max-height: 100%;
+}
+
+.cockpit .power .chan small {
+  font-size: 0.55rem;
+}
+
+.cockpit .power .chan kbd {
+  font-size: 0.55rem;
+  padding: 0 2px;
+}
+
+.cockpit .power .c0 .pbar i {
+  background: linear-gradient(0deg, #2a6fbf, #9fd4ff);
+}
+
+.cockpit .power .c1 .pbar i {
+  background: linear-gradient(0deg, #b8661a, #ffb347);
+}
+
+.cockpit .power .c2 .pbar i {
+  background: linear-gradient(0deg, #2a8fb0, #6ff3ff);
+}
+
+.cockpit .power b {
+  font-size: 0.66rem;
+  color: var(--ink);
+}
+
+.cockpit .power kbd {
+  font-size: 0.55rem;
+  padding: 0 3px;
+}
+
+.cockpit .power[data-mode='1'] .c0 .pbar,
+.cockpit .power[data-mode='2'] .c1 .pbar,
+.cockpit .power[data-mode='3'] .c2 .pbar {
+  box-shadow: 0 0 8px rgba(140, 244, 255, 0.7);
+}
+
+/* v2: reverse segments below the zero line, red when lit; dark past the ship's reverse ceiling. */
+.cockpit .lever .stack hr {
+  margin: 1px -2px;
+  border: 0;
+  border-top: 2px solid #8a99bf;
+}
+
+.cockpit .lever .stack i.rev.on {
+  background: #ff4b4b;
+  box-shadow: 0 0 5px rgba(255, 75, 75, 0.8);
+}
+
+.cockpit .lever .stack i.rev.na {
+  opacity: 0.15;
+}
+
+.cockpit .lever.reverse b {
+  color: #ff6b6b;
 }

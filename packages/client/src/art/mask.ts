@@ -1,4 +1,4 @@
-import type { Shape } from './shapes';
+import { bounds, type Shape } from './shapes';
 
 /**
  * Pure-JS coverage rasterizer for art checks (no DOM): floating-part detection and silhouette
@@ -62,9 +62,15 @@ export function rasterMask(shapes: Shape[], x0: number, y0: number, x1: number, 
   const cols = Math.ceil((x1 - x0) / cell);
   const rows = Math.ceil((y1 - y0) / cell);
   const owner = new Int16Array(cols * rows).fill(-1);
-  for (let r = 0; r < rows; r++) {
+  // Only cells inside the hull's bounding box can be covered.
+  const b = bounds(shapes);
+  const r0 = Math.max(0, Math.floor((b.y0 - y0) / cell) - 1);
+  const r1 = Math.min(rows, Math.ceil((b.y1 - y0) / cell) + 1);
+  const c0 = Math.max(0, Math.floor((b.x0 - x0) / cell) - 1);
+  const c1 = Math.min(cols, Math.ceil((b.x1 - x0) / cell) + 1);
+  for (let r = r0; r < r1; r++) {
     const y = y0 + (r + 0.5) * cell;
-    for (let c = 0; c < cols; c++) {
+    for (let c = c0; c < c1; c++) {
       const x = x0 + (c + 0.5) * cell;
       for (let i = shapes.length - 1; i >= 0; i--) {
         if (covers(shapes[i], x, y)) {

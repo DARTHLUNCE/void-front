@@ -10,6 +10,13 @@ export const MATCH = {
   maxFleet: 100,
   /** Sub-Light drive (Shift): charges for `spool` s, then runs at `speedMul`× top speed. */
   cruise: { spool: 1.5, speedMul: 2.5 },
+  /** v2: default reverse-throttle ceiling (share of top speed); nodes raise it via `reverseMax`. */
+  reverseMax: 0.4,
+  /**
+   * v2: FOB and Titan hull scale with fleet size (the spec's 36,000 / 60,000 are the 40 v 40
+   * baseline): a 60-ship push otherwise erases a base 50% faster than a 40-ship one.
+   */
+  baseHullFleet: { baseline: 40, maxMul: 2.5 },
   /** Ship acceleration responsiveness (1/s). */
   accel: 5,
   movement: {

@@ -22,7 +22,7 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
     target = new EventTarget();
     Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
     vi.stubGlobal('window', target);
-    input = new Input(scheme, 'keys', { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+    input = new Input(scheme, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
     event('mousemove', { clientX: 700, clientY: 300 });
     event('keydown', { code: 'KeyD' });
     event('keydown', { code: 'ShiftLeft' });
@@ -90,44 +90,68 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
   });
 });
 
-describe('throttle', () => {
+describe('v2 throttle and Reactor Power', () => {
   let target: EventTarget;
 
-  function make(mode: 'keys' | 'wheel', wheel = vi.fn()): Input {
+  function make(wheel = vi.fn()): Input {
     target = new EventTarget();
     Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
     vi.stubGlobal('window', target);
-    return new Input('wasd', mode, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel, escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+    return new Input('wasd', { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel, escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
   }
 
-  function key(code: string): void {
+  function key(code: string): Event {
     const e = new Event('keydown', { cancelable: true });
     Object.assign(e, { code });
     target.dispatchEvent(e);
+    return e;
   }
+
+  const frame = (input: Input) => input.frame({ x: 400, y: 300 }, 1, (x, y) => ({ x, y }));
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it('steps with the arrow keys in 10% steps, never below 10%, and scales thrust', () => {
-    const input = make('keys');
-    key('KeyD');
-    key('ArrowDown');
-    key('ArrowDown');
-    key('ArrowDown');
+  it('steps the throttle 10% at a time through zero into reverse, down to the ship’s ceiling', () => {
+    const input = make();
+    for (let i = 0; i < 3; i++) input.stepThrottle(-1);
     expect(input.throttle).toBeCloseTo(0.7);
-    expect(input.frame({ x: 400, y: 300 }, 1, (x, y) => ({ x, y })).moveX).toBeCloseTo(0.7);
-    for (let i = 0; i < 20; i++) key('ArrowDown');
-    expect(input.throttle).toBeCloseTo(0.1);
-    for (let i = 0; i < 20; i++) key('ArrowUp');
+    for (let i = 0; i < 20; i++) input.stepThrottle(-1);
+    expect(input.throttle).toBeCloseTo(-0.4);
+    input.reverseMax = 0.55;
+    input.stepThrottle(-1);
+    expect(input.throttle).toBeCloseTo(-0.5);
+    for (let i = 0; i < 30; i++) input.stepThrottle(1);
     expect(input.throttle).toBe(1);
-    input.dispose();
   });
 
-  it('leaves the arrows alone in wheel mode and asks for zoom only with Ctrl', () => {
-    const wheel = vi.fn();
-    const input = make('wheel', wheel);
+  it('sends the signed throttle unscaled and never spools Sub-Light in reverse', () => {
+    const input = make();
+    key('KeyD');
+    key('ShiftLeft');
+    expect(frame(input).cruise).toBe(true);
+    for (let i = 0; i < 13; i++) input.stepThrottle(-1);
+    const f = frame(input);
+    expect(f.moveX).toBe(1);
+    expect(f.throttle).toBeCloseTo(-0.3);
+    expect(f.cruise).toBe(false);
+  });
+
+  it('arrow keys shunt Reactor Power once each, without scrolling the page', () => {
+    const input = make();
+    expect(key('ArrowLeft').defaultPrevented).toBe(true);
+    expect(frame(input).power).toBe(1);
+    expect(frame(input).power).toBe(-1);
+    key('ArrowUp');
+    expect(frame(input).power).toBe(2);
+    key('ArrowRight');
+    expect(frame(input).power).toBe(3);
     key('ArrowDown');
-    expect(input.throttle).toBe(1);
+    expect(frame(input).power).toBe(0);
+  });
+
+  it('the bare wheel is throttle, Ctrl + wheel asks for zoom', () => {
+    const wheel = vi.fn();
+    make(wheel);
     const turn = (ctrlKey: boolean) => {
       const e = new Event('wheel', { cancelable: true });
       Object.assign(e, { deltaY: 100, clientX: 0, clientY: 0, ctrlKey });
@@ -136,6 +160,5 @@ describe('throttle', () => {
     turn(false);
     turn(true);
     expect(wheel.mock.calls.map((c) => c[3])).toEqual([false, true]);
-    input.dispose();
   });
 });

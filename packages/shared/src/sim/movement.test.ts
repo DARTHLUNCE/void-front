@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MATCH } from '../content/match';
+import { HULL_CLASS_SCALE } from '../content/thrusters';
 import { createWorld } from './step';
 import { aimAndFire } from './systems/combat';
 import { baseSpeed, moveShips } from './systems/movement';
@@ -41,7 +42,7 @@ describe('inertial movement', () => {
     expect(ship.engineForward).toBeGreaterThan(0);
     expect(ship.engineLateral).toBeLessThan(0);
     expect(ship.vy).toBeLessThan(0);
-    expect(ship.engineTorque).toBeCloseTo(-25 * 0.65 * ship.engineLateral);
+    expect(ship.engineTorque).toBeCloseTo(-25 * HULL_CLASS_SCALE.patrol * ship.engineLateral);
     aimAndFire(w, ship);
     expect(ship.angularVelocity).toBeCloseTo(ship.engineTorque / (ship.radius ** 2 * MATCH.movement.inertiaFactor) * DT);
     expect(ship.angle).toBeGreaterThan(0);

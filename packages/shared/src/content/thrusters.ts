@@ -1,16 +1,19 @@
 import type { ClassId } from './types';
 
-/** Existing art scales, shared with off-center propulsion. */
+/**
+ * Art scale per class, shared with off-center propulsion. v2 size ladder: each class's old scale
+ * times (new radius / old radius), so hulls grow with ShipClass.radius (13→22 … 48→155 u).
+ */
 export const HULL_CLASS_SCALE: Record<ClassId, number> = {
-  patrol: 0.65,
-  corvette: 1,
-  frigate: 1.1,
-  destroyer: 1,
-  cruiser: 1,
-  battlecruiser: 1,
-  battleship: 1.6,
-  dreadnought: 2.2,
-  carrier: 2,
+  patrol: 0.65 * (22 / 13),
+  corvette: 1 * (28 / 16),
+  frigate: 1.1 * (38 / 20),
+  destroyer: 1 * (52 / 24),
+  cruiser: 1 * (72 / 30),
+  battlecruiser: 1 * (90 / 34),
+  battleship: 1.6 * (118 / 40),
+  dreadnought: 2.2 * (155 / 48),
+  carrier: 2 * (135 / 44),
 };
 
 /** Local nozzle sockets before class art scale; same geometry drives physics and flares. */

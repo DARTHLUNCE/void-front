@@ -1,12 +1,14 @@
 import { BOT_SKILL } from '../../content/bots';
+import { POWER_INDEX } from '../../content/power';
 import { QUIRK_PARAMS } from '../../content/quirks';
 import { DRONES } from '../../content/structures';
 import type { DroneBehavior, DroneStats, TeamId } from '../../content/types';
 import { hasFlag, statValue } from '../stats';
 import { DT, EventType, type Drone, type Ship, type World } from '../world';
-import { damageDeployable, damageShip, damageStructure, leadAngle, spawnPattern } from './combat';
+import { apHit, damageDeployable, damageShip, damageStructure, leadAngle, MAX_SHIP_RADIUS, spawnPattern } from './combat';
 import { damageNodesInRadius } from './points';
 import { DRONE_READY } from './quirks';
+import { hasStatus } from './status';
 
 const DRONE_GUN = { damage: 0, fireInterval: 1, projectileSpeed: 900, count: 1, spread: 0, size: 3, life: 0.6 };
 
@@ -36,6 +38,7 @@ export function spawnDrone(
   let splash = base.splash;
   let structureMul = base.structureMul;
   let lifesteal = base.lifesteal;
+  let ap = base.ap ?? Infinity;
   if (ownerShip) {
     if (behavior === 'orbit') hullMul = dmgMul = 1 + QUIRK_PARAMS.droneBay.perRank * ownerShip.rank;
     dmgMul *= statValue(ownerShip, 'droneDamage', 1);
@@ -43,6 +46,14 @@ export function spawnDrone(
     splash += statValue(ownerShip, 'droneSplash', 0);
     structureMul *= statValue(ownerShip, 'droneStructure', 1);
     lifesteal += statValue(ownerShip, 'droneLifesteal', 0);
+    ap += statValue(ownerShip, 'droneAp', 0);
+    // Starships inherit the carrier's Reactor Power state when they launch.
+    const bay = QUIRK_PARAMS.droneBay;
+    if (ownerShip.powerMode === POWER_INDEX.speed) speedMul *= 1 + bay.powerSpeed;
+    else if (ownerShip.powerMode === POWER_INDEX.weapons) {
+      dmgMul *= 1 + bay.powerWeapons;
+      ap *= 1 + bay.powerWeapons;
+    } else if (ownerShip.powerMode === POWER_INDEX.shields) hullMul *= 1 + bay.powerShields;
   }
   d.team = team;
   d.owner = owner;
@@ -70,6 +81,7 @@ export function spawnDrone(
   d.targetObj = -1;
   d.vision = base.vision ?? 0;
   d.kamikazeDamage = 0;
+  d.ap = ap;
   d.lastHitBy = -1;
   const skill = ownerShip?.bot?.skill ?? BOT_SKILL.normal;
   d.aimError = (skill.aimErrorMin + skill.aimErrorMax) / 2;
@@ -80,7 +92,7 @@ export function killDrone(w: World, d: Drone): void {
   if (!d.active) return;
   if (d.behavior === 'orbit' && d.owner >= 0) {
     const owner = w.ships[d.owner];
-    owner.quirk[DRONE_READY] = Math.max(owner.quirk[DRONE_READY], w.time + QUIRK_PARAMS.droneBay.respawn);
+    owner.quirk[DRONE_READY] = Math.max(owner.quirk[DRONE_READY], w.time + QUIRK_PARAMS.droneBay.respawn * statValue(owner, 'droneRelaunch', 1));
   }
   w.drones.release(d);
 }
@@ -134,7 +146,8 @@ export function stepDrones(w: World): void {
 
     // Targeting every few ticks, staggered by index. Recon drones never fight; bombers go for
     // structures, nodes and deployables first.
-    if (d.behavior !== 'recon' && (w.tick + d.index) % 6 === 0) {
+    // Retarget on a shared beat (not keyed on pool index, which differs between the teams).
+    if (d.behavior !== 'recon' && w.tick % 6 === 0) {
       if (d.behavior !== 'bomber' || !pickStructureTarget(w, d, ax, ay, leash)) pickTarget(w, d, owner, ax, ay, leash, d.behavior === 'interceptor');
     }
     const t = d.targetShip >= 0 ? w.ships[d.targetShip] : null;
@@ -204,6 +217,7 @@ export function stepDrones(w: World): void {
       const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
       if (p) {
         p.fromDrone = true;
+        p.ap = d.ap;
         p.splash = d.splash;
         p.structureMul = d.structureMul;
         p.lifesteal = d.lifesteal;
@@ -302,11 +316,12 @@ function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: numb
   }
   const n = w.shipHash.query(cx, cy, r, w.scratch3);
   let best = -1;
-  let bestD = r * r;
+  let bestD = r * r + 1;
   for (let i = 0; i < n; i++) {
     const s = w.ships[w.scratch3[i]];
     if (!s.alive || s.team === d.team || !(s.visibleMask & (1 << d.team))) continue;
-    const dd = (s.x - cx) ** 2 + (s.y - cy) ** 2;
+    // Painted targets (Fire-Control Uplink) draw every starship first.
+    const dd = (s.x - cx) ** 2 + (s.y - cy) ** 2 - (hasStatus(s, 'painted') ? r * r : 0);
     if (dd < bestD || (dd === bestD && best >= 0 && s.slot < best)) {
       bestD = dd;
       best = s.slot;
@@ -337,7 +352,7 @@ function pickDroneTarget(w: World, d: Drone, cx: number, cy: number, r: number):
 
 /** Point Defense: zap enemy missiles and mines that come close. */
 function pointDefense(w: World, d: Drone): void {
-  if ((w.tick + d.index) % 9 !== 0) return;
+  if (w.tick % 9 !== 0) return;
   const r2 = 260 * 260;
   const proj = w.projectiles;
   for (let i = proj.count - 1; i >= 0; i--) {
@@ -371,13 +386,14 @@ function kamikaze(w: World, d: Drone): void {
   w.drones.release(d);
 }
 
-/** Area damage to enemy ships, drones and structures (kamikaze drones, mines, splash shells). */
-export function explode(w: World, team: TeamId, owner: number, x: number, y: number, radius: number, damage: number, structureMul = 1): void {
-  const n = w.shipHash.query(x, y, radius + 40, w.scratch3);
+/** Area damage to enemy ships, drones and structures (kamikaze drones, mines, splash shells). `ap` is the shell's caliber. */
+export function explode(w: World, team: TeamId, owner: number, x: number, y: number, radius: number, damage: number, structureMul = 1, ap = Infinity): void {
+  const n = w.shipHash.query(x, y, radius + MAX_SHIP_RADIUS, w.scratch3);
+  const hit = apHit(ap);
   for (let i = 0; i < n; i++) {
     const s = w.ships[w.scratch3[i]];
     if (!s.alive || s.team === team) continue;
-    if ((s.x - x) ** 2 + (s.y - y) ** 2 <= (radius + s.radius) ** 2) damageShip(w, s, damage, owner);
+    if ((s.x - x) ** 2 + (s.y - y) ** 2 <= (radius + s.radius) ** 2) damageShip(w, s, damage, owner, hit);
   }
   const m = w.droneHash.query(x, y, radius + 20, w.scratch3);
   for (let i = 0; i < m; i++) {
@@ -385,14 +401,14 @@ export function explode(w: World, team: TeamId, owner: number, x: number, y: num
     if (o.active && o.team !== team && (o.x - x) ** 2 + (o.y - y) ** 2 <= (radius + o.radius) ** 2) damageDrone(w, o, damage, owner);
   }
   for (const st of w.structures) {
-    if (st.alive && st.team !== team && (st.x - x) ** 2 + (st.y - y) ** 2 <= (radius + st.radius) ** 2) damageStructure(w, st, damage * structureMul, owner);
+    if (st.alive && st.team !== team && (st.x - x) ** 2 + (st.y - y) ** 2 <= (radius + st.radius) ** 2) damageStructure(w, st, damage * structureMul, owner, ap);
   }
   const dep = w.deployables;
   for (let i = dep.count - 1; i >= 0; i--) {
     const dp = dep.at(i);
     if (dp.team !== team && (dp.x - x) ** 2 + (dp.y - y) ** 2 <= (radius + dp.def.radius) ** 2) damageDeployable(w, dp, damage * structureMul, owner);
   }
-  damageNodesInRadius(w, team, x, y, radius, damage * structureMul, owner);
+  damageNodesInRadius(w, team, x, y, radius, damage * structureMul, owner, ap);
   w.emit(EventType.Explosion, team, 0, x, y, radius);
 }
 

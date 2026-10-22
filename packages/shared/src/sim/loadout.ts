@@ -1,4 +1,5 @@
 import { CLASSES } from '../content/classes/index';
+import { ARMOR } from '../content/combat';
 import type { AbilityDef, ClassId, ConditionId, ModifierDef, StatId } from '../content/types';
 import { Rng } from './rng';
 import { applyLoadout, statValue } from './stats';
@@ -51,6 +52,20 @@ const STAT_WORDS: Partial<Record<StatId, string>> = {
   spread: 'spread',
   castCost: 'dash cost',
   gunCount: 'barrels',
+  maxShield: 'max shield',
+  shieldRegen: 'shield regen',
+  shieldDR: 'shield damage reduction',
+  armor: 'Armor Rating',
+  bowArmor: 'bow armor bonus',
+  ap: 'caliber (AP)',
+  shieldBypass: 'damage bypassing shields',
+  secondaryCount: 'secondary turrets',
+  secondaryDamage: 'secondary turret damage',
+  secondaryFireRate: 'secondary turret fire rate',
+  secondaryJitter: 'secondary turret jitter',
+  secondaryAp: 'secondary turret AP',
+  reverseMax: 'reverse throttle',
+  turnRate: 'turn rate',
 };
 
 const CONDITION_WORDS: Record<ConditionId, string> = {
@@ -65,12 +80,28 @@ const CONDITION_WORDS: Record<ConditionId, string> = {
   sieged: 'in Siege Mode',
   overdrive: 'during Overdrive',
   stormRun: 'during Storm Run',
+  powerBalanced: 'with Power EQUALIZED (↓)',
+  powerSpeed: 'with Power on SPEED (←)',
+  powerWeapons: 'with Power on WEAPONS (↑)',
+  powerShields: 'with Power on SHIELDS (→)',
+  reversing: 'in reverse throttle',
+  stationaryOrReversing: 'while stationary or reversing',
+  fullMomentum: 'at full Momentum',
+  hot: 'above 50% Heat',
+  targetBelow40: 'vs targets under 40% hull',
+  targetBelow45: 'vs targets under 45% hull',
+  targetLight: 'vs Light hulls',
+  targetArmored: 'vs Armored hulls (60+ armor)',
+  fullChargeVsArmored: 'on full-charge hits vs Armored hulls',
+  targetStern: 'on stern hits',
+  targetPainted: 'vs painted targets',
 };
 
 export function describeModifier(m: ModifierDef): string {
   const what = STAT_WORDS[m.stat] ?? m.stat;
   const amount = m.op === 'mul' ? `${m.value > 0 ? '+' : ''}${Math.round(m.value * 100)}%` : `${m.value > 0 ? '+' : ''}${m.value}`;
-  return `${amount} ${what}${m.when ? ` ${CONDITION_WORDS[m.when]}` : ''}`;
+  const when = m.when === undefined ? [] : typeof m.when === 'string' ? [m.when] : m.when;
+  return `${amount} ${what}${when.map((c) => ` ${CONDITION_WORDS[c]}`).join(',')}`;
 }
 
 /** `picks[t]`: 0 (A), 1 (B) or -1; tiers must be bought in order, so picks stop at the first -1. */
@@ -96,6 +127,9 @@ export function loadoutDeck(classId: ClassId, picks: ArrayLike<number>, statLeve
   const charge = cls.quirk === 'chargeShot' ? 3 : 1;
   const rows: DeckRow[] = [
     { id: 'hull', group: 'Hull', label: 'Max hull', value: ship.maxHull, neutral: -1, unit: '', better: 'higher' },
+    { id: 'shield', group: 'Hull', label: 'Energy shield', value: ship.maxShield, neutral: -1, unit: '', better: 'higher' },
+    { id: 'armor', group: 'Hull', label: 'Armor (flank)', value: v('armor', cls.armor), neutral: -1, unit: '', better: 'higher' },
+    { id: 'bow', group: 'Hull', label: 'Armor (bow)', value: v('armor', cls.armor) * (1 + v('bowArmor', ARMOR.bowBonus)), neutral: -1, unit: '', better: 'higher' },
     { id: 'taken', group: 'Hull', label: 'Damage taken', value: v('damageTaken', 1), neutral: 1, unit: '×', better: 'lower' },
     { id: 'regen', group: 'Hull', label: 'Hull regen', value: v('hullRegen', 1), neutral: 1, unit: '×', better: 'higher' },
     { id: 'speed', group: 'Hull', label: 'Top speed', value: v('speed', cls.speed), neutral: -1, unit: 'u/s', better: 'higher' },
@@ -103,6 +137,8 @@ export function loadoutDeck(classId: ClassId, picks: ArrayLike<number>, statLeve
     { id: 'shot', group: 'Guns', label: 'Damage per shot', value: damage * charge, neutral: -1, unit: '', better: 'higher' },
     { id: 'barrels', group: 'Guns', label: 'Barrels', value: barrels, neutral: -1, unit: '', better: 'higher' },
     { id: 'rate', group: 'Guns', label: 'Shots per second', value: 1 / interval, neutral: -1, unit: '/s', better: 'higher' },
+    { id: 'ap', group: 'Guns', label: 'Caliber (AP)', value: v('ap', g.ap ?? 0), neutral: -1, unit: '', better: 'higher' },
+    { id: 'turrets', group: 'Guns', label: 'Secondary turrets', value: cls.secondary ? cls.secondary.count + Math.round(v('secondaryCount', 0)) : 0, neutral: 0, unit: '', better: 'higher' },
     { id: 'range', group: 'Guns', label: 'Gun range', value: g.projectileSpeed * g.life * v('range', 1), neutral: -1, unit: 'u', better: 'higher' },
     { id: 'crit', group: 'Guns', label: 'Crit chance', value: v('critChance', 0) * 100, neutral: 0, unit: '%', better: 'higher' },
     { id: 'critMul', group: 'Guns', label: 'Crit damage', value: v('critMul', 0), neutral: 0, unit: '×', better: 'higher' },

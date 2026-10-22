@@ -3,10 +3,10 @@ import { CLASS_ORDER } from '../content/classes/index';
 import { PATROL_CRAFT } from '../content/classes/patrol';
 import { QUIRK_PARAMS } from '../content/quirks';
 import type { AbilityDef } from '../content/types';
-import { duelWorld, place } from '../test-utils';
+import { duelWorld, noShields, place } from '../test-utils';
 import { step } from './step';
 import { PRIMITIVES, shipCaster, tryCast } from './systems/abilities';
-import { damageShip } from './systems/combat';
+import { ARC_BOW, armorMul, damageShip, shipArmor } from './systems/combat';
 import { buyTier, grantXp } from './systems/progression';
 import { CHARGE, momentumLevel, quirkGauge } from './systems/quirks';
 import { applyStatus, hasStatus, tickStatuses } from './systems/status';
@@ -54,6 +54,7 @@ describe('primitives', () => {
 
   it('projectiles: spawns count × projectiles that hit an enemy in their path', () => {
     const { w, a, b } = duelWorld();
+    noShields(w, b);
     PRIMITIVES.projectiles(w, shipCaster(a, -1), { kind: 'projectiles', gun: { count: 3, spread: 0.2, damage: 20 } });
     expect(w.projectiles.count).toBe(3);
     for (let i = 0; i < 30; i++) step(w);
@@ -63,6 +64,7 @@ describe('primitives', () => {
 
   it('beam: instantly hits everything on the line', () => {
     const { w, a, b } = duelWorld();
+    noShields(w, b);
     PRIMITIVES.beam(w, shipCaster(a, -1), { kind: 'beam', length: 1000, width: 40, count: 1, spread: 0, damage: 50 });
     expect(b.maxHull - b.hull).toBeCloseTo(50);
   });
@@ -70,6 +72,7 @@ describe('primitives', () => {
   it('pulse: damages enemies and heals allies in radius', () => {
     const { w, a, b } = duelWorld();
     place(w, b, a.x + 200, a.y, 0);
+    noShields(w, b);
     PRIMITIVES.pulse(w, shipCaster(a, -1), { kind: 'pulse', radius: 300, damage: 30, affects: ['enemies'] });
     expect(b.maxHull - b.hull).toBeCloseTo(30);
     a.hull = 50;
@@ -87,6 +90,7 @@ describe('primitives', () => {
     const { w, a, b } = duelWorld();
     a.input.cursorX = b.x;
     a.input.cursorY = b.y;
+    noShields(w, b);
     PRIMITIVES.zone(w, shipCaster(a, -1), { kind: 'zone', at: 'cursor', radius: 200, duration: 2, perSecond: { damage: 30 }, affects: ['enemies'] });
     for (let i = 0; i < 30 * 3; i++) step(w);
     expect(b.maxHull - b.hull).toBeGreaterThan(55);
@@ -98,6 +102,7 @@ describe('primitives', () => {
     const { w, a, b } = duelWorld();
     a.input.cursorX = b.x;
     a.input.cursorY = b.y;
+    noShields(w, b);
     PRIMITIVES.strike(w, shipCaster(a, -1), { kind: 'strike', delay: 1, radius: 300, damage: 80 });
     for (let i = 0; i < 25; i++) step(w);
     expect(b.hull).toBe(b.maxHull);
@@ -141,6 +146,7 @@ describe('statuses', () => {
   it('bleed deals its magnitude per second', () => {
     const { w, a, b } = duelWorld();
     a.lastHitBy = b.slot;
+    noShields(w, a);
     applyStatus(w, a, { status: 'bleed', duration: 3, magnitude: 10 });
     for (let i = 0; i < 30 * 3 + 2; i++) step(w);
     expect(a.maxHull - a.hull).toBeCloseTo(30, 0);
@@ -159,14 +165,15 @@ describe('Patrol Craft', () => {
     expect(a.signature.cooldown).toBeCloseTo(PATROL_CRAFT.signature.cooldown - DT, 5);
   });
 
-  it('gun: twin barrels deal 100 DPS against a stationary target', () => {
+  it('gun: twin 20mm pulse lasers deal 88 DPS against a stationary target (22 AP fully penetrates a patrol bow)', () => {
     const { w, a, b } = duelWorld();
+    noShields(w, b);
     b.hull = b.maxHull = 1e6;
     a.input.fire = true;
     for (let i = 0; i < 30 * 5; i++) step(w);
     const dps = (b.maxHull - b.hull) / 5;
-    expect(dps).toBeGreaterThan(85); // the first 0.6 s are bolts in flight
-    expect(dps).toBeLessThan(110);
+    expect(dps).toBeGreaterThan(75); // the first 0.6 s are bolts in flight
+    expect(dps).toBeLessThan(95);
   });
 
   it('momentum: builds after going straight, resets on a sharp turn and on a hit', () => {
@@ -190,13 +197,16 @@ describe('Patrol Craft', () => {
 describe('class quirks', () => {
   it('Dreadnought: holding fire charges, releasing fires a full-charge shot for 3×', () => {
     const { w, a, b } = duelWorld(1, 'dreadnought');
+    noShields(w, b);
     b.hull = b.maxHull = 1e6;
     a.input.fire = true;
     for (let i = 0; i < 30 * 2; i++) step(w);
     expect(a.quirk[CHARGE]).toBe(1);
     a.input.fire = false;
     for (let i = 0; i < 30; i++) step(w);
-    expect(b.maxHull - b.hull).toBeGreaterThanOrEqual(a.cls.gun.damage * QUIRK_PARAMS.chargeShot.fullChargeMul * 0.99);
+    // 135 AP against a dreadnought's 137.5 bow armor lands ~99% of the ×3 slug.
+    const expected = a.cls.gun.damage * QUIRK_PARAMS.chargeShot.fullChargeMul * armorMul(a.cls.gun.ap!, shipArmor(w, b, ARC_BOW), false);
+    expect(b.maxHull - b.hull).toBeGreaterThanOrEqual(expected * 0.99);
   });
 
   it('Battleship: sustained fire builds heat until the guns lock', () => {

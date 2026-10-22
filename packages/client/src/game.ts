@@ -1,7 +1,7 @@
 import { CLASS_ORDER, COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo, type SeatId } from '@void-front/shared';
 import type { ShipArtMode } from './art/referenceShips';
 import { Hud } from './hud/hud';
-import { Input, type ControlScheme, type ThrottleMode } from './input';
+import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
 import { Renderer } from './render/renderer';
 import { carryEvents, Snap } from './snap';
@@ -13,7 +13,8 @@ export interface GameOptions {
   lighting: boolean;
   shipArt?: ShipArtMode;
   derivedNormals?: boolean;
-  throttle: ThrottleMode;
+  /** Team Palette: fly for Cobalt (0, west) or Ember (1, east). */
+  team?: 0 | 1;
 }
 
 /** Commander camera pan speed in screen pixels per second, and the screen-edge pan band. */
@@ -45,7 +46,7 @@ export class Game {
     } catch {
       /* storage unavailable */
     }
-    this.hud = new Hud(hudRoot, this.opts.scheme, this.opts.throttle, {
+    this.hud = new Hud(hudRoot, this.opts.scheme, {
       stat: (i) => this.send({ type: 'stat', index: i }),
       tier: (o) => this.send({ type: 'tier', option: o }),
       pickClass: (choice) => this.send({ type: 'pickClass', choice }),
@@ -56,13 +57,14 @@ export class Game {
       minimap: (x, y) => this.onMinimap(x, y),
       restart: () => this.restart(),
     });
-    this.input = new Input(this.opts.scheme, this.opts.throttle, {
+    this.input = new Input(this.opts.scheme, {
       stat: (i) => this.mode() === 'pilot' && this.send({ type: 'stat', index: i }),
       digit: (n) => this.onDigit(n),
       scoreboard: (show) => this.hud.showScoreboard(show, this.curr),
       bigMap: () => this.hud.toggleMap(),
       autofire: (on) => this.hud.setAutofire(on),
       press: (x, y, button) => this.onPress(x, y, button),
+      // v2: the wheel is the signed throttle while flying; Ctrl + wheel (or - / =) zooms.
       wheel: (dy, x, y, zoom) => {
         if (this.mode() === 'commander') this.renderer.zoomAt(dy < 0 ? 1.15 : 1 / 1.15, x, y);
         else if (zoom) this.setPilotZoom(this.renderer.pilotZoom * (dy < 0 ? 1.1 : 1 / 1.1));
@@ -104,7 +106,7 @@ export class Game {
     this.prev = this.curr = null;
     this.hud.pendingOrder = null;
     // Client-side seed choice is fine: the sim itself only ever sees the number.
-    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty });
+    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty, team: this.opts.team ?? 0 });
   }
 
   /** What the local player is doing right now. */
@@ -125,6 +127,8 @@ export class Game {
       else if (n >= 10 && n <= 12) this.send({ type: 'pickSeat', seat: (n - 10) as SeatId });
     } else if (mode === 'pilot') {
       if ((n === 1 || n === 2) && this.curr && this.hud.tierReady(this.curr)) this.send({ type: 'tier', option: n - 1 });
+      // - and = zoom the camera out and in.
+      else if (n === 11 || n === 12) this.setPilotZoom(this.renderer.pilotZoom * (n === 12 ? 1.1 : 1 / 1.1));
     } else {
       const id = this.hud.visibleOrders[n - 1];
       if (id) this.armOrder(id);
@@ -215,7 +219,13 @@ export class Game {
     this.renderer.render(this.prev, curr, now, myTeam);
     this.hud.update(curr, now, this.fps, this.simMs);
     this.hud.setBraking(this.input.braking);
-    this.hud.setThrottle(this.input.throttle);
+    // The reverse ceiling comes from the ship's nodes (−40% base, −55% max).
+    const reverseMax = curr.buf[curr.o.self + SELF.reverseMax];
+    if (reverseMax > 0) {
+      this.input.reverseMax = reverseMax;
+      if (this.input.throttle < -reverseMax) this.input.throttle = -Math.round(reverseMax * 10) / 10;
+    }
+    this.hud.setThrottle(this.input.throttle, this.input.reverseMax);
 
     const alive = (curr.buf[me + SHIP.flags] & SHIP_FLAG.alive) !== 0;
     if (mode === 'pilot' && alive && curr.buf[H.over] !== 1) {

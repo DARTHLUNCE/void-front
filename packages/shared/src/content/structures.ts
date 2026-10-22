@@ -1,4 +1,4 @@
-import type { DeployKind, DroneBehavior, DroneStats, StructureDef } from './types';
+import type { DeployKind, DroneBehavior, DroneStats, StatusApply, StructureDef } from './types';
 
 /**
  * Capture-point nodes: an asteroid with a building. A held node has hull; the enemy must destroy
@@ -6,42 +6,54 @@ import type { DeployKind, DroneBehavior, DroneStats, StructureDef } from './type
  */
 export const NODE = {
   hull: 6_000,
-  /** Hit radius of the asteroid (the capture zone is POINTS.radius). */
+  /** Hit radius of the asteroid (the capture zone is POINTS.radius). Solid to ships and every shot. */
   radius: 110,
+  /** v2: Armor Rating of the rock. */
+  armor: 65,
+  /** v2: bots orbit this far outside the rock (plus their own radius) while capturing. */
+  standOff: 90,
+  /** v2: Node Citadel / Fortress defense turrets mounted on a fortified node. */
+  turret: { range: 700, damage: 16, interval: 0.25, projectileSpeed: 1500, size: 5, ap: 70 },
   lockout: 20,
   /** Self-repair, fraction of hull per second, after `regenDelay` s without damage. */
   regen: 0.005,
   regenDelay: 8,
 } as const;
 
+/** The Fleet Titan (v2: 520 u, twin capital turrets at four corners). */
 export const MOTHERSHIP: StructureDef = {
   id: 'mothership',
   hull: 60_000,
-  radius: 280,
+  radius: 520,
   turrets: {
     offsets: [
-      { x: 170, y: -170 },
-      { x: 170, y: 170 },
-      { x: -170, y: -170 },
-      { x: -170, y: 170 },
+      { x: 320, y: -320 },
+      { x: 320, y: 320 },
+      { x: -320, y: -320 },
+      { x: -320, y: 320 },
     ],
-    range: 900,
-    damage: 22,
+    // v2: capital guns reach 860–1,450 u, so base turrets out-range them.
+    range: 1600,
+    damage: 40,
     interval: 0.24,
-    projectileSpeed: 1400,
-    size: 6,
+    projectileSpeed: 1500,
+    size: 7,
+    ap: 160,
+    barrels: 2,
   },
-  healRadius: 600,
+  healRadius: 1050,
   healPerSecond: 0.07,
-  vision: 2500,
+  vision: 2800,
+  armor: 110,
 };
 
 /** Deployable structures: engineer kit and commander call-ins. */
 export interface DeployableDef {
   hull: number;
   radius: number;
-  turret?: { range: number; damage: number; interval: number; projectileSpeed: number; size: number };
-  mine?: { trigger: number; damage: number; radius: number };
+  turret?: { range: number; damage: number; interval: number; projectileSpeed: number; size: number; ap?: number };
+  /** v2: `status` is applied to ships caught in the blast (Magnetic Anchor Mines). */
+  mine?: { trigger: number; damage: number; radius: number; status?: StatusApply };
   emitter?: { radius: number; shield: number };
   /** Ships of this team may respawn here. */
   respawn?: boolean;
@@ -49,25 +61,26 @@ export interface DeployableDef {
 }
 
 export const DEPLOYABLES: Record<DeployKind, DeployableDef> = {
-  turret: { hull: 250, radius: 14, turret: { range: 600, damage: 10, interval: 0.25, projectileSpeed: 1100, size: 4 }, vision: 900 },
-  mine: { hull: 20, radius: 8, mine: { trigger: 70, damage: 90, radius: 110 }, vision: 0 },
+  turret: { hull: 250, radius: 18, turret: { range: 650, damage: 12, interval: 0.25, projectileSpeed: 1300, size: 4, ap: 55 }, vision: 900 },
+  // v2: Magnetic Anchor Mines also drain the victim's Reactor Power to 33% for 3 s.
+  mine: { hull: 20, radius: 10, mine: { trigger: 90, damage: 85, radius: 120, status: { status: 'powerDrain', duration: 3 } }, vision: 0 },
   emitter: { hull: 300, radius: 14, emitter: { radius: 300, shield: 0.3 }, vision: 600 },
   beacon: { hull: 1500, radius: 34, respawn: true, vision: 1_400 },
-  platform: { hull: 2500, radius: 40, turret: { range: 800, damage: 18, interval: 0.3, projectileSpeed: 1300, size: 6 }, vision: 1_400 },
+  platform: { hull: 2500, radius: 48, turret: { range: 850, damage: 18, interval: 0.3, projectileSpeed: 1400, size: 6, ap: 70 }, vision: 1_400 },
 };
 
 /** Drone stats by behavior. Orbit drones (Drone Bay) also scale with the owner's tier. */
 export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
-  orbit: { hull: 40, damage: 6, fireInterval: 0.3, speed: 380, range: 420, splash: 0, structureMul: 1, lifesteal: 0, radius: 8 },
-  swarm: { hull: 30, damage: 6, fireInterval: 0.25, speed: 420, range: 380, splash: 0, structureMul: 1, lifesteal: 0, radius: 7 },
-  guard: { hull: 140, damage: 9, fireInterval: 0.3, speed: 300, range: 650, splash: 0, structureMul: 1, lifesteal: 0, radius: 11 },
-  decoy: { hull: 30, damage: 0, fireInterval: 1, speed: 330, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 17 },
+  orbit: { hull: 60, damage: 7, fireInterval: 0.3, speed: 380, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 10, ap: 25 },
+  swarm: { hull: 40, damage: 6, fireInterval: 0.25, speed: 420, range: 400, splash: 0, structureMul: 1, lifesteal: 0, radius: 9, ap: 22 },
+  guard: { hull: 160, damage: 9, fireInterval: 0.3, speed: 300, range: 650, splash: 0, structureMul: 1, lifesteal: 0, radius: 13, ap: 40 },
+  decoy: { hull: 40, damage: 0, fireInterval: 1, speed: 330, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 28 },
   // Commander wings: bombers hit structures and nodes, interceptors hunt drones then ships, fighters
   // dogfight ships, defenders (guard) hold a spot, recon spots.
-  bomber: { hull: 160, damage: 45, fireInterval: 1.4, speed: 250, range: 480, splash: 140, structureMul: 3, lifesteal: 0, radius: 13 },
-  interceptor: { hull: 80, damage: 8, fireInterval: 0.2, speed: 540, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 9 },
-  recon: { hull: 60, damage: 0, fireInterval: 1, speed: 420, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 9, vision: 1_600 },
-  fighter: { hull: 120, damage: 11, fireInterval: 0.28, speed: 430, range: 520, splash: 0, structureMul: 1, lifesteal: 0, radius: 10 },
+  bomber: { hull: 160, damage: 45, fireInterval: 1.4, speed: 250, range: 480, splash: 140, structureMul: 3, lifesteal: 0, radius: 15, ap: 90 },
+  interceptor: { hull: 80, damage: 8, fireInterval: 0.2, speed: 540, range: 460, splash: 0, structureMul: 1, lifesteal: 0, radius: 11, ap: 30 },
+  recon: { hull: 60, damage: 0, fireInterval: 1, speed: 420, range: 0, splash: 0, structureMul: 1, lifesteal: 0, radius: 11, vision: 1_600 },
+  fighter: { hull: 120, damage: 11, fireInterval: 0.28, speed: 430, range: 520, splash: 0, structureMul: 1, lifesteal: 0, radius: 12, ap: 35 },
 };
 
 /** Commander wings launch from a base and fly to their target; their timer runs only once they arrive. */
@@ -94,19 +107,22 @@ export const FOB_SPAWN_BLOCK = 10;
 export const FOB: StructureDef = {
   id: 'fob',
   hull: 36_000,
-  radius: 170,
+  radius: 320,
   turrets: {
     offsets: [
-      { x: 0, y: -110 },
-      { x: 0, y: 110 },
+      { x: 0, y: -210 },
+      { x: 0, y: 210 },
     ],
-    range: 750,
-    damage: 22,
+    range: 1300,
+    damage: 32,
     interval: 0.24,
-    projectileSpeed: 1300,
-    size: 5,
+    projectileSpeed: 1400,
+    size: 6,
+    ap: 130,
+    barrels: 2,
   },
-  healRadius: 600,
+  healRadius: 800,
   healPerSecond: 0.05,
-  vision: 2500,
+  vision: 2600,
+  armor: 95,
 };

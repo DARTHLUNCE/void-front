@@ -1,5 +1,5 @@
-import { tickAbility, tryCast } from './systems/abilities';
-import { aimAndFire, damageShip, stepProjectiles } from './systems/combat';
+import { tickAbility, tickBurst, tryCast } from './systems/abilities';
+import { aimAndFire, damageShip, fireSecondaries, stepProjectiles } from './systems/combat';
 import { buyUpgrade, issueCommand, issuePing } from './systems/command';
 import { collectCrystals, rebuildCrystalHash, seedCrystals, spawnCrystals } from './systems/crystals';
 import { runDirectors } from './systems/director';
@@ -7,10 +7,11 @@ import { countOwnedDrones, rebuildDroneHash, stepDrones } from './systems/drones
 import { updateMatch } from './systems/match';
 import { applyAuras, moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
 import { botAim, steer, think } from './systems/pilot';
+import { switchPower, updateShields } from './systems/power';
 import { updatePoints } from './systems/points';
 import { buyStat, buyTier, processRespawns, regenHull, resolveDeaths, respawnShip } from './systems/progression';
 import { quirkOf } from './systems/quirks';
-import { fireTurrets, structureAuras } from './systems/structures';
+import { fireNodeTurrets, fireTurrets, structureAuras } from './systems/structures';
 import { statusMagnitude, tickStatuses } from './systems/status';
 import { updateVision, VISION_EVERY } from './systems/vision';
 import { stepDeployables, stepZones } from './systems/zones';
@@ -47,6 +48,10 @@ export function step(w: World): void {
       buyTier(w, s, inp.tierPick);
       inp.tierPick = -1;
     }
+    if (inp.power >= 0) {
+      if (s.alive) switchPower(w, s, inp.power);
+      inp.power = -1;
+    }
   }
   for (const order of w.pendingOrders.splice(0)) issueCommand(w, order);
   for (const ping of w.pendingPings.splice(0)) issuePing(w, ping.team, ping.x, ping.y);
@@ -63,11 +68,14 @@ export function step(w: World): void {
   resolveCollisions(w);
   rebuildDroneHash(w);
 
-  // 3. Only now aim, fire and use abilities (fairness rule: all ships have moved).
+  // 3. Only now aim, fire primaries and secondary auto-turrets, and use abilities (fairness
+  //    rule: all ships have moved).
   for (const s of w.ships) {
     if (!s.alive) continue;
     if (s.bot) botAim(w, s);
     aimAndFire(w, s);
+    fireSecondaries(w, s);
+    tickBurst(w, s);
     const inp = s.input;
     if (inp.cruise) continue;
     const target = s.bot ? s.bot.targetShip : -1;
@@ -76,6 +84,7 @@ export function step(w: World): void {
     if (inp.extra && s.extra) tryCast(w, s, s.extra, target);
   }
   fireTurrets(w);
+  fireNodeTurrets(w);
   stepDeployables(w);
 
   // 4. Projectiles, drones, zones and strikes.
@@ -89,6 +98,7 @@ export function step(w: World): void {
     if (!s.alive) continue;
     tickStatuses(w, s, DT);
     bleed(w, s);
+    updateShields(w, s, DT);
     regenHull(w, s, DT, drones[s.slot]);
     tickAbility(w, s, s.signature);
     tickAbility(w, s, s.ultimate);

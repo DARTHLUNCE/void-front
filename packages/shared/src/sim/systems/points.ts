@@ -5,6 +5,7 @@ import { QUIRK_PARAMS } from '../../content/quirks';
 import { NODE } from '../../content/structures';
 import type { StatId, TeamId } from '../../content/types';
 import { DT, EventType, type PointState, type World } from '../world';
+import { armorMul } from './combat';
 import { grantXp } from './progression';
 import { hasStatus } from './status';
 
@@ -49,6 +50,12 @@ export function nextIncomeIn(w: World): number {
 }
 
 function capture(w: World, p: PointState): void {
+  // A Node Citadel's doubled hull reverts when it lapses.
+  if (p.fortifyUntil > 0 && w.time >= p.fortifyUntil) {
+    p.fortifyUntil = -1;
+    p.maxHull = NODE.hull;
+    p.hull = Math.min(p.hull, p.maxHull);
+  }
   const r = POINTS.radius;
   const n = w.shipHash.query(p.x, p.y, r + 40, w.scratch);
   const weight = [0, 0];
@@ -118,9 +125,15 @@ function flip(w: World, p: PointState, team: TeamId): void {
   w.emit(EventType.PointFlip, p.index, team, p.x, p.y);
 }
 
-/** Damage a held node. At 0 hull it falls neutral and locks out capture for NODE.lockout s. */
-export function damageNode(w: World, p: PointState, amount: number, team: TeamId, attackerSlot: number): number {
+/** Armor Rating of a node: the rock plus any Node Bastion fortification. */
+export function nodeArmor(w: World, p: PointState): number {
+  return NODE.armor + (w.time < p.armorUntil ? p.armorBonus : 0);
+}
+
+/** Damage a held node (caliber vs. node armor). At 0 hull it falls neutral and locks out capture for NODE.lockout s. */
+export function damageNode(w: World, p: PointState, amount: number, team: TeamId, attackerSlot: number, ap = Infinity): number {
   if (p.owner < 0 || p.owner === team || amount <= 0) return 0;
+  amount *= armorMul(ap, nodeArmor(w, p), true);
   const dealt = Math.min(amount, p.hull);
   p.hull -= amount;
   p.lastDamageTime = w.time;
@@ -131,6 +144,10 @@ export function damageNode(w: World, p: PointState, amount: number, team: TeamId
     p.owner = -1;
     p.meter = 0;
     p.lockedUntil = w.time + NODE.lockout;
+    // A wrecked node loses its fortifications.
+    p.turrets = 0;
+    p.turretUntil = p.respawnUntil = p.armorUntil = p.fortifyUntil = -1;
+    p.maxHull = NODE.hull;
     w.stats.nodesDestroyed++;
     if (attacker) grantXp(w, attacker, ECONOMY.xp.nodeDestroy);
     w.emit(EventType.NodeDestroyed, p.index, team, p.x, p.y, attackerSlot);
@@ -158,8 +175,8 @@ export function inOwnedPoint(w: World, team: TeamId, x: number, y: number): bool
 }
 
 /** Area damage to enemy-held nodes whose asteroid overlaps the circle (strikes, splash, bombs). */
-export function damageNodesInRadius(w: World, team: TeamId, x: number, y: number, radius: number, amount: number, attackerSlot: number): void {
+export function damageNodesInRadius(w: World, team: TeamId, x: number, y: number, radius: number, amount: number, attackerSlot: number, ap = Infinity): void {
   for (const p of w.points) {
-    if (p.owner >= 0 && p.owner !== team && (p.x - x) ** 2 + (p.y - y) ** 2 <= (radius + NODE.radius) ** 2) damageNode(w, p, amount, team, attackerSlot);
+    if (p.owner >= 0 && p.owner !== team && (p.x - x) ** 2 + (p.y - y) ** 2 <= (radius + NODE.radius) ** 2) damageNode(w, p, amount, team, attackerSlot, ap);
   }
 }

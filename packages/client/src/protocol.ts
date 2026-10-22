@@ -14,10 +14,15 @@ export interface InputFrame {
   cruise: boolean;
   brake: boolean;
   steerWithAim: boolean;
+  /** v2: signed throttle (−reverse ceiling … 1). */
+  throttle: number;
+  /** v2: one-shot Reactor Power switch (POWER_INDEX) or -1. */
+  power: number;
 }
 
 export type ToWorker =
-  | { type: 'start'; seed: number; fleet: number; difficulty: BotDifficulty }
+  /** `team`: which side the player flies for (Team Palette; Cobalt when omitted). */
+  | { type: 'start'; seed: number; fleet: number; difficulty: BotDifficulty; team?: 0 | 1 }
   | { type: 'input'; input: InputFrame }
   /** Class picker: a ship class. */
   | { type: 'pickClass'; choice: ClassId }
@@ -42,4 +47,3 @@ export type FromWorker =
   | { type: 'commandResult'; id: CommandId; ok: boolean; reason: string }
   | { type: 'upgradeResult'; ok: boolean; reason: string };
 
-export const HUMAN_SLOT = 0;

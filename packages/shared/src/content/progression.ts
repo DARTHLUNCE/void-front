@@ -2,9 +2,9 @@ import type { ModifierDef } from './types';
 
 /**
  * The economy. Two currencies:
- * - Shards (from crystals and wreck loot) buy stat upgrades. Costs climb per level, and the
- *   upgrades reset when tier 3 swaps your hull. On death you keep 60% of unspent shards; the rest
- *   spills as loot. Spent shards are never lost.
+ * - Shards (from crystals and wreck loot) buy Shard Calibration levels (Weapons, Hull & Plating,
+ *   Engines, Reactor; 0–7 each). Costs climb per level; levels are kept for the whole match (v2:
+ *   no tier-3 reset). On death you keep 60% of unspent shards; the rest spills as loot.
  * - XP (from kills, damage, healing, capturing and defending points) buys tiers. XP is never lost.
  */
 export const ECONOMY = {
@@ -12,7 +12,7 @@ export const ECONOMY = {
   statCosts: [12, 18, 26, 36, 50, 68, 90] as readonly number[],
   /** XP to buy tier n+1 (index n). */
   tierCosts: [150, 350, 650, 1050, 1600] as readonly number[],
-  /** The tier that swaps the hull and resets stat upgrades. */
+  /** The tier that swaps the hull model (Shard Calibration levels carry over). */
   hullTier: 3,
   deathShardKeep: 0.6,
   /** Spilled shards drop as loot crystals worth this many shards each (the last one takes the rest). */
@@ -55,16 +55,36 @@ export interface StatPointDef {
   perPoint: ModifierDef[];
 }
 
+/** v2 Shard Calibration tracks (300 shards each to max). */
 export const STAT_POINTS: readonly StatPointDef[] = [
-  { id: 'weapons', name: 'Weapons', short: '+12% damage', perPoint: [{ stat: 'damage', op: 'mul', value: 0.12 }] },
-  { id: 'hull', name: 'Hull', short: '+15% hull', perPoint: [{ stat: 'maxHull', op: 'mul', value: 0.15 }] },
-  { id: 'engines', name: 'Engines', short: '+7% speed', perPoint: [{ stat: 'speed', op: 'mul', value: 0.07 }] },
+  {
+    id: 'weapons',
+    name: 'Weapons',
+    short: '+8% dmg, +2 AP',
+    perPoint: [
+      { stat: 'damage', op: 'mul', value: 0.08 },
+      { stat: 'ap', op: 'add', value: 2 },
+      { stat: 'secondaryAp', op: 'add', value: 2 },
+    ],
+  },
+  {
+    id: 'hull',
+    name: 'Hull & Plating',
+    short: '+15% hull & shield, +3 armor',
+    perPoint: [
+      { stat: 'maxHull', op: 'mul', value: 0.15 },
+      { stat: 'maxShield', op: 'mul', value: 0.15 },
+      { stat: 'armor', op: 'add', value: 3 },
+    ],
+  },
+  { id: 'engines', name: 'Engines', short: '+7% speed & reverse', perPoint: [{ stat: 'speed', op: 'mul', value: 0.07 }] },
   {
     id: 'reactor',
     name: 'Reactor',
-    short: '+6% fire rate, −5% cooldown',
+    short: '+6% fire rate & shield regen, −5% cooldown',
     perPoint: [
       { stat: 'fireRate', op: 'mul', value: 0.06 },
+      { stat: 'shieldRegen', op: 'mul', value: 0.06 },
       { stat: 'cooldown', op: 'mul', value: -0.05 },
     ],
   },

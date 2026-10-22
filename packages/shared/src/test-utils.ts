@@ -1,5 +1,6 @@
 import { createWorld } from './sim/step';
 import { rebuildShipHash } from './sim/systems/movement';
+import { applyStatus } from './sim/systems/status';
 import type { Ship, World } from './sim/world';
 import type { ClassId } from './content/types';
 
@@ -12,6 +13,14 @@ export function duelWorld(seed = 1, classId: ClassId = 'patrol'): { w: World; a:
   place(w, a, 10_000, 5_500, 0);
   place(w, b, 10_600, 5_500, Math.PI);
   return { w, a, b };
+}
+
+/** v2: take the energy shield out of the picture so a test can measure hull damage directly. */
+export function noShields(w: World, ...ships: Ship[]): void {
+  for (const s of ships) {
+    s.shield = 0;
+    applyStatus(w, s, { status: 'shieldsDown', duration: 1e9 });
+  }
 }
 
 export function place(w: World, s: Ship, x: number, y: number, angle: number): void {

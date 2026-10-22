@@ -5,6 +5,9 @@ import { STATUS_IDS } from '../content/statuses';
 import type { DeployKind, DroneBehavior } from '../content/types';
 import { TURRET_TYPES } from '../content/upgrades';
 import { abilityCooldown } from '../sim/systems/abilities';
+import { ARC_BOW, ARC_FLANK, ARC_STERN, gunFor, secondaryCount, shipArmor } from '../sim/systems/combat';
+import { reverseCeiling } from '../sim/systems/movement';
+import { powerLevels } from '../sim/systems/power';
 import { commandCost, seatCanIssue } from '../sim/systems/command';
 import { nextIncomeIn } from '../sim/systems/points';
 import { quirkGauge } from '../sim/systems/quirks';
@@ -20,10 +23,10 @@ export const SNAP = {
   self: 64,
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
-  ship: 18,
+  ship: 21,
   projectile: 8, // x, y, vx, vy, team, radius, flags, remaining lifetime
   crystal: 3,
-  point: 8,
+  point: 10,
   structure: 8,
   drone: 7,
   deployable: 6,
@@ -97,8 +100,12 @@ export const H = {
  * refit (TURRET_TYPES index), Shipyard and Plating levels, seconds left on an enemy EMP.
  */
 export const STRUCT = { hull: 0, maxHull: 1, alive: 2, shielded: 3, turretType: 4, shipyard: 5, plating: 6, emp: 7 } as const;
-/** Per node: meter, owner, contested, hot seconds left, pushing ×2, hull fraction, lockout seconds left. */
-export const POINT = { meter: 0, owner: 1, contested: 2, hot: 3, push0: 4, push1: 5, hull: 6, locked: 7 } as const;
+/**
+ * Per node: meter, owner, contested, hot seconds left, pushing ×2, hull fraction, lockout seconds
+ * left, fortification bits (POINT_FORT) and max hull (a Node Citadel doubles it).
+ */
+export const POINT = { meter: 0, owner: 1, contested: 2, hot: 3, push0: 4, push1: 5, hull: 6, locked: 7, fortify: 8, maxHull: 9 } as const;
+export const POINT_FORT = { armor: 1, turrets: 2, respawn: 4 } as const;
 
 /** Per-ability block inside SELF: cooldown, cooldown max, charges, max charges (max 0 = none). */
 export const ABILITY = { cooldown: 0, cooldownMax: 1, charges: 2, maxCharges: 3 } as const;
@@ -131,6 +138,18 @@ export const SELF = {
   alive: 40,
   /** Command seat (SeatId) or -1. */
   seat: 41,
+  /** v2: Reactor Power mode (POWER_INDEX) and live channel levels 0..1 (speed, weapons, shields). */
+  powerMode: 42,
+  powerSpeed: 43,
+  powerWeapons: 44,
+  powerShields: 45,
+  /** v2: reverse-throttle ceiling (0.4 base), effective armor per arc, primary caliber, secondary mounts. */
+  reverseMax: 46,
+  armorBow: 47,
+  armorFlank: 48,
+  armorStern: 49,
+  ap: 50,
+  turrets: 51,
 } as const;
 
 export const SHIP = {
@@ -153,10 +172,14 @@ export const SHIP = {
   quirkGauge: 15,
   thrustAngle: 16,
   enginePower: 17,
+  /** v2: energy shield, its live cap, Reactor Power mode. */
+  shield: 18,
+  maxShield: 19,
+  powerMode: 20,
 } as const;
 export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visible1: 16, human: 32, invulnerable: 64, retreating: 128, commander: 256, docked: 512 } as const;
 
-export const PROJ_FLAG = { structure: 1, crit: 2, missile: 4, heal: 8, drone: 16, fullCharge: 32 } as const;
+export const PROJ_FLAG = { structure: 1, crit: 2, missile: 4, heal: 8, drone: 16, fullCharge: 32, secondary: 64, own: 128 } as const;
 
 export const DRONE_BEHAVIORS: readonly DroneBehavior[] = ['orbit', 'swarm', 'guard', 'decoy', 'bomber', 'interceptor', 'recon', 'fighter'];
 export const DEPLOY_KINDS: readonly DeployKind[] = ['turret', 'mine', 'emitter', 'beacon', 'platform'];
@@ -238,7 +261,8 @@ function writeAbility(b: Float32Array, at: number, w: World, s: Ship, st: Abilit
 
 export function statusBits(s: Ship): number {
   let bits = 0;
-  for (let i = 0; i < STATUS_IDS.length; i++) if (s.statusTime[i] > 0) bits |= 1 << i;
+  // Float32 holds 24 bits exactly: only the first 24 statuses are sent (the rest are sim-only).
+  for (let i = 0; i < Math.min(24, STATUS_IDS.length); i++) if (s.statusTime[i] > 0) bits |= 1 << i;
   return bits;
 }
 
@@ -349,6 +373,19 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[s + SELF.xpEarned] = me.xpEarned;
     b[s + SELF.alive] = me.alive ? 1 : 0;
     b[s + SELF.seat] = me.commander ? me.seat : -1;
+    b[s + SELF.powerMode] = me.powerMode;
+    if (me.alive) {
+      const lv = powerLevels(w, me);
+      b[s + SELF.powerSpeed] = lv[0];
+      b[s + SELF.powerWeapons] = lv[1];
+      b[s + SELF.powerShields] = lv[2];
+      b[s + SELF.armorBow] = shipArmor(w, me, ARC_BOW);
+      b[s + SELF.armorFlank] = shipArmor(w, me, ARC_FLANK);
+      b[s + SELF.armorStern] = shipArmor(w, me, ARC_STERN);
+      b[s + SELF.ap] = gunFor(w, me).ap ?? 0;
+    }
+    b[s + SELF.reverseMax] = reverseCeiling(w, me);
+    b[s + SELF.turrets] = secondaryCount(w, me);
 
     // Fleet Command: per order, seconds until ready for our seat, the current (possibly
     // discounted) cost, and whether our seat may issue it.
@@ -371,6 +408,9 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + SHIP.angle] = s.angle;
     b[k + SHIP.thrustAngle] = s.thrustAngle;
     b[k + SHIP.enginePower] = Math.min(1, Math.hypot(s.engineForward, s.engineLateral) / (s.cls.speed * 3.2));
+    b[k + SHIP.shield] = s.shield;
+    b[k + SHIP.maxShield] = s.maxShield;
+    b[k + SHIP.powerMode] = s.powerMode;
     b[k + SHIP.hull] = s.hull;
     b[k + SHIP.maxHull] = s.maxHull;
     b[k + SHIP.rank] = s.rank;
@@ -412,6 +452,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     if (p.heal > 0) f |= PROJ_FLAG.heal;
     if (p.fromDrone) f |= PROJ_FLAG.drone;
     if (p.fullCharge) f |= PROJ_FLAG.fullCharge;
+    if (p.secondary) f |= PROJ_FLAG.secondary;
+    if (p.owner === selfSlot && selfSlot >= 0) f |= PROJ_FLAG.own;
     b[k + 6] = f;
     b[k + 7] = p.life;
     k += SNAP.projectile;
@@ -436,6 +478,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 5] = p.pushing[1];
     b[k + 6] = p.owner >= 0 ? p.hull / p.maxHull : 0;
     b[k + 7] = Math.max(0, p.lockedUntil - w.time);
+    b[k + POINT.fortify] = (w.time < p.armorUntil ? POINT_FORT.armor : 0) | (p.turrets > 0 && w.time < p.turretUntil ? POINT_FORT.turrets : 0) | (w.time < p.respawnUntil ? POINT_FORT.respawn : 0);
+    b[k + POINT.maxHull] = p.maxHull;
     k += SNAP.point;
   }
 

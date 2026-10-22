@@ -7,8 +7,9 @@ export const DIRECTOR = {
   /** The opening minutes are for taking nodes; the first push waits until then. */
   firstPushMin: 300,
   firstPushMax: 360,
-  pushIntervalMin: 110,
-  pushIntervalMax: 150,
+  /** v2: tankier hulls make each push hit harder, so waves come further apart. */
+  pushIntervalMin: 160,
+  pushIntervalMax: 210,
   pushDuration: 30,
   /** Longest a push waits at its staging point; it goes early once `stageReadyFrac` of the wave is there. */
   pushGather: 60,
@@ -63,8 +64,9 @@ export const BOT_SKILL: Record<BotDifficulty, BotSkill> = {
 };
 
 export const PILOT = {
-  engageRadius: 800,
-  assaultEngageRadius: 700,
+  /** v2: guns reach 700–1,450 u, so bots pick fights from further out. */
+  engageRadius: 950,
+  assaultEngageRadius: 800,
   cruiseClearRadius: 2_000,
   assaultCruiseClear: 900,
   cruiseMinDistance: 1_600,

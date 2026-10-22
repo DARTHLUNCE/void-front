@@ -15,6 +15,7 @@ import {
   MOTHERSHIP,
   NODE,
   POINT,
+  POINT_FORT,
   POINTS,
   PROJ_FLAG,
   SHIP,
@@ -27,6 +28,7 @@ import {
   type MatchInfo,
 } from '@void-front/shared';
 import { loadReferenceShips, type ShipArtMode } from '../art/referenceShips';
+import { loadCosmetics } from '../cosmetics';
 import { HULL_BY_ID, type HullArt } from '../art/hulls';
 import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
@@ -38,14 +40,15 @@ export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
 const VIEW_W = 1650;
 const VIEW_ASPECT = 937.5 / 1650;
 /** Long guns need to see their targets: frame ~1.9× the gun's reach plus margin, up to this. */
-const VIEW_W_MAX = 3000;
+const VIEW_W_MAX = 3400;
 
 /** World units the pilot camera shows across for a hull class (index into CLASS_ORDER). */
 export function viewWidthFor(classIndex: number): number {
   const cls = CLASSES[CLASS_ORDER[classIndex]];
   if (!cls) return VIEW_W;
   const reach = cls.gun.projectileSpeed * cls.gun.life;
-  return Math.min(VIEW_W_MAX, Math.max(VIEW_W, reach * 1.9 + 300));
+  // v2 hulls run up to 155 u: big ships also need room around their own silhouette.
+  return Math.min(VIEW_W_MAX, Math.max(VIEW_W, reach * 1.9 + 300, cls.radius * 16));
 }
 const LABEL_RANGE = 1200;
 const PARTICLE_CAP = 2000;
@@ -233,6 +236,9 @@ export class Renderer {
   /** Order waiting for a click (draws its footprint at the cursor). */
   pendingOrder: CommandId | null = null;
   private readonly cursor = { x: 0, y: 0 };
+
+  /** Drydock cosmetics for your own ship and shots. */
+  private readonly cosmetics = loadCosmetics();
 
   constructor(private readonly lightingOn = true, private readonly shipArt: ShipArtMode = 'original', private readonly derivedNormals = true) {}
 
@@ -569,14 +575,16 @@ export class Renderer {
       const s = this.tex.assets[id] ? this.assetPool(id, team, this.shotLayer).next() : this.shots.next(heavy ? this.tex.shell[team] : this.tex.bolt[team]);
       s.position.set(x, y);
       s.rotation = Math.atan2(b[k + 3], b[k + 2]);
-      // Nanite rounds read green; crits and full-charge rail shots are bigger and white-hot.
-      s.tint = f & PROJ_FLAG.heal ? 0x8dffc0 : f & (PROJ_FLAG.crit | PROJ_FLAG.fullCharge) ? 0xffffff : 0xffffff;
-      const size = f & PROJ_FLAG.fullCharge ? 2.2 : f & PROJ_FLAG.crit ? 1.5 : f & PROJ_FLAG.drone ? 0.7 : Math.max(0.8, b[k + 5] / 5);
+      // Nanite rounds read green; your own bolts take the Drydock color; crits and full-charge rail
+      // shots are bigger and white-hot; secondary-turret tracers are small.
+      const ownTint = f & PROJ_FLAG.own && this.cosmetics.bolt >= 0 && !(f & PROJ_FLAG.heal) ? this.cosmetics.bolt : -1;
+      s.tint = f & PROJ_FLAG.heal ? 0x8dffc0 : ownTint >= 0 ? ownTint : 0xffffff;
+      const size = f & PROJ_FLAG.fullCharge ? 2.2 : f & PROJ_FLAG.crit ? 1.5 : f & (PROJ_FLAG.drone | PROJ_FLAG.secondary) ? 0.65 : Math.max(0.8, b[k + 5] / 5);
       // Match lifetime to the interpolated position, then burn out over the last 220 ms.
       const remaining = Math.max(0, b[k + 7] + back);
       const burn = Math.min(1, remaining / 0.22);
       const fade = burn * burn * (3 - 2 * burn);
-      const color = f & PROJ_FLAG.heal ? 0x3fd08a : LIGHT.bolt[team];
+      const color = f & PROJ_FLAG.heal ? 0x3fd08a : ownTint >= 0 ? ownTint : LIGHT.bolt[team];
       s.alpha = fade;
       s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
       this.light(x, y, heavy ? 12 : 8 * size, color, fade);
@@ -648,10 +656,11 @@ export class Renderer {
       const s = this.hullPool(art.id, team).next();
       s.position.set(x, y);
       s.rotation = rot;
+      const radius = CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.radius ?? 20;
       if (isMe) {
         // 4-bracket industrial HUD targeting reticle around the player's ship
-        const br = 36;
-        const bl = 11;
+        const br = radius * 1.45 + 14;
+        const bl = Math.max(11, radius * 0.35);
         for (const sx of [-1, 1]) {
           for (const sy of [-1, 1]) {
             bars
@@ -678,7 +687,7 @@ export class Renderer {
         const hullScale = isMe ? 1.15 : 1;
         f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
         f.rotation = rot + exhaustGimbal;
-        f.tint = team === 0 ? 0x7df9ff : 0xffc061;
+        f.tint = isMe && this.cosmetics.engine >= 0 ? this.cosmetics.engine : team === 0 ? 0x7df9ff : 0xffc061;
         f.alpha = 0.55 + 0.35 * thrust;
         f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
         this.light(f.position.x, f.position.y, e.r * (0.9 + thrust * 0.7), LIGHT.engine[team]);
@@ -688,12 +697,18 @@ export class Renderer {
       if (cloaked) glow.alpha *= 0.3;
       this.statusFx(bars, x, y, status, now);
 
-      // Segmented industrial hull bar for anyone damaged, plus us always.
+      // Segmented industrial hull bar (and the energy shield above it) for anyone damaged, plus us always.
       const hull = b[k + SHIP.hull] / b[k + SHIP.maxHull];
-      if (hull < 0.999 || isMe) {
-        const bw = 46;
+      const maxShield = b[k + SHIP.maxShield];
+      const shield = maxShield > 0 ? Math.max(0, b[k + SHIP.shield]) / maxShield : 0;
+      if (hull < 0.999 || shield < 0.999 || isMe) {
+        const bw = Math.max(46, radius * 1.7);
         const bx = x - bw / 2;
-        const by = y + 28;
+        const by = y + radius + 12;
+        if (maxShield > 0) {
+          bars.rect(bx - 1, by - 6, bw + 2, 5).fill({ color: 0x050811, alpha: 0.7 });
+          bars.rect(bx, by - 5, bw * shield, 3).fill({ color: 0x6ff3ff, alpha: 0.9 });
+        }
         bars.rect(bx - 1, by - 1, bw + 2, 7).fill({ color: 0x050811, alpha: 0.78 });
         bars.rect(bx, by, bw * Math.max(0, hull), 5).fill({ color: hull > 0.3 ? (team === selfTeam ? 0x5cff9d : 0xff5c6c) : 0xff3b3b });
         for (let seg = 1; seg < 4; seg++) {
@@ -719,7 +734,7 @@ export class Renderer {
         l.visible = true;
         l.tint = team === selfTeam ? 0xcfe6ff : 0xffd2bd;
         l.alpha = isMe ? 1 : 0.8;
-        l.position.set(x, y - 26);
+        l.position.set(x, y - radius - 8);
       } else if (label) {
         label.visible = false;
       }
@@ -747,6 +762,12 @@ export class Renderer {
         } else if (type === EventType.StrikeLanded) {
           this.ring(b[k + 3], b[k + 4], b[k + 5], 0xffffff, 0.8);
           this.burst(b[k + 3], b[k + 4], 0xffe0a0, 120, 700);
+        } else if (type === EventType.Ricochet) {
+          // A glancing hit: sparks skip off the armor where the shot struck.
+          const target = curr.ship(b[k + 1]);
+          const r = CLASSES[CLASS_ORDER[b[target + SHIP.classIndex]]]?.radius ?? 20;
+          const dir = b[k + 5];
+          this.burst(b[k + 3] - Math.cos(dir) * r, b[k + 4] - Math.sin(dir) * r, 0xffe6a0, 5, 240);
         } else if (type === EventType.Beam) {
           this.beams.push({ x: b[k + 3], y: b[k + 4], angle: b[k + 5], length: b[k + 6], life: 0.3, color: TEAM_COLORS[b[k + 1]] });
         } else if (type === EventType.PointFlip) {
@@ -859,6 +880,16 @@ export class Renderer {
           for (let seg = 1; seg < 6; seg++) {
             g.moveTo(bx + (bw * seg) / 6, by).lineTo(bx + (bw * seg) / 6, by + 10).stroke({ width: 2, color: 0x050811, alpha: 0.75 });
           }
+        }
+      }
+      // Frigate fortifications: armor plating ring, defense turrets on the rim, citadel respawn beacon.
+      const fort = b[k + POINT.fortify];
+      if (owner >= 0 && fort) {
+        const fc = TEAM_COLORS[owner];
+        if (fort & POINT_FORT.armor) g.circle(p.x, p.y, NODE.radius + 18).stroke({ width: 6, color: 0xc4d2e6, alpha: 0.55 });
+        if (fort & POINT_FORT.respawn) g.circle(p.x, p.y, NODE.radius + 40 + 8 * Math.sin(now * 0.004)).stroke({ width: 4, color: fc, alpha: 0.7 });
+        if (fort & POINT_FORT.turrets) {
+          for (const a of [0, Math.PI]) g.circle(p.x + Math.cos(a) * (NODE.radius + 10), p.y + Math.sin(a) * (NODE.radius + 10), 10).fill({ color: fc, alpha: 0.9 });
         }
       }
       this.light(p.x, p.y, 22, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
@@ -986,10 +1017,12 @@ export class Renderer {
     // Heal tethers (Warden beam)
     for (let i = 0, k = curr.o.tethers; i < b[H.tetherCount]; i++, k += SNAP.tether) {
       const o = curr.ship(b[k]);
-      const t = curr.ship(b[k + 1]);
+      // Negative targets are friendly nodes (Warden tether on an asteroid).
+      const node = b[k + 1] < 0 ? KESSLER_REACH.points[-1 - b[k + 1]]?.pos : null;
+      const t = node ? -1 : curr.ship(b[k + 1]);
       if (o === t) continue;
       g.moveTo(b[o + SHIP.x], b[o + SHIP.y])
-        .lineTo(b[t + SHIP.x], b[t + SHIP.y])
+        .lineTo(node ? node.x : b[t + SHIP.x], node ? node.y : b[t + SHIP.y])
         .stroke({ width: 6, color: 0x5cff9d, alpha: 0.45 + 0.2 * Math.sin(now * 0.02) });
     }
 

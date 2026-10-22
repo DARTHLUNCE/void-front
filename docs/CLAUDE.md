@@ -42,7 +42,8 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
    (shop picks `statPick`/`tierPick` apply first; hosts queue Fleet Command orders and pings on
    `w.pendingOrders` / `w.pendingPings`, which run here so their events reach the snapshot)
 2. Move every ship, collisions, separation
-3. Aim, fire, abilities (signature, ultimate, extra) — **only after every ship has moved** (fairness rule)
+3. Aim, fire primaries and secondary auto-turrets, abilities (signature, ultimate, extra) — **only after
+   every ship has moved** (fairness rule)
 4. Projectiles, drones, zones and orbital strikes (deployables fire in step 3)
 5. Statuses and bleed, regen, cooldowns, quirk ticks, auras, crystals, deaths (shard loss, kill
    XP), respawns
@@ -71,7 +72,9 @@ browser worker, on the server and in the harness, and so 60 upgrade nodes stay b
 ## Performance
 
 - Entities live in fixed pools (`sim/pool.ts`); nothing is allocated per tick in the hot path.
-- All spatial queries go through `SpatialHash` (512 u cells) with caller-owned result buffers.
+- All spatial queries go through `SpatialHash` (768 u cells, v2 hulls reach 165 u) with caller-owned result buffers.
+- Never stagger work on a pool index (`(tick + p.index) % n`): pool indices differ between the teams, so
+  mirrored missiles or drones would update on different ticks and break side fairness.
 
 ## Workflow
 

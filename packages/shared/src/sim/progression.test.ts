@@ -56,7 +56,7 @@ describe('tiers (XP)', () => {
     expect(a.xp).toBeCloseTo(0);
   });
 
-  it('tier 3 swaps the hull and resets stat upgrades (tiers 1–2 do not)', () => {
+  it('tier 3 swaps the hull and keeps every Shard Calibration level (v2: no reset)', () => {
     const { w, a } = duelWorld();
     grantShards(w, a, 1_000);
     buyStat(a, 0);
@@ -68,11 +68,11 @@ describe('tiers (XP)', () => {
     const hull = a.hullModel;
     buyTier(w, a, 0);
     expect(a.hullModel).not.toBe(hull);
-    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
-    // Fresh hull, fresh costs: the next weapons level costs the level-1 price again.
+    expect(Array.from(a.statPoints)).toEqual([2, 0, 0, 0]);
+    // Costs keep climbing from where you are: the next weapons level is level 3's price.
     const before = a.shards;
     buyStat(a, 0);
-    expect(before - a.shards).toBe(ECONOMY.statCosts[0]);
+    expect(before - a.shards).toBe(ECONOMY.statCosts[2]);
   });
 
   it('the input path buys tiers and stats during a step', () => {

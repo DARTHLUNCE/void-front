@@ -10,6 +10,7 @@ import { HIGH_COMMAND, type TurretType, type UpgradeTrack } from '../content/upg
 import type {
   AbilityDef,
   Affects,
+  PrimitiveDef,
   CapturePointDef,
   ClassId,
   DeployKind,
@@ -29,7 +30,8 @@ import { STAT_IDS } from './stats';
 
 export const TICK_RATE = 30;
 export const DT = 1 / TICK_RATE;
-export const HASH_CELL = 512;
+/** v2: hulls up to 165 u radius, so the hash cells grew with them. */
+export const HASH_CELL = 768;
 export const PROJECTILE_CAPACITY = 8192;
 export const CRYSTAL_CAPACITY = 1600;
 export const DRONE_CAPACITY = 1024;
@@ -41,6 +43,8 @@ export const EVENT_CAPACITY = 512;
 export const TIERS = 5;
 /** spawnChoice values at or above this pick a structure (an FOB) by index. */
 export const SPAWN_AT_STRUCTURE = 1000;
+/** v2: spawnChoice values at or above this pick a fortified asteroid node (Node Citadel) by index. */
+export const SPAWN_AT_NODE = 2000;
 
 export const PingKind = { Move: 0, Attack: 1, Defend: 2 } as const;
 export type PingKind = (typeof PingKind)[keyof typeof PingKind];
@@ -65,10 +69,14 @@ export interface ShipInput {
   statPick: number;
   /** One-shot: tier option to buy (0 = A, 1 = B), or -1. */
   tierPick: number;
+  /** v2: signed throttle, −reverseMax … 1. Negative drives retro-thrusters along the stern. */
+  throttle: number;
+  /** v2: one-shot Reactor Power switch (POWER_INDEX), or -1. */
+  power: number;
 }
 
 export function emptyInput(): ShipInput {
-  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, extra: false, cruise: false, brake: false, steerWithAim: false, statPick: -1, tierPick: -1 };
+  return { moveX: 0, moveY: 0, aim: 0, cursorX: 0, cursorY: 0, fire: false, ability: false, ultimate: false, extra: false, cruise: false, brake: false, steerWithAim: false, statPick: -1, tierPick: -1, throttle: 1, power: -1 };
 }
 
 export const Job = { Farm: 0, Skirmish: 1, Assault: 2, Defend: 3, Rally: 4 } as const;
@@ -155,6 +163,18 @@ export class Ship {
   engineTorque = 0;
   hull = 0;
   maxHull = 0;
+  /** v2: energy shield, struck before the hull. maxShield is refreshed each tick (power, stats). */
+  shield = 0;
+  maxShield = 0;
+  /** v2: Reactor Power mode (POWER_INDEX) and when it last changed. */
+  powerMode = 0;
+  powerSwitchAt = -99;
+  /** v2: secondary turret cooldowns, one per mount. */
+  readonly secondaryCd = new Float64Array(16);
+  /** v2: a rippling projectile salvo still to fire (Sequential Tube Salvo). */
+  burstStep: Extract<PrimitiveDef, { kind: 'projectiles' }> | null = null;
+  burstLeft = 0;
+  burstTimer = 0;
 
   // Economy
   /** Unspent shards (stat upgrade currency). */
@@ -168,7 +188,7 @@ export class Ship {
   /** Tier picks: -1 not bought, 0 = option A, 1 = option B. */
   readonly picks = new Int8Array(TIERS).fill(-1);
   tiersOwned = 0;
-  /** Stat upgrade levels bought with shards on the current hull. */
+  /** Stat upgrade levels bought with shards (kept across tiers in v2). */
   readonly statPoints = new Int8Array(STAT_POINTS.length);
   hullModel: string;
   nodes: NodeDef[] = [];
@@ -188,6 +208,9 @@ export class Ship {
   dashDy = 0;
   dashRam = 0;
   dashKnock = 0;
+  /** v2: caliber of the ram impact and statuses it applies (Ironclad stun). */
+  dashRamAp = Infinity;
+  dashRamStatus: readonly StatusApply[] | null = null;
   /** Ships already rammed or marked during the current dash. */
   readonly dashHits = new Int32Array(16);
   dashHitCount = 0;
@@ -238,6 +261,8 @@ export class Ship {
 export class Structure {
   hull: number;
   maxHull: number;
+  /** Hull before Armor Plating (the def's hull scaled to the fleet size). */
+  baseHull: number;
   alive = true;
   shielded = false;
   lastDamageTime = -99;
@@ -249,6 +274,10 @@ export class Structure {
   plating = 0;
   /** Turrets stay dark until this time (enemy EMP Bomb). */
   empUntil = -1;
+  /** v2: Armor Rating (structure def + plating). */
+  get armor(): number {
+    return this.def.armor;
+  }
 
   constructor(
     readonly index: number,
@@ -259,6 +288,7 @@ export class Structure {
   ) {
     this.hull = def.hull;
     this.maxHull = def.hull;
+    this.baseHull = def.hull;
     this.radius = def.radius;
     this.turretCooldown = new Float64Array(def.turrets.offsets.length);
   }
@@ -292,6 +322,16 @@ export class Projectile implements Pooled {
   /** Fraction of damage dealt that heals the owner (Hive drones). */
   lifesteal = 0;
   fromDrone = false;
+  /** v2: caliber (Infinity = full penetration), overpenetration guard and shield bypass. */
+  ap = Infinity;
+  noOverpen = false;
+  shieldBypass = 0;
+  /** Fraction of armor ignored on hits to the target's rear arc (Stern Exhaust Seeker). */
+  sternPierce = 0;
+  /** Fired by a secondary auto-turret (on-hit filters, rendering). */
+  secondary = false;
+  /** Statuses this projectile applies to the ship it hits (ability salvos). */
+  statuses: readonly StatusApply[] | null = null;
   constructor(readonly index: number) {}
 }
 
@@ -344,6 +384,8 @@ export class Drone implements Pooled {
   /** Kamikaze dive: when > 0 the drone flies at (kx, ky) and explodes for this much. */
   kamikazeDamage = 0;
   kamikazeRadius = 0;
+  /** v2: caliber of the drone's gun. */
+  ap = Infinity;
   kx = 0;
   ky = 0;
   lastHitBy = -1;
@@ -383,6 +425,8 @@ export class Zone implements Pooled {
   blocksProjectiles = false;
   reveal = false;
   affects: Affects[] = [];
+  /** v2: the heal also repairs friendly nodes. */
+  healNodes = false;
   constructor(readonly index: number) {}
 }
 
@@ -396,16 +440,21 @@ export class Strike implements Pooled {
   landsAt = 0;
   damage = 0;
   structureDamage = 0;
+  /** v2: caliber, or Infinity for full penetration. */
+  ap = Infinity;
   constructor(readonly index: number) {}
 }
 
 export class Tether implements Pooled {
   active = false;
   owner = -1;
+  /** Ship slot, or −1 − point index for a friendly node (v2). */
   target = -1;
   expires = 0;
   range = 0;
   healPerSecond = 0;
+  shieldPerSecond = 0;
+  status: StatusApply | null = null;
   constructor(readonly index: number) {}
 }
 
@@ -420,8 +469,18 @@ export class PointState {
   contested = false;
   hotUntil = -1;
   hull = 0;
-  readonly maxHull = NODE.hull;
+  /** v2: Node Citadel doubles it while active (see fortifyUntil). */
+  maxHull: number = NODE.hull;
   lockedUntil = -1;
+  /** v2 fortification (Frigate node engineering): bonus armor, defense turrets, fleet respawn. */
+  armorBonus = 0;
+  armorUntil = -1;
+  turrets = 0;
+  turretUntil = -1;
+  readonly turretCd = new Float64Array(4);
+  respawnUntil = -1;
+  /** When a Citadel's doubled max hull reverts. */
+  fortifyUntil = -1;
   lastDamageTime = -99;
   /** Ships of each team pushing this tick (after the cap). */
   readonly pushing = new Float64Array(2);
@@ -456,6 +515,8 @@ export const EventType = {
   NodeDestroyed: 12,
   /** a = team, b = PingKind, c = point index or -1. */
   Ping: 13,
+  /** v2: a hit glanced off armor. a = target slot, b = attacker slot, c = hit direction. */
+  Ricochet: 14,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
@@ -649,6 +710,8 @@ export class World {
     ];
 
     for (const f of fobs) this.teams[f.team].fobs.push(f);
+    const baseMul = Math.min(MATCH.baseHullFleet.maxMul, Math.max(1, this.fleetSize / MATCH.baseHullFleet.baseline));
+    for (const st of this.structures) st.baseHull = st.hull = st.maxHull = st.def.hull * baseMul;
     for (const ms of [ms0, ms1]) ms.shielded = fobs.some((f) => f.team === ms.team);
 
     const humans = new Set(opts.humanSlots ?? []);

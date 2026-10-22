@@ -1,29 +1,85 @@
+import { ARMOR, PAINTED_JITTER_MUL, SECONDARY_MOUNT_RING } from '../../content/combat';
 import { MATCH } from '../../content/match';
 import { angleDelta } from '../angles';
 import { ECONOMY } from '../../content/progression';
 import { QUIRK_PARAMS } from '../../content/quirks';
 import { DEPLOYABLES, NODE, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
 import type { GunDef, TeamId } from '../../content/types';
-import { hasFlag, hitMul, liveStat, statValue } from '../stats';
-import { DT, EventType, type Deployable, type Projectile, type Ship, type Structure, type World } from '../world';
+import { conditionsHold, hasFlag, type HitContext, hitMul, liveStat, statValue } from '../stats';
+import { DT, EVENT_CAPACITY, EventType, type Deployable, type Projectile, type Ship, type Structure, type World } from '../world';
 import { damageDrone, explode } from './drones';
-import { damageNode } from './points';
+import { damageNode, repairNode } from './points';
+import { apPowerBonus, heatPowerMul, secondaryRofPowerMul, shieldDrPowerBonus, weaponPowerMul } from './power';
 import { creditHealing, grantXp, heal } from './progression';
 import { CHARGE, quirkOf } from './quirks';
 import { applyStatus, canAct, hasStatus, removeStatus, statusMagnitude } from './status';
 
-/** Largest ship radius any class can have; bounds hash queries for hits. */
-export const MAX_SHIP_RADIUS = 50;
+/** Largest ship radius any class can have; bounds hash queries for hits (v2 size ladder). */
+export const MAX_SHIP_RADIUS = 165;
 
-/** The ship's gun after stat upgrades and node modifiers (Split Barrels, Flak Spread, siege...). */
+/**
+ * How an incoming hit meets armor: caliber, overpenetration guard, the share that skips the
+ * energy shield, rear-arc armor ignored, and the hit's travel direction (0,0 = no direction).
+ */
+export interface HitInfo {
+  ap: number;
+  noOverpen: boolean;
+  shieldBypass: number;
+  sternPierce: number;
+  dirX: number;
+  dirY: number;
+}
+
+/** Area effects, bleed and commander strikes: no caliber, so full penetration and no arc. */
+export const HIT_AREA: Readonly<HitInfo> = { ap: Infinity, noOverpen: false, shieldBypass: 0, sternPierce: 0, dirX: 0, dirY: 0 };
+
+/** A directionless hit with a caliber (beams, rams, AP pulses). */
+export function apHit(ap: number | undefined, noOverpen = false): HitInfo {
+  return { ap: ap ?? Infinity, noOverpen, shieldBypass: 0, sternPierce: 0, dirX: 0, dirY: 0 };
+}
+
+/** Hull damage multiplier for a caliber against an Armor Rating (content/combat.ts ARMOR). */
+export function armorMul(ap: number, armor: number, noOverpen: boolean): number {
+  if (!(ap < Infinity) || armor <= 0) return 1;
+  if (!noOverpen && ap >= armor * ARMOR.overpenRatio) return ARMOR.overpenMul;
+  return clamp((ap / armor) ** ARMOR.exponent, ARMOR.floor, 1);
+}
+
+export const ARC_BOW = 0;
+export const ARC_FLANK = 1;
+export const ARC_STERN = 2;
+const BOW_COS = Math.cos((ARMOR.bowHalfArcDeg * Math.PI) / 180);
+const STERN_COS = Math.cos((ARMOR.sternFromDeg * Math.PI) / 180);
+
+/** Which armor arc a hit travelling along (dirX, dirY) strikes. */
+export function hitArc(target: Ship, dirX: number, dirY: number): number {
+  const len = Math.hypot(dirX, dirY);
+  if (len === 0) return ARC_FLANK;
+  // The side struck faces back along the hit's travel direction.
+  const c = -(dirX * Math.cos(target.angle) + dirY * Math.sin(target.angle)) / len;
+  return c >= BOW_COS ? ARC_BOW : c <= STERN_COS ? ARC_STERN : ARC_FLANK;
+}
+
+/** Effective Armor Rating on an arc: stats + Armor Up − Sunder, then the bow bonus or stern cut. */
+export function shipArmor(w: World, s: Ship, arc: number): number {
+  const base = Math.max(0, liveStat(w, s, 'armor', s.cls.armor) + statusMagnitude(s, 'armorUp') - statusMagnitude(s, 'sunder'));
+  if (arc === ARC_BOW) return base * (1 + liveStat(w, s, 'bowArmor', ARMOR.bowBonus));
+  if (arc === ARC_STERN) return base * ARMOR.sternMul;
+  return base;
+}
+
+/** The ship's gun after stat upgrades, node modifiers, Reactor Power and its quirk. */
 export function gunFor(w: World, ship: Ship): GunDef {
   const g = ship.cls.gun;
+  const ap = g.ap === undefined ? undefined : liveStat(w, ship, 'ap', g.ap) * (1 + apPowerBonus(w, ship)) + (quirkOf(ship).apBonus?.(ship) ?? 0);
   return {
     ...g,
     count: g.count + Math.round(liveStat(w, ship, 'gunCount', 0)),
     spread: g.spread + liveStat(w, ship, 'spread', 0),
     pierce: (g.pierce ?? 0) + Math.round(liveStat(w, ship, 'pierce', 0)),
     splash: (g.splash ?? 0) + liveStat(w, ship, 'splash', 0),
+    ap,
+    noOverpen: g.noOverpen === true || liveStat(w, ship, 'noOverpen', 0) > 0,
   };
 }
 
@@ -32,10 +88,15 @@ export function gunRange(ship: Ship, w?: World): number {
   return g.projectileSpeed * g.life * (w ? liveStat(w, ship, 'range', 1) : statValue(ship, 'range', 1));
 }
 
-/** Attacker-side multiplier that doesn't depend on the target: upgrades, quirk, self conditions. */
+/** Attacker-side multiplier that doesn't depend on the target: upgrades, quirk, self conditions, WEAPONS power. */
 export function outgoingDamageMul(w: World, ship: Ship): number {
   const quirkBonus = quirkOf(ship).damageBonus?.(ship) ?? 0;
-  return liveStat(w, ship, 'damage', 1) * (1 + quirkBonus);
+  return liveStat(w, ship, 'damage', 1) * (1 + quirkBonus) * weaponPowerMul(w, ship);
+}
+
+/** Live turn-rate cap (rad/s): class, Helm stats, Turn Slow. */
+export function turnRateOf(w: World, s: Ship): number {
+  return (s.cls.turnRate ?? MATCH.movement.aimTurnRate) * liveStat(w, s, 'turnRate', 1) * (1 - statusMagnitude(s, 'turnSlow'));
 }
 
 /**
@@ -88,6 +149,12 @@ export function spawnPattern(
     p.heal = 0;
     p.lifesteal = 0;
     p.fromDrone = false;
+    p.ap = gun.ap ?? Infinity;
+    p.noOverpen = gun.noOverpen === true;
+    p.shieldBypass = 0;
+    p.sternPierce = 0;
+    p.secondary = false;
+    p.statuses = null;
   }
   if (w.projectiles.count > w.stats.projectilePeak) w.stats.projectilePeak = w.projectiles.count;
 }
@@ -96,9 +163,10 @@ export function spawnPattern(
 export function aimAndFire(w: World, s: Ship): void {
   const inp = s.input;
   const tuning = MATCH.movement;
-  const turnRate = s.cls.turnRate ?? tuning.aimTurnRate;
+  const turnRate = turnRateOf(w, s);
   const desiredTurn = Math.max(-turnRate, Math.min(turnRate, angleDelta(s.angle, inp.aim) * tuning.aimResponse));
-  const driven = inp.steerWithAim && !inp.brake && !hasStatus(s, 'stun') && !hasStatus(s, 'rooted') && s.dashTime <= 0 && Math.hypot(inp.moveX, inp.moveY) > 0;
+  // Reverse throttle flies on retro-thrusters: attitude jets keep pointing the nose at the aim.
+  const driven = inp.steerWithAim && inp.throttle > 0 && !inp.brake && !hasStatus(s, 'stun') && !hasStatus(s, 'rooted') && s.dashTime <= 0 && Math.hypot(inp.moveX, inp.moveY) > 0;
   if (driven) {
     // The aft drive's actual force produces yaw: torque / moment of inertia.
     s.angularVelocity += s.engineTorque / (s.radius * s.radius * tuning.inertiaFactor) * DT;
@@ -117,7 +185,7 @@ export function aimAndFire(w: World, s: Ship): void {
 
   if (charging) {
     // Hold to charge, release to fire. Charge only builds while the gun is ready.
-    const chargeTime = (s.cls.gun.chargeMax ?? 1.5) * liveStat(w, s, 'chargeTime', 1);
+    const chargeTime = (s.cls.gun.chargeMax ?? 1.5) * liveStat(w, s, 'chargeTime', 1) * heatPowerMul(w, s);
     if (able && inp.fire && s.fireCooldown <= 0) {
       s.quirk[CHARGE] = Math.min(1, s.quirk[CHARGE] + DT / Math.max(0.1, chargeTime));
       return;
@@ -144,10 +212,12 @@ export function aimAndFire(w: World, s: Ship): void {
 function fireVolley(w: World, s: Ship, charge: number): void {
   const gun = gunFor(w, s);
   let mul = outgoingDamageMul(w, s);
-  // Ambush: the first volley out of cloak hits harder (Assassinate guarantees it).
+  // Ambush: the first volley out of cloak hits harder and with a heavier caliber (Assassinate guarantees it).
   const ambush = statusMagnitude(s, 'ambush');
+  let ambushAp = 0;
   if (ambush > 0) {
     mul *= ambush;
+    ambushAp = statValue(s, 'ambushAp', 0);
     removeStatus(s, 'ambush');
   }
   const critChance = statValue(s, 'critChance', 0);
@@ -155,33 +225,212 @@ function fireVolley(w: World, s: Ship, charge: number): void {
   if (crit) mul *= statValue(s, 'critMul', 0) || 2;
   const fullCharge = charge >= 1;
   if (s.cls.quirk === 'chargeShot') {
-    mul *= 1 + (QUIRK_PARAMS.chargeShot.fullChargeMul - 1) * charge;
-    if (fullCharge) gun.pierce = (gun.pierce ?? 0) + QUIRK_PARAMS.chargeShot.fullChargePierce;
+    const p = { ...QUIRK_PARAMS.chargeShot, ...s.cls.quirkTuning };
+    mul *= 1 + (p.fullChargeMul - 1) * charge;
+    if (fullCharge) gun.pierce = (gun.pierce ?? 0) + p.fullChargePierce;
   }
   const first = w.projectiles.count;
   spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, mul, liveStat(w, s, 'range', 1), s.radius);
-  const healPower = statValue(s, 'healPower', 0);
+  const healPower = liveStat(w, s, 'healPower', 0);
   const pierceBonus = statValue(s, 'pierceBonus', 0);
+  const bypass = Math.min(1, liveStat(w, s, 'shieldBypass', 0));
+  const sternPierce = Math.min(1, liveStat(w, s, 'sternPierce', 0));
+  const structureMul = liveStat(w, s, 'structureDamage', 1);
   for (let i = first; i < w.projectiles.count; i++) {
     const p = w.projectiles.at(i);
     p.crit = crit;
     p.fullCharge = fullCharge;
     p.heal = healPower;
     p.pierceBonus = pierceBonus;
-    p.structureMul = liveStat(w, s, 'structureDamage', 1);
+    p.structureMul = structureMul;
+    p.ap += ambushAp;
+    p.shieldBypass = bypass;
+    p.sternPierce = sternPierce;
   }
-  s.fireCooldown += gun.fireInterval / (liveStat(w, s, 'fireRate', 1) * (1 + statusMagnitude(s, 'rapid')));
+  const rate = liveStat(w, s, 'fireRate', 1) * (1 + statusMagnitude(s, 'rapid')) * (1 + (quirkOf(s).fireRateBonus?.(s) ?? 0));
+  s.fireCooldown += gun.fireInterval / rate;
   if (s.fireCooldown < 0) s.fireCooldown = 0;
   s.lastFireTime = w.time;
   quirkOf(s).onFire?.(w, s);
   if (fullCharge) {
-    const recoil = statValue(s, 'recoil', 0);
+    const recoil = liveStat(w, s, 'recoil', 0);
     if (recoil > 0 && !hasFlag(s, 'knockbackImmune')) {
       s.x = clamp(s.x - Math.cos(s.angle) * recoil, s.radius, w.map.width - s.radius);
       s.y = clamp(s.y - Math.sin(s.angle) * recoil, s.radius, w.map.height - s.radius);
     }
   }
 }
+
+// ─── Secondary auto-turrets ─────────────────────────────────────────────────
+
+/** Mounts this ship carries right now (class count + Secondary Battery nodes). */
+export function secondaryCount(w: World, s: Ship): number {
+  const def = s.cls.secondary;
+  if (!def) return 0;
+  return Math.max(0, Math.min(s.secondaryCd.length, def.count + Math.round(liveStat(w, s, 'secondaryCount', 0))));
+}
+
+/** World position of mount k of n: a symmetric ring around the hull, turning with it. */
+export function secondaryMount(s: Ship, k: number, n: number, out: { x: number; y: number }): void {
+  const a = s.angle + ((k + 0.5) / n) * Math.PI * 2;
+  const r = s.radius * SECONDARY_MOUNT_RING;
+  out.x = s.x + Math.cos(a) * r;
+  out.y = s.y + Math.sin(a) * r;
+}
+
+const mount = { x: 0, y: 0 };
+
+/**
+ * Pass 3 (after every ship moved): each secondary turret independently picks the nearest visible,
+ * uncloaked enemy in its range (painted targets first; CIWS mounts take starships first) and
+ * fires with loose aim: lead angle ± jitter from the ship's own Rng stream. `force` fires every
+ * mount now regardless of cooldown (Micro-Jump Strike's full salvo).
+ */
+export function fireSecondaries(w: World, s: Ship, force = false): void {
+  const def = s.cls.secondary;
+  if (!def || !s.alive) return;
+  const n = secondaryCount(w, s);
+  if (n === 0) return;
+  const idle = !canAct(s) || s.cruising || hasStatus(s, 'turretsOff');
+  const rof = liveStat(w, s, 'secondaryFireRate', 1) * liveStat(w, s, 'fireRate', 1) * secondaryRofPowerMul(w, s) * (1 + statusMagnitude(s, 'turretRapid'));
+  const interval = def.fireInterval / Math.max(0.05, rof);
+  const range = def.range * liveStat(w, s, 'secondaryRange', 1);
+  const locked = hasStatus(s, 'turretLock');
+  const pd = hasFlag(s, 'secondaryPD');
+  for (let k = 0; k < n; k++) {
+    s.secondaryCd[k] -= DT;
+    if (force) s.secondaryCd[k] = 0;
+    if (idle || s.secondaryCd[k] > 0) {
+      if (s.secondaryCd[k] < 0) s.secondaryCd[k] = 0;
+      continue;
+    }
+    secondaryMount(s, k, n, mount);
+    // Point-defense mounts zap an incoming missile before anything else.
+    if (pd && shootDownMissile(w, s.team, mount.x, mount.y, range * 0.6)) {
+      s.secondaryCd[k] += interval;
+      continue;
+    }
+    let angle: number;
+    let target: Ship | null = null;
+    if (locked) {
+      angle = Math.atan2(s.input.cursorY - mount.y, s.input.cursorX - mount.x);
+    } else {
+      const aim = secondaryTarget(w, s, mount.x, mount.y, range, def.ciws === true, def.projectileSpeed);
+      if (aim === null) {
+        s.secondaryCd[k] = 0;
+        continue;
+      }
+      target = aim.ship;
+      let jitter = (def.jitterDeg * Math.PI) / 180 * liveStat(w, s, 'secondaryJitter', 1);
+      if (target) {
+        jitter *= statValue(target, 'jitterOnMe', 1);
+        if (hasStatus(target, 'painted')) jitter *= PAINTED_JITTER_MUL;
+      }
+      angle = aim.angle + (s.rng.next() - 0.5) * 2 * jitter;
+    }
+    fireSecondaryShot(w, s, mount.x, mount.y, angle, range);
+    s.secondaryCd[k] += interval;
+  }
+}
+
+const aimOut = { angle: 0, ship: null as Ship | null };
+
+function secondaryTarget(w: World, s: Ship, x: number, y: number, range: number, ciws: boolean, speed: number): typeof aimOut | null {
+  if (ciws) {
+    const m = w.droneHash.query(x, y, range, w.scratch3);
+    let best = -1;
+    let bestD = range * range;
+    for (let i = 0; i < m; i++) {
+      const d = w.drones.items[w.scratch3[i]];
+      if (!d.active || d.team === s.team) continue;
+      const dd = (d.x - x) ** 2 + (d.y - y) ** 2;
+      if (dd < bestD) {
+        bestD = dd;
+        best = d.index;
+      }
+    }
+    if (best >= 0) {
+      const d = w.drones.items[best];
+      aimOut.angle = leadAngle(x, y, d.x, d.y, d.vx, d.vy, speed);
+      aimOut.ship = null;
+      return aimOut;
+    }
+  }
+  const n = w.shipHash.query(x, y, range + MAX_SHIP_RADIUS, w.scratch3);
+  const bit = 1 << s.team;
+  let best: Ship | null = null;
+  let bestScore = Infinity;
+  for (let i = 0; i < n; i++) {
+    const o = w.ships[w.scratch3[i]];
+    if (!o.alive || o.team === s.team || !(o.visibleMask & bit) || hasStatus(o, 'cloak')) continue;
+    const d2 = (o.x - x) ** 2 + (o.y - y) ** 2;
+    if (d2 > (range + o.radius) ** 2) continue;
+    // Painted targets come first; ties go to the lower team-relative slot.
+    const score = d2 - (hasStatus(o, 'painted') ? 1e12 : 0);
+    if (score < bestScore || (score === bestScore && best !== null && relSlot(w, o) < relSlot(w, best))) {
+      bestScore = score;
+      best = o;
+    }
+  }
+  if (!best) return null;
+  aimOut.angle = leadAngle(x, y, best.x, best.y, best.vx, best.vy, speed);
+  aimOut.ship = best;
+  return aimOut;
+}
+
+function fireSecondaryShot(w: World, s: Ship, x: number, y: number, angle: number, range: number): void {
+  const def = s.cls.secondary!;
+  const p = w.projectiles.alloc();
+  if (!p) {
+    w.stats.projectileOverflow++;
+    return;
+  }
+  p.x = x;
+  p.y = y;
+  p.speed = def.projectileSpeed;
+  p.vx = Math.cos(angle) * def.projectileSpeed;
+  p.vy = Math.sin(angle) * def.projectileSpeed;
+  p.life = (range / def.projectileSpeed) * 1.05;
+  p.damage = def.damage * outgoingDamageMul(w, s) * liveStat(w, s, 'secondaryDamage', 1);
+  p.radius = def.size;
+  p.team = s.team;
+  p.owner = s.slot;
+  p.pierceLeft = 0;
+  p.pierceBonus = 0;
+  p.hitCount = 0;
+  p.structureMul = liveStat(w, s, 'structureDamage', 1);
+  p.splash = 0;
+  p.crit = false;
+  p.fullCharge = false;
+  p.missile = false;
+  p.homingTurn = 0;
+  p.heal = 0;
+  p.lifesteal = 0;
+  p.fromDrone = false;
+  p.ap = def.ap + liveStat(w, s, 'secondaryAp', 0) + (quirkOf(s).apBonus?.(s) ?? 0);
+  p.noOverpen = false;
+  p.shieldBypass = 0;
+  p.sternPierce = 0;
+  p.secondary = true;
+  p.statuses = null;
+  if (w.projectiles.count > w.stats.projectilePeak) w.stats.projectilePeak = w.projectiles.count;
+}
+
+/** Point defense: destroy the nearest enemy missile within `range` of (x, y). */
+export function shootDownMissile(w: World, team: TeamId, x: number, y: number, range: number): boolean {
+  const proj = w.projectiles;
+  const r2 = range * range;
+  for (let i = proj.count - 1; i >= 0; i--) {
+    const m = proj.at(i);
+    if (m.missile && m.team !== team && (m.x - x) ** 2 + (m.y - y) ** 2 <= r2) {
+      proj.release(m);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ─── Projectiles ────────────────────────────────────────────────────────────
 
 /** Smallest t in [0,1] where segment P0 + t·D enters the circle (C, r), or -1. */
 function segmentCircleT(x0: number, y0: number, dx: number, dy: number, cx: number, cy: number, r: number): number {
@@ -280,8 +529,8 @@ export function stepProjectiles(w: World): void {
         hitShip = null;
       }
     }
+    // v2: every asteroid node is solid cover, whoever holds it.
     for (const pt of w.points) {
-      if (pt.owner < 0 || pt.owner === p.team) continue;
       if (Math.abs(pt.x - mx) > qr + NODE.radius || Math.abs(pt.y - my) > qr + NODE.radius) continue;
       const t = segmentCircleT(p.x, p.y, dx, dy, pt.x, pt.y, NODE.radius + p.radius);
       if (t >= 0 && t < bestT) {
@@ -306,7 +555,7 @@ export function stepProjectiles(w: World): void {
         continue;
       }
       shipHit(w, p, s);
-      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul);
+      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul, p.ap);
       if (p.pierceLeft > 0 && p.hitCount < p.hits.length) {
         p.pierceLeft--;
         p.hits[p.hitCount++] = s.slot;
@@ -317,18 +566,27 @@ export function stepProjectiles(w: World): void {
       }
     } else if (kind === DRONE) {
       const d = w.drones.items[hitIndex];
-      creditLifesteal(w, p, damageDrone(w, d, p.damage, p.owner));
+      const owner = p.owner >= 0 ? w.ships[p.owner] : null;
+      const vsDrones = p.secondary && owner ? 1 + statValue(owner, 'secondaryVsDrones', 0) : 1;
+      creditLifesteal(w, p, damageDrone(w, d, p.damage * vsDrones, p.owner));
       pool.release(p);
       continue;
     } else if (kind === STRUCTURE) {
       const st = w.structures[hitIndex];
-      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul);
-      else creditLifesteal(w, p, damageStructure(w, st, p.damage * p.structureMul, p.owner));
+      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul, p.ap);
+      else creditLifesteal(w, p, damageStructure(w, st, p.damage * p.structureMul, p.owner, p.ap));
       pool.release(p);
       continue;
     } else if (kind === NODE_HIT) {
-      if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul);
-      else damageNode(w, w.points[hitIndex], p.damage * p.structureMul, p.team, p.owner);
+      const pt = w.points[hitIndex];
+      if (pt.owner >= 0 && pt.owner !== p.team) {
+        if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul, p.ap);
+        else damageNode(w, pt, p.damage * p.structureMul, p.team, p.owner, p.ap);
+      } else if (healing && pt.owner === p.team) {
+        // Nanite rounds patch friendly asteroid nodes (never FOBs or Titans).
+        repairNode(pt, p.damage * p.heal);
+      }
+      // Neutral and friendly rock simply absorbs the shot.
       pool.release(p);
       continue;
     } else if (kind === DEPLOYABLE) {
@@ -344,15 +602,47 @@ export function stepProjectiles(w: World): void {
   }
 }
 
+const hitCtx: HitContext = { target: null, fullCharge: false, stern: false };
+const projHit: HitInfo = { ap: Infinity, noOverpen: false, shieldBypass: 0, sternPierce: 0, dirX: 0, dirY: 0 };
+
 function shipHit(w: World, p: Projectile, s: Ship): void {
   const owner = p.owner >= 0 ? w.ships[p.owner] : null;
+  hitCtx.target = s;
+  hitCtx.fullCharge = p.fullCharge;
+  hitCtx.stern = hitArc(s, p.vx, p.vy) === ARC_STERN;
   let dmg = p.damage;
-  if (owner) dmg *= 1 + hitMul(w, owner, 'damage', { target: s, fullCharge: p.fullCharge });
-  const dealt = damageShip(w, s, dmg, p.owner);
+  projHit.ap = p.ap;
+  projHit.noOverpen = p.noOverpen;
+  projHit.shieldBypass = p.shieldBypass;
+  projHit.sternPierce = p.sternPierce;
+  projHit.dirX = p.vx;
+  projHit.dirY = p.vy;
+  if (owner && !p.fromDrone) {
+    // Target-dependent node modifiers (Executioner, Citadel Cavitator, Proximity Flak...).
+    dmg *= 1 + hitMul(w, owner, 'damage', hitCtx);
+    projHit.ap += hitMul(w, owner, 'ap', hitCtx, 'add');
+    projHit.shieldBypass = Math.min(1, projHit.shieldBypass + hitMul(w, owner, 'shieldBypass', hitCtx, 'add'));
+  }
+  const dealt = damageShip(w, s, dmg, p.owner, projHit);
   creditLifesteal(w, p, dealt);
+  // Hive siphon: starship hits feed the carrier's energy shield.
+  if (p.fromDrone && owner && dealt > 0) {
+    const siphon = statValue(owner, 'droneShieldSteal', 0);
+    if (siphon > 0) owner.shield = Math.min(owner.maxShield, owner.shield + dealt * siphon);
+  }
+  if (p.statuses) for (const st of p.statuses) applyStatus(w, s, st);
   if (!owner || p.fromDrone || dealt <= 0) return;
+  const source = p.secondary ? 'secondary' : 'primary';
   for (const node of owner.nodes) {
-    if (node.onHit) for (const st of node.onHit) applyStatus(w, s, st);
+    if (node.onHit) {
+      for (const st of node.onHit) {
+        const from = st.source ?? 'primary';
+        if (from !== 'any' && from !== source) continue;
+        if (st.arc === 'stern' && !hitCtx.stern) continue;
+        if (st.when && !conditionsHold(w, owner, st.when, hitCtx)) continue;
+        applyStatus(w, s, st);
+      }
+    }
     if (p.crit && node.onCritHit) for (const st of node.onCritHit) applyStatus(w, s, st);
   }
 }
@@ -370,20 +660,25 @@ function reflect(p: Projectile, s: Ship): void {
   p.owner = s.slot;
   p.hitCount = 0;
   p.heal = 0;
+  p.secondary = false;
+  p.statuses = null;
   p.x += p.vx * DT;
   p.y += p.vy * DT;
 }
 
-/** Missiles steer toward the nearest visible enemy ship in front of them. */
+/**
+ * Missiles steer toward the nearest visible enemy ship (painted ships first), every tick: pool
+ * indices differ between the teams, so a stagger keyed on them would steer mirrored missiles on
+ * different ticks and break side fairness.
+ */
 function home(w: World, p: Projectile): void {
-  if ((w.tick + p.index) % 3 !== 0) return;
   const n = w.shipHash.query(p.x, p.y, 700, w.scratch2);
   let best: Ship | null = null;
   let bestD = 700 * 700;
   for (let k = 0; k < n; k++) {
     const s = w.ships[w.scratch2[k]];
     if (!s.alive || s.team === p.team || !(s.visibleMask & (1 << p.team))) continue;
-    const d = (s.x - p.x) ** 2 + (s.y - p.y) ** 2;
+    const d = (s.x - p.x) ** 2 + (s.y - p.y) ** 2 - (hasStatus(s, 'painted') ? 1e12 : 0);
     if (d < bestD) {
       bestD = d;
       best = s;
@@ -394,7 +689,7 @@ function home(w: World, p: Projectile): void {
   const cur = Math.atan2(p.vy, p.vx);
   let diff = want - cur;
   diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-  const max = p.homingTurn * DT * 3;
+  const max = p.homingTurn * DT;
   const a = cur + Math.max(-max, Math.min(max, diff));
   p.vx = Math.cos(a) * p.speed;
   p.vy = Math.sin(a) * p.speed;
@@ -420,20 +715,66 @@ function relSlot(w: World, s: Ship): number {
   return s.slot - s.team * w.fleetSize;
 }
 
-/** Defender side of the damage order: invulnerable → mark → shield → damageTaken → hull. */
-export function damageShip(w: World, target: Ship, amount: number, attackerSlot: number): number {
+/**
+ * Defender side of the damage order (v2): invulnerable → mark → damage-reduction statuses →
+ * damageTaken → energy shield (Shield DR; `shieldBypass` skips it) → overflow into the hull
+ * through Armor vs. Caliber on the struck arc. Returns shield + hull damage dealt.
+ */
+export function damageShip(w: World, target: Ship, amount: number, attackerSlot: number, hit: Readonly<HitInfo> = HIT_AREA): number {
   if (!target.alive || amount <= 0) return 0;
   if (hasStatus(target, 'invulnerable')) return 0;
   let dmg = amount * (1 + statusMagnitude(target, 'mark'));
   dmg *= 1 - statusMagnitude(target, 'shield');
   dmg *= liveStat(w, target, 'damageTaken', 1);
   if (dmg <= 0) return 0;
-  const dealt = Math.min(dmg, Math.max(0, target.hull));
-  target.hull -= dmg;
+
+  let toHull = dmg * clamp(hit.shieldBypass, 0, 1);
+  let rest = dmg - toHull;
+  let shieldDealt = 0;
+  let broke = false;
+  if (rest > 0 && target.shield > 0 && !hasStatus(target, 'shieldsDown')) {
+    const dr = clamp(liveStat(w, target, 'shieldDR', 0) + shieldDrPowerBonus(w, target), 0, 0.9);
+    const absorb = rest * (1 - dr);
+    if (absorb <= target.shield) {
+      target.shield -= absorb;
+      shieldDealt = absorb;
+      rest = 0;
+    } else {
+      rest *= 1 - target.shield / absorb;
+      shieldDealt = target.shield;
+      target.shield = 0;
+      broke = true;
+    }
+  }
+  toHull += rest;
+
+  let hullDealt = 0;
+  let glanced = false;
+  if (toHull > 0) {
+    const arc = hitArc(target, hit.dirX, hit.dirY);
+    let armor = shipArmor(w, target, arc);
+    if (arc === ARC_STERN && hit.sternPierce > 0) armor *= 1 - hit.sternPierce;
+    let mul = armorMul(hit.ap, armor, hit.noOverpen);
+    if (hit.ap < liveStat(w, target, 'glanceThreshold', 0)) mul = ARMOR.floor;
+    glanced = mul < ARMOR.glanceBelow;
+    const h = toHull * mul;
+    hullDealt = Math.min(h, Math.max(0, target.hull));
+    target.hull -= h;
+  }
+
   target.lastDamageTime = w.time;
   target.cruiseSpool = 0;
   target.cruising = false;
   quirkOf(target).onDamaged?.(w, target);
+  if (broke) for (const node of target.nodes) if (node.onShieldBreak) for (const st of node.onShieldBreak) applyStatus(w, target, st);
+  if (glanced) {
+    for (const node of target.nodes) if (node.onGlance) target.shield = Math.min(target.maxShield, target.shield + node.onGlance.shield);
+    // Sparks are cosmetic and only shown where a pilot cares (their own shots, or hits on them);
+    // never let them crowd kills and flips out of the event buffer.
+    const watched = attackerSlot >= 0 && (!w.ships[attackerSlot].isBot || !target.isBot);
+    if (watched && w.eventCount < EVENT_CAPACITY / 2) w.emit(EventType.Ricochet, target.slot, attackerSlot, target.x, target.y, Math.atan2(hit.dirY, hit.dirX));
+  }
+  const dealt = shieldDealt + hullDealt;
   if (attackerSlot >= 0) {
     const attacker = w.ships[attackerSlot];
     target.lastHitBy = attackerSlot;
@@ -446,10 +787,11 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
   return dealt;
 }
 
-export function damageStructure(w: World, st: Structure, amount: number, attackerSlot: number): number {
+/** FOBs and Titans: no arcs or overpenetration, just caliber against their Armor Rating. */
+export function damageStructure(w: World, st: Structure, amount: number, attackerSlot: number, ap = Infinity): number {
   if (!st.alive || st.shielded || amount <= 0) return 0;
   const attacker = attackerSlot >= 0 ? w.ships[attackerSlot] : null;
-  const dmg = Math.min(amount, st.hull);
+  const dmg = Math.min(amount * armorMul(ap, st.armor, true), st.hull);
   st.hull -= dmg;
   st.lastDamageTime = w.time;
   if (attacker) {
@@ -484,6 +826,7 @@ function salvageBeacon(w: World, fob: Structure): void {
   d.maxHull = d.hull = SALVAGE.hull;
   d.expires = Infinity;
   d.cooldown = 0;
+  d.empUntil = -1;
 }
 
 export function damageDeployable(w: World, d: Deployable, amount: number, attackerSlot: number): number {
@@ -524,4 +867,3 @@ export function leadAngle(sx: number, sy: number, tx: number, ty: number, tvx: n
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v;
 }
-

@@ -169,7 +169,7 @@ export function buyUpgrade(w: World, team: TeamId, seat: SeatId, base: number, t
   else if (track === 'shipyard') st.shipyard++;
   else {
     st.plating++;
-    const added = st.def.hull * BASE_UPGRADES.plating.hullPerLevel;
+    const added = st.baseHull * BASE_UPGRADES.plating.hullPerLevel;
     st.maxHull += added;
     st.hull += added;
   }

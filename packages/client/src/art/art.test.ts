@@ -4,9 +4,14 @@ import { hiddenShapes, iou, outline, pieces, rasterMask } from './mask';
 import { MOTHERSHIP_ART } from './props';
 import { bounds } from './shapes';
 
-/** Every hull on one shared grid around the ship's center, so silhouettes compare at true size. */
-const GRID = { x0: -120, y0: -90, x1: 140, y1: 90 };
-const masks = new Map(HULLS.map((h) => [h.id, rasterMask(h.shapes, GRID.x0, GRID.y0, GRID.x1, GRID.y1, 0.5)]));
+/**
+ * Every hull on one shared grid around the ship's center, so silhouettes compare at true size.
+ * v2 size ladder: the grid spans the largest hull (Dreadnought, ~3× its old size) and samples
+ * coarser in proportion, keeping the cell count close to the old 0.5 u grid.
+ */
+const GRID = { x0: -400, y0: -300, x1: 460, y1: 300 };
+const STEP = 0.7;
+const masks = new Map(HULLS.map((h) => [h.id, rasterMask(h.shapes, GRID.x0, GRID.y0, GRID.x1, GRID.y1, STEP)]));
 
 describe('hull art', () => {
   it.each(HULLS.map((h) => [h.id, h] as const))('%s is one connected piece (no floating parts)', (_id, h) => {

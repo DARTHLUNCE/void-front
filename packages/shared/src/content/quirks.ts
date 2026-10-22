@@ -8,6 +8,10 @@ export const QUIRK_PARAMS = {
     rampTime: 1.5,
     speedBonus: 0.15,
     damageBonus: 0.3,
+    /** v2: Slipstream Momentum trades the damage bonus for fire rate (Patrol Craft tuning). */
+    fireRateBonus: 0,
+    /** v2: buildup speed multiplier while Reactor Power is on SPEED. */
+    speedPowerBuild: 2,
     /** Below this fraction of base speed you're not "flying", so momentum resets. */
     minSpeedFrac: 0.35,
   },
@@ -19,10 +23,12 @@ export const QUIRK_PARAMS = {
   },
   heat: {
     max: 100,
-    /** Above this heat the guns hit harder. */
+    /** Above this heat the guns hit harder and with a heavier caliber (primary and secondary). */
     hotThreshold: 50,
-    hotDamageBonus: 0.2,
-    lockTime: 2,
+    hotDamageBonus: 0.25,
+    hotAp: 15,
+    /** At 100% the primary guns vent; secondary turrets keep firing. */
+    lockTime: 1.8,
     coolPerSecond: 30,
     coolDelay: 0.5,
   },
@@ -32,7 +38,11 @@ export const QUIRK_PARAMS = {
   },
   droneBay: {
     count: 2,
-    respawn: 8,
+    respawn: 7,
+    /** v2: escorts inherit the carrier's Reactor Power: SPEED, WEAPONS (damage and AP), SHIELDS (hull). */
+    powerSpeed: 0.3,
+    powerWeapons: 0.25,
+    powerShields: 0.4,
     /** Drone hull and damage grow this much per tier owned. */
     perRank: 0.15,
     orbitRadius: 70,
@@ -41,13 +51,15 @@ export const QUIRK_PARAMS = {
     captureMul: 2,
   },
   pointDefense: {
-    radius: 320,
-    interval: 0.5,
+    radius: 360,
+    interval: 0.6,
     starshipDamage: 25,
   },
   lockOn: {
     rampTime: 3,
-    maxBonus: 0.25,
+    maxBonus: 0.2,
+    /** v2: Harmonic Target Lock also raises primary caliber up to this much. */
+    maxAp: 20,
     /** Firing gaps longer than this drain the lock. */
     holdWindow: 0.5,
     drainPerSecond: 2,
