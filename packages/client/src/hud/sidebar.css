@@ -1,0 +1,95 @@
+/* Sidebar experiment. ?hud=bottom retains the original layout for comparison. */
+.sidebar-layout {
+  --hud-width: clamp(280px, 24vw, 360px);
+  --play-center: calc(50% + var(--hud-width) / 2);
+}
+
+.sidebar-layout #stage { left: var(--hud-width); }
+.sidebar-layout #stage canvas { position: absolute; }
+.sidebar-layout #hud::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: var(--hud-width);
+  background: linear-gradient(90deg, #060a13, #0b1220);
+  border-right: 1px solid var(--edge);
+  pointer-events: auto;
+}
+
+.sidebar-layout .vhud {
+  inset: 0 auto 0 0;
+  width: var(--hud-width);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 8px;
+  padding: 10px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #35507e #060a13;
+  pointer-events: auto;
+}
+.sidebar-layout .vhud > * { flex-shrink: 0; }
+.sidebar-layout .vhud-left,
+.sidebar-layout .vhud-right { padding: 8px; gap: 6px; justify-content: space-between; }
+.sidebar-layout .ship-array-screen { width: 130px; height: 130px; }
+.sidebar-layout .ship-shield-ring,
+.sidebar-layout .ship-hull-ring {
+  -webkit-mask: radial-gradient(circle closest-side, transparent 87%, #000 89%);
+  mask: radial-gradient(circle closest-side, transparent 87%, #000 89%);
+}
+.sidebar-layout .ship-hull-ring { inset: 11px; }
+.sidebar-layout .ship-inner-crt { inset: 18px; }
+.sidebar-layout .ship-array-label,
+.sidebar-layout .led-power-head { font-size: 9px; letter-spacing: .06em; }
+.sidebar-layout .led-power-panel { padding: 5px; }
+.sidebar-layout .led-cols { gap: 6px; }
+.sidebar-layout .led-stack { padding: 3px; }
+.sidebar-layout .led-stack i { width: 14px; height: 4px; }
+.sidebar-layout .led-eq-btn { padding: 3px; font-size: 9px; }
+.sidebar-layout .vhud-upgrades-bank,
+.sidebar-layout .vhud-weapons-dash { padding: 8px; }
+.sidebar-layout .vhud-bank-strip { flex-wrap: wrap; gap: 6px; }
+.sidebar-layout .vhud-xp-wrap { flex-basis: 100%; gap: 5px; }
+.sidebar-layout .vhud-tier-badge { padding: 2px 4px; }
+.sidebar-layout .vhud-up-grid,
+.sidebar-layout .vhud-weapons-dash { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.sidebar-layout .vhud-up-card { padding: 5px; }
+.sidebar-layout .vhud-up-top { font-size: 10px; }
+.sidebar-layout .vhud-up-sub { flex-wrap: wrap; gap: 3px; white-space: normal; }
+.sidebar-layout .vhud-up-sub span:last-child { display: inline; }
+.sidebar-layout .w-slot { padding: 6px; min-height: 77px; }
+.sidebar-layout .w-slot-title { white-space: normal; overflow-wrap: anywhere; }
+.sidebar-layout .w-slot-meta { flex-wrap: wrap; gap: 4px; white-space: normal; }
+.sidebar-layout .vhud-right { margin-top: auto; }
+.sidebar-layout .vhud-throttle,
+.sidebar-layout .vhud-sublight { padding: 5px 3px; min-width: 36px; }
+.sidebar-layout .thr-led-bar i { width: 16px; height: 4px; }
+.sidebar-layout .sl-led-bar i { width: 14px; height: 6px; }
+.sidebar-layout .vhud-radar-wrap { flex: 1; min-width: 0; justify-content: center; }
+.sidebar-layout .vhud .radar { width: 144px; height: 144px; max-width: 100%; object-fit: contain; }
+.sidebar-layout .vhud-radar-head { flex-wrap: wrap; justify-content: center; gap: 3px; }
+.sidebar-layout .vhud-radar-head span { display: inline; }
+.sidebar-layout .vhud-radar-foot { white-space: normal; text-align: center; line-height: 1.3; }
+
+/* Center world-related overlays in the same space as the camera. */
+.sidebar-layout .top,
+.sidebar-layout .toast,
+.sidebar-layout .minimap.big { left: var(--play-center); }
+.sidebar-layout .minimap.big { max-width: calc(100vw - var(--hud-width) - 24px); max-height: calc(100vh - 24px); object-fit: contain; }
+.sidebar-layout .overlay:not(.picker) { left: var(--hud-width); }
+.sidebar-layout .board .cols { max-width: calc(100vw - var(--hud-width) - 24px); overflow: auto; }
+.sidebar-layout .perf { left: calc(var(--hud-width) + 10px); }
+.sidebar-layout .tierpop { left: calc(var(--hud-width) + 12px); right: auto; bottom: 12px; max-height: calc(100vh - 100px); overflow-y: auto; }
+.sidebar-layout .command { inset: 10px auto 10px 10px; width: calc(var(--hud-width) - 20px); }
+
+@media (max-height: 760px) {
+  .sidebar-layout .vhud { padding: 6px; gap: 5px; }
+  .sidebar-layout .vhud-center { gap: 5px; }
+  .sidebar-layout .vhud-left,
+  .sidebar-layout .vhud-right { padding: 6px; }
+  .sidebar-layout .vhud .radar { width: 130px; height: 130px; }
+}

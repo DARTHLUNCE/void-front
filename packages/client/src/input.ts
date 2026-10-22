@@ -4,6 +4,8 @@ export type ControlScheme = 'mouse' | 'wasd';
 
 /** v2 signed throttle: −reverse ceiling (−40% base) … +100%, in 10% steps on the mouse wheel. */
 const THROTTLE_STEP = 0.1;
+const HUD_TARGET = 'button, .panel, .hud-hit, .overlay:not(.passive), .sidebar-layout #hud';
+const overHud = (target: EventTarget | null): boolean => !!(target as Element | null)?.closest?.(HUD_TARGET);
 
 /** v2 Reactor Power on the arrow keys (POWER_INDEX: balanced 0, speed 1, weapons 2, shields 3). */
 const POWER_KEYS: Readonly<Record<string, number>> = { ArrowDown: 0, ArrowLeft: 1, ArrowUp: 2, ArrowRight: 3 };
@@ -40,6 +42,7 @@ export class Input {
   private right = false;
   private readonly keys = new Set<string>();
   autofire = false;
+  pointerOverHud = false;
   /** Signed share of top speed: positive drives toward W/A/S/D or the mouse, negative backs up on the retro-thrusters. */
   throttle = 1;
   /** Deepest reverse this ship allows (0.4 base; nodes raise it). Kept in sync from the snapshot. */
@@ -59,15 +62,21 @@ export class Input {
   constructor(
     readonly scheme: ControlScheme,
     private readonly h: InputHandlers,
+    initialPointer = { x: window.innerWidth / 2, y: window.innerHeight / 2 },
   ) {
-    this.mouseX = window.innerWidth / 2;
-    this.mouseY = window.innerHeight / 2;
+    this.mouseX = initialPointer.x;
+    this.mouseY = initialPointer.y;
     this.on(window, 'mousemove', (e: MouseEvent) => {
+      this.pointerOverHud = overHud(e.target);
+      if (this.pointerOverHud) {
+        this.left = this.right = false;
+        return;
+      }
       this.mouseX = e.clientX;
       this.mouseY = e.clientY;
     });
     this.on(window, 'mousedown', (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('button, .panel, .hud-hit, .overlay:not(.passive)')) return;
+      if (overHud(e.target)) return;
       if (e.button === 0) this.left = true;
       if (e.button === 2) this.right = true;
       this.h.press(e.clientX, e.clientY, e.button);
@@ -78,6 +87,7 @@ export class Input {
       (e: WheelEvent) => {
         // Ctrl+wheel would zoom the whole page.
         if (e.ctrlKey) e.preventDefault();
+        if (overHud(e.target)) return;
         this.h.wheel(e.deltaY, e.clientX, e.clientY, e.ctrlKey);
       },
       { passive: false },

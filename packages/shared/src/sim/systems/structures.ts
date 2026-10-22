@@ -1,3 +1,4 @@
+import { nodeTurretRadius } from '../worldCollision';
 import type { GunDef, StructureDef } from '../../content/types';
 import { EXPOSED, NODE } from '../../content/structures';
 import { BASE_UPGRADES, TURRET_REFITS, type TurretType } from '../../content/upgrades';
@@ -91,8 +92,9 @@ export function fireNodeTurrets(w: World): void {
       const a = (k / p.turrets) * Math.PI * 2;
       const ux = Math.cos(a);
       const uy = Math.sin(a);
-      const tx = p.x + ux * (NODE.radius + NODE_GUN.size + 4);
-      const ty = p.y + uy * (NODE.radius + NODE_GUN.size + 4);
+      const rim = nodeTurretRadius(p.def.resource, w.opts.hullGeometry ?? 'reference', a);
+      const tx = p.x + ux * rim;
+      const ty = p.y + uy * rim;
       const target = nearestEnemy(w, team, tx, ty, NODE.turret.range);
       if (!target || (target.x - p.x) * ux + (target.y - p.y) * uy <= 0) {
         p.turretCd[k] = 0;
