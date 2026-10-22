@@ -126,7 +126,6 @@ export class Hud {
           <div class="bars">
             <div class="who"><b data-k="cname"></b> <span data-k="hname"></span></div>
             <div class="bar xp"><i data-k="xp"></i><span data-k="xptext"></span></div>
-            <div class="bar hull"><i data-k="hull"></i><span data-k="hulltext"></span></div>
           </div>
         </div>
         <div class="shards"><span class="gem">◆</span> <b data-k="shards">0</b> shards <small>· buy upgrades, costs climb per level</small></div>
@@ -136,15 +135,39 @@ export class Hud {
           ).join('')}
         </div>
       </div>
-      <div data-k="abilities" class="abilities panel hidden">
-        ${['RMB', 'T', 'G']
-          .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
-          .join('')}
-        <div class="meters">
-          <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
-          <div class="meter throttle"><label>Throttle <kbd>${throttleMode === 'keys' ? '&uarr; &darr;' : 'Wheel'}</kbd> <b data-k="thrText">100%</b></label><div class="bar thr"><i data-k="thr"></i></div></div>
-          <div data-k="sublight" class="meter sublight"><label>Sub-Light <kbd>Shift</kbd> <b data-k="slText">ready</b></label><div class="bar sl"><i data-k="sl"></i></div></div>
-          <div class="chips"><span data-k="brake" class="chip">Brake · Space</span><span data-k="auto" class="chip">Auto-fire · ${autofireKeyLabel(scheme)}</span></div>
+      <div data-k="abilities" class="cockpit hidden">
+        <div class="dash">
+          <div class="strip">
+            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
+            <span class="tag"><i data-k="brake" class="led red"></i>BRK <kbd>Space</kbd></span>
+            <span class="tag"><i data-k="auto" class="led green"></i>AUTO <kbd>${autofireKeyLabel(scheme)}</kbd></span>
+            <span class="tag"><i data-k="slLed" class="led amber"></i>SUB-L</span>
+            <span class="tag"><i data-k="dmgLed" class="led red"></i>DMG</span>
+            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
+          </div>
+          <div data-k="hullScope" class="scope hullscope">
+            <div data-k="hullDial" class="dial"></div>
+            <div class="glass"><span data-k="hullPic" class="wire"></span><b data-k="hullPct">100%</b><small>HULL</small><em data-k="hulltext"></em></div>
+          </div>
+          <div class="crt">
+            <div class="crt-head"><b data-k="crtName"></b><span data-k="crtTier"></span></div>
+            <div class="crt-abilities">
+              ${['RMB', 'T', 'G']
+                .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
+                .join('')}
+            </div>
+            <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
+          </div>
+          <div class="lever">
+            <label>THR</label>
+            <div data-k="thrStack" class="stack">${'<i></i>'.repeat(10)}</div>
+            <b data-k="thrText">100%</b>
+            <kbd>${throttleMode === 'keys' ? '&uarr;&darr;' : 'Wheel'}</kbd>
+          </div>
+          <div data-k="sublight" class="scope slscope">
+            <div data-k="slDial" class="dial"></div>
+            <div class="glass"><span class="chevrons">&#x25B2;&#x25B2;</span><b data-k="slText">READY</b><small>SUB-LIGHT</small><kbd>Shift</kbd></div>
+          </div>
         </div>
       </div>
       <div data-k="tierPop" class="tierpop panel hidden"></div>
@@ -247,8 +270,21 @@ export class Hud {
   setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
 
   setThrottle(t: number): void {
-    this.set('thr', `${t * 100}%`, 'width');
+    const lit = Math.round(t * 10);
     this.set('thrText', `${Math.round(t * 100)}%`);
+    if (this.cache.get('thrLit') === String(lit)) return;
+    this.cache.set('thrLit', String(lit));
+    // Segments fill bottom-up (the stack is laid out top-down, so count from the end).
+    const segs = this.$.thrStack.children;
+    for (let i = 0; i < segs.length; i++) segs[i].classList.toggle('on', segs.length - 1 - i < lit);
+  }
+
+  /** Set a CSS custom property, only when it changed. */
+  private setVar(key: string, name: string, value: string): void {
+    const ck = `${key}${name}`;
+    if (this.cache.get(ck) === value) return;
+    this.cache.set(ck, value);
+    this.$[key].style.setProperty(name, value);
   }
 
   setAutofire(on: boolean): void {
@@ -430,8 +466,26 @@ export class Hud {
     this.set('xptext', next < 0 ? 'All tiers owned' : `${Math.floor(xp)} / ${next} XP → tier ${tiers + 1}`);
     const hull = b[me + SHIP.hull];
     const maxHull = b[me + SHIP.maxHull];
-    this.set('hull', `${(100 * Math.max(0, hull)) / Math.max(1, maxHull)}%`, 'width');
+    // Cockpit hull scope: dial, wireframe of the current hull, and warning states.
+    const frac = Math.max(0, hull) / Math.max(1, maxHull);
+    this.setVar('hullDial', '--p', `${(frac * 360).toFixed(1)}deg`);
+    this.set('hullPct', `${Math.round(frac * 100)}%`);
     this.set('hulltext', `${Math.ceil(Math.max(0, hull))} / ${Math.round(maxHull)}`);
+    const state = frac < 0.25 ? 'crit' : frac < 0.5 ? 'warn' : '';
+    if (this.cache.get('hullState') !== state) {
+      this.cache.set('hullState', state);
+      this.$.hullScope.classList.toggle('warn', state === 'warn');
+      this.$.hullScope.classList.toggle('crit', state === 'crit');
+      this.$.dmgLed.classList.toggle('on', state === 'crit');
+    }
+    const model = hullNode?.hullModel ?? cls.hullModel;
+    if (this.cache.get('hullPic') !== model) {
+      this.cache.set('hullPic', model);
+      const art = HULL_BY_ID[model];
+      this.$.hullPic.innerHTML = art ? hullSvg(art.shapes) : '';
+    }
+    this.set('crtName', cls.name.toUpperCase());
+    this.set('crtTier', `TIER ${tiers} · ${cls.role.toUpperCase()}`);
     const shards = b[s + SELF.shards];
     this.set('shards', String(Math.floor(shards)));
     for (let i = 0; i < this.statRows.length; i++) {
@@ -492,12 +546,14 @@ export class Hud {
       this.set('gauge', `${Math.min(1, b[s + SELF.quirkGauge]) * 100}%`, 'width');
       this.$.gauge.parentElement!.classList.toggle('hot', cls.quirk === 'heat' && b[s + SELF.quirkGauge] >= 0.5);
     }
-    // Sub-Light: the meter fills while Shift charges the drive, then the jump engages.
+    // Sub-Light: the scope's ring fills while Shift charges the drive, then the jump engages.
     const spool = b[s + SELF.cruiseSpool];
-    this.set('sl', `${Math.min(1, spool) * 100}%`, 'width');
-    this.set('slText', spool >= 1 ? 'ENGAGED' : spool > 0 ? `charging ${Math.floor(spool * 100)}%` : 'ready');
+    this.setVar('slDial', '--p', `${(Math.min(1, spool) * 360).toFixed(1)}deg`);
+    this.set('slText', spool >= 1 ? 'ENGAGED' : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
     this.$.sublight.classList.toggle('on', spool >= 1);
     this.$.sublight.classList.toggle('spool', spool > 0 && spool < 1);
+    this.$.slLed.classList.toggle('on', spool > 0);
+    this.$.slLed.classList.toggle('blink', spool > 0 && spool < 1);
 
     // Tier pop-up: industrial module schematic cards with keybindings and hull SVG preview at Tier 3.
     if (this.tierReady(snap)) {

@@ -424,135 +424,437 @@ button.primary:hover {
   background: #ffd166;
 }
 
-.abilities {
+/*
+ * Cockpit console along the bottom edge: a metal dash with an LED strip, a green hull scope (left),
+ * an amber CRT with the abilities (center), the throttle lever and a Sub-Light scope (right).
+ */
+.cockpit {
+  --dash-w: clamp(560px, calc(100vw - 690px), 880px);
+  --crt: #ffb347;
+  --crt-dim: rgba(255, 179, 71, 0.45);
+  --scope: #5cff9d;
   left: 50%;
-  bottom: 14px;
+  bottom: 0;
+  width: var(--dash-w);
   transform: translateX(-50%);
+  filter: drop-shadow(0 -6px 18px rgba(0, 0, 0, 0.55));
+}
+
+.cockpit .dash {
+  position: relative;
+  display: grid;
+  grid-template-columns: 132px 1fr 58px 132px;
+  grid-template-rows: auto 1fr;
+  column-gap: 12px;
+  align-items: end;
+  padding: 10px 46px 10px;
+}
+
+/* The dash plate: angled shoulders, brushed gunmetal, seams and rivets. */
+.cockpit .dash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  clip-path: polygon(0 100%, 4% 22%, 11% 0, 89% 0, 96% 22%, 100% 100%);
+  background:
+    radial-gradient(circle at 7% 72%, #8796ad 0 2px, transparent 3px),
+    radial-gradient(circle at 93% 72%, #8796ad 0 2px, transparent 3px),
+    radial-gradient(circle at 13% 10%, #8796ad 0 2px, transparent 3px),
+    radial-gradient(circle at 87% 10%, #8796ad 0 2px, transparent 3px),
+    linear-gradient(90deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.5) calc(50% - 1px) calc(50% + 1px), transparent 0),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #2b3446 0%, #1a2130 38%, #0e131d 100%);
+  border-top: 2px solid #4a5874;
+}
+
+/* Bright top lip of the dash. */
+.cockpit .dash::after {
+  content: '';
+  position: absolute;
+  left: 11%;
+  right: 11%;
+  top: 0;
+  height: 2px;
+  z-index: -1;
+  background: linear-gradient(90deg, transparent, rgba(160, 190, 240, 0.55), transparent);
+}
+
+.cockpit .strip {
+  grid-column: 1 / -1;
   display: flex;
-  gap: 16px;
+  justify-content: center;
   align-items: center;
-  padding: 8px 14px;
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  background: var(--panel);
+  gap: 10px;
+  margin: 0 auto 8px;
+  padding: 3px 12px;
+  border: 1px solid #39465f;
+  border-radius: 3px;
+  background: #0a0e16;
+  font: 600 0.68rem var(--mono);
+  letter-spacing: 0.08em;
+  color: #7f8cab;
 }
 
-.ability {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-}
-
-.ring {
-  --p: 360deg;
-  width: 54px;
-  height: 54px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(var(--cobalt) var(--p), rgba(255, 255, 255, 0.08) 0);
-  font-weight: 700;
-}
-
-.ring span {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #0b1020;
-  font-size: 0.85rem;
-}
-
-.ring.ready {
-  box-shadow: 0 0 14px rgba(74, 168, 255, 0.6);
-}
-
-.ability label {
-  font-weight: 700;
-}
-
-.ability small {
-  color: var(--dim);
-}
-
-.meters {
-  display: grid;
-  gap: 6px;
-  min-width: 190px;
-}
-
-.meter label {
-  font-size: 0.8rem;
-  color: var(--dim);
-}
-
-.bar.mom {
-  height: 8px;
-}
-
-.bar.mom i {
-  background: linear-gradient(90deg, var(--cobalt), #9ff);
-}
-
-.chips {
+.cockpit .strip .bank {
   display: flex;
-  gap: 6px;
+  gap: 4px;
 }
 
-.chip {
-  padding: 1px 8px;
-  border: 1px solid var(--edge);
-  border-radius: 999px;
-  font-size: 0.8rem;
-  color: var(--dim);
+.cockpit .strip .tag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.chip.on {
-  border-color: var(--good);
-  color: var(--good);
+.cockpit .strip kbd {
+  font-size: 0.6rem;
+  padding: 0 3px;
 }
 
-.chip.spool {
-  border-color: #ffd166;
-  color: #ffd166;
+.cockpit .led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a1414;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
 }
 
-/* Throttle gauge and Sub-Light charge meter */
-.meter label kbd {
-  font-size: 0.7rem;
+.cockpit .bank .led:nth-child(3n + 1) {
+  background: #d23a3a;
+  box-shadow: 0 0 5px rgba(255, 70, 70, 0.7);
+}
+
+.cockpit .bank .led:nth-child(4n + 2) {
+  background: #3a8cff;
+  box-shadow: 0 0 5px rgba(80, 160, 255, 0.7);
+}
+
+.cockpit .led.green.on {
+  background: var(--scope);
+  box-shadow: 0 0 7px var(--scope);
+}
+
+.cockpit .led.red.on {
+  background: #ff4b4b;
+  box-shadow: 0 0 8px #ff4b4b;
+}
+
+.cockpit .led.amber.on {
+  background: var(--amber);
+  box-shadow: 0 0 7px var(--amber);
+}
+
+.cockpit .led.blink {
+  animation: led-blink 0.35s steps(2) infinite;
+}
+
+@keyframes led-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Round scopes: metal bezel, value ring, phosphor glass with a range grid. */
+.cockpit .scope {
+  --c: var(--scope);
+  position: relative;
+  width: 132px;
+  height: 132px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #121722 58%, #3c475d 59%, #1c2331 64%, #59667f 68%, #222a3a 71%);
+  box-shadow: 0 0 0 2px #0a0d14, 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.cockpit .scope .dial {
+  --p: 360deg;
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: conic-gradient(var(--c) var(--p), rgba(255, 255, 255, 0.06) 0);
+  mask: radial-gradient(circle, transparent 54px, #000 55px);
+  filter: drop-shadow(0 0 4px var(--c));
+}
+
+.cockpit .scope .glass {
+  position: absolute;
+  inset: 16px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 32%, color-mix(in srgb, var(--c) 22%, transparent) 32.5% 33.5%, transparent 34% 64%, color-mix(in srgb, var(--c) 18%, transparent) 64.5% 65.5%, transparent 66%),
+    linear-gradient(transparent calc(50% - 0.5px), color-mix(in srgb, var(--c) 20%, transparent) 0 calc(50% + 0.5px), transparent 0),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), color-mix(in srgb, var(--c) 20%, transparent) 0 calc(50% + 0.5px), transparent 0),
+    radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--c) 26%, #06120c), #020604 75%);
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.9);
+  color: var(--c);
+  font-family: var(--mono);
+  line-height: 1;
+  text-shadow: 0 0 6px var(--c);
+  overflow: hidden;
+}
+
+.cockpit .scope b {
+  position: relative;
+  font-size: 1.25rem;
+}
+
+.cockpit .scope small {
+  position: relative;
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  opacity: 0.8;
+}
+
+.cockpit .scope em {
+  position: relative;
+  margin-top: 2px;
+  font-style: normal;
+  font-size: 0.6rem;
+  opacity: 0.75;
+}
+
+.cockpit .scope kbd {
+  position: relative;
+  margin-top: 3px;
+  font-size: 0.58rem;
   padding: 0 4px;
 }
 
-.meter label b {
-  float: right;
-  color: var(--text, #dfe8ff);
+/* Hull wireframe behind the readout, nose up. */
+.cockpit .wire {
+  position: absolute;
+  inset: 10px;
+  display: grid;
+  place-items: center;
+  opacity: 0.38;
+  transform: rotate(-90deg);
 }
 
-.bar.thr,
-.bar.sl {
-  height: 8px;
+.cockpit .wire svg {
+  width: 100%;
+  height: 100%;
 }
 
-.bar.thr i {
-  background: linear-gradient(90deg, #3d6fb8, #9fd4ff);
+.cockpit .wire svg * {
+  fill: color-mix(in srgb, var(--c) 12%, transparent);
+  stroke: var(--c);
+  stroke-width: 0.8;
 }
 
-.bar.sl i {
-  background: linear-gradient(90deg, #b8862a, #ffd166);
+.cockpit .hullscope.warn {
+  --c: var(--amber);
 }
 
-.meter.sublight.spool label b {
-  color: #ffd166;
+.cockpit .hullscope.crit {
+  --c: #ff4b4b;
 }
 
-.meter.sublight.on label b {
-  color: var(--good);
+.cockpit .hullscope.crit .glass {
+  animation: scope-alarm 0.6s ease-in-out infinite alternate;
 }
 
-.meter.sublight.on .bar.sl i {
-  background: linear-gradient(90deg, #2fbf71, #9dffc8);
-  box-shadow: 0 0 10px rgba(92, 255, 157, 0.6);
+@keyframes scope-alarm {
+  to {
+    box-shadow: inset 0 0 26px rgba(255, 60, 60, 0.55);
+  }
+}
+
+.cockpit .slscope {
+  --c: #57d6ff;
+}
+
+.cockpit .slscope.spool {
+  --c: var(--amber);
+}
+
+.cockpit .slscope.on {
+  --c: var(--scope);
+}
+
+.cockpit .slscope .chevrons {
+  position: relative;
+  font-size: 0.7rem;
+  letter-spacing: -0.1em;
+  opacity: 0.6;
+}
+
+.cockpit .slscope.on .chevrons {
+  opacity: 1;
+  animation: led-blink 0.5s steps(2) infinite;
+}
+
+/* Amber CRT in the middle of the dash: class readout and abilities. */
+.cockpit .crt {
+  align-self: stretch;
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 7px 12px 8px;
+  border: 3px solid #0b0f17;
+  border-radius: 8px;
+  outline: 2px solid #3c475d;
+  background:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, #2a1806, #0d0803 80%);
+  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.85);
+  color: var(--crt);
+  font-family: var(--mono);
+  text-shadow: 0 0 6px rgba(255, 170, 60, 0.6);
+}
+
+.cockpit .crt-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--crt-dim);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cockpit .crt-head span {
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cockpit .crt-abilities {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+}
+
+.cockpit .ability {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.cockpit .ring {
+  --p: 360deg;
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(var(--crt) var(--p), rgba(255, 179, 71, 0.12) 0);
+  font-weight: 700;
+}
+
+.cockpit .ring span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #140c04;
+  font-size: 0.72rem;
+}
+
+.cockpit .ring.ready {
+  box-shadow: 0 0 12px rgba(255, 179, 71, 0.55);
+}
+
+.cockpit .ability label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+}
+
+.cockpit .ability small {
+  font-size: 0.64rem;
+  color: var(--crt-dim);
+}
+
+.cockpit .ability.locked {
+  opacity: 0.4;
+}
+
+.cockpit .meter label {
+  font-size: 0.66rem;
+  color: var(--crt);
+}
+
+.cockpit .bar.mom {
+  height: 7px;
+  border-color: var(--crt-dim);
+}
+
+.cockpit .bar.mom i {
+  background: linear-gradient(90deg, #b8661a, var(--crt));
+}
+
+.cockpit .bar.mom.hot i {
+  background: linear-gradient(90deg, #ff8a3c, #ff3c3c);
+}
+
+/* Narrower screens: sit the dash to the right of the pilot panel instead of centering it under it. */
+@media (max-width: 1280px) {
+  .cockpit {
+    --dash-w: min(820px, calc(100vw - 340px));
+    left: 332px;
+    transform: none;
+  }
+}
+
+/* Throttle lever: ten LED segments that fill bottom-up. */
+.cockpit .lever {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  margin-bottom: 6px;
+  font-family: var(--mono);
+  color: #9fb0d6;
+}
+
+.cockpit .lever label {
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+}
+
+.cockpit .lever .stack {
+  display: grid;
+  gap: 2px;
+  width: 30px;
+  padding: 3px;
+  border: 2px solid #3c475d;
+  border-radius: 4px;
+  background: #07090f;
+}
+
+.cockpit .lever .stack i {
+  height: 6px;
+  border-radius: 1px;
+  background: #1a2230;
+}
+
+.cockpit .lever .stack i.on {
+  background: #4aa8ff;
+  box-shadow: 0 0 5px rgba(74, 168, 255, 0.8);
+}
+
+.cockpit .lever .stack i:nth-child(-n + 3).on {
+  background: var(--amber);
+  box-shadow: 0 0 5px rgba(255, 209, 102, 0.8);
+}
+
+.cockpit .lever b {
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+
+.cockpit .lever kbd {
+  font-size: 0.58rem;
+  padding: 0 3px;
 }
 
 .perf {
@@ -733,14 +1035,6 @@ button.primary:hover {
 
 .stat.can {
   border-color: #6ff3ff;
-}
-
-.ability.locked {
-  opacity: 0.4;
-}
-
-.bar.mom.hot i {
-  background: linear-gradient(90deg, #ffb84a, #ff5c3c);
 }
 
 .toast {
@@ -1205,7 +1499,7 @@ button.primary:hover {
   .pilot {
     width: calc(100vw - 24px);
   }
-  .abilities {
+  .cockpit {
     display: none;
   }
 }
