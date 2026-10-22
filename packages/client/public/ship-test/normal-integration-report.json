@@ -1,0 +1,128 @@
+[
+  {
+    "relativeResidual": 9.60296246977258e-06,
+    "iterations": 371,
+    "gradientFitRMSE": 0.7110158704150293,
+    "heightSpanTexels": 40.37038518585466,
+    "id": "patrol"
+  },
+  {
+    "relativeResidual": 9.94497149513209e-06,
+    "iterations": 344,
+    "gradientFitRMSE": 0.6691105301901049,
+    "heightSpanTexels": 37.04138716627268,
+    "id": "corvette"
+  },
+  {
+    "relativeResidual": 9.947330307502222e-06,
+    "iterations": 365,
+    "gradientFitRMSE": 0.7553025828389348,
+    "heightSpanTexels": 41.4843870438219,
+    "id": "battleship"
+  },
+  {
+    "relativeResidual": 9.940921202916764e-06,
+    "iterations": 344,
+    "gradientFitRMSE": 0.7831301116385465,
+    "heightSpanTexels": 34.11253498260989,
+    "id": "dreadnought"
+  },
+  {
+    "relativeResidual": 9.818688486910702e-06,
+    "iterations": 368,
+    "gradientFitRMSE": 0.7107530805230037,
+    "heightSpanTexels": 45.57185872087503,
+    "id": "carrier"
+  },
+  {
+    "relativeResidual": 9.693407470875724e-06,
+    "iterations": 368,
+    "gradientFitRMSE": 0.741941859612968,
+    "heightSpanTexels": 42.47609076851795,
+    "id": "frigate"
+  },
+  {
+    "relativeResidual": 9.66099632581788e-06,
+    "iterations": 385,
+    "gradientFitRMSE": 0.7335373764839437,
+    "heightSpanTexels": 40.24783592631455,
+    "id": "striker"
+  },
+  {
+    "relativeResidual": 9.601854413729843e-06,
+    "iterations": 392,
+    "gradientFitRMSE": 0.7090041193913804,
+    "heightSpanTexels": 48.585598337813835,
+    "id": "wraith"
+  },
+  {
+    "relativeResidual": 9.934355926805243e-06,
+    "iterations": 376,
+    "gradientFitRMSE": 0.7633148526296368,
+    "heightSpanTexels": 47.668254170955294,
+    "id": "bastion"
+  },
+  {
+    "relativeResidual": 9.85236548855798e-06,
+    "iterations": 368,
+    "gradientFitRMSE": 0.7919463606562235,
+    "heightSpanTexels": 38.494499083381115,
+    "id": "railstorm"
+  },
+  {
+    "relativeResidual": 9.932183100597339e-06,
+    "iterations": 373,
+    "gradientFitRMSE": 0.9648906608869863,
+    "heightSpanTexels": 40.655799384172795,
+    "id": "hive"
+  },
+  {
+    "relativeResidual": 9.729505578212883e-06,
+    "iterations": 380,
+    "gradientFitRMSE": 0.7935244180288014,
+    "heightSpanTexels": 42.50768680406996,
+    "id": "fortress"
+  },
+  {
+    "relativeResidual": 9.93104005900762e-06,
+    "iterations": 383,
+    "gradientFitRMSE": 0.6676447407468565,
+    "heightSpanTexels": 44.18249367415133,
+    "id": "comet"
+  },
+  {
+    "relativeResidual": 9.817110558044764e-06,
+    "iterations": 365,
+    "gradientFitRMSE": 0.5972370061692442,
+    "heightSpanTexels": 41.98286500423568,
+    "id": "specter"
+  },
+  {
+    "relativeResidual": 9.812470556461528e-06,
+    "iterations": 389,
+    "gradientFitRMSE": 0.6602552045654771,
+    "heightSpanTexels": 43.19719651559589,
+    "id": "juggernaut"
+  },
+  {
+    "relativeResidual": 9.978691739332524e-06,
+    "iterations": 378,
+    "gradientFitRMSE": 0.7791710594042133,
+    "heightSpanTexels": 35.89968673372484,
+    "id": "eclipse"
+  },
+  {
+    "relativeResidual": 9.92076108185033e-06,
+    "iterations": 393,
+    "gradientFitRMSE": 0.717200188397211,
+    "heightSpanTexels": 39.34821941670564,
+    "id": "overlord"
+  },
+  {
+    "relativeResidual": 9.875090143418227e-06,
+    "iterations": 371,
+    "gradientFitRMSE": 0.808641872502387,
+    "heightSpanTexels": 53.29024352828111,
+    "id": "warden"
+  }
+]

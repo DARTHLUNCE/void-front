@@ -1,0 +1,11 @@
+{
+  "folder": "ship-test",
+  "blackPoint": 64,
+  "gamma": 1.35,
+  "roughnessRange": [
+    0.08,
+    0.95
+  ],
+  "grayPixelsRemoved": 289679,
+  "emittingPixels": 42791
+}

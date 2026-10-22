@@ -1,0 +1,93 @@
+[
+  {
+    "relativeResidual": 9.834031549978443e-06,
+    "iterations": 411,
+    "gradientFitRMSE": 0.6180699713190541,
+    "heightSpanTexels": 45.885375798874165,
+    "id": "fob"
+  },
+  {
+    "relativeResidual": 9.845732030801022e-06,
+    "iterations": 420,
+    "gradientFitRMSE": 0.6357276830675099,
+    "heightSpanTexels": 83.08124712883884,
+    "id": "munitions"
+  },
+  {
+    "relativeResidual": 9.896440011301617e-06,
+    "iterations": 423,
+    "gradientFitRMSE": 0.6213051902735726,
+    "heightSpanTexels": 80.06110640381524,
+    "id": "fuel"
+  },
+  {
+    "relativeResidual": 9.851977146034239e-06,
+    "iterations": 431,
+    "gradientFitRMSE": 0.6013610357524375,
+    "heightSpanTexels": 84.03106615016544,
+    "id": "manpower"
+  },
+  {
+    "relativeResidual": 9.972589383607005e-06,
+    "iterations": 425,
+    "gradientFitRMSE": 0.6371098990993105,
+    "heightSpanTexels": 77.26023243090745,
+    "id": "research"
+  },
+  {
+    "relativeResidual": 9.622388683648806e-06,
+    "iterations": 406,
+    "gradientFitRMSE": 0.5766268517369707,
+    "heightSpanTexels": 41.786338622487165,
+    "id": "drone"
+  },
+  {
+    "relativeResidual": 9.38047657348573e-06,
+    "iterations": 390,
+    "gradientFitRMSE": 0.5524013637314752,
+    "heightSpanTexels": 62.31892479795168,
+    "id": "bolt"
+  },
+  {
+    "relativeResidual": 9.759781495654093e-06,
+    "iterations": 434,
+    "gradientFitRMSE": 0.5411433552527233,
+    "heightSpanTexels": 78.89876220831815,
+    "id": "shell"
+  },
+  {
+    "relativeResidual": 9.920620890563535e-06,
+    "iterations": 397,
+    "gradientFitRMSE": 0.6916262467444542,
+    "heightSpanTexels": 60.27431682556269,
+    "id": "turret"
+  },
+  {
+    "relativeResidual": 9.727712242633536e-06,
+    "iterations": 364,
+    "gradientFitRMSE": 0.4917812312288521,
+    "heightSpanTexels": 41.195884394021704,
+    "id": "mine"
+  },
+  {
+    "relativeResidual": 9.909629252665668e-06,
+    "iterations": 393,
+    "gradientFitRMSE": 0.7044352286489572,
+    "heightSpanTexels": 63.609821724041154,
+    "id": "emitter"
+  },
+  {
+    "relativeResidual": 9.814387168647256e-06,
+    "iterations": 379,
+    "gradientFitRMSE": 0.6280820901371807,
+    "heightSpanTexels": 54.732356465497666,
+    "id": "beacon"
+  },
+  {
+    "relativeResidual": 9.753797377961724e-06,
+    "iterations": 395,
+    "gradientFitRMSE": 0.6515960437368659,
+    "heightSpanTexels": 44.54791225746263,
+    "id": "platform"
+  }
+]

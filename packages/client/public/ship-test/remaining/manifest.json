@@ -1,0 +1,313 @@
+[
+  {
+    "id": "destroyer",
+    "label": "Destroyer",
+    "box": [
+      20,
+      35,
+      310,
+      190
+    ],
+    "nozzles": [
+      [
+        45,
+        113
+      ],
+      [
+        45,
+        150
+      ]
+    ],
+    "normalNeutral": [
+      129.0,
+      142.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "cruiser",
+    "label": "Cruiser",
+    "box": [
+      345,
+      35,
+      330,
+      190
+    ],
+    "nozzles": [
+      [
+        374,
+        111
+      ],
+      [
+        374,
+        134
+      ],
+      [
+        374,
+        155
+      ]
+    ],
+    "normalNeutral": [
+      129.0,
+      143.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "battlecruiser",
+    "label": "Battlecruiser",
+    "box": [
+      685,
+      35,
+      330,
+      190
+    ],
+    "nozzles": [
+      [
+        711,
+        118
+      ],
+      [
+        711,
+        145
+      ]
+    ],
+    "normalNeutral": [
+      128.0,
+      139.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "hunter",
+    "label": "Hunter-Killer",
+    "box": [
+      20,
+      315,
+      315,
+      190
+    ],
+    "nozzles": [
+      [
+        44,
+        383
+      ],
+      [
+        44,
+        407
+      ],
+      [
+        44,
+        432
+      ]
+    ],
+    "normalNeutral": [
+      129.0,
+      142.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "strikecruiser",
+    "label": "Strike Cruiser",
+    "box": [
+      345,
+      310,
+      330,
+      195
+    ],
+    "nozzles": [
+      [
+        378,
+        392
+      ],
+      [
+        378,
+        424
+      ]
+    ],
+    "normalNeutral": [
+      129.0,
+      142.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "raider",
+    "label": "Raider",
+    "box": [
+      685,
+      315,
+      330,
+      190
+    ],
+    "nozzles": [
+      [
+        712,
+        394
+      ],
+      [
+        712,
+        424
+      ]
+    ],
+    "normalNeutral": [
+      128.0,
+      139.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "escort",
+    "label": "Escort",
+    "box": [
+      20,
+      565,
+      315,
+      240
+    ],
+    "nozzles": [
+      [
+        54,
+        657
+      ],
+      [
+        54,
+        687
+      ],
+      [
+        54,
+        716
+      ]
+    ],
+    "normalNeutral": [
+      132.0,
+      140.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "commandcruiser",
+    "label": "Command Cruiser",
+    "box": [
+      345,
+      565,
+      330,
+      240
+    ],
+    "nozzles": [
+      [
+        408,
+        663
+      ],
+      [
+        408,
+        689
+      ],
+      [
+        408,
+        713
+      ]
+    ],
+    "normalNeutral": [
+      129.0,
+      143.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "ironclad",
+    "label": "Ironclad",
+    "box": [
+      685,
+      565,
+      330,
+      240
+    ],
+    "nozzles": [
+      [
+        706,
+        677
+      ],
+      [
+        706,
+        699
+      ]
+    ],
+    "normalNeutral": [
+      127.0,
+      137.0
+    ],
+    "atlas": "remaining"
+  },
+  {
+    "id": "mothership",
+    "label": "Titan / Mothership",
+    "box": [
+      1030,
+      125,
+      780,
+      575
+    ],
+    "nozzles": [
+      [
+        1065,
+        299
+      ],
+      [
+        1065,
+        355
+      ],
+      [
+        1065,
+        416
+      ],
+      [
+        1065,
+        474
+      ],
+      [
+        1065,
+        529
+      ]
+    ],
+    "normalNeutral": [
+      128.0,
+      143.0
+    ],
+    "atlas": "remaining",
+    "engineRadius": 17,
+    "lights": [
+      [
+        1495,
+        415,
+        29
+      ],
+      [
+        1717,
+        413,
+        17
+      ],
+      [
+        1236,
+        207,
+        7
+      ],
+      [
+        1631,
+        207,
+        7
+      ],
+      [
+        1236,
+        610,
+        7
+      ],
+      [
+        1631,
+        610,
+        7
+      ]
+    ]
+  }
+]

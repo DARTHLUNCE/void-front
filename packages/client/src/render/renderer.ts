@@ -23,6 +23,7 @@ import {
   type CommandId,
   type MatchInfo,
 } from '@void-front/shared';
+import { loadReferenceShips, type ShipArtMode } from '../art/referenceShips';
 import { HULL_BY_ID, type HullArt } from '../art/hulls';
 import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
@@ -150,6 +151,7 @@ interface Particle {
   max: number;
   color: number;
   size: number;
+  castLight?: boolean;
 }
 
 export interface Camera {
@@ -172,7 +174,6 @@ export class Renderer {
   /** Commander war-map markers drawn on top at constant screen size. */
   private readonly warLayer = new Graphics();
   private readonly motherships: Mesh<MeshGeometry, Shader>[] = [];
-  private readonly msOccluders: Sprite[] = [];
   /** FOB meshes in map order (structure index 2 + i), and each node's mesh per state (neutral, Cobalt, Ember). */
   private readonly fobMeshes: Mesh<MeshGeometry, Shader>[] = [];
   private readonly fobOccluders: Sprite[] = [];
@@ -181,8 +182,10 @@ export class Renderer {
   private lightOverlay!: Sprite;
   private lights!: SpritePool;
   private readonly occluderLayer = new Container();
-  private shipOccluders!: SpritePool;
   private readonly hullPools = new Map<string, MeshPool>();
+  private readonly assetPools = new Map<string, MeshPool>();
+  // Client-only cosmetic randomness. Position hashing keeps each stationary pickup stable.
+  private readonly shardVariantSeed = (Math.random() * 0xffffffff) >>> 0;
   private readonly crystalLayer = new Container();
   private readonly glowLayer = new Container();
   private readonly shotLayer = new Container();
@@ -214,12 +217,13 @@ export class Renderer {
   pendingOrder: CommandId | null = null;
   private readonly cursor = { x: 0, y: 0 };
 
-  constructor(private readonly lightingOn = true) {}
+  constructor(private readonly lightingOn = true, private readonly shipArt: ShipArtMode = 'original', private readonly derivedNormals = true) {}
 
   async init(parent: HTMLElement): Promise<void> {
-    await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, window.devicePixelRatio || 1) });
+    // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
+    await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(1.5, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
-    this.tex = makeTextures(this.app.renderer);
+    this.tex = makeTextures(this.app.renderer, await loadReferenceShips(this.shipArt, this.derivedNormals));
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
     this.lighting = new Lighting(this.app.renderer, this.lightingOn);
     // Faint light spill on space itself; ships get their lighting from the lit shader instead.
@@ -232,27 +236,18 @@ export class Renderer {
     const msArt = this.tex.mothership;
     const msGeom = litGeometry(msArt.widthWorld, msArt.heightWorld, msArt.anchorX, msArt.anchorY);
     KESSLER_REACH.motherships.forEach((pos, team) => {
-      const ms = new Mesh({ geometry: msGeom, shader: this.lighting.litShader(msArt.albedo[team].source, msArt.normal.source) });
+      const ms = new Mesh({ geometry: msGeom, shader: this.lighting.litShader(msArt.albedo[team].source, msArt.normal.source, msArt.relief?.source, msArt.reliefRange, msArt.material?.source) });
       ms.position.set(pos.x, pos.y);
       ms.rotation = team === 0 ? 0 : Math.PI; // each mothership faces the enemy
       shipyard.addChild(ms);
       this.motherships.push(ms);
       this.lighting.trackReceiver(ms);
-      // In the light pass the mothership is a solid occluder (black, opaque).
-      const occ = new Sprite(msArt.albedo[team]);
-      occ.anchor.set(msArt.anchorX, msArt.anchorY);
-      occ.width = msArt.widthWorld;
-      occ.height = msArt.heightWorld;
-      occ.position.set(pos.x, pos.y);
-      occ.rotation = ms.rotation;
-      occ.tint = 0x000000;
-      this.occluderLayer.addChild(occ);
-      this.msOccluders.push(occ);
+      // Hull relief self-shadows in the material; ships do not project silhouette shadows.
     });
     const fobArt = this.tex.fob;
     const fobGeom = litGeometry(fobArt.widthWorld, fobArt.heightWorld, fobArt.anchorX, fobArt.anchorY);
     for (const f of KESSLER_REACH.fobs) {
-      const m = new Mesh({ geometry: fobGeom, shader: this.lighting.litShader(fobArt.albedo[f.team].source, fobArt.normal.source) });
+      const m = new Mesh({ geometry: fobGeom, shader: this.lighting.litShader(fobArt.albedo[f.team].source, fobArt.normal.source, fobArt.relief?.source, fobArt.reliefRange, fobArt.material?.source) });
       m.position.set(f.pos.x, f.pos.y);
       m.rotation = f.team === 0 ? 0 : Math.PI;
       shipyard.addChild(m);
@@ -272,7 +267,7 @@ export class Renderer {
       const art = this.tex.nodes[p.resource ?? 'research'];
       const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
       const states = art.albedo.map((albedo) => {
-        const m = new Mesh({ geometry: geom, shader: this.lighting.litShader(albedo.source, art.normal.source) });
+        const m = new Mesh({ geometry: geom, shader: this.lighting.litShader(albedo.source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
         m.position.set(p.pos.x, p.pos.y);
         m.visible = false;
         shipyard.addChild(m);
@@ -281,7 +276,6 @@ export class Renderer {
       });
       this.nodeMeshes.push(states);
     }
-    this.shipOccluders = new SpritePool(this.occluderLayer, this.tex.disc);
     this.lights = new SpritePool(this.lighting.scene, this.tex.disc, 'add');
     this.world.addChild(
       this.staticLayer,
@@ -358,7 +352,6 @@ export class Renderer {
       const color = TEAM_COLORS[team];
       const alive = hulls[team] > 0;
       this.motherships[team].tint = alive ? 0xffffff : 0x3a3a3a;
-      this.msOccluders[team].visible = alive;
       if (alive) this.mothershipLights(pos.x, pos.y, team, now);
       if (alive) g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.035 }).stroke({ width: 3, color, alpha: 0.15 });
       // Shield bubble while any of its FOBs stands
@@ -458,9 +451,9 @@ export class Renderer {
     const cy = this.camera.y;
     const inView = (x: number, y: number) => Math.abs(x - cx) < halfW && Math.abs(y - cy) < halfH;
 
+    for (const pool of this.assetPools.values()) pool.begin();
     this.lighting.beginFrame();
     this.lights.begin();
-    this.shipOccluders.begin();
     this.drawStructures(curr, now);
 
     // Crystals
@@ -471,11 +464,19 @@ export class Renderer {
       const y = b[k + 1];
       if (!inView(x, y)) continue;
       const big = b[k + 2] > 0;
-      const s = big ? this.crystalsBig.next() : this.crystals.next();
-      // Shards stay upright and bob gently; the phase comes from position so it's stable per crystal.
+      let shardHash = Math.imul(Math.round(x * 16), 73856093) ^ Math.imul(Math.round(y * 16), 19349663) ^ this.shardVariantSeed;
+      shardHash = Math.imul(shardHash ^ (shardHash >>> 16), 0x45d9f3b);
+      shardHash ^= shardHash >>> 16;
+      const variant = (shardHash >>> 0) % 4 + (big ? 4 : 0);
+      const id = `shard${variant}`;
+      const s = this.tex.assets[id] ? this.assetPool(id, big ? 1 : 0, this.crystalLayer).next() : big ? this.crystalsBig.next() : this.crystals.next();
+      // Independent, stable cosmetic samples; pooled sprites never reroll each frame.
+      const rotationHash = Math.imul(shardHash ^ 0x68bc21eb, 0x27d4eb2d) >>> 0;
+      const sizeHash = Math.imul(shardHash ^ 0x02e5be93, 0x85ebca6b) >>> 0;
       const phase = (x + y) * 0.01;
       s.position.set(x, y + Math.sin(now * 0.003 + phase) * 2.5);
-      s.rotation = Math.sin(now * 0.0015 + phase) * 0.12;
+      s.rotation = rotationHash / 0x100000000 * Math.PI * 2;
+      s.scale.set(0.9 + sizeHash / 0x100000000 * 0.2);
       this.light(x, y, big ? 9 : 6, LIGHT.crystal[big ? 1 : 0]);
     }
     this.crystals.end();
@@ -490,14 +491,29 @@ export class Renderer {
       const team = b[k + 4];
       const f = b[k + 6];
       const heavy = (f & (PROJ_FLAG.structure | PROJ_FLAG.missile)) !== 0;
-      const s = this.shots.next(heavy ? this.tex.shell[team] : this.tex.bolt[team]);
+      const id = heavy ? 'shell' : 'bolt';
+      const s = this.tex.assets[id] ? this.assetPool(id, team, this.shotLayer).next() : this.shots.next(heavy ? this.tex.shell[team] : this.tex.bolt[team]);
       s.position.set(x, y);
       s.rotation = Math.atan2(b[k + 3], b[k + 2]);
       // Nanite rounds read green; crits and full-charge rail shots are bigger and white-hot.
       s.tint = f & PROJ_FLAG.heal ? 0x8dffc0 : f & (PROJ_FLAG.crit | PROJ_FLAG.fullCharge) ? 0xffffff : 0xffffff;
       const size = f & PROJ_FLAG.fullCharge ? 2.2 : f & PROJ_FLAG.crit ? 1.5 : f & PROJ_FLAG.drone ? 0.7 : Math.max(0.8, b[k + 5] / 5);
-      s.scale.set(size);
-      this.light(x, y, heavy ? 12 : 8 * size, f & PROJ_FLAG.heal ? 0x3fd08a : LIGHT.bolt[team]);
+      // Match lifetime to the interpolated position, then burn out over the last 220 ms.
+      const remaining = Math.max(0, b[k + 7] + back);
+      const burn = Math.min(1, remaining / 0.22);
+      const fade = burn * burn * (3 - 2 * burn);
+      const color = f & PROJ_FLAG.heal ? 0x3fd08a : LIGHT.bolt[team];
+      s.alpha = fade;
+      s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
+      this.light(x, y, heavy ? 12 : 8 * size, color, fade);
+      if (burn < 1 && this.particles.length < PARTICLE_CAP && Math.random() < 1 - Math.exp(-35 * dt)) {
+        const life = 0.12 + Math.random() * 0.1;
+        this.particles.push({
+          x, y, vx: b[k + 2] * 0.08 + (Math.random() - 0.5) * 35,
+          vy: b[k + 3] * 0.08 + (Math.random() - 0.5) * 35,
+          life, max: life, color, size: size * (0.15 + Math.random() * 0.25), castLight: false,
+        });
+      }
     }
     this.shots.end();
 
@@ -570,7 +586,7 @@ export class Renderer {
       // Smooth the plume relative to the hull so gyro corrections don't wag the entire trail.
       const exhaustGimbal = (this.exhaustGimbals[slot] ?? gimbal) + (gimbal - (this.exhaustGimbals[slot] ?? gimbal)) * exhaustBlend;
       this.exhaustGimbals[slot] = exhaustGimbal;
-      for (const e of art.engines) {
+      for (const e of this.tex.hulls[art.id].engines ?? art.engines) {
         const f = this.flares.next();
         const hullScale = isMe ? 1.15 : 1;
         f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
@@ -582,14 +598,6 @@ export class Renderer {
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
       s.scale.set(isMe ? 1.15 : 1);
-      const baked = this.tex.hulls[art.id];
-      const occ = this.shipOccluders.next(baked.albedo[team]);
-      occ.anchor.set(baked.anchorX, baked.anchorY);
-      occ.position.set(x, y);
-      occ.rotation = rot;
-      occ.width = baked.widthWorld * s.scale.x;
-      occ.height = baked.heightWorld * s.scale.y;
-      occ.tint = 0x000000;
       if (cloaked) glow.alpha *= 0.3;
       this.statusFx(bars, x, y, status, now);
 
@@ -624,6 +632,7 @@ export class Renderer {
       }
     }
     for (const pool of this.hullPools.values()) pool.end();
+    for (const pool of this.assetPools.values()) pool.end();
     this.glows.end();
     this.flares.end();
 
@@ -667,14 +676,14 @@ export class Renderer {
     this.drawRings(dt);
     if (this.commander && this.pendingOrder) this.drawOrderPreview(z);
     this.lights.end();
-    this.shipOccluders.end();
 
     this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
     this.lightOverlay.visible = this.lighting.enabled;
     if (this.lighting.enabled) {
       this.lightOverlay.texture = this.lighting.irradiance;
-      this.lightOverlay.width = sw;
-      this.lightOverlay.height = sh;
+      this.lightOverlay.position.set(this.lighting.screenOffset[0],this.lighting.screenOffset[1]);
+      this.lightOverlay.width = this.lighting.displaySize[0];
+      this.lightOverlay.height = this.lighting.displaySize[1];
     }
   }
 
@@ -788,7 +797,19 @@ export class Renderer {
       const def = DEPLOYABLES[DEPLOY_KINDS[kind]];
       const color = TEAM_COLORS[team];
       const r = def.radius;
+      const assetId = DEPLOY_KINDS[kind];
+      const detailed = this.tex.assets[assetId];
+      if (detailed) {
+        const mesh = this.assetPool(assetId, team).next();
+        mesh.position.set(x, y);
+        mesh.scale.set((r * 2) / Math.max(detailed.widthWorld, detailed.heightWorld));
+        mesh.rotation = team === 0 ? 0 : Math.PI;
+      }
       if (kind === KIND.mine) {
+        if (detailed) {
+          g.circle(x, y, r).stroke({ width: 1, color: 0xff5c6c, alpha: 0.3 + 0.3 * Math.sin(now * 0.01 + i) });
+          continue;
+        }
         g.circle(x, y, r).fill({ color: 0x1a2236 }).stroke({ width: 2, color: 0xff5c6c, alpha: 0.5 + 0.5 * Math.sin(now * 0.01 + i) });
         continue;
       }
@@ -796,15 +817,15 @@ export class Renderer {
       if (kind === KIND.beacon) {
         const pulse = 60 + 12 * Math.sin(now * 0.005);
         g.circle(x, y, pulse).stroke({ width: 3, color, alpha: 0.5 });
-        g.poly([x, y - r, x + r * 0.7, y, x, y + r, x - r * 0.7, y]).fill({ color: 0x1a2236 }).stroke({ width: 4, color });
+        if (!detailed) g.poly([x, y - r, x + r * 0.7, y, x, y + r, x - r * 0.7, y]).fill({ color: 0x1a2236 }).stroke({ width: 4, color });
         this.light(x, y, 30, LIGHT.engine[team]);
       } else if (kind === KIND.platform) {
         const pts: number[] = [];
         for (let s = 0; s < 6; s++) pts.push(x + Math.cos((s * Math.PI) / 3) * r, y + Math.sin((s * Math.PI) / 3) * r);
-        g.poly(pts).fill({ color: 0x1a2236 }).stroke({ width: 5, color });
-        g.circle(x, y, r * 0.35).fill({ color });
+        if (!detailed) g.poly(pts).fill({ color: 0x1a2236 }).stroke({ width: 5, color });
+        if (!detailed) g.circle(x, y, r * 0.35).fill({ color });
         this.light(x, y, 24, LIGHT.engine[team]);
-      } else {
+      } else if (!detailed) {
         g.circle(x, y, r).fill({ color: 0x1a2236 }).stroke({ width: 3, color });
         g.circle(x, y, r * 0.4).fill({ color });
       }
@@ -851,10 +872,10 @@ export class Renderer {
         m.scale.set(1);
         continue;
       }
-      const s = this.drones.next();
+      const s = this.tex.assets.drone ? this.assetPool('drone', team).next() : this.drones.next();
       s.position.set(x, y);
       s.rotation = rot;
-      s.tint = TEAM_COLORS[team];
+      s.tint = this.tex.assets.drone ? 0xffffff : TEAM_COLORS[team];
       s.scale.set(b[k + 5] === DRONE_BEHAVIORS.indexOf('guard') ? 1.4 : 1);
       this.light(x, y, 5, LIGHT.engine[team]);
       if (this.commander && z < 0.2) this.warLayer.circle(x, y, 3 / z).fill({ color: TEAM_COLORS[team], alpha: 0.8 });
@@ -944,13 +965,14 @@ export class Renderer {
   }
 
   /** Add a light emitter (a solid disc in the light pass) at a world position. */
-  private light(x: number, y: number, radius: number, color: number): void {
+  private light(x: number, y: number, radius: number, color: number, intensity = 1): void {
     if (!this.lighting.enabled) return;
-    this.lighting.addEmitter(x, y, radius, color);
+    this.lighting.addEmitter(x, y, radius, color, intensity);
     const l = this.lights.next();
     l.position.set(x, y);
     l.scale.set((radius * 2) / 32);
     l.tint = color;
+    l.alpha = intensity;
   }
 
   /** Reactor, hangar mouth, turret sights and engines of a mothership as light emitters. */
@@ -958,10 +980,32 @@ export class Renderer {
     const sign = team === 0 ? 1 : -1;
     const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + team);
     const accent = team === 0 ? 0x5fc8ff : 0xff9a4a;
+    const art = this.tex.mothership;
+    if (art.lights && art.engines) {
+      for (const [i, socket] of art.lights.entries()) this.light(x + sign * socket.x, y + sign * socket.y, socket.r * (i === 0 ? pulse : 1), accent);
+      for (const socket of art.engines) this.light(x + sign * socket.x, y + sign * socket.y, socket.r, LIGHT.engine[team]);
+      return;
+    }
     this.light(x + sign * 60, y, 30 * pulse, accent);
     this.light(x + sign * 250, y, 22, accent);
     for (const ty of [-92, -46, 0, 46, 92]) this.light(x - sign * 300, y + sign * ty, 18, LIGHT.engine[team]);
     for (const tx of [-170, 170]) for (const tyy of [-170, 170]) this.light(x + sign * (tx + 8), y + sign * tyy, 7, accent);
+  }
+
+  private assetPool(id: string, team: number, layer: Container = this.shipLayer): MeshPool {
+    const key = `${id}:${team}`;
+    let pool = this.assetPools.get(key);
+    if (!pool) {
+      const art = this.tex.assets[id];
+      const geometry = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
+      pool = new MeshPool(layer, () => {
+        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
+        this.lighting.trackReceiver(mesh);
+        return mesh;
+      });
+      this.assetPools.set(key, pool);
+    }
+    return pool;
   }
 
   private hullPool(id: string, team: number): MeshPool {
@@ -971,7 +1015,7 @@ export class Renderer {
       const art: LitArt = this.tex.hulls[id];
       const geom = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
       pool = new MeshPool(this.shipLayer, () => {
-        const mesh = new Mesh({ geometry: geom, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source) });
+        const mesh = new Mesh({ geometry: geom, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
         this.lighting.trackReceiver(mesh);
         return mesh;
       });
@@ -1009,7 +1053,7 @@ export class Renderer {
       p.vx *= 0.96;
       p.vy *= 0.96;
       if (!inView(p.x, p.y)) continue;
-      if (p.life / p.max > 0.4) this.light(p.x, p.y, 7 * p.size * (p.life / p.max), p.color);
+      if (p.castLight !== false && p.life / p.max > 0.4) this.light(p.x, p.y, 7 * p.size * (p.life / p.max), p.color);
       const s = this.sparks.next();
       s.position.set(p.x, p.y);
       s.tint = p.color;
@@ -1066,4 +1110,3 @@ function lerpAngle(a: number, b: number, t: number): number {
   d = Math.atan2(Math.sin(d), Math.cos(d));
   return a + d * t;
 }
-

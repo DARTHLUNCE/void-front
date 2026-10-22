@@ -1,0 +1,446 @@
+[
+  {
+    "id": "patrol",
+    "label": "Interceptor / Patrol",
+    "box": [
+      35,
+      25,
+      270,
+      225
+    ],
+    "nozzles": [
+      [
+        80,
+        142
+      ]
+    ],
+    "normalBackground": [
+      107,
+      121
+    ]
+  },
+  {
+    "id": "corvette",
+    "label": "Phantom / Corvette",
+    "box": [
+      390,
+      25,
+      175,
+      225
+    ],
+    "nozzles": [
+      [
+        427,
+        125
+      ],
+      [
+        427,
+        165
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "battleship",
+    "label": "Dreadnought / Battleship",
+    "box": [
+      590,
+      25,
+      335,
+      225
+    ],
+    "nozzles": [
+      [
+        625,
+        110
+      ],
+      [
+        625,
+        145
+      ],
+      [
+        625,
+        175
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "dreadnought",
+    "label": "Lancer / Dreadnought",
+    "box": [
+      940,
+      25,
+      285,
+      225
+    ],
+    "nozzles": [
+      [
+        980,
+        142
+      ]
+    ],
+    "normalBackground": [
+      107,
+      121
+    ]
+  },
+  {
+    "id": "carrier",
+    "label": "Carrier",
+    "box": [
+      1225,
+      20,
+      295,
+      235
+    ],
+    "nozzles": [
+      [
+        1265,
+        90
+      ],
+      [
+        1265,
+        115
+      ],
+      [
+        1265,
+        142
+      ],
+      [
+        1265,
+        170
+      ],
+      [
+        1265,
+        196
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "frigate",
+    "label": "Engineer / Frigate",
+    "box": [
+      1535,
+      25,
+      280,
+      225
+    ],
+    "nozzles": [
+      [
+        1580,
+        128
+      ],
+      [
+        1580,
+        165
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      121.0
+    ]
+  },
+  {
+    "id": "striker",
+    "label": "Striker",
+    "box": [
+      30,
+      305,
+      275,
+      215
+    ],
+    "nozzles": [
+      [
+        57,
+        405
+      ],
+      [
+        57,
+        435
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "wraith",
+    "label": "Wraith",
+    "box": [
+      315,
+      305,
+      295,
+      215
+    ],
+    "nozzles": [
+      [
+        367,
+        416
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "bastion",
+    "label": "Bastion",
+    "box": [
+      615,
+      305,
+      285,
+      215
+    ],
+    "nozzles": [
+      [
+        653,
+        396
+      ],
+      [
+        653,
+        440
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "railstorm",
+    "label": "Railstorm",
+    "box": [
+      935,
+      305,
+      285,
+      215
+    ],
+    "nozzles": [
+      [
+        960,
+        411
+      ],
+      [
+        960,
+        439
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "hive",
+    "label": "Hive",
+    "box": [
+      1225,
+      305,
+      295,
+      215
+    ],
+    "nozzles": [
+      [
+        1270,
+        390
+      ],
+      [
+        1270,
+        450
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "fortress",
+    "label": "Fortress",
+    "box": [
+      1540,
+      305,
+      275,
+      215
+    ],
+    "nozzles": [
+      [
+        1580,
+        400
+      ],
+      [
+        1580,
+        425
+      ],
+      [
+        1580,
+        450
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "comet",
+    "label": "Comet",
+    "box": [
+      45,
+      560,
+      250,
+      258
+    ],
+    "nozzles": [
+      [
+        80,
+        670
+      ],
+      [
+        80,
+        697
+      ],
+      [
+        80,
+        721
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "specter",
+    "label": "Specter",
+    "box": [
+      330,
+      560,
+      220,
+      258
+    ],
+    "nozzles": [
+      [
+        367,
+        673
+      ],
+      [
+        367,
+        714
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "juggernaut",
+    "label": "Juggernaut",
+    "box": [
+      580,
+      560,
+      345,
+      258
+    ],
+    "nozzles": [
+      [
+        619,
+        630
+      ],
+      [
+        675,
+        693
+      ],
+      [
+        619,
+        753
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "eclipse",
+    "label": "Eclipse",
+    "box": [
+      945,
+      560,
+      255,
+      258
+    ],
+    "nozzles": [
+      [
+        970,
+        695
+      ]
+    ],
+    "normalBackground": [
+      107,
+      120
+    ]
+  },
+  {
+    "id": "overlord",
+    "label": "Overlord",
+    "box": [
+      1205,
+      560,
+      330,
+      258
+    ],
+    "nozzles": [
+      [
+        1245,
+        675
+      ],
+      [
+        1245,
+        702
+      ],
+      [
+        1245,
+        726
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      120.0
+    ]
+  },
+  {
+    "id": "warden",
+    "label": "Warden",
+    "box": [
+      1540,
+      560,
+      275,
+      258
+    ],
+    "nozzles": [
+      [
+        1585,
+        695
+      ]
+    ],
+    "normalBackground": [
+      107.0,
+      121.0
+    ]
+  }
+]

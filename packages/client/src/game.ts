@@ -1,4 +1,5 @@
 import { CLASS_ORDER, COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
+import type { ShipArtMode } from './art/referenceShips';
 import { Hud } from './hud/hud';
 import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
@@ -10,6 +11,8 @@ export interface GameOptions {
   scheme: ControlScheme;
   difficulty: BotDifficulty;
   lighting: boolean;
+  shipArt?: ShipArtMode;
+  derivedNormals?: boolean;
 }
 
 /** Commander camera pan speed in screen pixels per second, and the screen-edge pan band. */
@@ -31,7 +34,7 @@ export class Game {
   private fps = 60;
 
   constructor(private readonly opts: GameOptions) {
-    this.renderer = new Renderer(opts.lighting);
+    this.renderer = new Renderer(opts.lighting, opts.shipArt, opts.derivedNormals);
   }
 
   async start(stage: HTMLElement, hudRoot: HTMLElement): Promise<void> {

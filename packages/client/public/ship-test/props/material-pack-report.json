@@ -1,0 +1,11 @@
+{
+  "folder": "props",
+  "blackPoint": 64,
+  "gamma": 1.35,
+  "roughnessRange": [
+    0.08,
+    0.95
+  ],
+  "grayPixelsRemoved": 422091,
+  "emittingPixels": 22297
+}

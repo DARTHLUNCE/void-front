@@ -1,0 +1,122 @@
+[
+  {
+    "id": "shard0",
+    "label": "Shard 1",
+    "box": [
+      4,
+      4,
+      436,
+      431
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 18,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard1",
+    "label": "Shard 2",
+    "box": [
+      448,
+      4,
+      435,
+      431
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 18,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard2",
+    "label": "Shard 3",
+    "box": [
+      891,
+      4,
+      435,
+      431
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 18,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard3",
+    "label": "Shard 4",
+    "box": [
+      1334,
+      4,
+      436,
+      431
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 18,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard4",
+    "label": "Shard 5",
+    "box": [
+      4,
+      448,
+      436,
+      430
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 26,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard5",
+    "label": "Shard 6",
+    "box": [
+      448,
+      448,
+      435,
+      430
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 26,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard6",
+    "label": "Shard 7",
+    "box": [
+      891,
+      448,
+      435,
+      430
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 26,
+    "material": "crystal",
+    "heightRange": 512
+  },
+  {
+    "id": "shard7",
+    "label": "Shard 8",
+    "box": [
+      1334,
+      448,
+      436,
+      430
+    ],
+    "nozzles": [],
+    "atlas": "shards",
+    "worldMax": 26,
+    "material": "crystal",
+    "heightRange": 512
+  }
+]

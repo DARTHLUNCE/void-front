@@ -1,0 +1,72 @@
+[
+  {
+    "relativeResidual": 9.883688760886504e-06,
+    "iterations": 385,
+    "gradientFitRMSE": 0.7137982825733465,
+    "heightSpanTexels": 52.5478521150453,
+    "id": "destroyer"
+  },
+  {
+    "relativeResidual": 9.813620371522117e-06,
+    "iterations": 392,
+    "gradientFitRMSE": 0.7427485069115125,
+    "heightSpanTexels": 56.754306000726025,
+    "id": "cruiser"
+  },
+  {
+    "relativeResidual": 9.852210670549727e-06,
+    "iterations": 390,
+    "gradientFitRMSE": 0.7455006479039653,
+    "heightSpanTexels": 50.90973817191098,
+    "id": "battlecruiser"
+  },
+  {
+    "relativeResidual": 9.896873431565702e-06,
+    "iterations": 396,
+    "gradientFitRMSE": 0.7478966145664518,
+    "heightSpanTexels": 45.34514521874566,
+    "id": "hunter"
+  },
+  {
+    "relativeResidual": 9.609560613797296e-06,
+    "iterations": 389,
+    "gradientFitRMSE": 0.7380142823027449,
+    "heightSpanTexels": 47.448380323736885,
+    "id": "strikecruiser"
+  },
+  {
+    "relativeResidual": 9.89191134788536e-06,
+    "iterations": 396,
+    "gradientFitRMSE": 0.6702697037319858,
+    "heightSpanTexels": 44.08192412660349,
+    "id": "raider"
+  },
+  {
+    "relativeResidual": 9.963749236498207e-06,
+    "iterations": 391,
+    "gradientFitRMSE": 0.7020846116023624,
+    "heightSpanTexels": 60.588349583377834,
+    "id": "escort"
+  },
+  {
+    "relativeResidual": 9.81942142892889e-06,
+    "iterations": 386,
+    "gradientFitRMSE": 0.7358962620600306,
+    "heightSpanTexels": 54.952598024892126,
+    "id": "commandcruiser"
+  },
+  {
+    "relativeResidual": 9.971974187360548e-06,
+    "iterations": 372,
+    "gradientFitRMSE": 0.68104224017314,
+    "heightSpanTexels": 50.148183033784136,
+    "id": "ironclad"
+  },
+  {
+    "relativeResidual": 9.865138570152978e-06,
+    "iterations": 444,
+    "gradientFitRMSE": 0.7696109612605588,
+    "heightSpanTexels": 87.66295283983399,
+    "id": "mothership"
+  }
+]

@@ -12,11 +12,22 @@ type PerTeam<T> = [T, T];
 /** A lit sprite: per-team albedo plus one shared normal map, with its size in world units. */
 export interface LitArt {
   albedo: PerTeam<Texture>;
+  neutralAlbedo?: Texture;
+  /** R roughness, G metallic, B emission; alpha matches the albedo. */
+  material?: Texture;
   normal: Texture;
+  /** Optional normal-derived height in RG, spanning 128 source texels. */
+  relief?: Texture;
+  /** RG16 decode range in source texels; legacy maps use 128. */
+  reliefRange?: number;
   widthWorld: number;
   heightWorld: number;
   anchorX: number;
   anchorY: number;
+  /** Optional sprite-specific exhaust sockets in world units. */
+  engines?: { x: number; y: number; r: number }[];
+  /** Sprite-specific reactor, hangar and turret light sockets. */
+  lights?: { x: number; y: number; r: number }[];
 }
 
 /** Lit art with one albedo per state (nodes: neutral and each team) and a shared normal map. */
@@ -27,6 +38,7 @@ export interface LitStates extends Omit<LitArt, 'albedo'> {
 export interface Textures {
   /** hull id → lit art */
   hulls: Record<string, LitArt>;
+  assets: Record<string, LitArt>;
   mothership: LitArt;
   fob: LitArt;
   /** Node art per building, with albedo per state: [neutral, Cobalt, Ember]. */
@@ -93,6 +105,7 @@ function litStates(shapes: Shape[], scale: number, bevel: number, palettes: read
   return {
     albedo: baked.map((b) => mip(b.albedo)),
     normal: mip(baked[0].normal),
+    relief: mip(baked[0].relief),
     widthWorld: baked[0].width / scale,
     heightWorld: baked[0].height / scale,
     anchorX: baked[0].anchorX,
@@ -100,13 +113,17 @@ function litStates(shapes: Shape[], scale: number, bevel: number, palettes: read
   };
 }
 
-export function makeTextures(renderer: Renderer): Textures {
+export function makeTextures(renderer: Renderer, replacements: Record<string, LitArt> = {}): Textures {
   const both = (shapes: Shape[], resolution?: number): PerTeam<ArtTexture> => [
     bakeArt(renderer, shapes, PALETTES[0], resolution),
     bakeArt(renderer, shapes, PALETTES[1], resolution),
   ];
   const hulls: Record<string, LitArt> = {};
-  for (const h of HULLS) hulls[h.id] = litArt(h.shapes, 3);
+  for (const h of HULLS) hulls[h.id] = replacements[h.id] ?? litArt(h.shapes, 3);
+  const nodeArt = (id: ResourceId | 'research'): LitStates => {
+    const replacement = replacements[id];
+    return replacement ? { ...replacement, albedo: [replacement.neutralAlbedo!, ...replacement.albedo] } : litStates(NODE_ART[id], 1.8, 3, NODE_PALETTES);
+  };
   const particle = new Graphics().circle(0, 0, 3).fill({ color: 0xffffff });
   const drone = new Graphics()
     .poly([12, 0, -7, -7, -3, 0, -7, 7])
@@ -114,13 +131,14 @@ export function makeTextures(renderer: Renderer): Textures {
     .stroke({ width: 1.5, color: 0x0b1020, alpha: 0.8 });
   return {
     hulls,
-    mothership: litArt(MOTHERSHIP_ART, 1.2, 5),
-    fob: litArt(FOB_ART, 1.4, 4),
+    assets: replacements,
+    mothership: replacements.mothership ?? litArt(MOTHERSHIP_ART, 1.2, 5),
+    fob: replacements.fob ?? litArt(FOB_ART, 1.4, 4),
     nodes: {
-      munitions: litStates(NODE_ART.munitions, 1.8, 3, NODE_PALETTES),
-      fuel: litStates(NODE_ART.fuel, 1.8, 3, NODE_PALETTES),
-      manpower: litStates(NODE_ART.manpower, 1.8, 3, NODE_PALETTES),
-      research: litStates(NODE_ART.research, 1.8, 3, NODE_PALETTES),
+      munitions: nodeArt('munitions'),
+      fuel: nodeArt('fuel'),
+      manpower: nodeArt('manpower'),
+      research: nodeArt('research'),
     },
     bolt: both(BOLT_ART),
     shell: both(SHELL_ART),

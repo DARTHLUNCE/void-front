@@ -32,5 +32,5 @@ export default defineConfig({
   plugins: [inspectSaver()],
   worker: { format: 'es' },
   server: { port: 5173, strictPort: true },
-  build: { target: 'es2022' },
+  build: { target: 'es2022', rollupOptions: { input: { game: resolve(__dirname, 'index.html'), ships: resolve(__dirname, 'ship-test.html') } } },
 });

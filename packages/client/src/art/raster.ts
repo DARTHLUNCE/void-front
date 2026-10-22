@@ -10,6 +10,7 @@ import { bounds, type Paint, type Palette, type Shape } from './shapes';
 export interface BakedArt {
   albedo: HTMLCanvasElement;
   normal: HTMLCanvasElement;
+  relief: HTMLCanvasElement;
   width: number;
   height: number;
   /** Pixels per world unit. */
@@ -200,7 +201,17 @@ export function bakeArtCanvas(shapes: Shape[], pal: Palette, scale = 3, pad = 3,
     }
   }
   nctx.putImageData(out, 0, 0);
-  return { albedo, normal, width: w, height: h, scale, anchorX: ox / w, anchorY: oy / h };
+  // Keep the authored height used to generate these normals: never reintegrate them.
+  const [relief, reliefContext] = canvas(w, h);
+  const reliefPixels = reliefContext.createImageData(w, h);
+  for (let i = 0; i < w * h; i++) {
+    const encoded = Math.round(Math.min(1, height[i] * strength * 2 / 128) * 65535);
+    reliefPixels.data[i * 4] = encoded >> 8;
+    reliefPixels.data[i * 4 + 1] = encoded & 255;
+    reliefPixels.data[i * 4 + 3] = M[i * 4 + 3];
+  }
+  reliefContext.putImageData(reliefPixels, 0, 0);
+  return { albedo, normal, relief, width: w, height: h, scale, anchorX: ox / w, anchorY: oy / h };
 }
 
 /**
