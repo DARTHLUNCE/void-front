@@ -28,7 +28,7 @@ export const CORVETTE: ShipClass = {
   radius: 28,
   turnRate: 310 * DEG,
   // Twin 30mm phase repeaters: 2 × 14.4 every 0.3 s = 96 DPS, 34 AP, 800 u.
-  gun: { damage: 14.4, fireInterval: 0.3, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 14, size: 4, life: 0.727, ap: 34 },
+  gun: { name: 'Twin 30mm Phase Repeaters', damage: 14.4, fireInterval: 0.3, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 14, size: 4, life: 0.727, ap: 34 },
   quirk: 'ghostDrive',
   accel: 5.5,
   respawnMul: 0.9,

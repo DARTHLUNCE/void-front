@@ -30,7 +30,7 @@ export const DESTROYER: ShipClass = {
   radius: 52,
   turnRate: 210 * DEG,
   // Dual 50mm heavy autocannons: 2 × 12.75 every 0.25 s = 102 DPS, 52 AP, 780 u.
-  gun: { damage: 12.75, fireInterval: 0.25, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 18, size: 5, life: 0.709, ap: 52 },
+  gun: { name: 'Dual 50mm Heavy Autocannons', damage: 12.75, fireInterval: 0.25, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 18, size: 5, life: 0.709, ap: 52 },
   secondary: { name: 'Twin 25mm Flak Auto-Turrets', count: 2, damage: 4.5, fireInterval: 0.25, ap: 24, range: 560, jitterDeg: 16, projectileSpeed: 1250, size: 3, ciws: true },
   quirk: 'pointDefense',
   accel: 4,

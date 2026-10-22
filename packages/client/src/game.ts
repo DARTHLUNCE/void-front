@@ -48,6 +48,7 @@ export class Game {
     }
     this.hud = new Hud(hudRoot, this.opts.scheme, {
       stat: (i) => this.send({ type: 'stat', index: i }),
+      power: (mode) => this.input.shunt(mode),
       tier: (o) => this.send({ type: 'tier', option: o }),
       pickClass: (choice) => this.send({ type: 'pickClass', choice }),
       pickSeat: (seat) => this.send({ type: 'pickSeat', seat }),

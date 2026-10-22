@@ -14,7 +14,7 @@ export const PATROL_CRAFT: ShipClass = {
   radius: 22,
   turnRate: 360 * DEG,
   // Twin 20mm pulse lasers: 2 × 8.8 every 0.2 s = 88 DPS, 22 AP, 720 u.
-  gun: { damage: 8.8, fireInterval: 0.2, projectileSpeed: 1000, count: 2, spread: 0, barrelGap: 12, size: 4, life: 0.72, ap: 22 },
+  gun: { name: 'Twin 20mm Pulse Lasers', damage: 8.8, fireInterval: 0.2, projectileSpeed: 1000, count: 2, spread: 0, barrelGap: 12, size: 4, life: 0.72, ap: 22 },
   quirk: 'momentum',
   quirkTuning: { buildTime: 1.8, damageBonus: 0, fireRateBonus: 0.25 },
   accel: 6,

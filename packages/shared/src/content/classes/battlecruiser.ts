@@ -14,7 +14,7 @@ export const BATTLECRUISER: ShipClass = {
   radius: 90,
   turnRate: 140 * DEG,
   // Twin 105mm siege plasma cannons: 2 × 19.8 every 0.3 s = 132 DPS, 88 AP, 840 u.
-  gun: { damage: 19.8, fireInterval: 0.3, projectileSpeed: 1150, count: 2, spread: 0, barrelGap: 24, size: 6, life: 0.73, ap: 88 },
+  gun: { name: 'Twin 105mm Siege Plasma Cannons', damage: 19.8, fireInterval: 0.3, projectileSpeed: 1150, count: 2, spread: 0, barrelGap: 24, size: 6, life: 0.73, ap: 88 },
   secondary: { name: 'Broadside Casemate Turrets', count: 4, damage: 5.4, fireInterval: 0.3, ap: 42, range: 640, jitterDeg: 16, projectileSpeed: 1300, size: 3 },
   quirk: 'momentum',
   quirkTuning: { damageBonus: 0.25, fireRateBonus: 0 },

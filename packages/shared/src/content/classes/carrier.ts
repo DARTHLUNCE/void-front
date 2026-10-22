@@ -14,7 +14,7 @@ export const CARRIER: ShipClass = {
   radius: 135,
   turnRate: 95 * DEG,
   // Axial command designator beam: 13.6 every 0.2 s = 68 DPS, 48 AP, 820 u.
-  gun: { damage: 13.6, fireInterval: 0.2, projectileSpeed: 1300, count: 1, spread: 0, size: 5, life: 0.63, ap: 48 },
+  gun: { name: 'Axial Command Designator Beam', damage: 13.6, fireInterval: 0.2, projectileSpeed: 1300, count: 1, spread: 0, size: 5, life: 0.63, ap: 48 },
   secondary: { name: 'Deck CIWS Auto-Turrets', count: 6, damage: 4.2, fireInterval: 0.3, ap: 25, range: 580, jitterDeg: 17, projectileSpeed: 1350, size: 3, ciws: true },
   quirk: 'droneBay',
   accel: 2.6,

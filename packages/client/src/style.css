@@ -498,7 +498,7 @@ button.primary:hover {
 }
 
 .feed {
-  top: 172px;
+  top: 56px;
   right: 10px;
   display: grid;
   gap: 2px;
@@ -517,572 +517,9 @@ button.primary:hover {
   outline: 1px solid rgba(255, 255, 255, 0.4);
 }
 
-.pilot {
-  left: 12px;
-  bottom: 12px;
-  width: 312px;
-  display: grid;
-  gap: 6px;
-  padding: 11px 12px;
-  border: 1px solid var(--edge);
-  border-left: 3px solid var(--cobalt);
-  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
-  background:
-    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
-    var(--panel);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-.lvrow {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.level {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  border: 2px solid var(--xp);
-  clip-path: polygon(25% 0%, 75% 0%, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0% 75%, 0% 25%);
-  background: rgba(180, 140, 255, 0.12);
-  font: 700 1.25rem/1 var(--mono);
-  color: #e8dcff;
-}
-
-.bars {
-  flex: 1;
-  display: grid;
-  gap: 4px;
-}
-
-.bar {
-  position: relative;
-  height: 14px;
-  border: 1px solid rgba(120, 150, 220, 0.28);
-  border-radius: 2px;
-  background: rgba(4, 7, 15, 0.85);
-  overflow: hidden;
-}
-
-.bar::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(90deg, transparent 0 11px, rgba(4, 7, 15, 0.45) 11px 12px);
-  pointer-events: none;
-}
-
-.bar i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  transition: width 0.1s linear;
-}
-
-.bar span {
-  position: relative;
-  z-index: 1;
-  padding-left: 6px;
-  font: 600 0.72rem/14px var(--mono);
-  text-shadow: 0 1px 2px #000;
-}
-
-.bar.xp i {
-  background: var(--xp);
-}
-
-.bar.hull i {
-  background: var(--good);
-}
-
-.points {
-  color: #ffd166;
-  font-weight: 700;
-  min-height: 1.2em;
-}
-
-.stats {
-  display: grid;
-  gap: 3px;
-}
-
-.stat {
-  display: grid;
-  grid-template-columns: 26px 70px 1fr;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 6px;
-  padding: 3px 6px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  text-align: left;
-}
-
-.stat em {
-  grid-column: 2 / 4;
-  font-style: normal;
-  font-size: 0.75rem;
-  color: var(--dim);
-}
-
-.stat.can {
-  border-color: #ffd166;
-}
-
-.pips {
-  display: flex;
-  gap: 3px;
-}
-
-.pips i {
-  width: 14px;
-  height: 6px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.12);
-}
-
-.pips i.on {
-  background: #ffd166;
-}
-
-/*
- * Cockpit console along the bottom edge: a metal dash with an LED strip, a green hull scope (left),
- * an amber CRT with the abilities (center), the throttle lever and a Sub-Light scope (right).
- */
-.cockpit {
-  --dash-w: clamp(620px, calc(100vw - 690px), 960px);
-  --crt: #ffb347;
-  --crt-dim: rgba(255, 179, 71, 0.45);
-  --scope: #5cff9d;
-  left: 50%;
-  bottom: 0;
-  width: var(--dash-w);
-  transform: translateX(-50%);
-  filter: drop-shadow(0 -6px 18px rgba(0, 0, 0, 0.55));
-}
-
-.cockpit .dash {
-  position: relative;
-  display: grid;
-  grid-template-columns: 132px 1fr auto 58px 132px;
-  grid-template-rows: auto 1fr;
-  column-gap: 12px;
-  align-items: end;
-  padding: 10px 46px 10px;
-}
-
-/* The dash plate: angled shoulders, brushed gunmetal, seams and rivets. */
-.cockpit .dash::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  clip-path: polygon(0 100%, 4% 22%, 11% 0, 89% 0, 96% 22%, 100% 100%);
-  background:
-    radial-gradient(circle at 7% 72%, #8796ad 0 2px, transparent 3px),
-    radial-gradient(circle at 93% 72%, #8796ad 0 2px, transparent 3px),
-    radial-gradient(circle at 13% 10%, #8796ad 0 2px, transparent 3px),
-    radial-gradient(circle at 87% 10%, #8796ad 0 2px, transparent 3px),
-    linear-gradient(90deg, transparent calc(50% - 1px), rgba(0, 0, 0, 0.5) calc(50% - 1px) calc(50% + 1px), transparent 0),
-    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 5px),
-    linear-gradient(180deg, #2b3446 0%, #1a2130 38%, #0e131d 100%);
-  border-top: 2px solid #4a5874;
-}
-
-/* Bright top lip of the dash. */
-.cockpit .dash::after {
-  content: '';
-  position: absolute;
-  left: 11%;
-  right: 11%;
-  top: 0;
-  height: 2px;
-  z-index: -1;
-  background: linear-gradient(90deg, transparent, rgba(160, 190, 240, 0.55), transparent);
-}
-
-.cockpit .strip {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin: 0 auto 8px;
-  padding: 3px 12px;
-  border: 1px solid #39465f;
-  border-radius: 3px;
-  background: #0a0e16;
-  font: 600 0.68rem var(--mono);
-  letter-spacing: 0.08em;
-  color: #7f8cab;
-}
-
-.cockpit .strip .bank {
-  display: flex;
-  gap: 4px;
-}
-
-.cockpit .strip .tag {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.cockpit .strip kbd {
-  font-size: 0.6rem;
-  padding: 0 3px;
-}
-
-.cockpit .led {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #2a1414;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8);
-}
-
-.cockpit .bank .led:nth-child(3n + 1) {
-  background: #d23a3a;
-  box-shadow: 0 0 5px rgba(255, 70, 70, 0.7);
-}
-
-.cockpit .bank .led:nth-child(4n + 2) {
-  background: #3a8cff;
-  box-shadow: 0 0 5px rgba(80, 160, 255, 0.7);
-}
-
-.cockpit .led.green.on {
-  background: var(--scope);
-  box-shadow: 0 0 7px var(--scope);
-}
-
-.cockpit .led.red.on {
-  background: #ff4b4b;
-  box-shadow: 0 0 8px #ff4b4b;
-}
-
-.cockpit .led.amber.on {
-  background: var(--amber);
-  box-shadow: 0 0 7px var(--amber);
-}
-
-.cockpit .led.blink {
-  animation: led-blink 0.35s steps(2) infinite;
-}
-
-@keyframes led-blink {
-  50% {
-    opacity: 0.25;
-  }
-}
-
-/* Round scopes: metal bezel, value ring, phosphor glass with a range grid. */
-.cockpit .scope {
-  --c: var(--scope);
-  position: relative;
-  width: 132px;
-  height: 132px;
-  margin-bottom: 4px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #121722 58%, #3c475d 59%, #1c2331 64%, #59667f 68%, #222a3a 71%);
-  box-shadow: 0 0 0 2px #0a0d14, 0 4px 12px rgba(0, 0, 0, 0.6);
-}
-
-.cockpit .scope .dial {
-  --p: 360deg;
-  position: absolute;
-  inset: 9px;
-  border-radius: 50%;
-  background: conic-gradient(var(--c) var(--p), rgba(255, 255, 255, 0.06) 0);
-  mask: radial-gradient(circle, transparent 54px, #000 55px);
-  filter: drop-shadow(0 0 4px var(--c));
-}
-
-.cockpit .scope .glass {
-  position: absolute;
-  inset: 16px;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, transparent 0 32%, color-mix(in srgb, var(--c) 22%, transparent) 32.5% 33.5%, transparent 34% 64%, color-mix(in srgb, var(--c) 18%, transparent) 64.5% 65.5%, transparent 66%),
-    linear-gradient(transparent calc(50% - 0.5px), color-mix(in srgb, var(--c) 20%, transparent) 0 calc(50% + 0.5px), transparent 0),
-    linear-gradient(90deg, transparent calc(50% - 0.5px), color-mix(in srgb, var(--c) 20%, transparent) 0 calc(50% + 0.5px), transparent 0),
-    radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--c) 26%, #06120c), #020604 75%);
-  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.9);
-  color: var(--c);
-  font-family: var(--mono);
-  line-height: 1;
-  text-shadow: 0 0 6px var(--c);
-  overflow: hidden;
-}
-
-.cockpit .scope b {
-  position: relative;
-  font-size: 1.25rem;
-}
-
-.cockpit .scope small {
-  position: relative;
-  font-size: 0.58rem;
-  letter-spacing: 0.18em;
-  opacity: 0.8;
-}
-
-.cockpit .scope em {
-  position: relative;
-  margin-top: 2px;
-  font-style: normal;
-  font-size: 0.6rem;
-  opacity: 0.75;
-}
-
-.cockpit .scope kbd {
-  position: relative;
-  margin-top: 3px;
-  font-size: 0.58rem;
-  padding: 0 4px;
-}
-
-/* Hull wireframe behind the readout, nose up. */
-.cockpit .wire {
-  position: absolute;
-  inset: 10px;
-  display: grid;
-  place-items: center;
-  opacity: 0.38;
-  transform: rotate(-90deg);
-}
-
-.cockpit .wire svg {
-  width: 100%;
-  height: 100%;
-}
-
-.cockpit .wire svg * {
-  fill: color-mix(in srgb, var(--c) 12%, transparent);
-  stroke: var(--c);
-  stroke-width: 0.8;
-}
-
-.cockpit .hullscope.warn {
-  --c: var(--amber);
-}
-
-.cockpit .hullscope.crit {
-  --c: #ff4b4b;
-}
-
-.cockpit .hullscope.crit .glass {
-  animation: scope-alarm 0.6s ease-in-out infinite alternate;
-}
-
-@keyframes scope-alarm {
-  to {
-    box-shadow: inset 0 0 26px rgba(255, 60, 60, 0.55);
-  }
-}
-
-.cockpit .slscope {
-  --c: #57d6ff;
-}
-
-.cockpit .slscope.spool {
-  --c: var(--amber);
-}
-
-.cockpit .slscope.on {
-  --c: var(--scope);
-}
-
-.cockpit .slscope .chevrons {
-  position: relative;
-  font-size: 0.7rem;
-  letter-spacing: -0.1em;
-  opacity: 0.6;
-}
-
-.cockpit .slscope.on .chevrons {
-  opacity: 1;
-  animation: led-blink 0.5s steps(2) infinite;
-}
-
-/* Amber CRT in the middle of the dash: class readout and abilities. */
-.cockpit .crt {
-  align-self: stretch;
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  margin-bottom: 4px;
-  padding: 7px 12px 8px;
-  border: 3px solid #0b0f17;
-  border-radius: 8px;
-  outline: 2px solid #3c475d;
-  background:
-    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 1px, transparent 1px 3px),
-    radial-gradient(ellipse at 50% 40%, #2a1806, #0d0803 80%);
-  box-shadow: inset 0 0 22px rgba(0, 0, 0, 0.85);
-  color: var(--crt);
-  font-family: var(--mono);
-  text-shadow: 0 0 6px rgba(255, 170, 60, 0.6);
-}
-
-.cockpit .crt-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--crt-dim);
-  font-size: 0.72rem;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-.cockpit .crt-head span {
-  opacity: 0.75;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.cockpit .crt-abilities {
-  display: flex;
-  justify-content: space-around;
-  gap: 8px;
-}
-
-.cockpit .ability {
-  display: grid;
-  justify-items: center;
-  gap: 1px;
-  min-width: 0;
-}
-
-.cockpit .ring {
-  --p: 360deg;
-  width: 46px;
-  height: 46px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: conic-gradient(var(--crt) var(--p), rgba(255, 179, 71, 0.12) 0);
-  font-weight: 700;
-}
-
-.cockpit .ring span {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: #140c04;
-  font-size: 0.72rem;
-}
-
-.cockpit .ring.ready {
-  box-shadow: 0 0 12px rgba(255, 179, 71, 0.55);
-}
-
-.cockpit .ability label {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.72rem;
-}
-
-.cockpit .ability small {
-  font-size: 0.64rem;
-  color: var(--crt-dim);
-}
-
-.cockpit .ability.locked {
-  opacity: 0.4;
-}
-
-.cockpit .meter label {
-  font-size: 0.66rem;
-  color: var(--crt);
-}
-
-.cockpit .bar.mom {
-  height: 7px;
-  border-color: var(--crt-dim);
-}
-
-.cockpit .bar.mom i {
-  background: linear-gradient(90deg, #b8661a, var(--crt));
-}
-
-.cockpit .bar.mom.hot i {
-  background: linear-gradient(90deg, #ff8a3c, #ff3c3c);
-}
-
-/* Narrower screens: sit the dash to the right of the pilot panel instead of centering it under it. */
-@media (max-width: 1280px) {
-  .cockpit {
-    --dash-w: min(820px, calc(100vw - 340px));
-    left: 332px;
-    transform: none;
-  }
-}
-
-/* Throttle lever: ten LED segments that fill bottom-up. */
-.cockpit .lever {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  margin-bottom: 6px;
-  font-family: var(--mono);
-  color: #9fb0d6;
-}
-
-.cockpit .lever label {
-  font-size: 0.62rem;
-  letter-spacing: 0.15em;
-}
-
-.cockpit .lever .stack {
-  display: grid;
-  gap: 2px;
-  width: 30px;
-  padding: 3px;
-  border: 2px solid #3c475d;
-  border-radius: 4px;
-  background: #07090f;
-}
-
-.cockpit .lever .stack i {
-  height: 6px;
-  border-radius: 1px;
-  background: #1a2230;
-}
-
-.cockpit .lever .stack i.on {
-  background: #4aa8ff;
-  box-shadow: 0 0 5px rgba(74, 168, 255, 0.8);
-}
-
-.cockpit .lever .stack i:nth-child(-n + 3).on {
-  background: var(--amber);
-  box-shadow: 0 0 5px rgba(255, 209, 102, 0.8);
-}
-
-.cockpit .lever b {
-  font-size: 0.78rem;
-  color: var(--ink);
-}
-
-.cockpit .lever kbd {
-  font-size: 0.58rem;
-  padding: 0 3px;
-}
-
 .perf {
-  right: 10px;
-  bottom: 8px;
+  left: 10px;
+  top: 8px;
   font-size: 0.8rem;
   color: var(--dim);
 }
@@ -1215,51 +652,6 @@ button.primary:hover {
   }
 }
 
-.who {
-  font-size: 0.9rem;
-  color: var(--dim);
-}
-
-.who b {
-  color: var(--ink);
-}
-
-.shards {
-  color: var(--dim);
-}
-
-.shards b,
-.gem {
-  color: #6ff3ff;
-}
-
-.shards small {
-  font-size: 0.72rem;
-}
-
-.stat .cost {
-  justify-self: end;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--dim);
-}
-
-.stat.can .cost {
-  color: #6ff3ff;
-}
-
-.stat {
-  grid-template-columns: 26px 70px 1fr auto;
-}
-
-.stat em {
-  grid-column: 2 / 5;
-}
-
-.stat.can {
-  border-color: #6ff3ff;
-}
-
 .toast {
   top: 22%;
   left: 50%;
@@ -1286,8 +678,8 @@ button.primary:hover {
 
 /* Tier pop-up: industrial module schematic cards */
 .tierpop {
-  right: 12px;
-  bottom: 34px;
+  right: 14px;
+  bottom: 262px;
   width: 336px;
   display: grid;
   gap: 8px;
@@ -1982,4 +1374,846 @@ button.primary:hover {
 
 .cockpit .lever.reverse b {
   color: #ff6b6b;
+}
+
+/*
+ * v2 pilot HUD: one bottom bar in three clusters. Left: shield & hull screen plus Energy Output
+ * LEDs. Middle: shard bank and Shard Calibration above the weapons dashboard. Right: throttle,
+ * Sub-Light and the ship-scoped radar. Cluster backgrounds let clicks through to the game; only
+ * buttons, the radar and the power columns take the mouse (.hud-hit).
+ */
+.vhud {
+  --shard: #6ff3ff;
+  --gold: #f5b841;
+  --live: #3ce68a;
+  --warn: #ff5c6c;
+  left: 14px;
+  right: 14px;
+  bottom: 12px;
+  display: grid;
+  grid-template-columns: auto minmax(440px, 680px) auto;
+  justify-content: space-between;
+  align-items: end;
+  gap: 14px;
+  font-family: var(--mono);
+}
+
+.vhud .hud-hit {
+  pointer-events: auto;
+}
+
+.vhud kbd {
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+/* LEFT CLUSTER */
+.vhud-left,
+.vhud-right {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 14px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.012) 3px 4px),
+    rgba(6, 10, 20, 0.92);
+  border: 1px solid rgba(92, 138, 215, 0.42);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
+}
+
+.vhud-left {
+  border-left: 3px solid var(--cobalt);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+
+.ship-array-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.ship-array-label,
+.led-power-head {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.ship-array-screen {
+  --shd-deg: 360deg;
+  --hull-deg: 360deg;
+  --hull-color: #3ce68a;
+  --hull-pct: 100%;
+  position: relative;
+  width: 158px;
+  height: 158px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #07101e 56%, #16243d 58%, #0d1628 66%, #24385c 68%, #09101d 72%);
+  box-shadow:
+    0 0 0 2px #050811,
+    0 0 20px rgba(74, 168, 255, 0.22),
+    inset 0 0 22px rgba(0, 0, 0, 0.9);
+}
+
+/* Outer blue ring: shield. */
+.ship-shield-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: conic-gradient(#4aa8ff var(--shd-deg), rgba(74, 168, 255, 0.1) 0);
+  -webkit-mask: radial-gradient(circle, transparent 66px, #000 67px);
+  mask: radial-gradient(circle, transparent 66px, #000 67px);
+  filter: drop-shadow(0 0 6px rgba(74, 168, 255, 0.85));
+}
+
+/* Inner ring: hull, green / yellow / red. */
+.ship-hull-ring {
+  position: absolute;
+  inset: 13px;
+  border-radius: 50%;
+  background: conic-gradient(var(--hull-color) var(--hull-deg), rgba(255, 255, 255, 0.06) 0);
+  -webkit-mask: radial-gradient(circle, transparent 58px, #000 59px);
+  mask: radial-gradient(circle, transparent 58px, #000 59px);
+  opacity: 0.85;
+}
+
+.ship-inner-crt {
+  position: absolute;
+  inset: 20px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, transparent 0 38%, rgba(92, 230, 138, 0.12) 38.5% 39.5%, transparent 40%),
+    linear-gradient(transparent calc(50% - 0.5px), rgba(92, 230, 138, 0.14) 0 calc(50% + 0.5px), transparent 0),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(92, 230, 138, 0.14) 0 calc(50% + 0.5px), transparent 0),
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--hull-color) 20%, #040b12), #020509 78%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.92);
+}
+
+.ship-array-screen.crit .ship-inner-crt {
+  animation: hud-crit-pulse 0.55s ease-in-out infinite alternate;
+}
+
+@keyframes hud-crit-pulse {
+  to {
+    box-shadow: inset 0 0 28px rgba(255, 65, 80, 0.65);
+  }
+}
+
+.ship-silhouette-wrap {
+  position: absolute;
+  inset: 14px;
+}
+
+/* Hull art points along +x: turn it nose-up. */
+.ship-silhouette-bg,
+.ship-silhouette-fill {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  transform: rotate(-90deg);
+}
+
+.ship-silhouette-bg svg,
+.ship-silhouette-fill svg {
+  width: 82%;
+  height: 82%;
+}
+
+.ship-silhouette-bg svg {
+  opacity: 0.22;
+}
+
+.ship-silhouette-bg svg * {
+  fill: none !important;
+  stroke: var(--hull-color) !important;
+  stroke-width: 1.1 !important;
+}
+
+/* The fill keeps the stern side (bottom once turned), so the level drains down from the nose as hull is lost. */
+.ship-silhouette-fill {
+  clip-path: inset(0 calc(100% - var(--hull-pct)) 0 0);
+  transition: clip-path 0.15s ease-out;
+  filter: drop-shadow(0 0 8px var(--hull-color));
+}
+
+.ship-silhouette-fill svg * {
+  fill: color-mix(in srgb, var(--hull-color) 62%, #04120a) !important;
+  stroke: var(--hull-color) !important;
+  stroke-width: 1.2 !important;
+}
+
+.ship-readout-overlay {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  text-shadow: 0 1px 4px #000, 0 0 8px #000;
+}
+
+.ship-readout-overlay .shd-val {
+  display: block;
+  font-size: 10px;
+  color: var(--shard);
+  letter-spacing: 0.06em;
+}
+
+.ship-readout-overlay .hull-pct {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--hull-color);
+  line-height: 1.05;
+}
+
+.ship-readout-overlay .hull-state {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.65);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--hull-color);
+}
+
+.ship-armor-arcs {
+  display: flex;
+  gap: 8px;
+  font: 10px/1 var(--mono);
+  color: var(--dim);
+}
+
+.ship-armor-arcs b {
+  color: var(--gold);
+}
+
+/* Energy Output: three vertical 12-LED columns. */
+.led-power-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 10px;
+  background: #050811;
+  border: 1px solid #2b3c5e;
+  border-radius: 4px;
+}
+
+.led-power-head {
+  color: var(--ink);
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.led-cols {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.led-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.led-stack {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 4px;
+  background: #090d16;
+  border: 1px solid #24324f;
+  border-radius: 3px;
+}
+
+.led-stack i {
+  width: 18px;
+  height: 6px;
+  border-radius: 1px;
+  background: #161d2b;
+  transition: background 0.08s, box-shadow 0.08s;
+}
+
+.led-col.spd .led-stack i.on {
+  background: #3ce68a;
+  box-shadow: 0 0 6px rgba(60, 230, 138, 0.85);
+}
+
+.led-col.wpn .led-stack i.on {
+  background: #ff4b5c;
+  box-shadow: 0 0 6px rgba(255, 75, 92, 0.85);
+}
+
+/* Shields use blue LEDs; --shd-led-color / --shd-led-glow override them. */
+.led-col.shd .led-stack i.on {
+  background: var(--shd-led-color, #4aa8ff);
+  box-shadow: 0 0 6px var(--shd-led-glow, rgba(74, 168, 255, 0.85));
+}
+
+.led-col small {
+  font: 700 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+}
+
+.led-col.spd small {
+  color: #3ce68a;
+}
+
+.led-col.wpn small {
+  color: #ff4b5c;
+}
+
+.led-col.shd small {
+  color: var(--shd-led-color, #4aa8ff);
+}
+
+.led-col .led-pct {
+  font: 700 10px/1 var(--mono);
+  color: var(--ink);
+}
+
+.led-eq-btn {
+  margin-top: 6px;
+  padding: 3px 6px;
+  background: rgba(74, 168, 255, 0.12);
+  border: 1px solid rgba(74, 168, 255, 0.35);
+  color: var(--ink);
+  font: 600 10px/1 var(--mono);
+  text-align: center;
+}
+
+.led-eq-btn:hover {
+  border-color: var(--shard);
+  color: var(--shard);
+}
+
+/* MIDDLE CLUSTER */
+.vhud-center {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vhud-upgrades-bank {
+  padding: 8px 12px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 255, 255, 0.01) 3px 4px),
+    rgba(6, 10, 20, 0.92);
+  border: 1px solid rgba(92, 138, 215, 0.42);
+  border-top: 2px solid var(--shard);
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.vhud-bank-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(92, 138, 215, 0.25);
+}
+
+.vhud-shard-counter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  background: rgba(92, 230, 255, 0.12);
+  border: 1px solid rgba(92, 230, 255, 0.45);
+  border-radius: 3px;
+  color: var(--shard);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vhud-xp-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.vhud-tier-badge {
+  padding: 2px 7px;
+  background: rgba(182, 146, 255, 0.16);
+  border: 1px solid var(--xp);
+  color: #ebdfff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 45%;
+}
+
+.vhud-xp-bar {
+  flex: 1;
+  height: 12px;
+  background: #050811;
+  border: 1px solid rgba(182, 146, 255, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.vhud-xp-bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #6e44cc, #b692ff);
+}
+
+.vhud-xp-bar span {
+  position: relative;
+  display: block;
+  text-align: center;
+  font-size: 10px;
+  line-height: 10px;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+  white-space: nowrap;
+}
+
+.vhud-up-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.vhud-up-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 5px 7px;
+  background: rgba(11, 18, 34, 0.9);
+  border: 1px solid rgba(92, 138, 215, 0.3);
+  border-radius: 3px;
+  text-align: left;
+  font-family: var(--mono);
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.vhud-up-card.can {
+  border-color: rgba(92, 230, 255, 0.65);
+  box-shadow: 0 0 8px rgba(92, 230, 255, 0.18);
+}
+
+.vhud-up-card:hover {
+  border-color: var(--shard);
+  background: rgba(20, 34, 62, 0.95);
+}
+
+.vhud-up-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 700 11px/1 var(--mono);
+}
+
+.vhud-up-top b {
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.vhud-up-top .cost {
+  color: var(--dim);
+  font-size: 10px;
+}
+
+.vhud-up-card.can .cost {
+  color: var(--shard);
+}
+
+.vhud-up-pips {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.vhud-up-pips i {
+  height: 5px;
+  background: #172238;
+  border-radius: 1px;
+}
+
+.vhud-up-pips i.on {
+  background: var(--gold);
+  box-shadow: 0 0 4px rgba(245, 184, 65, 0.75);
+}
+
+.vhud-up-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  font: 10px/1 var(--mono);
+  color: var(--dim);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Weapons dashboard: primary, special (RMB), secondary (G), ultimate (T). */
+.vhud-weapons-dash {
+  display: grid;
+  grid-template-columns: 1.45fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(16, 25, 46, 0.95), rgba(7, 11, 22, 0.96));
+  border: 1px solid rgba(92, 138, 215, 0.48);
+  border-bottom: 3px solid var(--shard);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.7);
+}
+
+.w-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  min-width: 0;
+  padding: 7px 9px;
+  background: rgba(5, 8, 16, 0.85);
+  border: 1px solid #2b3c5e;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.w-slot.ready {
+  border-color: rgba(60, 230, 138, 0.55);
+}
+
+.w-slot.primary {
+  border-color: rgba(92, 230, 255, 0.45);
+}
+
+.w-slot.empty,
+.w-slot.locked {
+  opacity: 0.52;
+}
+
+.w-slot-cd {
+  position: absolute;
+  inset: auto auto 0 0;
+  height: 3px;
+  background: var(--shard);
+  transition: width 0.1s linear;
+}
+
+.w-slot.ready .w-slot-cd {
+  background: var(--live);
+}
+
+.w-slot[data-ab='2'] .w-slot-cd {
+  background: var(--gold);
+}
+
+.w-slot-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font: 700 10px/1 var(--mono);
+  color: var(--dim);
+}
+
+.w-slot-head .slot-type {
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.w-slot-title {
+  font: 700 13px/1.15 'Rajdhani', sans-serif;
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.w-slot-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  font: 10px/1 var(--mono);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+.w-slot-meta .status-tag {
+  color: var(--live);
+  font-weight: 700;
+}
+
+.w-slot.on-cd .status-tag {
+  color: var(--gold);
+}
+
+.w-slot.locked .status-tag {
+  color: var(--warn);
+}
+
+.turret-subpill {
+  padding: 2px 5px;
+  background: rgba(245, 184, 65, 0.12);
+  border: 1px solid rgba(245, 184, 65, 0.35);
+  color: var(--gold);
+  font: 600 9.5px/1 var(--mono);
+  border-radius: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.turret-subpill.none {
+  opacity: 0.55;
+}
+
+.w-quirk {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 9.5px/1 var(--mono);
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.w-quirk-bar {
+  flex: 1;
+  height: 5px;
+  background: #0a1120;
+  border: 1px solid #24324f;
+  overflow: hidden;
+}
+
+.w-quirk-bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #4aa8ff, #6ff3ff);
+}
+
+.w-quirk-bar.hot i {
+  background: linear-gradient(90deg, #ff8a3c, #ff3c3c);
+}
+
+.auto-tag {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 700;
+  color: #4a5878;
+}
+
+.auto-tag.on {
+  color: var(--live);
+  text-shadow: 0 0 6px rgba(60, 230, 138, 0.7);
+}
+
+/* RIGHT CLUSTER */
+.vhud-right {
+  border-right: 3px solid var(--cobalt);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
+}
+
+.vhud-throttle,
+.vhud-sublight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 6px 8px;
+  background: #050811;
+  border: 1px solid #2b3c5e;
+  border-radius: 4px;
+}
+
+.vhud-throttle > label,
+.vhud-sublight > label {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+}
+
+.thr-led-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 3px;
+  background: #090d16;
+  border: 1px solid #24324f;
+  border-radius: 3px;
+}
+
+.thr-led-bar i {
+  width: 22px;
+  height: 5px;
+  border-radius: 1px;
+  background: #161d2b;
+}
+
+.thr-led-bar i.fwd.on {
+  background: #4aa8ff;
+  box-shadow: 0 0 5px rgba(74, 168, 255, 0.85);
+}
+
+.thr-led-bar i.fwd.peak.on {
+  background: #ffd166;
+  box-shadow: 0 0 5px rgba(255, 209, 102, 0.85);
+}
+
+.thr-zero-line {
+  height: 2px;
+  background: #8a99bf;
+  margin: 1px -2px;
+}
+
+.thr-led-bar i.rev.on {
+  background: #ff4b5c;
+  box-shadow: 0 0 6px rgba(255, 75, 92, 0.9);
+}
+
+.thr-led-bar i.rev.na {
+  opacity: 0.16;
+}
+
+.thr-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.thr-val.rev {
+  color: #ff5969;
+}
+
+.thr-brake {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--dim);
+}
+
+.thr-brake .led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2a1218;
+  box-shadow: inset 0 0 2px #000;
+}
+
+.thr-brake .led.on {
+  background: #ff4b5c;
+  box-shadow: 0 0 6px rgba(255, 75, 92, 0.95);
+}
+
+.sl-led-bar {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 3px;
+  padding: 4px;
+  background: #090d16;
+  border: 1px solid #24324f;
+  border-radius: 3px;
+}
+
+.sl-led-bar i {
+  width: 16px;
+  height: 8px;
+  border-radius: 1px;
+  background: #161d2b;
+}
+
+.sl-led-bar i.on {
+  background: #5ce6ff;
+  box-shadow: 0 0 6px rgba(92, 230, 255, 0.9);
+}
+
+.sl-led-bar.engaged i.on {
+  background: #3ce68a;
+  box-shadow: 0 0 8px rgba(60, 230, 138, 0.95);
+}
+
+.sl-status {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #5ce6ff;
+  white-space: nowrap;
+}
+
+.vhud-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.vhud-radar-head {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font: 700 10px/1 var(--mono);
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.vhud-radar-head b {
+  color: var(--shard);
+}
+
+.vhud .radar {
+  border-radius: 50%;
+  border: 2px solid #35507e;
+  background: #040914;
+  box-shadow:
+    0 0 16px rgba(74, 168, 255, 0.2),
+    inset 0 0 20px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
+}
+
+.vhud-radar-foot {
+  font: 10px/1 var(--mono);
+  color: var(--dim);
+  white-space: nowrap;
+}
+
+/* Narrower screens: let the middle cluster shrink and drop the card blurbs. */
+@media (max-width: 1240px) {
+  .vhud {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    left: 8px;
+    right: 8px;
+  }
+  .vhud-up-sub span:last-child,
+  .vhud-radar-head span {
+    display: none;
+  }
+  .vhud-weapons-dash {
+    grid-template-columns: 1.3fr 1fr 1fr 1fr;
+    padding: 7px 8px;
+    gap: 6px;
+  }
 }

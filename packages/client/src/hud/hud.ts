@@ -9,6 +9,8 @@ import {
   EventType,
   H,
   KESSLER_REACH,
+  loadoutDeck,
+  MATCH,
   MOTHERSHIP,
   pickedNodes,
   POINT,
@@ -56,6 +58,40 @@ const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat'
 const SEAT_KEYS = ['0', '-', '='];
 const TURRET_NAMES: Record<TurretType, string> = { standard: 'Standard turrets', rocket: 'Rocket turrets', laser: 'Laser turrets' };
 const BEACON = DEPLOY_KINDS.indexOf('beacon');
+/** Ship-scoped radar: base scope (world units, before vision modifiers) and bezel size per class. */
+const RADAR_SCOPES: Record<ClassId, { range: number; px: number }> = {
+  patrol: { range: 1800, px: 146 },
+  corvette: { range: 1900, px: 148 },
+  frigate: { range: 2100, px: 154 },
+  destroyer: { range: 2200, px: 158 },
+  cruiser: { range: 2400, px: 164 },
+  battlecruiser: { range: 2700, px: 170 },
+  battleship: { range: 2900, px: 176 },
+  dreadnought: { range: 3200, px: 182 },
+  carrier: { range: 3600, px: 190 },
+};
+/** Hull screen states: above 50%, 25–50%, below 25% (with the pulse alarm). */
+const HULL_STATES = [
+  { color: '#3ce68a', label: 'HULL OKAY' },
+  { color: '#ffd166', label: 'DAMAGED' },
+  { color: '#ff4b5c', label: 'CRITICAL' },
+];
+/** Energy Output columns: Reactor Power mode each one shunts to (POWER_INDEX), arrow key. */
+const POWER_CHANNELS = [
+  { css: 'spd', name: 'SPD', mode: 1, key: '&larr;', title: 'Speed' },
+  { css: 'wpn', name: 'WPN', mode: 2, key: '&uarr;', title: 'Weapons' },
+  { css: 'shd', name: 'SHD', mode: 3, key: '&rarr;', title: 'Shields' },
+];
+const POWER_LEDS = 12;
+const POWER_MODE_NAMES = ['EQUALIZED', 'MAX SPEED', 'MAX WEAPONS', 'MAX SHIELDS'];
+/** Weapons dashboard ability bays after the primary: signature, auxiliary, ultimate. */
+const ABILITY_BAYS = [
+  { type: 'Special', key: 'RMB', at: SELF.signature },
+  { type: 'Secondary', key: 'G', at: SELF.extra },
+  { type: 'Ultimate', key: 'T', at: SELF.ultimate },
+];
+const UP_LABELS = ['WEAPONS', 'HULL', 'ENGINES', 'REACTOR'];
+const SUBLIGHT_LEDS = 8;
 
 interface FeedEntry {
   html: string;
@@ -64,6 +100,8 @@ interface FeedEntry {
 
 export interface HudHandlers {
   stat(index: number): void;
+  /** Reactor Power from the Energy Output panel (POWER_INDEX: 0 equalize, 1 speed, 2 weapons, 3 shields). */
+  power(mode: number): void;
   tier(option: number): void;
   pickClass(choice: ClassId): void;
   pickSeat(seat: SeatId): void;
@@ -77,11 +115,22 @@ export interface HudHandlers {
   restart(): void;
 }
 
-/** Plain-DOM HUD: score bar, pilot panel, abilities, tier pop-up, class picker, Fleet Command panel, minimap, feed, overlays. */
+/**
+ * Plain-DOM HUD: score bar, the pilot's 3-cluster bottom HUD (ship screen and power, upgrades and
+ * weapons, throttle / Sub-Light / radar), tier pop-up, class picker, Fleet Command panel, sector
+ * map, feed, overlays.
+ */
 export class Hud {
   private readonly $: Record<string, HTMLElement> = {};
   private readonly statRows: HTMLElement[] = [];
-  private readonly abilityRings: HTMLElement[] = [];
+  private readonly abilityBays: HTMLElement[] = [];
+  private readonly radar: HTMLCanvasElement;
+  private readonly radarCtx: CanvasRenderingContext2D;
+  private lastRadar = 0;
+  /** Radar scope in world units: class base × the ship's vision modifiers. */
+  private radarRange = 2400;
+  private deckKey = '';
+  private deck: ReturnType<typeof loadoutDeck> | null = null;
   private readonly orderRows: HTMLElement[] = [];
   /** Picker cap labels, by CLASS_ORDER index. */
   private readonly capEls: HTMLElement[] = [];
@@ -117,67 +166,79 @@ export class Hud {
         </div>
         <div class="team ember"><span data-k="k1" class="kills">0</span><span class="tname">Ember</span></div>
       </div>
-      <canvas class="minimap" width="300" height="150"></canvas>
+      <canvas class="minimap hud-hit hidden" width="300" height="150"></canvas>
       <div data-k="feed" class="feed"></div>
       <div data-k="toast" class="toast"></div>
-      <div data-k="pilot" class="pilot panel hidden">
-        <div class="lvrow"><div data-k="rank" class="level" title="Tiers owned">T0</div>
-          <div class="bars">
-            <div class="who"><b data-k="cname"></b> <span data-k="hname"></span></div>
-            <div class="bar xp"><i data-k="xp"></i><span data-k="xptext"></span></div>
+      <div data-k="vhud" class="vhud hidden">
+        <div class="vhud-left">
+          <div class="ship-array-wrap">
+            <span class="ship-array-label">Shield &amp; Hull Array</span>
+            <div data-k="shipScreen" class="ship-array-screen">
+              <div class="ship-shield-ring"></div>
+              <div class="ship-hull-ring"></div>
+              <div class="ship-inner-crt">
+                <div class="ship-silhouette-wrap"><div data-k="shipBg" class="ship-silhouette-bg"></div><div data-k="shipFill" class="ship-silhouette-fill"></div></div>
+                <div class="ship-readout-overlay"><span data-k="shdText" class="shd-val"></span><span data-k="hullPct" class="hull-pct"></span><span data-k="hullState" class="hull-state"></span></div>
+              </div>
+            </div>
+            <div data-k="armorArcs" class="ship-armor-arcs"></div>
+          </div>
+          <div class="led-power-panel">
+            <div class="led-power-head">Energy Output</div>
+            <div class="led-cols">
+              ${POWER_CHANNELS.map(
+                (c, i) =>
+                  `<div class="led-col ${c.css} hud-hit" data-power="${c.mode}" title="Shunt power to ${c.title}"><span data-k="pwPct${i}" class="led-pct"></span><div data-k="pwLeds${i}" class="led-stack">${'<i></i>'.repeat(POWER_LEDS)}</div><small>${c.name}</small><kbd>${c.key}</kbd></div>`,
+              ).join('')}
+            </div>
+            <button class="led-eq-btn" data-power="0" title="Equalize power"><kbd>&darr;</kbd> <span data-k="powerMode">EQUALIZED</span></button>
           </div>
         </div>
-        <div class="shards"><span class="gem">◆</span> <b data-k="shards">0</b> shards <small>· buy upgrades, costs climb per level</small></div>
-        <div class="stats">
-          ${STAT_POINTS.map(
-            (s, i) => `<button class="stat" data-stat="${i}"><kbd>${keys[i]}</kbd><b>${s.name}</b><span class="pips">${'<i></i>'.repeat(STAT_POINT_MAX)}</span><span class="cost" data-cost="${i}"></span><em>${s.short}</em></button>`,
-          ).join('')}
+        <div class="vhud-center">
+          <div class="vhud-upgrades-bank">
+            <div class="vhud-bank-strip">
+              <div class="vhud-shard-counter" title="Unspent shards: spend them on Shard Calibration below"><span class="gem">◆</span><span>BANK <b data-k="shards">0</b> SHARDS</span></div>
+              <div class="vhud-xp-wrap"><span data-k="tierBadge" class="vhud-tier-badge"></span><div class="vhud-xp-bar"><i data-k="xp"></i><span data-k="xptext"></span></div></div>
+            </div>
+            <div class="vhud-up-grid">
+              ${STAT_POINTS.map(
+                (s, i) =>
+                  `<button class="vhud-up-card" data-stat="${i}" title="${s.name}: ${s.short} per level"><span class="vhud-up-top"><b><kbd>${keys[i]}</kbd> ${UP_LABELS[i]}</b><span class="cost"></span></span><span class="vhud-up-pips">${'<i></i>'.repeat(STAT_POINT_MAX)}</span><span class="vhud-up-sub"><span class="lv"></span><span>${s.short.split(',')[0]}</span></span></button>`,
+              ).join('')}
+            </div>
+          </div>
+          <div class="vhud-weapons-dash">
+            <div class="w-slot primary">
+              <div class="w-slot-head"><span class="slot-type">Primary</span><kbd>LMB</kbd></div>
+              <div data-k="gunName" class="w-slot-title"></div>
+              <div data-k="turretPill" class="turret-subpill"></div>
+              <div data-k="gaugeRow" class="w-quirk"><label data-k="gaugeName"></label><div class="w-quirk-bar"><i data-k="gauge"></i></div></div>
+              <div class="w-slot-meta"><span data-k="gunStats"></span><span data-k="auto" class="auto-tag">AUTO <kbd>${autofireKeyLabel(scheme)}</kbd></span></div>
+            </div>
+            ${ABILITY_BAYS.map(
+              (bay, i) =>
+                `<div class="w-slot" data-ab="${i}"><div class="w-slot-head"><span class="slot-type">${bay.type}</span><kbd>${bay.key}</kbd></div><div class="w-slot-title"></div><div class="w-slot-meta"><span class="sub"></span><span class="status-tag"></span></div><div class="w-slot-cd"></div></div>`,
+            ).join('')}
+          </div>
         </div>
-      </div>
-      <div data-k="abilities" class="cockpit hidden">
-        <div class="dash">
-          <div class="strip">
-            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
-            <span class="tag"><i data-k="brake" class="led red"></i>BRK <kbd>Space</kbd></span>
-            <span class="tag"><i data-k="auto" class="led green"></i>AUTO <kbd>${autofireKeyLabel(scheme)}</kbd></span>
-            <span class="tag"><i data-k="slLed" class="led amber"></i>SUB-L</span>
-            <span class="tag"><i data-k="dmgLed" class="led red"></i>DMG</span>
-            <span class="tag"><i data-k="revLed" class="led red"></i>REV</span>
-            <span class="bank">${'<i class="led"></i>'.repeat(7)}</span>
-          </div>
-          <div data-k="hullScope" class="scope hullscope">
-            <div data-k="hullDial" class="dial"></div>
-            <div data-k="shieldDial" class="dial shieldring"></div>
-            <div class="glass"><span data-k="hullPic" class="wire"></span><b data-k="hullPct">100%</b><small>HULL</small><em data-k="hulltext"></em></div>
-          </div>
-          <div class="crt">
-            <div class="crt-head"><b data-k="crtName"></b><span data-k="crtTier"></span></div>
-            <div class="crt-shield"><label>SHD</label><div class="bar shd"><i data-k="shieldBar"></i></div><b data-k="shieldText"></b></div>
-            <div class="crt-armor"><span data-k="armorText"></span><span data-k="apText"></span></div>
-            <div class="crt-abilities">
-              ${['RMB', 'T', 'G']
-                .map((key, i) => `<div class="ability" data-ab="${i}"><div class="ring"><span>${key}</span></div><label></label><small></small></div>`)
-                .join('')}
-            </div>
-            <div data-k="gaugeRow" class="meter"><label data-k="gaugeName"></label><div class="bar mom"><i data-k="gauge"></i></div></div>
-          </div>
-          <div data-k="power" class="power">
-            <label>POWER</label>
-            <div class="chans">
-              ${['SPD', 'WPN', 'SHD'].map((n, i) => `<div class="chan c${i}"><div class="pbar"><i data-k="pw${i}"></i></div><small>${n}</small><kbd>${['&larr;', '&uarr;', '&rarr;'][i]}</kbd></div>`).join('')}
-            </div>
-            <b data-k="powerMode">EQUAL</b>
-            <kbd>&darr; equalize</kbd>
-          </div>
-          <div class="lever">
+        <div class="vhud-right">
+          <div class="vhud-throttle" title="Mouse wheel: throttle (below 0% backs up)">
             <label>THR</label>
-            <div data-k="thrStack" class="stack">${'<i></i>'.repeat(10)}<hr />${'<i class="rev"></i>'.repeat(6)}</div>
-            <b data-k="thrText">100%</b>
-            <kbd>Wheel</kbd>
+            <div data-k="thrLeds" class="thr-led-bar">${'<i class="fwd peak"></i>'.repeat(3)}${'<i class="fwd"></i>'.repeat(7)}<div class="thr-zero-line"></div>${'<i class="rev"></i>'.repeat(6)}</div>
+            <span data-k="thrVal" class="thr-val">100%</span>
+            <span class="thr-brake"><i data-k="brake" class="led"></i>BRK</span>
+            <kbd>Space</kbd>
           </div>
-          <div data-k="sublight" class="scope slscope">
-            <div data-k="slDial" class="dial"></div>
-            <div class="glass"><span class="chevrons">&#x25B2;&#x25B2;</span><b data-k="slText">READY</b><small>SUB-LIGHT</small><kbd>Shift</kbd></div>
+          <div class="vhud-sublight" title="Hold Shift to spool the Sub-Light drive">
+            <label>SUB-L</label>
+            <div data-k="slLeds" class="sl-led-bar">${'<i></i>'.repeat(SUBLIGHT_LEDS)}</div>
+            <span data-k="slStatus" class="sl-status">READY</span>
+            <kbd>Shift</kbd>
+          </div>
+          <div class="vhud-radar-wrap">
+            <div class="vhud-radar-head"><span>Tactical Radar</span><b data-k="radarScope"></b></div>
+            <canvas class="radar hud-hit" width="164" height="164" title="Click or press M for the sector map"></canvas>
+            <div data-k="radarFoot" class="vhud-radar-foot"></div>
           </div>
         </div>
       </div>
@@ -225,11 +286,12 @@ export class Hud {
       <div data-k="board" class="overlay board passive hidden"></div>
     `;
     root.querySelectorAll<HTMLElement>('[data-k]').forEach((n) => (this.$[n.dataset.k!] = n));
-    root.querySelectorAll<HTMLButtonElement>('.stat').forEach((b) => {
+    root.querySelectorAll<HTMLButtonElement>('[data-stat]').forEach((b) => {
       this.statRows.push(b);
       b.addEventListener('click', () => this.h.stat(Number(b.dataset.stat)));
     });
-    root.querySelectorAll<HTMLElement>('.ability').forEach((a) => this.abilityRings.push(a));
+    root.querySelectorAll<HTMLElement>('[data-power]').forEach((b) => b.addEventListener('mousedown', () => this.h.power(Number(b.dataset.power))));
+    root.querySelectorAll<HTMLElement>('[data-ab]').forEach((a) => this.abilityBays.push(a));
     root.querySelectorAll<HTMLButtonElement>('.order').forEach((b) => {
       this.orderRows.push(b);
       b.addEventListener('click', () => this.h.order(b.dataset.order as CommandId));
@@ -259,6 +321,9 @@ export class Hud {
       const map = KESSLER_REACH;
       this.h.minimap(((e.clientX - r.left) / r.width) * map.width, ((e.clientY - r.top) / r.height) * map.height);
     });
+    this.radar = root.querySelector<HTMLCanvasElement>('.radar')!;
+    this.radarCtx = this.radar.getContext('2d')!;
+    this.radar.addEventListener('mousedown', () => this.toggleMap());
   }
 
   setMatch(info: MatchInfo): void {
@@ -280,39 +345,38 @@ export class Hud {
 
   setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
 
-  /** Throttle lever: 10 forward segments fill up from the zero line, reverse segments fill down in red. */
+  /** Throttle column: 10 forward LEDs rise from the zero line, 6 red reverse LEDs fall below it. */
   setThrottle(t: number, reverseMax: number): void {
     const lit = Math.round(t * 10);
     const pct = Math.round(t * 100);
-    this.set('thrText', `${pct > 0 ? '' : pct < 0 ? '−' : ''}${Math.abs(pct)}%`);
+    this.set('thrVal', pct > 0 ? `+${pct}%` : pct < 0 ? `−${-pct}% REV` : '0%');
     const key = `${lit}:${reverseMax}`;
     if (this.cache.get('thrLit') === key) return;
     this.cache.set('thrLit', key);
-    const fwd = this.$.thrStack.querySelectorAll('i:not(.rev)');
-    const rev = this.$.thrStack.querySelectorAll('i.rev');
+    const fwd = this.$.thrLeds.querySelectorAll('i.fwd');
+    const rev = this.$.thrLeds.querySelectorAll('i.rev');
     // Forward stack is laid out top-down (100% first), so count from the bottom.
     fwd.forEach((seg, i) => seg.classList.toggle('on', fwd.length - 1 - i < lit));
-    // Reverse segments read down from the zero line; segments past this ship's ceiling stay dark.
+    // Reverse segments read down from the zero line; segments past this ship's ceiling stay dimmed.
     const depth = Math.round(reverseMax * 10);
     rev.forEach((seg, i) => {
       seg.classList.toggle('on', i < -lit);
       seg.classList.toggle('na', i >= depth);
     });
-    this.$.revLed.classList.toggle('on', lit < 0);
-    this.$.thrStack.parentElement!.classList.toggle('reverse', lit < 0);
+    this.$.thrVal.classList.toggle('rev', lit < 0);
   }
 
-  /** Reactor Power: three channel bars (0.33 / 0.5 / 1.0) and the mode name. */
+  /** Energy Output: 12 LEDs per channel (33% = 4, 50% = 6, 100% = 12) and the mode name. */
   setPower(mode: number, levels: readonly number[]): void {
-    const names = ['EQUAL', 'SPEED', 'WEAPONS', 'SHIELDS'];
-    this.set('powerMode', names[mode] ?? 'EQUAL');
+    this.set('powerMode', POWER_MODE_NAMES[mode] ?? POWER_MODE_NAMES[0]);
     for (let c = 0; c < 3; c++) {
-      const h = `${Math.round(Math.min(1, levels[c]) * 100)}%`;
-      if (this.cache.get(`pw${c}`) === h) continue;
-      this.cache.set(`pw${c}`, h);
-      this.$[`pw${c}`].style.height = h;
+      const level = Math.min(1, levels[c]);
+      this.set(`pwPct${c}`, `${Math.round(level * 100)}%`);
+      const lit = Math.round(level * POWER_LEDS);
+      if (this.cache.get(`pwLit${c}`) === String(lit)) continue;
+      this.cache.set(`pwLit${c}`, String(lit));
+      Array.from(this.$[`pwLeds${c}`].children).forEach((led, i) => led.classList.toggle('on', i < lit));
     }
-    this.$.power.dataset.mode = String(mode);
   }
 
   /** Set a CSS custom property, only when it changed. */
@@ -393,12 +457,19 @@ export class Hud {
       this.set('seatName2', `FOB Commander · ${fobName(myTeam, 1)}`);
       this.updateCaps(snap, myTeam);
     }
-    this.show('pilot', !commander && !docked);
-    this.show('abilities', !commander && !docked);
+    const pilot = !commander && !docked;
+    this.show('vhud', pilot);
     this.show('command', commander && !over);
     this.root.classList.toggle('cmdmode', commander);
+    // Pilots read the ship-scoped radar; the sector map shows on M (or a radar click). Commanders keep it docked top-right.
+    const mapOn = commander || this.bigMap;
+    this.mini.classList.toggle('hidden', !mapOn);
     if (commander) this.updateCommand(snap);
     else if (!docked) this.updatePilot(snap);
+    if (pilot && now - this.lastRadar > 33) {
+      this.lastRadar = now;
+      this.drawRadar(snap, myTeam, now);
+    }
     this.show('tierPop', !commander && !docked && !over && this.tierReady(snap));
 
     // Death overlay with the shard-loss notice and respawn point choice.
@@ -447,7 +518,7 @@ export class Hud {
 
     if (now - this.lastMini > 200) {
       this.lastMini = now;
-      this.drawMinimap(snap, myTeam);
+      if (mapOn) this.drawMinimap(snap, myTeam);
       if (this.scoreboardOpen) this.renderBoard(snap);
     }
     this.set('perf', `${fps.toFixed(0)} fps · sim ${simMs.toFixed(2)} ms · ${b[H.projectileCount]} shots`);
@@ -491,100 +562,80 @@ export class Hud {
     const picks = this.picks(snap);
     const nodes = pickedNodes(cls, picks);
     const tiers = b[s + SELF.tiersOwned];
-
-    this.set('rank', `T${tiers}`);
-    this.set('cname', cls.name);
     const hullNode = nodes.find((n) => n.hullModel);
-    this.set('hname', hullNode ? `· ${hullNode.name} hull` : `· ${cls.role}`);
-    const next = b[s + SELF.nextTierCost];
-    const xp = b[s + SELF.xp];
-    this.set('xp', `${next < 0 ? 100 : Math.min(100, (100 * xp) / next)}%`, 'width');
-    this.set('xptext', next < 0 ? 'All tiers owned' : `${Math.floor(xp)} / ${next} XP → tier ${tiers + 1}`);
-    const hull = b[me + SHIP.hull];
-    const maxHull = b[me + SHIP.maxHull];
-    // Cockpit hull scope: dial, wireframe of the current hull, and warning states.
-    const frac = Math.max(0, hull) / Math.max(1, maxHull);
-    this.setVar('hullDial', '--p', `${(frac * 360).toFixed(1)}deg`);
-    this.set('hullPct', `${Math.round(frac * 100)}%`);
-    this.set('hulltext', `${Math.ceil(Math.max(0, hull))} / ${Math.round(maxHull)}`);
-    const state = frac < 0.25 ? 'crit' : frac < 0.5 ? 'warn' : '';
-    if (this.cache.get('hullState') !== state) {
-      this.cache.set('hullState', state);
-      this.$.hullScope.classList.toggle('warn', state === 'warn');
-      this.$.hullScope.classList.toggle('crit', state === 'crit');
-      this.$.dmgLed.classList.toggle('on', state === 'crit');
+    const statLevels = STAT_POINTS.map((_, i) => b[s + SELF.stat0 + i]);
+    // Static loadout numbers (gun DPS, vision) from the sim's own loadout code, rebuilt only when picks or levels change.
+    const deckKey = `${cls.id}:${picks.join(',')}:${statLevels.join(',')}`;
+    if (deckKey !== this.deckKey || !this.deck) {
+      this.deckKey = deckKey;
+      this.deck = loadoutDeck(cls.id, picks, statLevels);
     }
+    const deckRow = (id: string) => this.deck!.rows.find((r) => r.id === id)?.value ?? 0;
+
+    // LEFT: shield ring, hull ring and a nose-up silhouette that drains from the top as hull is lost.
+    const hull = Math.max(0, b[me + SHIP.hull]);
+    const maxHull = Math.max(1, b[me + SHIP.maxHull]);
+    const frac = Math.min(1, hull / maxHull);
+    const shield = Math.max(0, b[me + SHIP.shield]);
+    const maxShield = b[me + SHIP.maxShield];
+    const sfrac = maxShield > 0 ? Math.min(1, shield / maxShield) : 0;
+    const state = frac < 0.25 ? 2 : frac < 0.5 ? 1 : 0;
+    this.setVar('shipScreen', '--shd-deg', `${(sfrac * 360).toFixed(1)}deg`);
+    this.setVar('shipScreen', '--hull-deg', `${(frac * 360).toFixed(1)}deg`);
+    this.setVar('shipScreen', '--hull-pct', `${(frac * 100).toFixed(1)}%`);
+    this.setVar('shipScreen', '--hull-color', HULL_STATES[state].color);
+    if (this.cache.get('hullStateN') !== String(state)) {
+      this.cache.set('hullStateN', String(state));
+      this.$.shipScreen.classList.toggle('crit', state === 2);
+    }
+    this.set('hullState', HULL_STATES[state].label);
+    this.set('hullPct', `${Math.ceil(frac * 100)}%`);
+    this.set('shdText', `SHD ${Math.ceil(shield)} / ${Math.round(maxShield)}`);
     const model = hullNode?.hullModel ?? cls.hullModel;
     if (this.cache.get('hullPic') !== model) {
       this.cache.set('hullPic', model);
       const art = HULL_BY_ID[model];
-      this.$.hullPic.innerHTML = art ? hullSvg(art.shapes) : '';
+      const svg = art ? hullSvg(art.shapes) : '';
+      this.$.shipBg.innerHTML = svg;
+      this.$.shipFill.innerHTML = svg;
     }
-    this.set('crtName', cls.name.toUpperCase());
-    this.set('crtTier', `TIER ${tiers} · ${cls.role.toUpperCase()}`);
-    // Energy shield (outer ring + CRT bar), armor arcs and caliber.
-    const shield = b[me + SHIP.shield];
-    const maxShield = b[me + SHIP.maxShield];
-    const sfrac = maxShield > 0 ? Math.max(0, shield) / maxShield : 0;
-    this.setVar('shieldDial', '--p', `${(sfrac * 360).toFixed(1)}deg`);
-    this.set('shieldBar', `${sfrac * 100}%`, 'width');
-    this.set('shieldText', `${Math.ceil(Math.max(0, shield))} / ${Math.round(maxShield)}`);
-    this.set('armorText', `ARMOR ${Math.round(b[s + SELF.armorBow])} / ${Math.round(b[s + SELF.armorFlank])} / ${Math.round(b[s + SELF.armorStern])}`);
-    this.set('apText', `${Math.round(b[s + SELF.ap])} AP · ${b[s + SELF.turrets]} TURRETS`);
+    this.set(
+      'armorArcs',
+      `<span>BOW <b>${Math.round(b[s + SELF.armorBow])}</b></span><span>FLK <b>${Math.round(b[s + SELF.armorFlank])}</b></span><span>STN <b>${Math.round(b[s + SELF.armorStern])}</b></span>`,
+      'html',
+    );
     this.setPower(b[s + SELF.powerMode], [b[s + SELF.powerSpeed], b[s + SELF.powerWeapons], b[s + SELF.powerShields]]);
+
+    // MIDDLE, top row: shard bank, tier and XP, Shard Calibration cards.
     const shards = b[s + SELF.shards];
     this.set('shards', String(Math.floor(shards)));
+    this.set('tierBadge', `T${tiers} · ${(hullNode?.name ?? cls.name).toUpperCase()}`);
+    const next = b[s + SELF.nextTierCost];
+    const xp = b[s + SELF.xp];
+    this.set('xp', `${next < 0 ? 100 : Math.min(100, (100 * xp) / next)}%`, 'width');
+    this.set('xptext', next < 0 ? 'ALL TIERS OWNED' : `${Math.floor(xp)} / ${next} XP → T${tiers + 1}`);
     for (let i = 0; i < this.statRows.length; i++) {
-      const n = b[s + SELF.stat0 + i];
+      const n = statLevels[i];
       const cost = b[s + SELF.statCost0 + i];
       const can = cost >= 0 && shards >= cost;
       const key = `stat${i}`;
       const v = `${n}:${cost}:${can}`;
       if (this.cache.get(key) === v) continue;
       this.cache.set(key, v);
-      const row = this.statRows[i];
-      row.classList.toggle('can', can);
-      row.querySelectorAll('.pips i').forEach((p, j) => p.classList.toggle('on', j < n));
-      row.querySelector('.cost')!.textContent = cost < 0 ? 'MAX' : `◆ ${cost}`;
+      const card = this.statRows[i];
+      card.classList.toggle('can', can);
+      card.querySelectorAll('.vhud-up-pips i').forEach((p, j) => p.classList.toggle('on', j < n));
+      card.querySelector('.cost')!.textContent = cost < 0 ? 'MAX' : `◆ ${cost}`;
+      card.querySelector('.lv')!.textContent = `LV ${n}/${STAT_POINT_MAX}`;
     }
 
-    // Ability slots: signature (RMB), ultimate (T, tier 5), extra (G, from a tier node).
-    const sig = nodes.reduce((a, n) => n.replacesSignature ?? a, cls.signature);
-    const ult = nodes.find((n) => n.ultimate)?.ultimate;
-    const extra = nodes.find((n) => n.extraAbility)?.extraAbility;
-    const slots = [
-      { def: sig, at: SELF.signature, locked: '' },
-      { def: ult, at: SELF.ultimate, locked: 'Tier 5' },
-      { def: extra, at: SELF.extra, locked: '' },
-    ];
-    slots.forEach((slot, i) => {
-      const el = this.abilityRings[i];
-      const has = slot.def !== undefined;
-      el.classList.toggle('hidden', !has && !slot.locked);
-      el.classList.toggle('locked', !has);
-      const label = el.querySelector('label')!;
-      const small = el.querySelector('small')!;
-      const ring = el.querySelector<HTMLElement>('.ring')!;
-      const name = slot.def?.name ?? 'Ultimate';
-      if (label.textContent !== name) label.textContent = name;
-      if (!has) {
-        if (small.textContent !== slot.locked) small.textContent = slot.locked;
-        ring.style.setProperty('--p', '0deg');
-        ring.classList.remove('ready');
-        return;
-      }
-      const k = s + slot.at;
-      const charges = b[k + ABILITY.charges];
-      const maxCharges = b[k + ABILITY.maxCharges];
-      const cd = b[k + ABILITY.cooldown];
-      const ready = charges >= 1;
-      const frac = ready ? 1 : 1 - cd / Math.max(0.01, b[k + ABILITY.cooldownMax]);
-      ring.style.setProperty('--p', `${Math.max(0, frac) * 360}deg`);
-      ring.classList.toggle('ready', ready);
-      const text = maxCharges > 1 ? `${Math.floor(charges)}/${maxCharges}` : ready ? 'ready' : `${cd.toFixed(1)}s`;
-      if (small.textContent !== text) small.textContent = text;
-    });
-
+    // MIDDLE, bottom row: primary gun (caliber, DPS, auto-turrets, quirk gauge), then the ability bays.
+    this.set('gunName', cls.gun.name ?? `${cls.name} main gun`);
+    const turrets = b[s + SELF.turrets];
+    this.set('turretPill', turrets > 0 ? `+${turrets}× AUTO-TURRETS · ±${cls.secondary?.jitterDeg ?? 0}°` : 'AXIAL MOUNT · NO TURRETS');
+    this.$.turretPill.classList.toggle('none', turrets <= 0);
+    this.$.turretPill.title = cls.secondary?.name ?? '';
+    this.set('gunStats', `${Math.round(b[s + SELF.ap])} AP · ${Math.round(deckRow('dps'))} DPS`);
     const gauge = QUIRK_GAUGE[cls.quirk];
     this.show('gaugeRow', gauge !== undefined);
     if (gauge) {
@@ -592,14 +643,66 @@ export class Hud {
       this.set('gauge', `${Math.min(1, b[s + SELF.quirkGauge]) * 100}%`, 'width');
       this.$.gauge.parentElement!.classList.toggle('hot', cls.quirk === 'heat' && b[s + SELF.quirkGauge] >= 0.5);
     }
-    // Sub-Light: the scope's ring fills while Shift charges the drive, then the jump engages.
+    // Signature (RMB, or a node's replacement), auxiliary (G, from a tier node), ultimate (T, tier 5).
+    const defs = [
+      nodes.reduce((a, n) => n.replacesSignature ?? a, cls.signature),
+      nodes.find((n) => n.extraAbility)?.extraAbility,
+      nodes.find((n) => n.ultimate)?.ultimate,
+    ];
+    ABILITY_BAYS.forEach((bay, i) => {
+      const def = defs[i];
+      let bayState = 'ready';
+      let name: string;
+      let sub: string;
+      let tag: string;
+      let fill = 0;
+      if (!def) {
+        bayState = i === 2 ? 'locked' : 'empty';
+        name = i === 2 ? 'Tier 5 Ultimate' : 'No Secondary';
+        sub = i === 2 ? 'Unlocks at Tier 5' : 'Tier 2 / 4 node';
+        tag = i === 2 ? 'LOCKED' : 'EMPTY';
+      } else {
+        const k = s + bay.at;
+        const charges = b[k + ABILITY.charges];
+        const maxCharges = b[k + ABILITY.maxCharges];
+        const cd = b[k + ABILITY.cooldown];
+        const cdMax = b[k + ABILITY.cooldownMax] || def.cooldown;
+        const ready = charges >= 1;
+        bayState = ready ? 'ready' : 'on-cd';
+        name = def.name;
+        sub = maxCharges > 1 ? `${Math.floor(charges)}/${maxCharges} CHARGES` : `CD ${Math.round(cdMax)}s`;
+        tag = ready ? 'READY' : `${cd.toFixed(1)}s`;
+        fill = charges >= maxCharges ? 1 : Math.max(0, 1 - cd / Math.max(0.01, cdMax));
+      }
+      const v = `${bayState}|${name}|${sub}|${tag}|${Math.round(fill * 100)}`;
+      if (this.cache.get(`bay${i}`) === v) return;
+      this.cache.set(`bay${i}`, v);
+      const el = this.abilityBays[i];
+      el.className = `w-slot ${bayState}`;
+      el.querySelector('.w-slot-title')!.textContent = name;
+      el.querySelector('.sub')!.textContent = sub;
+      el.querySelector('.status-tag')!.textContent = tag;
+      el.querySelector<HTMLElement>('.w-slot-cd')!.style.width = `${fill * 100}%`;
+    });
+
+    // RIGHT: Sub-Light LEDs fill while Shift spools the drive, then glow green once it engages.
     const spool = b[s + SELF.cruiseSpool];
-    this.setVar('slDial', '--p', `${(Math.min(1, spool) * 360).toFixed(1)}deg`);
-    this.set('slText', spool >= 1 ? 'ENGAGED' : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
-    this.$.sublight.classList.toggle('on', spool >= 1);
-    this.$.sublight.classList.toggle('spool', spool > 0 && spool < 1);
-    this.$.slLed.classList.toggle('on', spool > 0);
-    this.$.slLed.classList.toggle('blink', spool > 0 && spool < 1);
+    const slLit = spool >= 1 ? SUBLIGHT_LEDS : Math.floor(spool * SUBLIGHT_LEDS);
+    if (this.cache.get('slLit') !== `${slLit}:${spool >= 1}`) {
+      this.cache.set('slLit', `${slLit}:${spool >= 1}`);
+      Array.from(this.$.slLeds.children).forEach((led, i) => led.classList.toggle('on', i < slLit));
+      this.$.slLeds.classList.toggle('engaged', spool >= 1);
+    }
+    this.set('slStatus', spool >= 1 ? `${MATCH.cruise.speedMul}× ON` : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
+    // Radar scope: class base, stretched by the ship's vision modifiers; bigger hulls get a bigger bezel.
+    const scope = RADAR_SCOPES[cls.id];
+    this.radarRange = scope.range * (deckRow('vision') / MATCH.shipVision || 1);
+    if (this.radar.width !== scope.px) {
+      this.radar.width = scope.px;
+      this.radar.height = scope.px;
+    }
+    this.set('radarScope', `SCOPE ${(this.radarRange / 1000).toFixed(1)} KM`);
+    this.set('radarFoot', `${cls.name.toUpperCase()} SENSORS · <kbd>M</kbd> MAP`, 'html');
 
     // Tier pop-up: industrial module schematic cards with keybindings and hull SVG preview at Tier 3.
     if (this.tierReady(snap)) {
@@ -825,6 +928,120 @@ export class Hud {
         .join('')}</table></div>`;
     });
     this.$.board.innerHTML = `<div class="cols">${cols.join('')}</div>`;
+  }
+
+  /**
+   * Ship-scoped radar: centred on our ship, north-up like the main view, with 1,000u range rings,
+   * our heading cone, a rotating sweep, nodes, bases and every ship our team can see.
+   */
+  private drawRadar(snap: Snap, myTeam: number, now: number): void {
+    const c = this.radarCtx;
+    const W = this.radar.width;
+    const cx = W / 2;
+    const R = cx - 3;
+    const range = this.radarRange;
+    const k = R / range;
+    const b = snap.buf;
+    const me = snap.ship(this.info!.selfSlot);
+    const mx = b[me + SHIP.x];
+    const my = b[me + SHIP.y];
+    const heading = b[me + SHIP.angle];
+    const colors = ['#4aa8ff', '#ff7a3d'];
+    c.clearRect(0, 0, W, W);
+    c.save();
+    c.beginPath();
+    c.arc(cx, cx, R, 0, Math.PI * 2);
+    c.fillStyle = '#040914';
+    c.fill();
+    c.clip();
+    // Range rings every 1,000u and crosshairs.
+    c.strokeStyle = 'rgba(74, 168, 255, 0.22)';
+    c.lineWidth = 1;
+    for (let d = 1000; d < range; d += 1000) {
+      c.beginPath();
+      c.arc(cx, cx, d * k, 0, Math.PI * 2);
+      c.stroke();
+    }
+    c.beginPath();
+    c.moveTo(cx - R, cx);
+    c.lineTo(cx + R, cx);
+    c.moveTo(cx, cx - R);
+    c.lineTo(cx, cx + R);
+    c.stroke();
+    // Forward cone along our heading, and the sweep.
+    c.fillStyle = 'rgba(74, 168, 255, 0.08)';
+    c.beginPath();
+    c.moveTo(cx, cx);
+    c.arc(cx, cx, R, heading - 0.7, heading + 0.7);
+    c.closePath();
+    c.fill();
+    const sweep = (now / 1000) * 1.6;
+    const grad = c.createRadialGradient(cx, cx, 2, cx, cx, R);
+    grad.addColorStop(0, 'rgba(92, 230, 255, 0.28)');
+    grad.addColorStop(1, 'rgba(92, 230, 255, 0)');
+    c.fillStyle = grad;
+    c.beginPath();
+    c.moveTo(cx, cx);
+    c.arc(cx, cx, R, sweep, sweep + 0.45);
+    c.closePath();
+    c.fill();
+    const inScope = (x: number, y: number, pad = 0) => (x - mx) ** 2 + (y - my) ** 2 <= (range + pad) ** 2;
+    const px = (x: number) => cx + (x - mx) * k;
+    const py = (y: number) => cx + (y - my) * k;
+    // Nodes: owner-tinted discs (contested ones outlined white).
+    const map = KESSLER_REACH;
+    for (let i = 0, p = snap.o.points; i < b[H.pointCount]; i++, p += SNAP.point) {
+      const pos = map.points[i].pos;
+      if (!inScope(pos.x, pos.y, 300)) continue;
+      const owner = b[p + POINT.owner];
+      c.fillStyle = owner < 0 ? 'rgba(138, 153, 191, 0.3)' : owner === 0 ? 'rgba(74, 168, 255, 0.35)' : 'rgba(255, 122, 61, 0.35)';
+      c.strokeStyle = b[p + POINT.contested] ? '#ffffff' : owner < 0 ? 'rgba(138, 153, 191, 0.7)' : colors[owner];
+      c.beginPath();
+      c.arc(px(pos.x), py(pos.y), Math.max(4, 260 * k), 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
+    }
+    // Titans and standing FOBs.
+    const bases = [...map.motherships.map((m, team) => ({ x: m.x, y: m.y, team, size: 7 })), ...map.fobs.map((f) => ({ x: f.pos.x, y: f.pos.y, team: f.team, size: 5 }))];
+    bases.forEach((st, i) => {
+      if (b[snap.o.structures + i * SNAP.structure + STRUCT.alive] !== 1 || !inScope(st.x, st.y, 400)) return;
+      c.fillStyle = colors[st.team];
+      c.fillRect(px(st.x) - st.size / 2, py(st.y) - st.size / 2, st.size, st.size);
+    });
+    // Ships: our team always, enemies only when spotted, not cloaked, and not under a Radar Jammer.
+    const jammed = b[H.jammed] > 0;
+    const visBit = myTeam === 0 ? SHIP_FLAG.visible0 : SHIP_FLAG.visible1;
+    for (let slot = 0; slot < b[H.shipCount]; slot++) {
+      if (slot === this.info!.selfSlot) continue;
+      const s = snap.ship(slot);
+      const f = b[s + SHIP.flags];
+      const team = b[s + SHIP.team];
+      if (!(f & SHIP_FLAG.alive) || (team !== myTeam && (jammed || !(f & visBit) || b[s + SHIP.status] & STATUS_BIT.cloak))) continue;
+      const x = b[s + SHIP.x];
+      const y = b[s + SHIP.y];
+      if (!inScope(x, y)) continue;
+      c.fillStyle = team === myTeam ? colors[myTeam] : '#ff5969';
+      c.fillRect(px(x) - 2, py(y) - 2, 4, 4);
+    }
+    // Our ship: a green chevron pointing along the heading.
+    c.translate(cx, cx);
+    c.rotate(heading + Math.PI / 2);
+    c.fillStyle = '#3ce68a';
+    c.beginPath();
+    c.moveTo(0, -6);
+    c.lineTo(4.5, 4.5);
+    c.lineTo(0, 2);
+    c.lineTo(-4.5, 4.5);
+    c.closePath();
+    c.fill();
+    c.restore();
+    if (jammed) {
+      c.fillStyle = '#ff5c6c';
+      c.font = '600 10px Rajdhani, sans-serif';
+      c.textAlign = 'center';
+      c.fillText('JAMMED', cx, W - 14);
+      c.textAlign = 'start';
+    }
   }
 
   private drawMinimap(snap: Snap, myTeam: number): void {

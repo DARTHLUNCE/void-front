@@ -26,7 +26,7 @@ export const DREADNOUGHT: ShipClass = {
   radius: 155,
   turnRate: 75 * DEG,
   // 240mm spinal rail: a full 1.4 s charge fires a 260-damage slug (×3) at 135 AP, 1,450 u: ~148 DPS cycled.
-  gun: { damage: 87, fireInterval: 0.36, projectileSpeed: 1900, count: 1, spread: 0, size: 9, life: 0.763, chargeMax: 1.4, ap: 135 },
+  gun: { name: '240mm Spinal Rail Cannon', damage: 87, fireInterval: 0.36, projectileSpeed: 1900, count: 1, spread: 0, size: 9, life: 0.763, chargeMax: 1.4, ap: 135 },
   secondary: { name: '25mm Point-Defense Blisters', count: 8, damage: 3.6, fireInterval: 0.3, ap: 28, range: 600, jitterDeg: 20, projectileSpeed: 1300, size: 3 },
   quirk: 'chargeShot',
   accel: 2.4,

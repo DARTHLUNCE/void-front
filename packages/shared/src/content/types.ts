@@ -183,6 +183,8 @@ export interface ModifierDef {
 }
 
 export interface GunDef {
+  /** ext (v2): display name on the HUD weapons dashboard (class main guns). */
+  name?: string;
   damage: number;
   fireInterval: number;
   projectileSpeed: number;

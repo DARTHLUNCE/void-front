@@ -28,7 +28,7 @@ export const FRIGATE: ShipClass = {
   radius: 38,
   turnRate: 250 * DEG,
   // Axial nanite lance: 11 every 0.2 s = 55 DPS, 32 AP, 700 u; heals allies and friendly nodes.
-  gun: { damage: 11, fireInterval: 0.2, projectileSpeed: 1000, count: 1, spread: 0, size: 4, life: 0.7, ap: 32 },
+  gun: { name: 'Axial Nanite Lance', damage: 11, fireInterval: 0.2, projectileSpeed: 1000, count: 1, spread: 0, size: 4, life: 0.7, ap: 32 },
   secondary: { name: 'Dorsal PD / Nanite Auto-Turret', count: 1, damage: 6.6, fireInterval: 0.3, ap: 20, range: 520, jitterDeg: 18, projectileSpeed: 1200, size: 3 },
   quirk: 'fieldEngineer',
   accel: 4.5,

@@ -14,7 +14,7 @@ export const BATTLESHIP: ShipClass = {
   radius: 118,
   turnRate: 105 * DEG,
   // Twin 150mm gauss batteries: 2 × 28 every 0.4 s = 140 DPS, 105 AP, 880 u, building heat.
-  gun: { damage: 28, fireInterval: 0.4, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 30, size: 8, life: 0.8, heatPerShot: 7, ap: 105 },
+  gun: { name: 'Twin 150mm Heavy Gauss Batteries', damage: 28, fireInterval: 0.4, projectileSpeed: 1100, count: 2, spread: 0, barrelGap: 30, size: 8, life: 0.8, heatPerShot: 7, ap: 105 },
   secondary: { name: '35mm Deck Auto-Batteries', count: 6, damage: 4.5, fireInterval: 0.3, ap: 35, range: 660, jitterDeg: 18, projectileSpeed: 1300, size: 3 },
   quirk: 'heat',
   accel: 3,

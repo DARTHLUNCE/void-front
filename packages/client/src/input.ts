@@ -48,6 +48,12 @@ export class Input {
   powerMode = 0;
   private readonly off: (() => void)[] = [];
 
+  /** Reactor Power switch from the HUD's Energy Output panel (POWER_INDEX), sent with the next frame. */
+  shunt(mode: number): void {
+    this.power = mode;
+    this.powerMode = mode;
+  }
+
   constructor(
     readonly scheme: ControlScheme,
     private readonly h: InputHandlers,
@@ -59,7 +65,7 @@ export class Input {
       this.mouseY = e.clientY;
     });
     this.on(window, 'mousedown', (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest('button, .panel, .overlay:not(.passive)')) return;
+      if ((e.target as HTMLElement).closest('button, .panel, .hud-hit, .overlay:not(.passive)')) return;
       if (e.button === 0) this.left = true;
       if (e.button === 2) this.right = true;
       this.h.press(e.clientX, e.clientY, e.button);

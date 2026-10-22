@@ -14,7 +14,7 @@ export const CRUISER: ShipClass = {
   radius: 72,
   turnRate: 165 * DEG,
   // Triple 75mm lasers: 3 × 9.8 every 0.25 s = 118 DPS, 65 AP, 860 u.
-  gun: { damage: 9.8, fireInterval: 0.25, projectileSpeed: 1300, count: 3, spread: 0, barrelGap: 16, size: 5, life: 0.662, ap: 65 },
+  gun: { name: 'Triple 75mm High-Caliber Lasers', damage: 9.8, fireInterval: 0.25, projectileSpeed: 1300, count: 3, spread: 0, barrelGap: 16, size: 5, life: 0.662, ap: 65 },
   secondary: { name: 'Deck Pulse Auto-Turrets', count: 3, damage: 4.8, fireInterval: 0.3, ap: 32, range: 620, jitterDeg: 15, projectileSpeed: 1300, size: 3 },
   quirk: 'lockOn',
   accel: 3.5,
