@@ -17,7 +17,8 @@ class FloatTable {
 export class LightGrid {
   readonly lights=new FloatTable();readonly tiles=new FloatTable();readonly indices=new FloatTable();
   readonly size=new Float32Array([1,1]);
-  update(emitters:readonly SceneLight[],camX:number,camY:number,zoom:number,screenW:number,screenH:number,bufferW:number,bufferH:number,offsetX=0,offsetY=0):void {
+  /** `maxPerTile` keeps each tile's strongest lights (radius × intensity) so the shader loop stays bounded. */
+  update(emitters:readonly SceneLight[],camX:number,camY:number,zoom:number,screenW:number,screenH:number,bufferW:number,bufferH:number,offsetX=0,offsetY=0,maxPerTile=Infinity):void {
     const cols=Math.max(1,Math.ceil(screenW/128)),rows=Math.max(1,Math.ceil(screenH/128));
     const lists=Array.from({length:cols*rows},()=>[] as number[]);
     this.size.set([cols,rows]);
@@ -30,7 +31,12 @@ export class LightGrid {
       if(radius<=0 || x+range<0 || y+range<0 || x-range>screenW || y-range>screenH)continue;
       const x0=Math.max(0,Math.floor((x-range)/screenW*cols)),x1=Math.min(cols-1,Math.floor((x+range)/screenW*cols));
       const y0=Math.max(0,Math.floor((y-range)/screenH*rows)),y1=Math.min(rows-1,Math.floor((y+range)/screenH*rows));
-      for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){lists[ty*cols+tx].push(i);total++;}
+      for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++)lists[ty*cols+tx].push(i);
+    }
+    const strength=(i:number)=>emitters[i].radius*(emitters[i].intensity??1);
+    for(const list of lists){
+      if(list.length>maxPerTile){list.sort((a,b)=>strength(b)-strength(a));list.length=maxPerTile;}
+      total+=list.length;
     }
     this.indices.resize(INDEX_WIDTH,2**Math.ceil(Math.log2(Math.max(1,Math.ceil(total/INDEX_WIDTH)))));
     let offset=0;

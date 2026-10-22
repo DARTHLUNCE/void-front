@@ -8,8 +8,9 @@ Titan.
 ![All ship hulls at true relative scale](docs/art/ship-lineup.png)
 
 **Status: offline prototype.** Nine hull classes with full five-tier trees, the shard/XP economy,
-nodes with resources, FOBs, and the command seats (Admiral and FOB Commanders) are playable offline against bots. Forward
-bases and multiplayer come later. See [docs/SPEC.md](docs/SPEC.md) for the full design and the phase
+nodes with resources, FOBs, the command seats (Admiral and FOB Commanders) and High Command base
+upgrades are playable offline against bots, with detailed sprite art for every ship, the Titan, FOBs,
+control-point buildings and shards, and a cockpit-style HUD. Multiplayer comes later. See [docs/SPEC.md](docs/SPEC.md) for the full design and the phase
 notes in [docs/](docs/) for what's built so far.
 
 ## Run it
@@ -23,11 +24,27 @@ npx --yes pnpm@9.15.0 install
 npx --yes pnpm@9.15.0 dev
 ```
 
-Open http://localhost:5173, pick a fleet size and enemy difficulty, and press **Launch**. Then choose a
+Open http://localhost:5173, pick a fleet size, enemy difficulty and your control settings, and press
+**Launch**. Then choose a
 hull class (keys 1–9) or a command seat: Admiral (0), FOB Commander North (-) or South (=). Bigger hulls hit harder and take more punishment
 but turn and accelerate slowly, respawn slower, and are capped per team.
 
 If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` and `pnpm dev` work too.
+
+### Home-screen settings
+
+| Setting | Options |
+|---|---|
+| Controls | Mouse steering (default) or WASD |
+| Throttle | Arrow keys (wheel zooms) or mouse wheel (Ctrl + wheel zooms) |
+| Lighting | Radiance cascades on or off (L toggles in game) |
+| Ship artwork | Reference sprites in team colors (default), neutral gray, or the original vector hulls |
+| Sprite surface lighting | Derived normal maps (default) or flat |
+
+**Performance.** Lighting cost is set by `LIGHT_QUALITY` at the top of
+`packages/client/src/render/lighting.ts`. The defaults keep the game smooth on ordinary GPUs (quarter
+resolution light buffer, single-trace cascades, no hull-on-hull shadows, 6 lights per screen tile). Raise
+them on a fast GPU for sharper light and shadows, or turn lighting off with L.
 
 ## Controls
 
@@ -95,5 +112,8 @@ The repo is a pnpm workspace:
 | `pnpm harness --matches 30 --fleet 60 --seed 1` | Simulate bot matches and write `reports/latest.md` |
 | `pnpm tech-tree` | Rebuild `docs/tech-tree.html`, the interactive build planner |
 
-Hull art can be reviewed at http://localhost:5173/inspect.html while `pnpm dev` is running.
+Hull art can be reviewed at http://localhost:5173/inspect.html and every sprite at
+http://localhost:5173/ship-test.html while `pnpm dev` is running. How the sprite atlases and material
+maps are built (and the Python tools that rebuild them) is in
+[docs/reference-sprite-test.md](docs/reference-sprite-test.md).
 Project conventions are in [docs/CLAUDE.md](docs/CLAUDE.md).

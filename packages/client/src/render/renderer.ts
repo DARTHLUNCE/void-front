@@ -30,7 +30,7 @@ import { loadReferenceShips, type ShipArtMode } from '../art/referenceShips';
 import { HULL_BY_ID, type HullArt } from '../art/hulls';
 import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
-import { Lighting, litGeometry } from './lighting';
+import { Lighting, LIGHT_QUALITY, litGeometry } from './lighting';
 import { makeTextures, type LitArt, type Textures } from './textures';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
@@ -238,7 +238,7 @@ export class Renderer {
 
   async init(parent: HTMLElement): Promise<void> {
     // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
-    await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(1.5, window.devicePixelRatio || 1)) });
+    await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
     this.tex = makeTextures(this.app.renderer, await loadReferenceShips(this.shipArt, this.derivedNormals));
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
