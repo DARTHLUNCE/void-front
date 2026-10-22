@@ -518,6 +518,43 @@ button.primary:hover {
   color: #ffd166;
 }
 
+/* Throttle gauge and Sub-Light charge meter */
+.meter label kbd {
+  font-size: 0.7rem;
+  padding: 0 4px;
+}
+
+.meter label b {
+  float: right;
+  color: var(--text, #dfe8ff);
+}
+
+.bar.thr,
+.bar.sl {
+  height: 8px;
+}
+
+.bar.thr i {
+  background: linear-gradient(90deg, #3d6fb8, #9fd4ff);
+}
+
+.bar.sl i {
+  background: linear-gradient(90deg, #b8862a, #ffd166);
+}
+
+.meter.sublight.spool label b {
+  color: #ffd166;
+}
+
+.meter.sublight.on label b {
+  color: var(--good);
+}
+
+.meter.sublight.on .bar.sl i {
+  background: linear-gradient(90deg, #2fbf71, #9dffc8);
+  box-shadow: 0 0 10px rgba(92, 255, 157, 0.6);
+}
+
 .perf {
   right: 10px;
   bottom: 8px;
@@ -1081,6 +1118,76 @@ button.primary:hover {
   font-style: normal;
   color: #ff5c6c;
   font-weight: 700;
+}
+
+/* High Command: Credits and base upgrades */
+.command .upgrades h4 {
+  margin: 6px 0 4px;
+  color: #c9a8ff;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.command .upgrades h4 small {
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--dim);
+}
+
+.command .upgrades .base {
+  margin-bottom: 6px;
+}
+
+.command .upgrades .base.dead {
+  opacity: 0.5;
+}
+
+.command .upgrades .bhead small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--dim);
+}
+
+.command .upgrades .emp {
+  color: #ff5c6c;
+  font-weight: 700;
+}
+
+.command .upgrades .ups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 3px;
+}
+
+.command .upgrades .up {
+  padding: 2px 7px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.75rem;
+  opacity: 0.55;
+}
+
+.command .upgrades .up.can {
+  opacity: 1;
+  border-color: rgba(201, 168, 255, 0.6);
+}
+
+.command .upgrades .up b {
+  color: #c9a8ff;
+}
+
+.command .upgrades .maxed {
+  font-size: 0.72rem;
+  color: var(--good);
+  align-self: center;
+}
+
+.cls.commander.full {
+  opacity: 0.45;
 }
 
 .command .hint {

@@ -5,6 +5,7 @@ import {
   COMMAND_BY_ID,
   DEPLOY_KINDS,
   DEPLOYABLES,
+  BASE_UPGRADES,
   DRONE_BEHAVIORS,
   EventType,
   FOB,
@@ -149,6 +150,7 @@ interface BeamFx {
 }
 
 const DECOY = DRONE_BEHAVIORS.indexOf('decoy');
+const DRONE_SCALE = DRONE_BEHAVIORS.map((d) => ({ guard: 1.5, bomber: 1.8, fighter: 1.4, interceptor: 1.25, recon: 1.2 })[d as string] ?? 1);
 /** Ping colors by PingKind: move, attack, defend. */
 export const PING_COLORS = [0x6ff3ff, 0xff7a4d, 0x5cff9d];
 const TEAM_ACCENT = [0x5fc8ff, 0xff9a4a];
@@ -404,12 +406,14 @@ export class Renderer {
       this.msOccluders[team].visible = alive;
       if (alive) this.mothershipLights(pos.x, pos.y, team, now);
       if (alive) {
-        g.circle(pos.x, pos.y, MOTHERSHIP.healRadius).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.18 });
+        // Heal aura, widened by Shipyard upgrades.
+        const heal = MOTHERSHIP.healRadius + b[snap.o.structures + team * SNAP.structure + STRUCT.shipyard] * BASE_UPGRADES.shipyard.radiusPerLevel;
+        g.circle(pos.x, pos.y, heal).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.18 });
         // Technical perimeter cardinal ticks on heal zone
         for (let i = 0; i < 8; i++) {
           const a = (i * Math.PI) / 4;
-          const r0 = MOTHERSHIP.healRadius - 18;
-          const r1 = MOTHERSHIP.healRadius + 8;
+          const r0 = heal - 18;
+          const r1 = heal + 8;
           g.moveTo(pos.x + Math.cos(a) * r0, pos.y + Math.sin(a) * r0)
             .lineTo(pos.x + Math.cos(a) * r1, pos.y + Math.sin(a) * r1)
             .stroke({ width: 3, color, alpha: 0.28 });
@@ -444,7 +448,7 @@ export class Renderer {
       this.fobMeshes[i].tint = alive ? 0xffffff : 0x3a3a3a;
       this.fobOccluders[i].visible = alive;
       if (!alive) return;
-      g.circle(f.pos.x, f.pos.y, FOB.healRadius).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.16 });
+      g.circle(f.pos.x, f.pos.y, FOB.healRadius + b[k + STRUCT.shipyard] * BASE_UPGRADES.shipyard.radiusPerLevel).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.16 });
       const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + i);
       this.light(f.pos.x, f.pos.y, 22 * pulse, TEAM_ACCENT[f.team]);
       for (const y of [-110, 110]) this.light(f.pos.x, f.pos.y + y, 7, TEAM_ACCENT[f.team]);
@@ -994,7 +998,8 @@ export class Renderer {
       s.position.set(x, y);
       s.rotation = rot;
       s.tint = TEAM_COLORS[team];
-      s.scale.set(b[k + 5] === DRONE_BEHAVIORS.indexOf('guard') ? 1.4 : 1);
+      // Commander starships read bigger than ship-launched drones.
+      s.scale.set(DRONE_SCALE[b[k + 5]] ?? 1);
       this.light(x, y, 5, LIGHT.engine[team]);
       if (this.commander && z < 0.2) this.warLayer.circle(x, y, 3 / z).fill({ color: TEAM_COLORS[team], alpha: 0.8 });
     }

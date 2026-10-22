@@ -5,7 +5,7 @@ export const BATTLESHIP: ShipClass = {
   name: 'Battleship',
   role: 'Line ship',
   summary: 'Heavy armor and twin heavy cannons. Ride your heat for bonus damage without locking up.',
-  hull: 560,
+  hull: 810,
   speed: 195,
   radius: 40,
   turnRate: 2.4,

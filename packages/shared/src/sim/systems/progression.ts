@@ -5,6 +5,7 @@ import { CRYSTALS } from '../../content/crystals';
 import { RESOURCE_IDS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../../content/progression';
 import { EXPOSED, FOB_SPAWN_BLOCK } from '../../content/structures';
+import { HIGH_COMMAND } from '../../content/upgrades';
 import type { ClassId, TeamId } from '../../content/types';
 import { applyLoadout, statValue } from '../stats';
 import { classCount, EventType, Job, SPAWN_AT_STRUCTURE, TIERS, type Ship, type Structure, type TeamState, type World } from '../world';
@@ -153,11 +154,14 @@ export function killShip(w: World, victim: Ship): void {
   }
   w.emit(EventType.Kill, killer ? killer.slot : -1, victim.slot, victim.x, victim.y);
 
-  // Keep 60% of unspent shards; the rest spills as loot. Spent shards and XP are never lost.
+  // Keep 60% of unspent shards; the rest spills as loot, less the killers' High Command tax
+  // (Credits for base upgrades). Spent shards and XP are never lost.
   const lost = victim.shards * (1 - ECONOMY.deathShardKeep);
   victim.shards -= lost;
   victim.shardsLost = lost;
-  dropLoot(w, victim, lost);
+  const tax = lost * HIGH_COMMAND.killTax;
+  enemyTeam.credits += tax;
+  dropLoot(w, victim, lost - tax);
   victim.lastHitBy = -1;
 }
 

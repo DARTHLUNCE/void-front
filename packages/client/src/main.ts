@@ -1,7 +1,7 @@
 import './style.css';
 import { Game } from './game';
 import type { BotDifficulty } from '@void-front/shared';
-import type { ControlScheme } from './input';
+import type { ControlScheme, ThrottleMode } from './input';
 
 const menu = document.getElementById('menu')!;
 const stage = document.getElementById('stage')!;
@@ -54,32 +54,42 @@ menu.innerHTML = `
         <option value="wasd">WASD</option>
       </select>
     </label>
+    <label>Throttle
+      <select id="throttle">
+        <option value="keys">Arrow keys &uarr; &darr; (wheel zooms)</option>
+        <option value="wheel">Mouse wheel (Ctrl + wheel zooms)</option>
+      </select>
+    </label>
     <button id="play" class="primary">Launch</button>
     <div class="keys">
       <div><kbd>Mouse</kbd> steer / aim · <kbd>LMB</kbd> fire · <kbd>RMB</kbd> signature · <kbd>T</kbd> ultimate · <kbd>G</kbd> extra</div>
       <div><kbd>Q W E R</kbd> buy stat upgrades with shards (WASD: <kbd>Z X C V</kbd>) · <kbd>1</kbd> <kbd>2</kbd> pick a tier with XP</div>
-      <div><kbd>Space</kbd> brake · <kbd>Shift</kbd> cruise · <kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map · <kbd>Wheel</kbd> zoom</div>
+      <div><kbd>Space</kbd> brake · <kbd>Shift</kbd> Sub-Light (charges, then 2.5× speed) · <kbd>&uarr;</kbd> <kbd>&darr;</kbd> or <kbd>Wheel</kbd> throttle / zoom (see Throttle)</div>
+      <div><kbd>X</kbd> auto-fire (WASD: <kbd>F</kbd>) · <kbd>Tab</kbd> scoreboard · <kbd>M</kbd> map</div>
     </div>
-    <p class="note">You fight for Cobalt (blue). Pick a hull class (or Fleet Commander) when you drop in. Take nodes, break the Ember FOBs and then the Ember Titan on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
+    <p class="note">You fight for Cobalt (blue). Pick a hull class (or a command seat: Admiral or FOB Commander) when you drop in. Take nodes, break the Ember FOBs and then the Ember Titan on the far right. Dying costs 40% of unspent shards; XP and upgrades are kept.</p>
   </div>`;
 
 const fleetSel = document.getElementById('fleet') as HTMLSelectElement;
 const schemeSel = document.getElementById('scheme') as HTMLSelectElement;
 const difficultySel = document.getElementById('difficulty') as HTMLSelectElement;
 const lightingSel = document.getElementById('lighting') as HTMLSelectElement;
+const throttleSel = document.getElementById('throttle') as HTMLSelectElement;
 fleetSel.value = saved('vf.fleet', '60');
 schemeSel.value = saved('vf.scheme', 'mouse');
 difficultySel.value = saved('vf.difficulty', 'normal');
 lightingSel.value = saved('vf.lighting', 'on');
+throttleSel.value = saved('vf.throttle', 'keys');
 
 document.getElementById('play')!.addEventListener('click', async () => {
   save('vf.fleet', fleetSel.value);
   save('vf.scheme', schemeSel.value);
   save('vf.difficulty', difficultySel.value);
   save('vf.lighting', lightingSel.value);
+  save('vf.throttle', throttleSel.value);
   menu.classList.add('hidden');
   hud.classList.remove('hidden');
-  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty, lighting: lightingSel.value === 'on' });
+  const game = new Game({ fleet: Number(fleetSel.value), scheme: schemeSel.value as ControlScheme, difficulty: difficultySel.value as BotDifficulty, lighting: lightingSel.value === 'on', throttle: throttleSel.value as ThrottleMode });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   await game.start(stage, hud);
 });

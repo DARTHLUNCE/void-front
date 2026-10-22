@@ -1,5 +1,5 @@
 import { COMMAND_RULES } from '../../content/command';
-import { DEPLOYABLES, DRONES, NODE } from '../../content/structures';
+import { DEPLOYABLES, DRONES, NODE, WING_LAUNCH } from '../../content/structures';
 import type { GunDef, PrimitiveDef, PrimitiveKind, TeamId } from '../../content/types';
 import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
@@ -22,6 +22,10 @@ export interface Caster {
   cursorY: number;
   /** Ship slot the caster is targeting (bots), or -1. */
   targetSlot: number;
+  /** Commander Fuel wings: the base they take off from (they then fly to the cursor). */
+  launchX?: number;
+  launchY?: number;
+  launchRadius?: number;
 }
 
 export function shipCaster(s: Ship, targetSlot: number): Caster {
@@ -205,7 +209,17 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         }
         continue;
       }
-      // Commander call-ins warp in at the target; ship drones launch from the ship.
+      // Commander wings take off from their base and fly to the target (their timer starts on
+      // arrival); other call-ins warp in at the target; ship drones launch from the ship.
+      if (!s && c.launchX !== undefined && c.launchY !== undefined) {
+        const out = Math.atan2(c.cursorY - c.launchY, c.cursorX - c.launchX) + (k - (step.count - 1) / 2) * 0.35;
+        const r = (c.launchRadius ?? 0) + WING_LAUNCH.spread;
+        const x = clampX(w, c.launchX + Math.cos(out) * r);
+        const y = clampY(w, c.launchY + Math.sin(out) * r);
+        const travel = Math.hypot(c.cursorX - x, c.cursorY - y) / (step.params?.speed ?? DRONES[step.behavior].speed);
+        spawnDrone(w, c.team, c.slot, step.behavior, x, y, step.life + travel, s, step.params, c.cursorX, c.cursorY);
+        continue;
+      }
       const atTarget = !s;
       const x = atTarget ? c.cursorX + Math.cos(a * 3) * 80 : c.x;
       const y = atTarget ? c.cursorY + Math.sin(a * 3) * 80 : c.y;
@@ -236,6 +250,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       d.maxHull = d.hull = step.hull ?? def.hull;
       d.expires = w.time + step.life;
       d.cooldown = 0;
+      d.empUntil = -1;
     }
   },
 
@@ -285,7 +300,27 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     const team = w.teams[c.team];
     if (step.buff === 'overcharge') team.overchargeUntil = w.time + step.duration;
     else if (step.buff === 'reinforce') team.reinforceUntil = w.time + step.duration;
+    else if (step.buff === 'breakthrough') team.breakthroughUntil = w.time + step.duration;
     else team.jamUntil = w.time + step.duration;
+  },
+
+  emp(w, c, step) {
+    const r2 = step.radius * step.radius;
+    const until = w.time + step.duration;
+    for (const st of w.structures) {
+      if (st.alive && st.team !== c.team && (st.x - c.cursorX) ** 2 + (st.y - c.cursorY) ** 2 <= (step.radius + st.radius) ** 2) st.empUntil = Math.max(st.empUntil, until);
+    }
+    const dep = w.deployables;
+    for (let i = 0; i < dep.count; i++) {
+      const d = dep.at(i);
+      if (d.team !== c.team && (d.x - c.cursorX) ** 2 + (d.y - c.cursorY) ** 2 <= r2) d.empUntil = Math.max(d.empUntil, until);
+    }
+    const drones = w.drones;
+    for (let i = drones.count - 1; i >= 0; i--) {
+      const d = drones.at(i);
+      if (d.team !== c.team && (d.x - c.cursorX) ** 2 + (d.y - c.cursorY) ** 2 <= r2) damageDrone(w, d, d.hull + 1, -1);
+    }
+    w.emit(EventType.Explosion, c.team, 0, c.cursorX, c.cursorY, step.radius);
   },
 
   rally(w, c, step) {

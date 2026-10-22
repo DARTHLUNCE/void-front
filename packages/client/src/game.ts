@@ -1,6 +1,6 @@
-import { CLASS_ORDER, COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
+import { CLASS_ORDER, COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo, type SeatId } from '@void-front/shared';
 import { Hud } from './hud/hud';
-import { Input, type ControlScheme } from './input';
+import { Input, type ControlScheme, type ThrottleMode } from './input';
 import type { FromWorker, ToWorker } from './protocol';
 import { Renderer } from './render/renderer';
 import { carryEvents, Snap } from './snap';
@@ -10,6 +10,7 @@ export interface GameOptions {
   scheme: ControlScheme;
   difficulty: BotDifficulty;
   lighting: boolean;
+  throttle: ThrottleMode;
 }
 
 /** Commander camera pan speed in screen pixels per second, and the screen-edge pan band. */
@@ -41,25 +42,28 @@ export class Game {
     } catch {
       /* storage unavailable */
     }
-    this.hud = new Hud(hudRoot, this.opts.scheme, {
+    this.hud = new Hud(hudRoot, this.opts.scheme, this.opts.throttle, {
       stat: (i) => this.send({ type: 'stat', index: i }),
       tier: (o) => this.send({ type: 'tier', option: o }),
       pickClass: (choice) => this.send({ type: 'pickClass', choice }),
+      pickSeat: (seat) => this.send({ type: 'pickSeat', seat }),
+      upgrade: (base, track, option) => this.send({ type: 'upgrade', base, track, option }),
       spawn: (choice) => this.send({ type: 'spawn', choice }),
       order: (id) => this.armOrder(id),
       minimap: (x, y) => this.onMinimap(x, y),
       restart: () => this.restart(),
     });
-    this.input = new Input(this.opts.scheme, {
+    this.input = new Input(this.opts.scheme, this.opts.throttle, {
       stat: (i) => this.mode() === 'pilot' && this.send({ type: 'stat', index: i }),
       digit: (n) => this.onDigit(n),
       scoreboard: (show) => this.hud.showScoreboard(show, this.curr),
       bigMap: () => this.hud.toggleMap(),
       autofire: (on) => this.hud.setAutofire(on),
       press: (x, y, button) => this.onPress(x, y, button),
-      wheel: (dy, x, y) => {
+      wheel: (dy, x, y, zoom) => {
         if (this.mode() === 'commander') this.renderer.zoomAt(dy < 0 ? 1.15 : 1 / 1.15, x, y);
-        else this.setPilotZoom(this.renderer.pilotZoom * (dy < 0 ? 1.1 : 1 / 1.1));
+        else if (zoom) this.setPilotZoom(this.renderer.pilotZoom * (dy < 0 ? 1.1 : 1 / 1.1));
+        else this.input.stepThrottle(dy < 0 ? 1 : -1);
       },
       escape: () => this.armOrder(null),
     });
@@ -113,12 +117,14 @@ export class Game {
   private onDigit(n: number): void {
     const mode = this.mode();
     if (mode === 'picker') {
+      // 1–9 pick a class; 0, -, = take a command seat (Admiral, FOB 1, FOB 2).
       if (n <= CLASS_ORDER.length) this.send({ type: 'pickClass', choice: CLASS_ORDER[n - 1] });
-      else if (n === CLASS_ORDER.length + 1) this.send({ type: 'pickClass', choice: 'commander' });
+      else if (n >= 10 && n <= 12) this.send({ type: 'pickSeat', seat: (n - 10) as SeatId });
     } else if (mode === 'pilot') {
       if ((n === 1 || n === 2) && this.curr && this.hud.tierReady(this.curr)) this.send({ type: 'tier', option: n - 1 });
-    } else if (n <= COMMANDS.length) {
-      this.armOrder(COMMANDS[n - 1].id);
+    } else {
+      const id = this.hud.visibleOrders[n - 1];
+      if (id) this.armOrder(id);
     }
   }
 
@@ -183,9 +189,11 @@ export class Game {
       this.curr = new Snap(unseen ? carryEvents(unseen, msg.buf) : msg.buf, performance.now());
       this.drawn = false;
       this.simMs = this.simMs * 0.9 + msg.simMs * 0.1;
+    } else if (msg.type === 'upgradeResult') {
+      this.hud.toast(msg.ok ? 'Upgrade installed' : `Upgrade: ${msg.reason}`, performance.now(), !msg.ok);
     } else {
       const name = COMMANDS.find((c) => c.id === msg.id)?.name ?? '';
-      this.hud.toast(msg.ok ? `${name} deployed` : `${name}: ${msg.reason}`, performance.now(), !msg.ok);
+      this.hud.toast(msg.ok ? `${name} ${COMMAND_BY_ID[msg.id].role === 'fob' ? 'launched' : 'deployed'}` : `${name}: ${msg.reason}`, performance.now(), !msg.ok);
     }
   }
 
@@ -204,6 +212,7 @@ export class Game {
     this.renderer.render(this.prev, curr, now, myTeam);
     this.hud.update(curr, now, this.fps, this.simMs);
     this.hud.setBraking(this.input.braking);
+    this.hud.setThrottle(this.input.throttle);
 
     const alive = (curr.buf[me + SHIP.flags] & SHIP_FLAG.alive) !== 0;
     if (mode === 'pilot' && alive && curr.buf[H.over] !== 1) {

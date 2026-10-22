@@ -135,7 +135,7 @@ export function stepDrones(w: World): void {
     // Targeting every few ticks, staggered by index. Recon drones never fight; bombers go for
     // structures, nodes and deployables first.
     if (d.behavior !== 'recon' && (w.tick + d.index) % 6 === 0) {
-      if (d.behavior !== 'bomber' || !pickStructureTarget(w, d, ax, ay, leash)) pickTarget(w, d, owner, ax, ay, leash);
+      if (d.behavior !== 'bomber' || !pickStructureTarget(w, d, ax, ay, leash)) pickTarget(w, d, owner, ax, ay, leash, d.behavior === 'interceptor');
     }
     const t = d.targetShip >= 0 ? w.ships[d.targetShip] : null;
     const td = d.targetDrone >= 0 ? w.drones.items[d.targetDrone] : null;
@@ -216,8 +216,8 @@ export function stepDrones(w: World): void {
 }
 
 /** How far from its anchor a drone will chase, and how wide it circles when idle. */
-const LEASH: Record<DroneBehavior, number> = { orbit: 480, swarm: 700, guard: 750, decoy: 0, bomber: 900, interceptor: 1_100, recon: 0 };
-const IDLE_ORBIT: Record<DroneBehavior, number> = { orbit: 0, swarm: 0, guard: 260, decoy: 0, bomber: 320, interceptor: 380, recon: 200 };
+const LEASH: Record<DroneBehavior, number> = { orbit: 480, swarm: 700, guard: 750, decoy: 0, bomber: 900, interceptor: 1_100, recon: 0, fighter: 950 };
+const IDLE_ORBIT: Record<DroneBehavior, number> = { orbit: 0, swarm: 0, guard: 260, decoy: 0, bomber: 320, interceptor: 380, recon: 200, fighter: 340 };
 
 /** Object target kinds for d.targetKind. */
 const OBJ_STRUCTURE = 1;
@@ -285,7 +285,8 @@ function pickStructureTarget(w: World, d: Drone, ax: number, ay: number, leash: 
   return d.targetObj >= 0;
 }
 
-function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: number, leash: number): void {
+/** Nearest visible enemy ship in reach, else the nearest enemy drone; interceptors (`dronesFirst`) check drones first. */
+function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: number, leash: number, dronesFirst = false): void {
   // Command Uplink: attack whatever is under the owner's cursor.
   let cx = ax;
   let cy = ay;
@@ -294,6 +295,10 @@ function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: numb
     cx = owner.input.cursorX;
     cy = owner.input.cursorY;
     r = 220;
+  }
+  if (dronesFirst && pickDroneTarget(w, d, cx, cy, r)) {
+    d.targetShip = -1;
+    return;
   }
   const n = w.shipHash.query(cx, cy, r, w.scratch3);
   let best = -1;
@@ -309,10 +314,14 @@ function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: numb
   }
   d.targetShip = best;
   d.targetDrone = -1;
-  if (best >= 0) return;
+  if (best >= 0 || dronesFirst) return;
+  pickDroneTarget(w, d, cx, cy, r);
+}
+
+function pickDroneTarget(w: World, d: Drone, cx: number, cy: number, r: number): boolean {
   const m = w.droneHash.query(cx, cy, r, w.scratch3);
   let bestDrone = -1;
-  bestD = r * r;
+  let bestD = r * r;
   for (let i = 0; i < m; i++) {
     const o = w.drones.items[w.scratch3[i]];
     if (!o.active || o.team === d.team) continue;
@@ -323,6 +332,7 @@ function pickTarget(w: World, d: Drone, owner: Ship | null, ax: number, ay: numb
     }
   }
   d.targetDrone = bestDrone;
+  return bestDrone >= 0;
 }
 
 /** Point Defense: zap enemy missiles and mines that come close. */

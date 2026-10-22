@@ -1,6 +1,7 @@
 /// <reference lib="webworker" />
 import {
   commandBlocker,
+  upgradeBlocker,
   createWorld,
   DT,
   encodeSnapshot,
@@ -10,6 +11,7 @@ import {
   step,
   type BotDifficulty,
   type CommandOrder,
+  type SeatId,
   type World,
 } from '@void-front/shared';
 import { HUMAN_SLOT, type FromWorker, type InputFrame, type ToWorker } from './protocol';
@@ -109,11 +111,19 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       if (!w) break;
       const me = w.ships[HUMAN_SLOT];
       if (!me.awaitingClass) break;
-      if (msg.choice === 'commander') {
-        if (w.teams[me.team].commanderSlot < 0) setCommander(w, HUMAN_SLOT);
-      } else {
-        pickClass(w, me, msg.choice);
-      }
+      pickClass(w, me, msg.choice);
+      break;
+    }
+    case 'pickSeat':
+      if (w && w.ships[HUMAN_SLOT].awaitingClass) setCommander(w, HUMAN_SLOT, msg.seat);
+      break;
+    case 'upgrade': {
+      if (!w) break;
+      const me = w.ships[HUMAN_SLOT];
+      const seat = me.seat as SeatId;
+      const reason = me.commander ? upgradeBlocker(w, me.team, seat, msg.base, msg.track, msg.option) : 'Not in a command seat';
+      if (reason === null) w.pendingUpgrades.push({ team: me.team, seat, base: msg.base, track: msg.track, option: msg.option });
+      post({ type: 'upgradeResult', ok: reason === null, reason: reason ?? '' });
       break;
     }
     case 'stat':
@@ -126,7 +136,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       if (w) w.ships[HUMAN_SLOT].spawnChoice = msg.choice;
       break;
     case 'command':
-      if (w) commandQueue.push({ team: w.ships[HUMAN_SLOT].team, id: msg.id, x: msg.x, y: msg.y, point: msg.point });
+      if (w) commandQueue.push({ team: w.ships[HUMAN_SLOT].team, id: msg.id, x: msg.x, y: msg.y, point: msg.point, seat: Math.max(0, w.ships[HUMAN_SLOT].seat) as SeatId });
       break;
     case 'ping':
       if (w) w.pendingPings.push({ team: w.ships[HUMAN_SLOT].team, x: msg.x, y: msg.y });
@@ -137,6 +147,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         me.xp += msg.xp;
         me.shards += msg.shards;
         for (let r = 0; r < 3; r++) w.teams[me.team].resources[r] += msg.shards * 3;
+        w.teams[me.team].credits += msg.shards;
         if (msg.kill && me.alive) me.hull = 0;
       }
       break;

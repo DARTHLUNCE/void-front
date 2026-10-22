@@ -14,7 +14,7 @@ export const BATTLECRUISER: ShipClass = {
   name: 'Battlecruiser',
   role: 'Fast heavy gunship',
   summary: 'Battleship guns on a cruiser engine. Builds momentum flying straight and rams through screens.',
-  hull: 420,
+  hull: 590,
   speed: 265,
   radius: 34,
   turnRate: 3,

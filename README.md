@@ -8,7 +8,7 @@ Titan.
 ![All ship hulls at true relative scale](docs/art/ship-lineup.png)
 
 **Status: offline prototype.** Nine hull classes with full five-tier trees, the shard/XP economy,
-nodes with resources, FOBs, and the Fleet Commander role are playable offline against bots. Forward
+nodes with resources, FOBs, and the command seats (Admiral and FOB Commanders) are playable offline against bots. Forward
 bases and multiplayer come later. See [docs/SPEC.md](docs/SPEC.md) for the full design and the phase
 notes in [docs/](docs/) for what's built so far.
 
@@ -24,7 +24,7 @@ npx --yes pnpm@9.15.0 dev
 ```
 
 Open http://localhost:5173, pick a fleet size and enemy difficulty, and press **Launch**. Then choose a
-hull class (keys 1–9) or the Fleet Commander seat (0). Bigger hulls hit harder and take more punishment
+hull class (keys 1–9) or a command seat: Admiral (0), FOB Commander North (-) or South (=). Bigger hulls hit harder and take more punishment
 but turn and accelerate slowly, respawn slower, and are capped per team.
 
 If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` and `pnpm dev` work too.
@@ -39,30 +39,44 @@ If you have pnpm installed (`corepack enable` sets it up), plain `pnpm install` 
 | Signature ability | Right click | Right click |
 | Ultimate (tier 5) | T | T |
 | Extra ability (some tier nodes) | G | G |
-| Cruise drive | Hold Shift | Hold Shift |
+| Sub-Light drive (charges 1.5 s, then 2.5× speed) | Hold Shift | Hold Shift |
+| Throttle (10% steps, HUD gauge) | ↑ / ↓, or the wheel (see below) | ↑ / ↓, or the wheel |
 | Buy stat upgrades (shards) | Q W E R | Z X C V |
 | Pick a tier (XP) when the pop-up shows | 1 / 2 | 1 / 2 |
 | Auto-fire | X | F |
 | Scoreboard / map | Tab / M | Tab / M |
-| Camera zoom | Mouse wheel | Mouse wheel |
+| Camera zoom | Mouse wheel (Ctrl + wheel in wheel-throttle mode) | Same |
 | Lighting on/off | L | L |
+
+The **Throttle** setting on the home screen picks how you set speed: arrow keys (the wheel zooms) or the
+mouse wheel (Ctrl + wheel zooms).
 
 You fly for Cobalt (blue). Win by destroying the Ember Titan (mothership) on the far right of the map.
 It is shielded until both of Ember's FOBs (the space stations in front of it) are destroyed. Take the
 asteroid nodes in the middle for resources (the Research Lab in the center gives +25% XP instead): a
 node someone holds has to be shot down, then sits locked for 20 s before it can be captured again.
 Destroying an enemy FOB leaves you a salvage beacon to respawn at. FOBs and Titans heal friendly ships
-nearby. Only Titans (through the commander) and Carriers launch starships. Bot matches run about 20–35 minutes.
+nearby. Only command seats (from the Titan and FOBs) and Carriers launch starships. Bot matches run about 20–35 minutes.
 
 **Economy.** Shards (crystals and wreck loot) buy stat upgrades; each level costs more, and upgrades reset
 when tier 3 swaps your hull. XP from kills, damage, healing and capturing or defending points buys tiers.
 Dying drops 40% of your unspent shards as loot; XP and anything you bought are kept.
 
-**Fleet Commander.** One human per team can take the commander seat instead of a ship: pan the war map
-(WASD, arrows, screen edge, wheel to zoom), right-click to ping targets for free, and spend what your
-nodes and FOBs pay each minute on orders (keys 1–9, 0, -, =). Munitions (weapons factories) buy
-strikes and recon, Fuel (refineries) buys drone wings, Manpower (training camps) buys spawn beacons
-and reinforcements.
+**Command seats.** Up to three humans per team can command instead of flying: pan the war map (WASD,
+arrows, screen edge, wheel to zoom), right-click to ping targets for free, and spend what your nodes and
+FOBs pay each minute on orders (hotkeys 1–9, 0, -, =, then Z X C V B N, in panel order).
+
+- **Admiral** (on the Titan): Munitions (weapons factories) buy Orbital Strike, Black Hole Bomb, A-Bomb,
+  EMP Bomb, Radar Jammer, Recon Scan, Defense Platform and Fleet Overcharge; Manpower (training camps)
+  buys Forward Beacon, Rapid Deployment, Rally Order, Hull Reinforcement and Breakthrough (nodes pay
+  double for 5 min). Buys the Titan's upgrades.
+- **FOB Commander** (North or South): Fuel (refineries) launches Fighter, Interceptor, Bomber, Recon and
+  Defender wings from their FOB (from the Titan once it falls); they fly out to the spot you click. Buys
+  that FOB's upgrades.
+
+The Admiral covers any FOB seat nobody has taken. **High Command** takes 10% of the loot from every kill
+as Credits, spent on base upgrades: rocket or laser turrets, Shipyard (stronger, wider heal aura) and
+Armor Plating (more hull).
 
 ## For developers
 

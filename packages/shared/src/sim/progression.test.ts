@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, statCost, tierCost } from '../content/progression';
+import { HIGH_COMMAND } from '../content/upgrades';
 import { duelWorld } from '../test-utils';
 import { createWorld, step } from './step';
 import { damageShip } from './systems/combat';
@@ -88,7 +89,7 @@ describe('tiers (XP)', () => {
 });
 
 describe('death', () => {
-  it('keeps 60% of unspent shards, spills the rest as loot, keeps spent upgrades and all XP', () => {
+  it('keeps 60% of unspent shards, spills the rest as loot less the 10% kill tax, keeps spent upgrades and all XP', () => {
     const { w, a, b } = duelWorld();
     grantShards(w, a, 200);
     buyStat(a, 0); // 12 spent
@@ -104,7 +105,11 @@ describe('death', () => {
     expect(a.xp).toBe(xp);
     let loot = 0;
     for (let i = 0; i < w.crystals.count; i++) if (w.crystals.at(i).kind === 2) loot += w.crystals.at(i).shards;
-    expect(loot).toBe(Math.floor(unspent * (1 - ECONOMY.deathShardKeep)));
+    const lost = unspent * (1 - ECONOMY.deathShardKeep);
+    expect(loot).toBe(Math.floor(lost * (1 - HIGH_COMMAND.killTax)));
+    // The killers' High Command banks the tax as Credits.
+    expect(w.teams[b.team].credits).toBeCloseTo(lost * HIGH_COMMAND.killTax);
+    expect(w.teams[a.team].credits).toBe(0);
   });
 
   it('respawn time grows with rank: 5 s + 1.2 s per tier, max 11 s (before the hull-class multiplier)', () => {

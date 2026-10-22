@@ -22,7 +22,7 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
     target = new EventTarget();
     Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
     vi.stubGlobal('window', target);
-    input = new Input(scheme, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+    input = new Input(scheme, 'keys', { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel: vi.fn(), escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
     event('mousemove', { clientX: 700, clientY: 300 });
     event('keydown', { code: 'KeyD' });
     event('keydown', { code: 'ShiftLeft' });
@@ -87,5 +87,55 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
     moveShips(w);
     expect(ship.vx).toBeGreaterThan(0);
     expect(ship.x).toBeGreaterThan(stoppedX);
+  });
+});
+
+describe('throttle', () => {
+  let target: EventTarget;
+
+  function make(mode: 'keys' | 'wheel', wheel = vi.fn()): Input {
+    target = new EventTarget();
+    Object.assign(target, { innerWidth: 800, innerHeight: 600, closest: () => null });
+    vi.stubGlobal('window', target);
+    return new Input('wasd', mode, { stat: vi.fn(), digit: vi.fn(), press: vi.fn(), wheel, escape: vi.fn(), scoreboard: vi.fn(), bigMap: vi.fn(), autofire: vi.fn() });
+  }
+
+  function key(code: string): void {
+    const e = new Event('keydown', { cancelable: true });
+    Object.assign(e, { code });
+    target.dispatchEvent(e);
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('steps with the arrow keys in 10% steps, never below 10%, and scales thrust', () => {
+    const input = make('keys');
+    key('KeyD');
+    key('ArrowDown');
+    key('ArrowDown');
+    key('ArrowDown');
+    expect(input.throttle).toBeCloseTo(0.7);
+    expect(input.frame({ x: 400, y: 300 }, 1, (x, y) => ({ x, y })).moveX).toBeCloseTo(0.7);
+    for (let i = 0; i < 20; i++) key('ArrowDown');
+    expect(input.throttle).toBeCloseTo(0.1);
+    for (let i = 0; i < 20; i++) key('ArrowUp');
+    expect(input.throttle).toBe(1);
+    input.dispose();
+  });
+
+  it('leaves the arrows alone in wheel mode and asks for zoom only with Ctrl', () => {
+    const wheel = vi.fn();
+    const input = make('wheel', wheel);
+    key('ArrowDown');
+    expect(input.throttle).toBe(1);
+    const turn = (ctrlKey: boolean) => {
+      const e = new Event('wheel', { cancelable: true });
+      Object.assign(e, { deltaY: 100, clientX: 0, clientY: 0, ctrlKey });
+      target.dispatchEvent(e);
+    };
+    turn(false);
+    turn(true);
+    expect(wheel.mock.calls.map((c) => c[3])).toEqual([false, true]);
+    input.dispose();
   });
 });

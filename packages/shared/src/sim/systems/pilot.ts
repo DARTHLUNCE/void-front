@@ -6,6 +6,7 @@ import { canCast } from './abilities';
 import { gunRange, leadAngle } from './combat';
 import { pushTarget } from './director';
 import { CHARGE } from './quirks';
+import { turretRange } from './structures';
 
 interface ThinkCtx {
   targetDist: number;
@@ -317,7 +318,7 @@ export function steer(w: World, s: Ship): void {
     const dx = s.x - st.x;
     const dy = s.y - st.y;
     const d = Math.hypot(dx, dy) || 1;
-    if (d < st.def.turrets.range + PILOT.turretAvoidMargin + st.radius) {
+    if (d < turretRange(st) + PILOT.turretAvoidMargin + st.radius) {
       mx = dx / d;
       my = dy / d;
       wantFire = false;

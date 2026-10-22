@@ -5,7 +5,7 @@ export const CARRIER: ShipClass = {
   name: 'Carrier',
   role: 'Starship carrier',
   summary: 'Fights through its starships: two permanent escorts, plus a swarm on demand.',
-  hull: 520,
+  hull: 730,
   speed: 190,
   radius: 44,
   turnRate: 2,

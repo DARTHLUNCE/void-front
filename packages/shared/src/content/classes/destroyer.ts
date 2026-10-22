@@ -14,7 +14,7 @@ export const DESTROYER: ShipClass = {
   name: 'Destroyer',
   role: 'Hunter / screen',
   summary: 'Torpedo boat that screens the fleet: point defense shoots down missiles and starships.',
-  hull: 260,
+  hull: 285,
   speed: 280,
   radius: 24,
   turnRate: 4.5,
