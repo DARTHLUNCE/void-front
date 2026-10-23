@@ -31,6 +31,12 @@ export function hullThumbUrl(hullId: string, team: number): string | null {
   return url;
 }
 
+/** Pixel size of a hull's reference sprite, so big previews can stop short of blurry upscaling. */
+export function hullThumbSize(hullId: string): [number, number] | null {
+  const source = reference[hullId]?.albedo[0].source.resource;
+  return source instanceof HTMLCanvasElement ? [source.width, source.height] : null;
+}
+
 /** `<img>` of the reference sprite (nose +x), falling back to the vector hull as SVG. */
 export function hullThumb(hullId: string, team: number): string {
   const url = hullThumbUrl(hullId, team);

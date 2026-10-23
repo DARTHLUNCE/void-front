@@ -13,7 +13,7 @@ import {
   type SeatId,
   type ShipClass,
 } from '@void-front/shared';
-import { hullThumb, hullThumbUrl } from '../art/hullThumbs';
+import { hullThumb, hullThumbSize, hullThumbUrl } from '../art/hullThumbs';
 import type { Snap } from '../snap';
 import { fobName, RADAR_SCOPES } from './hudData';
 
@@ -23,12 +23,17 @@ const SEATS: Pick[] = ['seat0', 'seat1', 'seat2'];
 /** Picker keys for the command seats (Admiral, FOB 1, FOB 2): 0, -, = after the nine classes. */
 export const SEAT_KEYS = ['0', '-', '='];
 
-const ECHELONS: { id: string; name: string; items: readonly Pick[] }[] = [
-  { id: 'all', name: `All hulls (${CLASS_ORDER.length})`, items: CLASS_ORDER },
+/** Hull groups in the roster rail; the command seats get their own panel below it. */
+const GROUPS: { id: string; name: string; items: readonly Pick[] }[] = [
   { id: 'light', name: 'Light & Escort', items: ['patrol', 'corvette', 'frigate'] },
   { id: 'line', name: 'Line Combatants', items: ['destroyer', 'cruiser', 'battlecruiser'] },
   { id: 'capital', name: 'Capital & Fleet', items: ['battleship', 'carrier', 'dreadnought'] },
-  { id: 'command', name: 'High Command Seats', items: SEATS },
+];
+const ECHELONS: { id: string; name: string; items: readonly Pick[] }[] = [
+  { id: 'all', name: `All hulls`, items: CLASS_ORDER },
+  { id: 'light', name: 'Light', items: GROUPS[0].items },
+  { id: 'line', name: 'Line', items: GROUPS[1].items },
+  { id: 'capital', name: 'Capital', items: GROUPS[2].items },
 ];
 
 const SEAT_INFO = [
@@ -36,12 +41,14 @@ const SEAT_INFO = [
     name: 'Admiral',
     where: 'High Command · on the Titan',
     text: 'Watch the whole war map, ping targets for free, spend Munitions on bombs, strikes and recon and Manpower on spawns, reinforcements and Breakthrough. Buys the Titan’s upgrades with Credits, and runs any FOB nobody commands.',
+    duties: ['Whole-map command view', 'Munitions: bombs, strikes, recon', 'Manpower: spawns & Breakthrough', 'Credits: Titan upgrades'],
     art: 'mothership',
   },
   {
     name: 'FOB Commander',
     where: 'Station command · on the FOB',
     text: 'Launch Fuel wings from your FOB (fighters, interceptors, bombers, recon, defenders) and buy its turret, shipyard and armor upgrades with Credits.',
+    duties: ['Fuel: fighter & bomber wings', 'Recon and defender flights', 'Credits: turrets, shipyard, armor'],
     art: 'fob',
   },
 ];
@@ -64,6 +71,8 @@ const MAX = {
   armor: Math.max(...CLASS_ORDER.map((id) => CLASSES[id].armor)),
   dps: Math.max(...CLASS_ORDER.map((id) => FIGURES[id].dps)),
   speed: Math.max(...CLASS_ORDER.map((id) => CLASSES[id].speed)),
+  radar: Math.max(...CLASS_ORDER.map((id) => RADAR_SCOPES[id].range)),
+  radius: Math.max(...CLASS_ORDER.map((id) => CLASSES[id].radius)),
 };
 
 export interface HangarHandlers {
@@ -74,9 +83,10 @@ export interface HangarHandlers {
 }
 
 /**
- * "Choose your ship" as an Orbital Hangar: echelon tabs over a 3×3 roster, and a dossier for the
- * selected hull (or command seat) with its v2 combat figures, Tier-3 hulls and the launch button.
- * Number keys select, Enter / Space or a double-click launches.
+ * "Choose your ship" as an Orbital Hangar launch bay: a roster rail on the left, the selected hull
+ * floating over the bay deck at its true relative size in the middle, and a dossier of combat
+ * figures, specs and Tier-3 hulls on the right, with the launch bar along the bottom.
+ * Number keys select, Enter / Space or a double-click launches, the bay arrows cycle the roster.
  */
 export class Hangar {
   private readonly $: Record<string, HTMLElement> = {};
@@ -87,6 +97,8 @@ export class Hangar {
   private counts: number[] = new Array(CLASS_ORDER.length).fill(0);
   private seatTaken = [false, false, false];
   private fleet = 1;
+  /** What the stage and dossier were last drawn for, and the live state last drawn. */
+  private shown = '';
   private cache = '';
   /** True once the player has launched this match: leaving then abandons it. */
   inMatch = false;
@@ -104,40 +116,65 @@ export class Hangar {
     }
     this.selected = saved && (CLASS_ORDER.includes(saved as ClassId) || SEATS.includes(saved as Pick)) ? (saved as Pick) : 'cruiser';
     root.innerHTML = `<div class="hangar">
-      <header class="hangar-bar">
-        <div class="hb-title"><span class="hb-tag"><button type="button" data-h="leave" class="hb-leave" title="Leave for the menu (Esc)">◂ Back to menu</button>ORBITAL HANGAR // DEPLOYMENT BAY</span><h2>Choose your ship</h2></div>
-        <div class="hb-status">
-          <span data-h="sector"></span>
+      <header class="hg-bar">
+        <button type="button" data-h="leave" class="hb-leave" title="Leave for the menu (Esc)">◂ Back to menu</button>
+        <div class="hg-title"><span class="hg-tag">ORBITAL HANGAR <i>//</i> DEPLOYMENT BAY</span><h2>Choose your ship</h2></div>
+        <div class="hg-status">
+          <span class="hg-sector" data-h="sector"></span>
           <span class="hb-pilot">PILOT <b data-h="pilot"></b></span>
-          <span class="hb-keep">${Math.round(ECONOMY.deathShardKeep * 100)}% SHARDS KEPT ON DEATH · XP &amp; UPGRADES RETAINED</span>
         </div>
-        <nav class="hb-tabs">${ECHELONS.map((e) => `<button data-ech="${e.id}">${e.name}</button>`).join('')}</nav>
       </header>
-      <div class="hangar-body">
-        <div data-h="roster" class="roster"></div>
-        <aside data-h="dossier" class="dossier"></aside>
+      <div class="hg-body">
+        <aside class="hg-rail">
+          <nav class="hb-tabs">${ECHELONS.map((e) => `<button type="button" data-ech="${e.id}">${e.name}</button>`).join('')}</nav>
+          <div data-h="roster" class="hg-roster"></div>
+          <div data-h="command" class="hg-command"></div>
+        </aside>
+        <section class="hg-stage" data-h="stage">
+          <div class="st-sky"></div>
+          <div class="st-deck"><i></i></div>
+          <div data-h="ship" class="st-show"></div>
+          <button type="button" class="st-nav prev" data-step="-1" title="Previous">‹</button>
+          <button type="button" class="st-nav next" data-step="1" title="Next">›</button>
+        </section>
+        <aside data-h="dossier" class="hg-dossier"></aside>
       </div>
+      <footer class="hg-foot">
+        <span class="hg-keep">◆ ${Math.round(ECONOMY.deathShardKeep * 100)}% shards kept on death · XP &amp; upgrades retained</span>
+        <span data-h="cap" class="hg-cap"></span>
+        <button type="button" data-h="launch" class="hg-launch"></button>
+      </footer>
     </div>`;
     root.querySelectorAll<HTMLElement>('[data-h]').forEach((n) => (this.$[n.dataset.h!] = n));
     this.$.leave.addEventListener('click', () => this.leave());
+    this.$.launch.addEventListener('click', () => this.launch());
     root.querySelector('.hb-tabs')!.addEventListener('click', (e) => {
       const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-ech]');
       if (tab) this.setEchelon(tab.dataset.ech!);
     });
-    this.$.roster.addEventListener('click', (e) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>('[data-sel]');
-      if (card) this.select(card.dataset.sel as Pick);
+    this.$.stage.addEventListener('click', (e) => {
+      const nav = (e.target as HTMLElement).closest<HTMLElement>('[data-step]');
+      if (nav) this.step(Number(nav.dataset.step));
     });
-    this.$.roster.addEventListener('dblclick', (e) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>('[data-sel]');
-      if (card) {
+    this.$.stage.addEventListener('dblclick', (e) => {
+      if ((e.target as HTMLElement).closest('.st-art')) this.launch();
+    });
+    for (const list of [this.$.roster, this.$.command]) {
+      list.addEventListener('click', (e) => {
+        const card = (e.target as HTMLElement).closest<HTMLElement>('[data-sel]');
+        if (!card) return;
+        // Drop focus so a later Enter / Space launches the pick instead of re-clicking this card.
+        card.blur();
         this.select(card.dataset.sel as Pick);
-        this.launch();
-      }
-    });
-    this.$.dossier.addEventListener('click', (e) => {
-      if ((e.target as HTMLElement).closest('[data-launch]')) this.launch();
-    });
+      });
+      list.addEventListener('dblclick', (e) => {
+        const card = (e.target as HTMLElement).closest<HTMLElement>('[data-sel]');
+        if (card) {
+          this.select(card.dataset.sel as Pick);
+          this.launch();
+        }
+      });
+    }
   }
 
   /** Select a roster entry: 1–9 a class, 10–12 a command seat (keys 0, -, =). */
@@ -185,6 +222,7 @@ export class Hangar {
     setText(this.$.pilot, info.names[info.selfSlot] ?? '');
     if (myTeam !== this.team) {
       this.team = myTeam;
+      (this.root.firstElementChild as HTMLElement).dataset.team = String(myTeam);
       this.buildRoster();
     }
     this.render();
@@ -192,7 +230,7 @@ export class Hangar {
 
   private select(pick: Pick): void {
     this.selected = pick;
-    if (!ECHELONS.find((e) => e.id === this.echelon)!.items.includes(pick)) this.echelon = pick.startsWith('seat') ? 'command' : 'all';
+    if (!pick.startsWith('seat') && !ECHELONS.find((e) => e.id === this.echelon)!.items.includes(pick)) this.echelon = 'all';
     try {
       localStorage.setItem('vf.hangarPick', pick);
     } catch {
@@ -201,10 +239,17 @@ export class Hangar {
     this.render();
   }
 
+  /** The bay arrows: the previous or next entry in the open roster tab (or the seats), wrapping around. */
+  private step(dir: number): void {
+    const items = this.selected.startsWith('seat') ? SEATS : ECHELONS.find((e) => e.id === this.echelon)!.items;
+    const i = items.indexOf(this.selected);
+    this.select(items[(i + dir + items.length) % items.length]);
+  }
+
   private setEchelon(id: string): void {
     this.echelon = id;
     const items = ECHELONS.find((e) => e.id === id)!.items;
-    if (!items.includes(this.selected)) this.selected = items[0];
+    if (!this.selected.startsWith('seat') && !items.includes(this.selected)) this.selected = items[0];
     this.render();
   }
 
@@ -220,92 +265,152 @@ export class Hangar {
 
   private buildRoster(): void {
     const team = this.team;
-    const cards = CLASS_ORDER.map((id, i) => {
-      const cls = CLASSES[id];
-      const bar = (label: string, v: number) => `<span><i style="--v:${Math.max(0.06, v).toFixed(2)}"></i>${label}</span>`;
-      return `<button class="rcard" data-sel="${id}"><span class="rc-top"><kbd>${i + 1}</kbd><span class="rc-badge">R:${cls.radius}u · ${Math.round(FIGURES[id].ap)} AP</span></span>
-        <span class="rc-art">${hullThumb(cls.hullModel, team)}</span>
-        <b>${cls.name}</b><small>${cls.role}</small>
-        <span class="rc-cap" data-cap="${id}"></span>
-        <span class="rc-stats">${bar('HP', (cls.hull + cls.shield) / MAX.durability)}${bar('ARM', cls.armor / MAX.armor)}${bar('DPS', FIGURES[id].dps / MAX.dps)}${bar('SPD', cls.speed / MAX.speed)}</span></button>`;
-    });
-    const seats = SEATS.map((id, s) => {
-      const info = SEAT_INFO[s === 0 ? 0 : 1];
-      const url = hullThumbUrl(info.art, team);
-      return `<button class="rcard seat" data-sel="${id}"><span class="rc-top"><kbd>${SEAT_KEYS[s]}</kbd><span class="rc-badge">COMMAND</span></span>
-        <span class="rc-art">${url ? `<img class="hull-thumb" src="${url}" alt="" draggable="false" />` : ''}</span>
-        <b>${this.seatName(s)}</b><small>${info.where}</small><span class="rc-cap" data-cap="${id}"></span></button>`;
-    });
-    this.$.roster.innerHTML = cards.join('') + seats.join('');
-    this.cache = '';
+    const row = (pick: Pick) => {
+      const cls = CLASSES[pick as ClassId];
+      return `<button type="button" class="hg-row" data-sel="${pick}"><kbd>${CLASS_ORDER.indexOf(cls.id) + 1}</kbd>
+        <span class="hg-thumb">${hullThumb(cls.hullModel, team)}</span>
+        <span class="hg-name"><b>${cls.name}</b><small>${cls.role}</small></span>
+        <span class="hg-count" data-cap="${pick}"></span></button>`;
+    };
+    this.$.roster.innerHTML = GROUPS.map((g) => `<div class="hg-group" data-group="${g.id}"><h5><span>${g.name}</span></h5>${g.items.map(row).join('')}</div>`).join('');
+    // High Command: its own panel under the hulls, so taking a command seat is always in view.
+    const seat = (s: number) => {
+      const url = hullThumbUrl(SEAT_INFO[s === 0 ? 0 : 1].art, team);
+      return `<button type="button" class="hg-seat${s === 0 ? ' admiral' : ''}" data-sel="seat${s}"><kbd>${SEAT_KEYS[s]}</kbd>
+        <span class="hg-thumb">${url ? `<img class="hull-thumb" src="${url}" alt="" draggable="false" />` : ''}</span>
+        <b>${s === 0 ? 'Admiral' : `FOB ${fobName(team, s - 1)}`}</b>
+        <span class="hg-count"></span></button>`;
+    };
+    this.$.command.innerHTML = `<h5><span>★ High Command</span><small>Lead the fleet instead of flying</small></h5>
+      <div class="hg-seats">${[0, 1, 2].map(seat).join('')}</div>`;
+    this.shown = this.cache = '';
   }
 
   private seatName(s: number): string {
     return s === 0 ? 'Admiral' : `FOB Commander · ${fobName(this.team, s - 1)}`;
   }
 
-  /** Re-render the roster state and dossier only when something visible changed. */
+  /** Redraw the stage and dossier when the pick changes, and the live counts only when they change. */
   private render(): void {
-    const key = `${this.selected}|${this.echelon}|${this.counts.join(',')}|${this.seatTaken.join(',')}|${this.fleet}|${this.team}`;
-    if (key === this.cache || this.team < 0) return;
+    if (this.team < 0) return;
+    const shown = `${this.selected}|${this.team}`;
+    if (shown !== this.shown) {
+      this.shown = shown;
+      const seat = this.selected.startsWith('seat');
+      this.$.ship.innerHTML = seat ? this.seatStage(Number(this.selected.slice(4))) : this.classStage(CLASSES[this.selected as ClassId]);
+      this.$.dossier.innerHTML = seat ? this.seatDossier(Number(this.selected.slice(4))) : this.classDossier(CLASSES[this.selected as ClassId]);
+      this.$.dossier.scrollTop = 0;
+    }
+    const key = `${shown}|${this.echelon}|${this.counts.join(',')}|${this.seatTaken.join(',')}|${this.fleet}`;
+    if (key === this.cache) return;
     this.cache = key;
     this.root.querySelectorAll<HTMLElement>('[data-ech]').forEach((t) => t.classList.toggle('on', t.dataset.ech === this.echelon));
-    const items = ECHELONS.find((e) => e.id === this.echelon)!.items;
-    this.$.roster.querySelectorAll<HTMLElement>('[data-sel]').forEach((card) => {
+    this.$.roster.querySelectorAll<HTMLElement>('[data-group]').forEach((g) => g.classList.toggle('hidden', this.echelon !== 'all' && g.dataset.group !== this.echelon));
+    this.$.command.classList.toggle('on', this.selected.startsWith('seat'));
+    this.root.querySelectorAll<HTMLElement>('[data-sel]').forEach((card) => {
       const pick = card.dataset.sel as Pick;
-      card.classList.toggle('hidden', !items.includes(pick));
       card.classList.toggle('on', pick === this.selected);
       card.classList.toggle('full', this.blocked(pick));
-      const capEl = card.querySelector<HTMLElement>('.rc-cap')!;
-      if (pick.startsWith('seat')) setText(capEl, this.seatTaken[Number(pick.slice(4))] ? 'Seat taken' : 'Seat open');
+      const capEl = card.querySelector<HTMLElement>('.hg-count')!;
+      if (pick.startsWith('seat')) setText(capEl, this.seatTaken[Number(pick.slice(4))] ? 'TAKEN' : 'OPEN');
       else {
         const cap = this.cap(pick as ClassId);
         const n = this.counts[CLASS_ORDER.indexOf(pick as ClassId)];
-        setText(capEl, cap === Infinity ? `${n} on your team` : `${n} / ${cap} on your team`);
+        setText(capEl, cap === Infinity ? `${n}` : `${n}/${cap}`);
       }
     });
-    this.$.dossier.innerHTML = this.selected.startsWith('seat') ? this.seatDossier(Number(this.selected.slice(4))) : this.classDossier(CLASSES[this.selected as ClassId]);
+    this.$.roster.querySelector('.hg-row.on')?.scrollIntoView({ block: 'nearest' });
+    this.renderFoot();
+  }
+
+  /** Team count for the pick and the launch button. */
+  private renderFoot(): void {
+    const full = this.blocked(this.selected);
+    let cap: string;
+    if (this.selected.startsWith('seat')) cap = full ? '<b class="no">Seat taken</b> by another commander' : '<b>Seat open</b> · command from the bridge';
+    else {
+      const id = this.selected as ClassId;
+      const n = this.counts[CLASS_ORDER.indexOf(id)];
+      const max = this.cap(id);
+      const pips = max !== Infinity && max <= 16 ? `<span class="pips">${Array.from({ length: max }, (_, k) => `<i class="${k < n ? 'on' : ''}"></i>`).join('')}</span>` : '';
+      cap = `${pips}<b class="${full ? 'no' : ''}">${max === Infinity ? `${n} flying` : `${n} / ${max}`}</b> ${CLASSES[id].name}s on your team${max === Infinity ? ' · no cap' : ''}`;
+    }
+    this.$.cap.innerHTML = cap;
+    const launch = this.$.launch as HTMLButtonElement;
+    launch.disabled = full;
+    launch.innerHTML = full
+      ? this.selected.startsWith('seat')
+        ? 'Seat taken'
+        : 'Class full for your team'
+      : `<span>${this.selected.startsWith('seat') ? 'Take command' : 'Undock &amp; launch'}</span><kbd>Enter</kbd>`;
+  }
+
+  private classStage(cls: ShipClass): string {
+    const i = CLASS_ORDER.indexOf(cls.id);
+    const group = GROUPS.find((g) => g.items.includes(cls.id))!;
+    // True relative size: a Patrol Craft sits small in the bay, a Dreadnought fills it.
+    const k = 0.3 + 0.7 * (cls.radius / MAX.radius) ** 0.75;
+    return `<div class="st-ghost" aria-hidden="true" style="--len:${cls.name.length}">${cls.name}</div>
+      <div class="st-head"><span class="st-index">${String(i + 1).padStart(2, '0')}<i>/ ${String(CLASS_ORDER.length).padStart(2, '0')}</i></span><span class="st-group">${group.name}</span></div>
+      <div class="st-art" style="--k:${k.toFixed(2)};${size(cls.hullModel)}" title="Double-click to launch"><span class="st-float">${hullThumb(cls.hullModel, this.team)}</span></div>
+      <div class="st-ruler" style="--w:${(cls.radius / MAX.radius).toFixed(3)}"><i></i><span>HULL RADIUS ${cls.radius}u · ×${(cls.radius / CLASSES.patrol.radius).toFixed(1)} PATROL</span></div>
+      <div class="st-name" style="--len:${cls.name.length}"><h3>${cls.name}</h3><small>${cls.role}</small></div>`;
+  }
+
+  private seatStage(s: number): string {
+    const info = SEAT_INFO[s === 0 ? 0 : 1];
+    const url = hullThumbUrl(info.art, this.team);
+    return `<div class="st-ghost" aria-hidden="true" style="--len:${info.name.length}">${info.name}</div>
+      <div class="st-head"><span class="st-index">C${s + 1}<i>/ C3</i></span><span class="st-group">High Command</span></div>
+      <div class="st-art seat" style="--k:0.9;${size(info.art)}">${url ? `<span class="st-float"><img class="hull-thumb" src="${url}" alt="" draggable="false" /></span>` : ''}</div>
+      <div class="st-name" style="--len:${this.seatName(s).length}"><h3>${this.seatName(s)}</h3><small>${info.where}</small></div>`;
   }
 
   private classDossier(cls: ShipClass): string {
-    const i = CLASS_ORDER.indexOf(cls.id);
     const fig = FIGURES[cls.id];
     const sec = cls.secondary;
     const bow = Math.round(cls.armor * (1 + ARMOR.bowBonus));
     const stern = Math.round(cls.armor * ARMOR.sternMul);
-    const cap = this.cap(cls.id);
-    const full = this.blocked(cls.id);
+    const radar = RADAR_SCOPES[cls.id].range;
+    const meter = (label: string, value: string, v: number) =>
+      `<div class="mt"><label>${label}</label><span class="mt-bar" style="--v:${Math.max(0.05, v).toFixed(3)}"><i></i></span><b>${value}</b></div>`;
     const spec = (label: string, value: string, sub = '') => `<div class="spec"><label>${label}</label><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
     const t3 = cls.tiers[ECONOMY.hullTier - 1].options
       .map(
-        (o, k) => `<div class="t3"><span class="t3-art">${o.hullModel ? hullThumb(o.hullModel, this.team) : ''}</span><span><u>T${ECONOMY.hullTier}-${k === 0 ? 'A' : 'B'}</u> <b>${o.name}</b></span></div>`,
+        (o, k) => `<div class="t3"><span class="t3-art">${o.hullModel ? hullThumb(o.hullModel, this.team) : ''}</span><span><u>T${ECONOMY.hullTier}-${k === 0 ? 'A' : 'B'}</u><b>${o.name}</b></span></div>`,
       )
       .join('');
-    return `<div class="dz-bay"><span class="dz-art" style="--k:${Math.min(1, 0.45 + cls.radius / 300).toFixed(2)}">${hullThumb(cls.hullModel, this.team)}</span>
-        <span class="dz-scale">HULL RADIUS ${cls.radius}u · ×${(cls.radius / CLASSES.patrol.radius).toFixed(1)} PATROL</span></div>
-      <div class="dz-head"><kbd>${i + 1}</kbd><div><h3>${cls.name}</h3><small>${cls.role}</small></div><span class="dz-cap ${full ? 'full' : ''}">${cap === Infinity ? 'No team cap' : `${this.counts[i]} / ${cap} on your team`}</span></div>
-      <p class="dz-sum">${cls.summary} <em>${cls.quirkInfo.name}:</em> ${cls.quirkInfo.text}</p>
-      <div class="dz-specs">
-        ${spec('Hull + energy shield', `${cls.hull} + ${cls.shield} SHD`)}
+    return `<section class="dz-block"><h4>Combat profile</h4>
+        ${meter('Durability', `${cls.hull + cls.shield}`, (cls.hull + cls.shield) / MAX.durability)}
+        ${meter('Armor', `${cls.armor}`, cls.armor / MAX.armor)}
+        ${meter('Firepower', `${Math.round(fig.dps)}`, fig.dps / MAX.dps)}
+        ${meter('Speed', `${cls.speed}`, cls.speed / MAX.speed)}
+        ${meter('Radar', `${(radar / 1000).toFixed(1)}k`, radar / MAX.radar)}
+      </section>
+      <p class="dz-sum">${cls.summary}</p>
+      <div class="dz-quirk"><span>Quirk</span><b>${cls.quirkInfo.name}</b><p>${cls.quirkInfo.text}</p></div>
+      <section class="dz-block"><h4>Systems</h4><div class="dz-specs">
+        ${spec('Hull + energy shield', `${cls.hull} + ${cls.shield}`, 'HULL + SHD')}
         ${spec('Armor bow / flank / stern', `${bow} / ${cls.armor} / ${stern}`)}
         ${spec('Primary axial gun', cls.gun.name ?? 'Main gun', `${Math.round(fig.ap)} AP · ${Math.round(fig.dps)} DPS`)}
         ${spec('360° auto-turrets', sec ? `${sec.count}× ${sec.name}` : 'None', sec ? `${sec.ap} AP · ±${sec.jitterDeg}°` : 'Pure axial mount')}
-        ${spec('Tactical radar scope', `${(RADAR_SCOPES[cls.id].range / 1000).toFixed(1)} KM`)}
         ${spec('Signature ability <kbd>RMB</kbd>', cls.signature.name, `${cls.signature.cooldown}s cooldown`)}
-      </div>
-      <div class="dz-t3"><h4>Tier-${ECONOMY.hullTier} specialization hulls</h4><div class="t3s">${t3}</div></div>
-      <button class="dz-launch" data-launch ${full ? 'disabled' : ''}>${full ? 'Class full for your team' : 'Undock &amp; launch <kbd>Enter</kbd>'}</button>`;
+        ${spec('Tactical radar scope', `${(radar / 1000).toFixed(1)} KM`)}
+      </div></section>
+      <section class="dz-block"><h4>Tier-${ECONOMY.hullTier} specialization hulls</h4><div class="t3s">${t3}</div></section>`;
   }
 
   private seatDossier(s: number): string {
     const info = SEAT_INFO[s === 0 ? 0 : 1];
-    const url = hullThumbUrl(info.art, this.team);
-    const taken = this.seatTaken[s];
-    return `<div class="dz-bay seat">${url ? `<span class="dz-art" style="--k:0.85"><img class="hull-thumb" src="${url}" alt="" draggable="false" /></span>` : ''}</div>
-      <div class="dz-head"><kbd>${SEAT_KEYS[s]}</kbd><div><h3>${this.seatName(s)}</h3><small>${info.where}</small></div><span class="dz-cap ${taken ? 'full' : ''}">${taken ? 'Seat taken' : 'Seat open'}</span></div>
-      <p class="dz-sum">${info.text}</p>
-      <button class="dz-launch" data-launch ${taken ? 'disabled' : ''}>${taken ? 'Seat taken' : 'Take command <kbd>Enter</kbd>'}</button>`;
+    return `<p class="dz-sum">${info.text}</p>
+      <section class="dz-block"><h4>Command duties</h4><ul class="dz-duties">${info.duties.map((d) => `<li>${d}</li>`).join('')}</ul></section>`;
   }
+}
+
+/** The sprite's own pixel size as CSS variables, so the bay never blows it up past what it can show sharply. */
+function size(hullId: string): string {
+  const px = hullThumbSize(hullId);
+  return px ? `--nw:${px[0]}px;--nh:${px[1]}px` : '';
 }
 
 function setText(el: HTMLElement, text: string): void {
