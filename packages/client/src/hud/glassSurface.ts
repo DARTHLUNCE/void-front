@@ -1,4 +1,4 @@
-/** Shared optical surface for the GPU coating and DOM readout refraction. */
+/** Shared optical surface for the GPU glass coating over the cockpit screens. */
 export const GLASS = { sag: .12, roll: .065, bowl: .44, minPower: 3, maxPower: 8 } as const;
 
 export function glassNormal(x: number, y: number, width: number, height: number, radius: number): [number,number,number] {
@@ -10,30 +10,6 @@ export function glassNormal(x: number, y: number, width: number, height: number,
   };
   const nx=slope(x,width), ny=slope(y,height), length=Math.hypot(nx,ny,1);
   return [nx/length,ny/length,1/length];
-}
-
-export function glassRefraction(x: number, y: number, width: number, height: number, radius: number): [number,number] {
-  const qx=Math.abs(x-width/2)-width/2+radius, qy=Math.abs(y-height/2)-height/2+radius;
-  const edge=Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-radius;
-  if (edge>=0) return [0,0];
-  const [nx,ny,nz]=glassNormal(x,y,width,height,radius);
-  const eta=1/1.5, bend=Math.sqrt(1-eta*eta*(1-nz*nz))-eta*nz;
-  // Snell refraction through the convex surface, toward the display underneath.
-  const thickness=Math.min(12,Math.max(3,Math.min(width,height)*.07));
-  const travel=thickness/(eta+bend*nz);
-  const fade=Math.min(1,-edge/1.5); // Neutral outside the rounded aperture.
-  let dx=-nx*bend*travel*fade, dy=-ny*bend*travel*fade;
-  const limit=Math.min(3.2,Math.min(width,height)*.055);
-  const scale=Math.min(1,limit/Math.max(Math.hypot(dx,dy),.00001));
-  dx*=scale; dy*=scale;
-  return [dx,dy];
-}
-
-/** Four integer source offsets and normalized weights for bilinear reconstruction. */
-export function refractionTaps(dx: number, dy: number): { x: number; y: number; weight: number }[] {
-  const x=Math.floor(dx), y=Math.floor(dy), fx=dx-x, fy=dy-y;
-  return [{x,y,weight:(1-fx)*(1-fy)},{x:x+1,y,weight:fx*(1-fy)},
-    {x,y:y+1,weight:(1-fx)*fy},{x:x+1,y:y+1,weight:fx*fy}];
 }
 
 export const glassSurfaceGLSL = `

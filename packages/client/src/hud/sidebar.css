@@ -61,8 +61,9 @@
 .sidebar-layout .overlay:not(.picker) { left: var(--play-left); right: var(--play-right); }
 .sidebar-layout .minimap.big { max-width: calc(100vw - var(--play-left) - 24px); max-height: 85vh; object-fit: contain; }
 .sidebar-layout .board .cols { max-width: calc(100vw - var(--play-left) - 24px); overflow: auto; }
+/* Score panel: inside the play window's top-right corner, above the window bezel. */
+.sidebar-layout .livescore { top: calc(var(--play-top) + 14px); right: calc(var(--play-right) + 14px); z-index: 4; }
 .sidebar-layout .perf { left: calc(var(--play-left) + 8px); top: calc(var(--play-top) + 8px); font-size: 10px; color: var(--noir-dim); }
-.sidebar-layout .feed { top: calc(var(--play-top) + 32px); right: 24px; }
 .sidebar-layout .tierpop { left: calc(var(--play-left) + 8px); right: auto; bottom: 4%; max-height: 75vh; overflow-y: auto; }
 .sidebar-layout .command { inset: 24px auto 24px 24px; width: calc(var(--hud-width) - 48px); overflow-y: auto; }
 
@@ -85,9 +86,10 @@
 @media (max-width: 760px) { .sidebar-layout .noir-shell { z-index: 4; } }
 
 /* Piecewise artwork fallback shares the GPU mesh and aperture geometry. */
-.sidebar-layout #hud .noir-static-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; filter: url('#noir-frame-grade'); }
+.sidebar-layout #hud .noir-static-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; filter: url('#noir-frame-grade'); will-change: transform; }
 .sidebar-layout .noir-window-frame.noir-frame-mapped { background-image: none; filter: none; }
-.sidebar-layout .noir-frame-mapped::after { background-image: none; }
+.sidebar-layout .noir-frame-mapped::after { background-image: none; filter: none; }
+.sidebar-layout .noir-frame-lit .noir-top-surface::after { filter: none; }
 .sidebar-layout .noir-frame-lit .noir-static-frame { visibility: hidden; }
 
 @media (max-width: 760px) { .sidebar-layout .top { z-index: 3; } }

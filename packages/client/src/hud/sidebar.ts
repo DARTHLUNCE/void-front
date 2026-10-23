@@ -1,4 +1,3 @@
-import { installGlassRefraction } from './glassRefraction';
 import { installFrameLayout } from './frameLayout';
 import { installPanelFitting } from './panelFitting';
 
@@ -177,7 +176,6 @@ export function arrangePilotSidebar(root: HTMLElement): void {
   root.prepend(windowFrame);
   installFrameLayout(root);
   installPanelFitting(root);
-  installGlassRefraction(root);
   // Native activation still works; keyboard UI use must not also fire/brake.
   root.addEventListener('keydown', event => {
     if ((event.target as Element)?.closest('button, summary') &&

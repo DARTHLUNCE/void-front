@@ -52,7 +52,6 @@ const RESOURCES = [
 ] as const;
 /** Commander hotkeys, handed out in order to the orders your seat can issue (Input sends these as digits 1–18). */
 export const ORDER_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 'Z', 'X', 'C', 'V', 'B', 'N'];
-const PING_NAMES = ['Move here', 'Attack', 'Defend'];
 const PING_CSS = ['#6ff3ff', '#ff7a4d', '#5cff9d'];
 const QUIRK_GAUGE: Record<string, string> = { momentum: 'Momentum', heat: 'Heat', chargeShot: 'Charge', lockOn: 'Lock-On' };
 const TURRET_NAMES: Record<TurretType, string> = { standard: 'Standard turrets', rocket: 'Rocket turrets', laser: 'Laser turrets' };
@@ -130,7 +129,6 @@ export class Hud {
   private readonly miniCtx: CanvasRenderingContext2D;
   private bigMap = false;
   private lastMini = 0;
-  private readonly feed: FeedEntry[] = [];
   private seenTick = -1;
   private info: MatchInfo | null = null;
   private readonly cache = new Map<string, string>();
@@ -165,7 +163,6 @@ export class Hud {
       </div>
       <canvas class="minimap hud-hit hidden" width="300" height="150"></canvas>
       <div data-k="live" class="livescore"><div class="live-head"><span>Score</span><small>Hold Tab for full board</small></div><div data-k="liveRows"></div><div data-k="livePops" class="live-pops"></div></div>
-      <div data-k="feed" class="feed"></div>
       <div data-k="toast" class="toast"></div>
       <div data-k="vhud" class="vhud hidden">
         <div class="vhud-left">
@@ -332,7 +329,6 @@ export class Hud {
 
   setMatch(info: MatchInfo): void {
     this.info = info;
-    this.feed.length = 0;
     this.pops.length = 0;
     this.lastKills = this.lastAssists = -1;
     this.disarmRedeploy();
@@ -496,36 +492,19 @@ export class Hud {
     while (this.pops.length && this.pops[this.pops.length - 1].until < now) this.pops.pop();
     this.set('livePops', this.pops.map((p) => p.html).join(''), 'html');
 
-    // Objective and command events from this tick (kills are on the score panel, not here).
+    // No on-screen event feed: the score panel covers kills; the Titan shield and our tiers get a toast.
     if (b[H.tick] !== this.seenTick) {
       this.seenTick = b[H.tick];
       for (let i = 0, k = snap.o.events; i < b[H.eventCount]; i++, k += SNAP.event) {
         const type = b[k];
-        if (type === EventType.PointFlip) {
-          const p = KESSLER_REACH.points[b[k + 1]];
-          const team = b[k + 2];
-          this.pushFeed(`<div><span style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]}</span> took <b>${p.name}</b></div>`, now);
-        } else if (type === EventType.NodeDestroyed) {
-          const p = KESSLER_REACH.points[b[k + 1]];
-          const team = b[k + 2];
-          this.pushFeed(`<div><span style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]}</span> destroyed <b>${p.name}</b> · open in 20s</div>`, now);
-        } else if (type === EventType.StructureDestroyed && b[k + 1] >= 2) {
+        if (type === EventType.StructureDestroyed && b[k + 1] >= 2) {
           const fob = KESSLER_REACH.fobs[b[k + 1] - 2];
           const left = KESSLER_REACH.fobs.filter((f, i) => f.team === fob.team && b[snap.o.structures + (2 + i) * SNAP.structure + STRUCT.alive] === 1).length;
-          this.pushFeed(`<div class="big"><span style="color:${TEAM_CSS[fob.team]}">${TEAM_NAMES[fob.team]} FOB destroyed</span> · salvage beacon for ${TEAM_NAMES[1 - fob.team]}${left === 0 ? ' · mothership shield down' : ''}</div>`, now);
           if (left === 0) this.toast(fob.team === myTeam ? 'Our Titan shield is down' : 'Enemy Titan shield is down', now, fob.team === myTeam);
-        } else if (type === EventType.Ping && b[k + 1] === myTeam) {
-          const point = b[k + 5];
-          const where = point >= 0 ? KESSLER_REACH.points[point].name : 'marked spot';
-          this.pushFeed(`<div><b style="color:${PING_CSS[b[k + 2]]}">Commander:</b> ${PING_NAMES[b[k + 2]]} · ${where}</div>`, now);
-        } else if (type === EventType.Command && b[k + 1] !== myTeam) {
-          this.pushFeed(`<div><span style="color:${TEAM_CSS[b[k + 1]]}">Enemy ${b[k + 5] === 0 ? 'Admiral' : 'FOB Commander'}:</span> ${COMMANDS[b[k + 2]]?.name ?? ''}</div>`, now);
         } else if (type === EventType.TierBought && b[k + 1] === info.selfSlot) {
           this.toast(`Tier ${b[k + 2]} unlocked`, now);
         }
       }
-      while (this.feed.length > 7 || (this.feed.length && this.feed[this.feed.length - 1].until < now)) this.feed.pop();
-      this.set('feed', this.feed.map((f) => f.html).join(''), 'html');
     }
     if (now > this.toastUntil) this.$.toast.classList.remove('show');
 
@@ -545,10 +524,6 @@ export class Hud {
       const reason = b[H.endReason] === 1 ? 'Titan destroyed' : `Time limit · Victory Points ${b[H.vp0].toFixed(1)} – ${b[H.vp1].toFixed(1)}`;
       this.$.reason.textContent = `${winner >= 0 ? TEAM_NAMES[winner] + ' wins. ' : ''}${reason}. Kills ${b[H.kills0]} – ${b[H.kills1]}.`;
     }
-  }
-
-  private pushFeed(html: string, now: number): void {
-    this.feed.unshift({ html, until: now + 5000 });
   }
 
   private pushPop(html: string, now: number): void {

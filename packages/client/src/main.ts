@@ -371,6 +371,12 @@ const nextPaint = () =>
   });
 
 document.getElementById('play')!.addEventListener('click', async () => {
+  // Never leave the title skirmish simulating under the match (launching from the terminal skips its close).
+  if (disposeIntro) {
+    disposeIntro();
+    introOpen = false;
+    disposeIntro = null;
+  }
   const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? 'reference';
   const loaded = showLoading();
   menu.classList.add('hidden');
@@ -417,12 +423,17 @@ document.getElementById('play')!.addEventListener('click', async () => {
  * Shown on load and again from the terminal's "Title screen" button (or Esc).
  */
 let introOpen = false;
+/** Tears the title screen (and its live skirmish) down at once; set while it is open. */
+let disposeIntro: (() => void) | null = null;
 function openIntro(): void {
   if (introOpen) return;
   introOpen = true;
   const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? shipArt;
-  const close = () => (introOpen = false);
-  showIntro(document.body, {
+  const close = () => {
+    introOpen = false;
+    disposeIntro = null;
+  };
+  disposeIntro = showIntro(document.body, {
     setup: { callsign: callsignIn, fleet: fleetSel, difficulty: difficultySel, team: teamSel },
     team: teamSel.value === '1' ? 1 : 0,
     art: (['reference', 'neutral', 'original'].includes(art) ? art : 'reference') as ShipArtMode,
