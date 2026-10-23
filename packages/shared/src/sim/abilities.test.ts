@@ -222,7 +222,9 @@ describe('class quirks', () => {
   });
 
   it('Carrier: launches its bay drones', () => {
-    const { w } = duelWorld(1, 'carrier');
+    const { w, b } = duelWorld(1, 'carrier');
+    // Out of each other's guns: this checks the launch, not the duel (escorts launch off the bow toward it).
+    place(w, b, 2_000, 2_000, Math.PI);
     for (let i = 0; i < 30 * 2; i++) step(w);
     expect(w.drones.count).toBeGreaterThanOrEqual(QUIRK_PARAMS.droneBay.count * 2);
   });
