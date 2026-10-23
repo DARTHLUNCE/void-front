@@ -12,6 +12,7 @@ import { classCount, EventType, Job, SPAWN_AT_NODE, SPAWN_AT_STRUCTURE, TIERS, t
 import { inOwnedPoint, pointBuff } from './points';
 import { pushTarget } from './director';
 import { quirkOf } from './quirks';
+import { awardKill, clearHits, scoreHealing } from './score';
 import { isExposed } from './structures';
 import { applyStatus, clearStatuses } from './status';
 
@@ -81,14 +82,34 @@ export function setClass(ship: Ship, classId: ClassId): void {
   applyLoadout(ship);
 }
 
-/** A docked human picks their class: they launch straight away. */
-/** Returns false when the class is at its team cap (or the player is the commander). */
+/**
+ * A docked human picks their class: they launch straight away, or when their respawn timer runs
+ * out if they docked from the respawn screen. Returns false when the class is at its team cap (or
+ * the player is the commander).
+ */
 export function pickClass(w: World, ship: Ship, classId: ClassId): boolean {
   if (ship.commander) return false;
   if (classCount(w, ship.team, classId) >= teamCap(getClass(classId), w.fleetSize)) return false;
   setClass(ship, classId);
   ship.awaitingClass = false;
-  respawnShip(w, ship);
+  if (w.time >= ship.respawnAt) respawnShip(w, ship);
+  return true;
+}
+
+/**
+ * Change hull from the respawn screen: back to the hangar to start over. Tiers, XP, shards and
+ * Shard Calibration reset (a new hull is a fresh start); score, kills and deaths stay. Only while
+ * dead, so it can never dodge a death or skip the respawn timer.
+ */
+export function redeploy(ship: Ship): boolean {
+  if (ship.alive || ship.commander || ship.awaitingClass || ship.isBot) return false;
+  ship.awaitingClass = true;
+  ship.xp = 0;
+  ship.shards = 0;
+  ship.statPoints.fill(0);
+  ship.picks.fill(-1);
+  ship.tiersOwned = 0;
+  applyLoadout(ship);
   return true;
 }
 
@@ -139,9 +160,13 @@ export function killShip(w: World, victim: Ship): void {
   const enemyTeam = w.enemyOf(victim.team);
   enemyTeam.kills++;
 
-  const credited = victim.lastHitBy >= 0 && w.time - victim.lastHitTime <= ECONOMY.killCreditWindow;
-  const killer = credited ? w.ships[victim.lastHitBy] : null;
-  if (killer && killer.team !== victim.team) {
+  // The kill goes to whoever dealt the most recent damage (not the last hit); helpers get assists.
+  const killer = awardKill(w, victim);
+  if (killer && killer.commander) {
+    // A commander's strike or strike craft: kill and score, but no pilot XP or tier effects.
+    killer.kills++;
+    w.stats.killsByClass.command = (w.stats.killsByClass.command ?? 0) + 1;
+  } else if (killer) {
     killer.kills++;
     const x = ECONOMY.xp;
     const bounty = victim.rank >= killer.rank + x.bountyRankGap ? x.bountyMul : 1;
@@ -256,6 +281,7 @@ export function respawnShip(w: World, s: Ship): void {
   s.cruising = false;
   s.lastDamageTime = -99;
   s.lastHitBy = -1;
+  clearHits(s);
   s.signature.reset();
   s.ultimate?.reset();
   s.extra?.reset();
@@ -350,6 +376,7 @@ export function heal(s: Ship, amount: number): number {
 export function creditHealing(w: World, healer: Ship | null, target: Ship, restored: number): void {
   if (!healer || restored <= 0 || healer === target) return;
   healer.healingDone += restored;
+  scoreHealing(healer, target, restored);
   grantXp(w, healer, restored * ECONOMY.xp.healing);
   for (const node of healer.nodes) if (node.onHealAlly) applyStatus(w, target, node.onHealAlly);
 }

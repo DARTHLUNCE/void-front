@@ -12,6 +12,7 @@ export * from './sim/systems/command';
 export * from './sim/systems/drones';
 export * from './sim/systems/points';
 export * from './sim/systems/progression';
+export * from './sim/systems/score';
 export * from './sim/systems/quirks';
 export * from './sim/systems/status';
 export * from './net/snapshot';

@@ -33,6 +33,8 @@ export type ToWorker =
   | { type: 'tier'; option: number }
   /** Respawn at the mothership (-1) or at a friendly beacon (its deployable index). */
   | { type: 'spawn'; choice: number }
+  /** Respawn screen: back to the hangar to pick a new hull (progress restarts). */
+  | { type: 'redeploy' }
   | { type: 'command'; id: CommandId; x: number; y: number; point: number }
   /** Free commander ping at a world position. */
   | { type: 'ping'; x: number; y: number }

@@ -2,6 +2,7 @@ import { ARMOR, PAINTED_JITTER_MUL, SECONDARY_MOUNT_RING } from '../../content/c
 import { MATCH } from '../../content/match';
 import { angleDelta } from '../angles';
 import { ECONOMY } from '../../content/progression';
+import { SCORE } from '../../content/score';
 import { QUIRK_PARAMS } from '../../content/quirks';
 import { DEPLOYABLES, NODE, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
 import type { GunDef, TeamId } from '../../content/types';
@@ -12,6 +13,7 @@ import { damageNode, repairNode } from './points';
 import { apPowerBonus, heatPowerMul, secondaryRofPowerMul, shieldDrPowerBonus, weaponPowerMul } from './power';
 import { creditHealing, grantXp, heal } from './progression';
 import { CHARGE, quirkOf } from './quirks';
+import { creditShip, scoreShipDamage, scoreStructureDamage } from './score';
 import { applyStatus, canAct, hasStatus, removeStatus, statusMagnitude } from './status';
 
 /** Largest ship radius any class can have; bounds hash queries for hits (v2 size ladder). */
@@ -774,12 +776,24 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
     const watched = attackerSlot >= 0 && (!w.ships[attackerSlot].isBot || !target.isBot);
     if (watched && w.eventCount < EVENT_CAPACITY / 2) w.emit(EventType.Ricochet, target.slot, attackerSlot, target.x, target.y, Math.atan2(hit.dirY, hit.dirX));
   }
+  // Cosmetic: the renderer lights each ship's hull-shaped shield where it is struck and shows it
+  // collapsing. Capped so these never crowd kills and flips out of the event buffer.
+  if (shieldDealt > 0 && w.eventCount < EVENT_CAPACITY * 0.4) {
+    const directed = hit.dirX !== 0 || hit.dirY !== 0;
+    w.emit(EventType.ShieldHit, target.slot, attackerSlot, target.x, target.y, directed ? Math.atan2(hit.dirY, hit.dirX) : 0, directed ? shieldDealt : -shieldDealt);
+  }
+  if (broke && w.eventCount < EVENT_CAPACITY - 32) w.emit(EventType.ShieldBreak, target.slot, attackerSlot, target.x, target.y);
   const dealt = shieldDealt + hullDealt;
+  // A commander's order credits the commander (score, kills); only flying ships earn XP and on-hit effects.
+  const credited = creditShip(w, attackerSlot);
+  scoreShipDamage(w, target, credited, dealt);
+  if (credited) {
+    target.lastHitBy = credited.slot;
+    target.lastHitTime = w.time;
+    credited.damageDealt += dealt;
+  }
   if (attackerSlot >= 0) {
     const attacker = w.ships[attackerSlot];
-    target.lastHitBy = attackerSlot;
-    target.lastHitTime = w.time;
-    attacker.damageDealt += dealt;
     if (attacker.team !== target.team) grantXp(w, attacker, dealt * ECONOMY.xp.damageToShips);
     const reveal = statValue(attacker, 'revealOnHit', 0);
     if (reveal > 0) applyStatus(w, target, { status: 'revealed', duration: reveal });
@@ -798,8 +812,11 @@ export function damageStructure(w: World, st: Structure, amount: number, attacke
     attacker.structureDamage += dmg;
     grantXp(w, attacker, dmg * ECONOMY.xp.damageToStructures);
   }
+  const credited = creditShip(w, attackerSlot);
+  scoreStructureDamage(credited, dmg);
   if (st.hull <= 0) {
     st.alive = false;
+    if (credited) credited.score += SCORE.structureDestroy;
     const team = w.teams[st.team];
     if (st !== team.mothership) {
       // An FOB fell: the mothership's shield holds only while one of its FOBs stands.
@@ -834,6 +851,7 @@ export function damageDeployable(w: World, d: Deployable, amount: number, attack
   const dmg = Math.min(amount, d.hull);
   d.hull -= amount;
   if (attackerSlot >= 0) grantXp(w, w.ships[attackerSlot], dmg * ECONOMY.xp.damageToStructures);
+  scoreStructureDamage(creditShip(w, attackerSlot), dmg);
   if (d.hull <= 0) {
     w.emit(EventType.Explosion, d.team, 1, d.x, d.y, d.def.radius * 2);
     w.deployables.release(d);

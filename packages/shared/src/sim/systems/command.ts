@@ -4,6 +4,8 @@ import type { TeamId } from '../../content/types';
 import { BASE_UPGRADES, TURRET_REFITS, type TurretType, type UpgradeTrack } from '../../content/upgrades';
 import { EventType, PingKind, type Structure, type TeamState, type World } from '../world';
 import { runSteps, type Caster } from './abilities';
+import { commandOwner } from './score';
+import { SCORE } from '../../content/score';
 
 export interface CommandOrder {
   team: TeamId;
@@ -126,7 +128,9 @@ export function issueCommand(w: World, order: CommandOrder): boolean {
     x = w.points[order.point].x;
     y = w.points[order.point].y;
   }
-  const caster: Caster = { team: order.team, slot: -1, ship: null, x, y, angle: order.team === 0 ? 0 : Math.PI, cursorX: x, cursorY: y, targetSlot: -1 };
+  // The order carries its commander as owner so its damage, healing and kills score for them.
+  const commander = w.ships[team.seats[seat]];
+  const caster: Caster = { team: order.team, slot: commandOwner(commander.slot), ship: null, x, y, angle: order.team === 0 ? 0 : Math.PI, cursorX: x, cursorY: y, targetSlot: -1 };
   if (def.role === 'fob') {
     const base = launchBase(w, order.team, seat, x, y);
     caster.launchX = base.x;
@@ -134,7 +138,9 @@ export function issueCommand(w: World, order: CommandOrder): boolean {
     caster.launchRadius = base.radius;
   }
   runSteps(w, caster, def.steps);
-  team.resources[RESOURCE_INDEX[def.resource]] -= commandCost(w, order.team, order.id);
+  const cost = commandCost(w, order.team, order.id);
+  team.resources[RESOURCE_INDEX[def.resource]] -= cost;
+  commander.score += cost * SCORE.commandSpend;
   team.commandReady[`${seat}:${order.id}`] = w.time + def.cooldown;
   w.emit(EventType.Command, order.team, COMMANDS.findIndex((c) => c.id === order.id), x, y, seat);
   return true;
@@ -164,7 +170,9 @@ export function buyUpgrade(w: World, team: TeamId, seat: SeatId, base: number, t
   if (upgradeBlocker(w, team, seat, base, track, option)) return false;
   const t = w.teams[team];
   const st = seatBase(t, base);
-  t.credits -= upgradeCost(st, track, option);
+  const cost = upgradeCost(st, track, option);
+  t.credits -= cost;
+  w.ships[t.seats[seat]].score += cost * SCORE.upgradeSpend;
   if (track === 'turrets') st.turretType = option;
   else if (track === 'shipyard') st.shipyard++;
   else {

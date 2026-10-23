@@ -13,3 +13,4 @@ export * from './thrusters';
 export * from './upgrades';
 export * from './combat';
 export * from './power';
+export * from './score';

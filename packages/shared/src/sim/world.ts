@@ -41,6 +41,14 @@ export const STRIKE_CAPACITY = 64;
 export const TETHER_CAPACITY = 64;
 export const EVENT_CAPACITY = 512;
 export const TIERS = 5;
+/** Attackers remembered per ship for kill and assist credit. */
+export const HIT_LOG = 8;
+/**
+ * Owner values at or below this are a commander's order (strike, bomb, platform, strike craft):
+ * owner = COMMAND_OWNER - commander slot. Like -1 they are not a flying ship, but score credits
+ * the commander (sim/systems/score.ts).
+ */
+export const COMMAND_OWNER = -1000;
 /** spawnChoice values at or above this pick a structure (an FOB) by index. */
 export const SPAWN_AT_STRUCTURE = 1000;
 /** v2: spawnChoice values at or above this pick a fortified asteroid node (Node Citadel) by index. */
@@ -235,6 +243,21 @@ export class Ship {
   structureDamage = 0;
   healingDone = 0;
   captures = 0;
+  /** Match score (content/score.ts) and kill assists. */
+  score = 0;
+  assists = 0;
+  /**
+   * Who has damaged this ship since it spawned, for kill and assist credit (sim/systems/score.ts):
+   * attacker slot (-1 empty), damage dealt and when they last hit. Fixed size; the weakest entry
+   * is replaced when full.
+   */
+  readonly hitBy = new Int16Array(HIT_LOG).fill(-1);
+  readonly hitDmg = new Float64Array(HIT_LOG);
+  readonly hitAt = new Float64Array(HIT_LOG);
+  /** Last death: the credited killer's slot (-1 none), their share of the damage, up to two assisting slots. */
+  killedBy = -1;
+  killedByShare = 0;
+  readonly killAssists = new Int16Array(2).fill(-1);
   /** Bit t set = visible to team t. */
   visibleMask = 0;
   readonly input: ShipInput = emptyInput();
@@ -517,6 +540,10 @@ export const EventType = {
   Ping: 13,
   /** v2: a hit glanced off armor. a = target slot, b = attacker slot, c = hit direction. */
   Ricochet: 14,
+  /** Cosmetic: a hit landed on the energy shield. a = target slot, b = attacker slot, c = hit direction, d = shield damage (negative: area hit, no direction). */
+  ShieldHit: 15,
+  /** Cosmetic: the energy shield collapsed. a = target slot, b = attacker slot. */
+  ShieldBreak: 16,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 

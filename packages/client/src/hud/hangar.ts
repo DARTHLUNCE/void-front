@@ -69,6 +69,8 @@ const MAX = {
 export interface HangarHandlers {
   pickClass(choice: ClassId): void;
   pickSeat(seat: SeatId): void;
+  /** "Back to menu": leave the match for the terminal. */
+  leave(): void;
 }
 
 /**
@@ -86,6 +88,9 @@ export class Hangar {
   private seatTaken = [false, false, false];
   private fleet = 1;
   private cache = '';
+  /** True once the player has launched this match: leaving then abandons it. */
+  inMatch = false;
+  private leaveArmed = false;
 
   constructor(
     private readonly root: HTMLElement,
@@ -100,7 +105,7 @@ export class Hangar {
     this.selected = saved && (CLASS_ORDER.includes(saved as ClassId) || SEATS.includes(saved as Pick)) ? (saved as Pick) : 'cruiser';
     root.innerHTML = `<div class="hangar">
       <header class="hangar-bar">
-        <div class="hb-title"><span class="hb-tag">ORBITAL HANGAR // DEPLOYMENT BAY</span><h2>Choose your ship</h2></div>
+        <div class="hb-title"><span class="hb-tag"><button type="button" data-h="leave" class="hb-leave" title="Leave for the menu (Esc)">◂ Back to menu</button>ORBITAL HANGAR // DEPLOYMENT BAY</span><h2>Choose your ship</h2></div>
         <div class="hb-status">
           <span data-h="sector"></span>
           <span class="hb-pilot">PILOT <b data-h="pilot"></b></span>
@@ -114,6 +119,7 @@ export class Hangar {
       </div>
     </div>`;
     root.querySelectorAll<HTMLElement>('[data-h]').forEach((n) => (this.$[n.dataset.h!] = n));
+    this.$.leave.addEventListener('click', () => this.leave());
     root.querySelector('.hb-tabs')!.addEventListener('click', (e) => {
       const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-ech]');
       if (tab) this.setEchelon(tab.dataset.ech!);
@@ -143,8 +149,23 @@ export class Hangar {
   /** Undock in the selected hull, or take the selected command seat. */
   launch(): void {
     if (this.blocked(this.selected)) return;
+    this.inMatch = true;
     if (this.selected.startsWith('seat')) this.h.pickSeat(Number(this.selected.slice(4)) as SeatId);
     else this.h.pickClass(this.selected as ClassId);
+  }
+
+  /**
+   * Back to the menu. Before your first launch nothing is lost, so it goes at once; back in the
+   * hangar mid-match (Change hull) it abandons the match, so the first click asks to confirm.
+   */
+  leave(): void {
+    if (this.inMatch && !this.leaveArmed) {
+      this.leaveArmed = true;
+      this.$.leave.textContent = 'Leave match? Click again';
+      this.$.leave.classList.add('armed');
+      return;
+    }
+    this.h.leave();
   }
 
   update(snap: Snap, info: MatchInfo, myTeam: number): void {

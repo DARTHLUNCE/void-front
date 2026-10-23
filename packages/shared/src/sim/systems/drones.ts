@@ -8,6 +8,7 @@ import { DT, EventType, type Drone, type Ship, type World } from '../world';
 import { apHit, damageDeployable, damageShip, damageStructure, leadAngle, MAX_SHIP_RADIUS, spawnPattern } from './combat';
 import { damageNodesInRadius } from './points';
 import { DRONE_READY } from './quirks';
+import { creditShip, scoreStructureDamage } from './score';
 import { hasStatus } from './status';
 
 const DRONE_GUN = { damage: 0, fireInterval: 1, projectileSpeed: 900, count: 1, spread: 0, size: 3, life: 0.6 };
@@ -102,6 +103,8 @@ export function damageDrone(w: World, d: Drone, amount: number, attackerSlot: nu
   const dealt = Math.min(d.hull, amount);
   d.hull -= amount;
   d.lastHitBy = attackerSlot;
+  const credited = creditShip(w, attackerSlot);
+  if (credited && credited.team !== d.team) scoreStructureDamage(credited, dealt);
   if (d.hull <= 0) killDrone(w, d);
   return dealt;
 }

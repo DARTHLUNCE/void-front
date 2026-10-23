@@ -5,6 +5,7 @@ import { damageDrone, explode } from './drones';
 import { creditHealing, heal } from './progression';
 import { NODE } from '../../content/structures';
 import { damageNodesInRadius, repairNode } from './points';
+import { creditShip } from './score';
 import { applyStatus } from './status';
 
 /** Step 4: zones tick their per-second effects and pulls; orbital strikes land; heal tethers pulse. */
@@ -30,7 +31,7 @@ export function stepZones(w: World): void {
       for (const p of w.points) if (p.owner === z.team && (p.x - z.x) ** 2 + (p.y - z.y) ** 2 <= (z.radius + NODE.radius) ** 2) repairNode(p, p.maxHull * z.heal * DT);
     }
     if (!z.damage && !z.heal && !z.status && !z.pull) continue;
-    const healer = z.owner >= 0 ? w.ships[z.owner] : null;
+    const healer = creditShip(w, z.owner);
     const n = w.shipHash.query(z.x, z.y, z.radius + 40, w.scratch);
     for (let k = 0; k < n; k++) {
       const s = w.ships[w.scratch[k]];

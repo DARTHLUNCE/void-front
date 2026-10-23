@@ -7,6 +7,7 @@ import {
   encodeSnapshot,
   matchInfo,
   pickClass,
+  redeploy,
   setCommander,
   step,
   type BotDifficulty,
@@ -141,6 +142,9 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       break;
     case 'tier':
       tierQueue.push(msg.option);
+      break;
+    case 'redeploy':
+      if (w) redeploy(w.ships[humanSlot]);
       break;
     case 'spawn':
       if (w) w.ships[humanSlot].spawnChoice = msg.choice;

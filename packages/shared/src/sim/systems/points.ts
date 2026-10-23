@@ -2,11 +2,13 @@ import { COMMAND_RULES } from '../../content/command';
 import { POINTS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY } from '../../content/progression';
 import { QUIRK_PARAMS } from '../../content/quirks';
+import { SCORE } from '../../content/score';
 import { NODE } from '../../content/structures';
 import type { StatId, TeamId } from '../../content/types';
 import { DT, EventType, type PointState, type World } from '../world';
 import { armorMul } from './combat';
 import { grantXp } from './progression';
+import { creditShip, scoreStructureDamage } from './score';
 import { hasStatus } from './status';
 
 /**
@@ -100,7 +102,10 @@ function capture(w: World, p: PointState): void {
     for (let k = 0; k < n; k++) {
       const s = w.ships[w.scratch[k]];
       if (!s.alive || (s.x - p.x) ** 2 + (s.y - p.y) ** 2 > r * r) continue;
-      if (s.team === 0 ? moved > 0 : moved < 0) grantXp(w, s, ECONOMY.xp.capturePerSecond * DT);
+      if (s.team === 0 ? moved > 0 : moved < 0) {
+        grantXp(w, s, ECONOMY.xp.capturePerSecond * DT);
+        s.score += SCORE.capturePerSecond * DT;
+      }
     }
   }
   if (p.meter >= 100) flip(w, p, 0);
@@ -119,6 +124,7 @@ function flip(w: World, p: PointState, team: TeamId): void {
     const s = w.ships[w.scratch2[k]];
     if (s.alive && s.team === team && (s.x - p.x) ** 2 + (s.y - p.y) ** 2 <= r * r) {
       s.captures++;
+      s.score += SCORE.capture;
       grantXp(w, s, ECONOMY.xp.captureFlip);
     }
   }
@@ -139,7 +145,10 @@ export function damageNode(w: World, p: PointState, amount: number, team: TeamId
   p.lastDamageTime = w.time;
   const attacker = attackerSlot >= 0 ? w.ships[attackerSlot] : null;
   if (attacker) grantXp(w, attacker, dealt * ECONOMY.xp.damageToStructures);
+  const credited = creditShip(w, attackerSlot);
+  scoreStructureDamage(credited, dealt);
   if (p.hull <= 0) {
+    if (credited) credited.score += SCORE.nodeDestroy;
     p.hull = 0;
     p.owner = -1;
     p.meter = 0;
