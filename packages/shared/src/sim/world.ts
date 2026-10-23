@@ -377,6 +377,10 @@ export class Drone implements Pooled {
   /** Ship slot that owns it, or -1 for a commander call-in. */
   owner = -1;
   behavior: DroneBehavior = 'swarm';
+  /** v2.1: flying straight down the launch runway until this time (DECK_LAUNCH). */
+  launchUntil = 0;
+  /** v2.1: Drone Bay escorts: this escort's evenly spaced place on its carrier's ring. */
+  escortSlot = 0;
   x = 0;
   y = 0;
   vx = 0;

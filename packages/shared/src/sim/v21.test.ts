@@ -3,7 +3,7 @@ import { CALLSIGN, sanitizeCallsign } from '../content/match';
 import { POWER_INDEX } from '../content/power';
 import { DRONES } from '../content/structures';
 import { encodeSnapshot, readOffsets, SNAP } from '../net/snapshot';
-import { duelWorld } from '../test-utils';
+import { duelWorld, place } from '../test-utils';
 import { applyLoadout } from './stats';
 import { createWorld, step } from './step';
 import { ordnanceAp, PRIMITIVES, shipCaster } from './systems/abilities';
@@ -80,5 +80,43 @@ describe('v2.1 snapshot and call sign', () => {
     const w = createWorld({ seed: 1, fleetSize: 2, humanSlots: [0], playerCallsign: 'iron lance' });
     expect(w.ships[0].name).toBe('IRONLANCE');
     expect(createWorld({ seed: 1, fleetSize: 2, humanSlots: [0] }).ships[0].name).toBe('You');
+  });
+});
+
+describe('v2.1 carrier escorts', () => {
+  it('idle escort drones swarm outside the carrier hull, not over it', () => {
+    const { w, a } = duelWorld(1, 'carrier');
+    place(w, w.ships[1], 2_000, 2_000, 0);
+    let seen = 0;
+    for (let i = 0; i < 30 * 12; i++) {
+      step(w);
+      if (i < 30 * 8) continue;
+      for (let k = 0; k < w.drones.count; k++) {
+        const d = w.drones.at(k);
+        if (d.owner !== a.slot || d.behavior !== 'orbit') continue;
+        seen++;
+        expect(Math.hypot(d.x - a.x, d.y - a.y)).toBeGreaterThan(a.radius + 20);
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+
+  it('escorts launch from the bow and fly down the runway along the heading', () => {
+    const { w, a } = duelWorld(1, 'carrier');
+    place(w, w.ships[1], 2_000, 2_000, 0);
+    let launched = null;
+    for (let i = 0; i < 30 * 3 && !launched; i++) {
+      step(w);
+      for (let k = 0; k < w.drones.count; k++) {
+        const d = w.drones.at(k);
+        if (d.owner === a.slot && d.behavior === 'orbit') launched = d;
+      }
+    }
+    expect(launched).not.toBeNull();
+    const d = launched!;
+    // Ahead of the carrier (it faces +x) and moving forward.
+    expect(d.x - a.x).toBeGreaterThan(a.radius * 0.7);
+    expect(d.vx).toBeGreaterThan(0);
+    expect(Math.abs(d.vy)).toBeLessThan(d.vx);
   });
 });

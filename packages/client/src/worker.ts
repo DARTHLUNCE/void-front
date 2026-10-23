@@ -115,9 +115,14 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
     case 'start':
       start(msg.seed, msg.fleet, msg.difficulty, msg.team ?? 0, msg.callsign);
       break;
-    case 'input':
+    case 'input': {
+      // Frames arrive faster than the 30 Hz sim: keep a one-shot power switch that no tick has
+      // applied yet, or the next frame (power -1) would overwrite it and the key press is lost.
+      const pending = latest && latest.power >= 0 ? latest.power : -1;
       latest = msg.input;
+      if (latest.power < 0) latest.power = pending;
       break;
+    }
     case 'pickClass': {
       if (!w) break;
       const me = w.ships[humanSlot];

@@ -93,6 +93,13 @@ export const DRONES: Record<DroneBehavior, DroneStats & { radius: number }> = {
 export const WING_LAUNCH = { spread: 70 } as const;
 
 /**
+ * v2.1: ship-launched drones (Carrier escorts and scrambles) leave from the bow like a flight deck:
+ * they appear at `bow` × the hull radius ahead of the center, in lanes `laneGap` apart, and fly
+ * straight down the runway for `time` seconds before peeling off.
+ */
+export const DECK_LAUNCH = { bow: 0.9, laneGap: 16, time: 0.6 } as const;
+
+/**
  * A mothership whose FOBs are both down is exposed: its heal aura runs at reduced power and its
  * team's respawns slow down (the FOBs carried the fleet's support network).
  */

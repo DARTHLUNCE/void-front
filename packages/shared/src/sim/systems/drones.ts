@@ -1,7 +1,7 @@
 import { BOT_SKILL } from '../../content/bots';
 import { POWER_INDEX } from '../../content/power';
 import { QUIRK_PARAMS } from '../../content/quirks';
-import { DRONES } from '../../content/structures';
+import { DECK_LAUNCH, DRONES } from '../../content/structures';
 import type { DroneBehavior, DroneStats, TeamId } from '../../content/types';
 import { hasFlag, statValue } from '../stats';
 import { DT, EventType, type Drone, type Ship, type World } from '../world';
@@ -84,6 +84,7 @@ export function spawnDrone(
   d.kamikazeDamage = 0;
   d.ap = ap;
   d.lastHitBy = -1;
+  d.launchUntil = 0;
   const skill = ownerShip?.bot?.skill ?? BOT_SKILL.normal;
   d.aimError = (skill.aimErrorMin + skill.aimErrorMax) / 2;
   return d;
@@ -120,6 +121,19 @@ export function rebuildDroneHash(w: World): void {
   h.end();
 }
 
+/** Put a ship-launched drone at the bow in runway lane `lane` (…, -1, 0, 1, …), flying out along the heading. */
+export function launchFromBow(w: World, d: Drone, s: Ship, lane = 0): void {
+  const cos = Math.cos(s.angle);
+  const sin = Math.sin(s.angle);
+  const ahead = s.radius * DECK_LAUNCH.bow;
+  const side = lane * DECK_LAUNCH.laneGap;
+  d.x = Math.min(w.map.width, Math.max(0, s.x + cos * ahead - sin * side));
+  d.y = Math.min(w.map.height, Math.max(0, s.y + sin * ahead + cos * side));
+  d.vx = s.vx + cos * d.speed;
+  d.vy = s.vy + sin * d.speed;
+  d.launchUntil = w.time + DECK_LAUNCH.time;
+}
+
 /** Step 4: drones think, move and shoot. */
 export function stepDrones(w: World): void {
   const pool = w.drones;
@@ -138,6 +152,12 @@ export function stepDrones(w: World): void {
       // Decoys fly straight on from where they appeared, drawing fire.
       d.x += d.vx * DT;
       d.y += d.vy * DT;
+      continue;
+    }
+    if (w.time < d.launchUntil) {
+      // Still on the runway: hold the launch heading, don't engage yet.
+      d.x = Math.min(w.map.width, Math.max(0, d.x + d.vx * DT));
+      d.y = Math.min(w.map.height, Math.max(0, d.y + d.vy * DT));
       continue;
     }
     if (owner && hasFlag(owner, 'dronePointDefense')) pointDefense(w, d);
@@ -195,8 +215,17 @@ export function stepDrones(w: World): void {
       gx = d.x + (dx / dist) * radial * 100 - (dy / dist) * 60;
       gy = d.y + (dy / dist) * radial * 100 + (dx / dist) * 60;
     } else {
-      const r = IDLE_ORBIT[d.behavior] || QUIRK_PARAMS.droneBay.orbitRadius + (d.index % 4) * 14;
-      d.orbitAngle += DT * (d.behavior === 'orbit' || d.behavior === 'swarm' ? 1.6 : 0.5);
+      // Escorts circle outside the owner's hull (a Carrier's reaches 135 u from its center), not over it.
+      const bay = QUIRK_PARAMS.droneBay;
+      const escort = d.behavior === 'orbit' && owner !== null;
+      const r = IDLE_ORBIT[d.behavior] || (owner ? owner.radius : 0) + bay.orbitClearance + (escort ? 0 : (d.index % 4) * bay.orbitLane);
+      // Swarm at up to 1.6 rad/s, capped so the ring stays within ~75% of their top speed.
+      const spin = Math.min(1.6, (0.75 * d.speed) / r);
+      if (escort) {
+        // Drone Bay escorts share one ring, evenly spaced by slot, so the carrier's count reads at a glance.
+        const n = Math.max(1, bay.count + Math.round(statValue(owner, 'droneCount', 0)));
+        d.orbitAngle = w.time * spin + (d.escortSlot * Math.PI * 2) / n;
+      } else d.orbitAngle += DT * (d.behavior === 'swarm' ? spin : 0.5);
       gx = ax + Math.cos(d.orbitAngle) * r;
       gy = ay + Math.sin(d.orbitAngle) * r;
     }

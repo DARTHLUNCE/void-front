@@ -3,7 +3,7 @@ import type { QuirkId } from '../../content/types';
 import { POWER_INDEX } from '../../content/power';
 import { liveStat, QUIRK_LEFT_CLOAK, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
-import { damageDrone, spawnDrone } from './drones';
+import { damageDrone, launchFromBow, spawnDrone } from './drones';
 import { heatPowerMul } from './power';
 import { applyStatus, hasStatus, removeStatus } from './status';
 
@@ -167,13 +167,23 @@ const droneBay: QuirkHooks = {
     if (w.time < s.quirk[DRONE_READY]) return;
     const want = QUIRK_PARAMS.droneBay.count + Math.round(statValue(s, 'droneCount', 0));
     let have = 0;
+    let used = 0;
     const pool = w.drones;
     for (let i = 0; i < pool.count; i++) {
       const d = pool.at(i);
-      if (d.owner === s.slot && d.behavior === 'orbit') have++;
+      if (d.owner !== s.slot || d.behavior !== 'orbit') continue;
+      have++;
+      used |= 1 << d.escortSlot;
     }
     if (have < want) {
-      spawnDrone(w, s.team, s.slot, 'orbit', s.x, s.y, Infinity, s);
+      // Escorts take off down the bow runway, alternating lanes, then fill the lowest free place on the ring.
+      const d = spawnDrone(w, s.team, s.slot, 'orbit', s.x, s.y, Infinity, s);
+      if (d) {
+        let slot = 0;
+        while (used & (1 << slot)) slot++;
+        d.escortSlot = slot;
+        launchFromBow(w, d, s, (have % 3) - 1);
+      }
       // Respawn one at a time; the rest follow at the drone-respawn pace.
       s.quirk[DRONE_READY] = have + 1 < want ? w.time + 0.4 : w.time;
     }
