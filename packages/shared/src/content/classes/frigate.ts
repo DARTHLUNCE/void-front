@@ -27,12 +27,12 @@ export const FRIGATE: ShipClass = {
   speed: 270,
   radius: 38,
   turnRate: 250 * DEG,
-  // Axial nanite lance: 17 every 0.2 s = 85 DPS, 32 AP, 700 u; heals allies and friendly nodes.
-  gun: { name: 'Axial Nanite Lance', damage: 17, fireInterval: 0.2, projectileSpeed: 1000, count: 1, spread: 0, size: 4.5, life: 0.7, ap: 32 },
+  // Axial nanite lance: 22 every 0.2 s = 110 DPS, 32 AP, 700 u; heals allies and friendly nodes.
+  gun: { name: 'Axial Nanite Lance', damage: 22, fireInterval: 0.2, projectileSpeed: 1000, count: 1, spread: 0, size: 4.5, life: 0.7, ap: 32 },
   secondary: { name: 'Dorsal PD / Nanite Auto-Turret', count: 1, damage: 6.6, fireInterval: 0.3, ap: 20, range: 520, jitterDeg: 18, projectileSpeed: 1200, size: 3 },
   quirk: 'fieldEngineer',
   accel: 4.5,
-  respawnMul: 0.7,
+  respawnMul: 0.6,
   quirkInfo: {
     name: 'Field Engineer',
     text: 'Captures asteroid nodes at 2× rate. The nanite lance repairs friendly ships and friendly nodes (never FOBs or Titans) for 55% of shot value.',
@@ -40,12 +40,12 @@ export const FRIGATE: ShipClass = {
   signature: repairPulse('frigate.repairPulse', 'Repair & Shield Pulse'),
   hullModel: 'frigate',
   botRange: 420,
-  // v2.1: escorts jink too: wider enemy turret scatter, 30% off every hit and 25% faster guns while
+  // v2.1: escorts jink too: wider enemy turret scatter, 30% off every hit and 35% faster guns while
   // flying fast, and +12 AP against Armored hulls (Cruisers and up).
   baseStats: { healPower: 0.55, jitterOnMe: 0.5 },
   modifiers: [
     { stat: 'damageTaken', op: 'add', value: -0.3, when: 'jinking' },
-    { stat: 'fireRate', op: 'mul', value: 0.25, when: 'jinking' },
+    { stat: 'fireRate', op: 'mul', value: 0.35, when: 'jinking' },
     { stat: 'ap', op: 'add', value: 12, when: 'targetArmored' },
   ],
   tiers: [
