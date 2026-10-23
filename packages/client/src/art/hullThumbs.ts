@@ -67,3 +67,9 @@ export function hullSvg(shapes: Shape[]): string {
     .join('');
   return `<svg viewBox="${(b.x0 - 2).toFixed(0)} ${(b.y0 - 2).toFixed(0)} ${(b.x1 - b.x0 + 4).toFixed(0)} ${(b.y1 - b.y0 + 4).toFixed(0)}" aria-hidden="true">${parts}</svg>`;
 }
+
+/** Monochrome HUD schematic, independent of albedo textures and team paint. */
+export function hullBlueprint(hullId: string): string {
+  const shapes = HULL_BY_ID[hullId]?.shapes;
+  return shapes ? hullSvg(shapes) : '';
+}

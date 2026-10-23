@@ -1,3 +1,5 @@
+import { bodySeparation } from './bodyCollision';
+import { shipBody, pointBody } from './worldCollision';
 import { describe, expect, it } from 'vitest';
 import { ARMOR, SHIELDS } from '../content/combat';
 import { MATCH } from '../content/match';
@@ -184,8 +186,11 @@ describe('v2 asteroid nodes', () => {
     const { w, a } = duelWorld();
     const p = w.points[3];
     place(w, a, p.x + 10, p.y, 0);
-    resolveCollisions(w);
-    expect(Math.hypot(a.x - p.x, a.y - p.y)).toBeGreaterThanOrEqual(NODE.radius + a.radius - 0.01);
+    const out={x:0,y:0};
+    expect(bodySeparation(shipBody(w,a),pointBody(w,p),out)).toBe(true);
+    for(let tick=0;tick<12;tick++) resolveCollisions(w);
+    expect(bodySeparation(shipBody(w,a),pointBody(w,p),out)).toBe(false);
+    expect([a.vx,a.vy]).toEqual([0,0]);
   });
 
   it('neutral rock absorbs shots as cover; nanite rounds repair a friendly node', () => {

@@ -1,9 +1,12 @@
+import { snapshotMatchesSchema } from '@void-front/shared';
 import { COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
 import type { ShipArtMode } from './art/referenceShips';
 import { Hud } from './hud/hud';
+import { FrameLighting } from './hud/frameLighting';
 import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
 import { Renderer } from './render/renderer';
+import { edgePan } from './render/viewport';
 import { carryEvents, Snap } from './snap';
 
 export interface GameOptions {
@@ -28,6 +31,7 @@ export class Game {
   private readonly worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   private readonly renderer: Renderer;
   private hud!: Hud;
+  private frameLighting: FrameLighting | null = null;
   private input!: Input;
   private info: MatchInfo | null = null;
   private prev: Snap | null = null;
@@ -35,6 +39,7 @@ export class Game {
   private simMs = 0;
   /** The latest snapshot has been drawn (its events consumed). */
   private drawn = false;
+  private verifiedWorkerSchema = false;
   private fps = 60;
 
   constructor(private readonly opts: GameOptions) {
@@ -49,6 +54,10 @@ export class Game {
       /* storage unavailable */
     }
     this.hud = new Hud(hudRoot, this.opts.scheme, {
+      autofire: () => {
+        this.input.autofire = !this.input.autofire;
+        this.hud.setAutofire(this.input.autofire);
+      },
       stat: (i) => this.send({ type: 'stat', index: i }),
       power: (mode) => this.input.shunt(mode),
       tier: (o) => this.send({ type: 'tier', option: o }),
@@ -60,6 +69,7 @@ export class Game {
       minimap: (x, y) => this.onMinimap(x, y),
       restart: () => this.restart(),
     });
+    void FrameLighting.create(hudRoot).then(frame => { this.frameLighting = frame; });
     this.input = new Input(this.opts.scheme, {
       stat: (i) => this.mode() === 'pilot' && this.send({ type: 'stat', index: i }),
       digit: (n) => this.onDigit(n),
@@ -75,7 +85,7 @@ export class Game {
       },
       escape: () => this.armOrder(null),
       confirm: () => this.mode() === 'picker' && this.hud.hangar.launch(),
-    });
+    }, this.renderer.worldToScreen(this.renderer.camera.x, this.renderer.camera.y));
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
     let lit = this.opts.lighting;
     window.addEventListener('keydown', (e) => {
@@ -110,7 +120,7 @@ export class Game {
     this.prev = this.curr = null;
     this.hud.pendingOrder = null;
     // Client-side seed choice is fine: the sim itself only ever sees the number.
-    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty, team: this.opts.team ?? 0, callsign: this.opts.callsign });
+    this.send({ type: 'start', seed: (Math.random() * 2 ** 31) | 0, fleet: this.opts.fleet, difficulty: this.opts.difficulty, team: this.opts.team ?? 0, callsign: this.opts.callsign, hullGeometry: this.opts.shipArt === 'original' ? 'original' : 'reference' });
   }
 
   /** What the local player is doing right now. */
@@ -194,6 +204,28 @@ export class Game {
       this.renderer.setMatch(msg.info);
       this.hud.setMatch(msg.info);
     } else if (msg.type === 'snap') {
+      if (!snapshotMatchesSchema(msg.buf)) {
+        this.worker.terminate();
+        this.prev = this.curr = null;
+        console.error('Worker/client snapshot schema mismatch; rejected incompatible data.');
+        // A development worker can survive an HMR graph update. Reload both sides
+        // together once; storage-unavailable or persistent errors stay visible.
+        if (import.meta.env.DEV) {
+          try {
+            if (!sessionStorage.getItem('vf.snapshotReload')) {
+              sessionStorage.setItem('vf.snapshotReload', '1');
+              location.reload();
+              return;
+            }
+          } catch { /* Fall through to a visible error when storage is unavailable. */ }
+        }
+        this.hud.toast('Game versions differ. Reload to restart the worker.', performance.now(), true);
+        return;
+      }
+      if (!this.verifiedWorkerSchema) {
+        this.verifiedWorkerSchema = true;
+        try { sessionStorage.removeItem('vf.snapshotReload'); } catch { /* Storage is optional. */ }
+      }
       const unseen = this.curr && !this.drawn ? this.curr : null;
       this.prev = this.curr;
       this.curr = new Snap(unseen ? carryEvents(unseen, msg.buf) : msg.buf, performance.now());
@@ -220,6 +252,13 @@ export class Game {
     this.renderer.commander = mode === 'commander';
     if (mode === 'commander') this.panCamera(deltaMs / 1000);
     this.renderer.render(this.prev, curr, now, myTeam);
+    if (this.frameLighting) {
+      const viewport = this.renderer.viewport, camera = this.renderer.camera;
+      this.frameLighting.update(this.renderer.frameEmitters, {
+        x: camera.x, y: camera.y, zoom: camera.zoom, left: viewport.left, top: viewport.top,
+        width: viewport.width, height: viewport.height,
+      }, deltaMs, this.renderer.frameLightingEnabled, now);
+    }
     this.hud.update(curr, now, this.fps, this.simMs);
     this.hud.setBraking(this.input.braking);
     // The reverse ceiling comes from the ship's nodes (−40% base, −55% max).
@@ -243,11 +282,11 @@ export class Game {
     const k = this.input;
     let dx = (k.held('KeyD') || k.held('ArrowRight') ? 1 : 0) - (k.held('KeyA') || k.held('ArrowLeft') ? 1 : 0);
     let dy = (k.held('KeyS') || k.held('ArrowDown') ? 1 : 0) - (k.held('KeyW') || k.held('ArrowUp') ? 1 : 0);
-    const m = k.mouse;
-    if (m.x <= EDGE) dx = -1;
-    else if (m.x >= window.innerWidth - EDGE) dx = 1;
-    if (m.y <= EDGE) dy = -1;
-    else if (m.y >= window.innerHeight - EDGE) dy = 1;
+    if (!k.pointerOverHud) {
+      const edge = edgePan(k.mouse, this.renderer.viewport, EDGE);
+      if (edge.x) dx = edge.x;
+      if (edge.y) dy = edge.y;
+    }
     if (dx || dy) this.renderer.pan((dx * PAN_SPEED * dt) / this.renderer.camera.zoom, (dy * PAN_SPEED * dt) / this.renderer.camera.zoom);
   }
 }

@@ -1,9 +1,17 @@
 import './style.css';
+import './hud/sidebar.css';
+import './hud/cockpit.css';
+import './hud/cockpit-panels.css';
+import './hud/panelFitting.css';
+
 import type { ShipArtMode } from './art/referenceShips';
 import { BOLT_COLORS, ENGINE_TINTS } from './cosmetics';
 import { Game } from './game';
 import { CALLSIGN, sanitizeCallsign, type BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
+
+// Keep the previous layout available while trying the sidebar.
+document.documentElement.classList.toggle('sidebar-layout', new URLSearchParams(location.search).get('hud') !== 'bottom');
 
 const menu = document.getElementById('menu')!;
 const stage = document.getElementById('stage')!;

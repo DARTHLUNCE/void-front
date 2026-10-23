@@ -28,8 +28,26 @@ function inspectSaver(): Plugin {
   };
 }
 
+/** The page and module worker must use the same simulation/snapshot module graph. */
+function synchronizedWorkerReload(): Plugin {
+  const shared = resolve(__dirname, '../shared/src').replace(/\\/g, '/') + '/';
+  const worker = resolve(__dirname, 'src/worker.ts').replace(/\\/g, '/');
+  const protocol = resolve(__dirname, 'src/protocol.ts').replace(/\\/g, '/');
+  return {
+    name: 'synchronized-worker-reload',
+    apply: 'serve',
+    handleHotUpdate({ file, server }) {
+      const path = file.replace(/\\/g, '/');
+      if (path.startsWith(shared) || path === worker || path === protocol) {
+        server.ws.send({ type: 'full-reload' });
+        return [];
+      }
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [inspectSaver()],
+  plugins: [inspectSaver(), synchronizedWorkerReload()],
   worker: { format: 'es' },
   server: { port: 5173, strictPort: true },
   build: { target: 'es2022', rollupOptions: { input: { game: resolve(__dirname, 'index.html'), ships: resolve(__dirname, 'ship-test.html') } } },

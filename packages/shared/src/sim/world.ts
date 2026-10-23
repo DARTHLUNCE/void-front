@@ -295,6 +295,8 @@ export class Structure {
 }
 
 export class Projectile implements Pooled {
+  muzzleX = 0;
+  muzzleY = 0;
   active = false;
   x = 0;
   y = 0;
@@ -617,6 +619,8 @@ export interface MatchState {
 }
 
 export interface WorldOptions {
+  /** Match-wide art geometry, also used by headless simulations. */
+  hullGeometry?: 'reference' | 'original';
   seed: number;
   /** Ships per team. */
   fleetSize: number;

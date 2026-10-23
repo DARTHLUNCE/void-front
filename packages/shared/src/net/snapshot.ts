@@ -24,7 +24,7 @@ export const SNAP = {
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
   ship: 21,
-  projectile: 9, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none)
+  projectile: 11, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
   crystal: 3,
   point: 10,
   structure: 8,
@@ -93,6 +93,7 @@ export const H = {
   /** The viewer team's High Command Credits and seconds left on its Breakthrough. */
   credits: 48,
   breakthrough: 49,
+  schema: 50,
 } as const;
 
 /**
@@ -251,6 +252,18 @@ export function readOffsets(buf: Float32Array): SnapshotOffsets {
   });
 }
 
+/** 24-bit fingerprint is exactly representable in the Float32 wire header.
+ * Bump the seed when meanings change without changing section strides. */
+export const SNAPSHOT_SCHEMA = Object.values(SNAP).reduce((hash,stride)=>(Math.imul(hash,31)+stride)&0xffffff,2);
+export function snapshotMatchesSchema(buf:Float32Array):boolean {
+  if(buf.length<SNAP.header || buf[H.schema]!==SNAPSHOT_SCHEMA) return false;
+  for(const field of [H.structureCount,H.shipCount,H.projectileCount,H.crystalCount,H.pointCount,H.droneCount,H.deployableCount,H.zoneCount,H.strikeCount,H.tetherCount,H.eventCount]) {
+    const n=buf[field];
+    if(!Number.isInteger(n) || n<0) return false;
+  }
+  return readOffsets(buf).length===buf.length;
+}
+
 function writeAbility(b: Float32Array, at: number, w: World, s: Ship, st: AbilityState | null): void {
   if (!st) return;
   b[at + ABILITY.cooldown] = st.cooldown;
@@ -281,6 +294,7 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     events: w.eventCount,
   });
   const b = new Float32Array(o.length);
+  b[H.schema] = SNAPSHOT_SCHEMA;
   const [t0, t1] = w.teams;
   const me = selfSlot >= 0 ? w.ships[selfSlot] : null;
   const myTeam = w.teams[me ? me.team : 0];
@@ -457,6 +471,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 6] = f;
     b[k + 7] = p.life;
     b[k + 8] = Number.isFinite(p.ap) ? p.ap : 0;
+    b[k + 9] = p.muzzleX;
+    b[k + 10] = p.muzzleY;
     k += SNAP.projectile;
   }
 

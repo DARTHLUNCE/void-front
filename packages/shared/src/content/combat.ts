@@ -39,3 +39,6 @@ export const LIGHT_ARMOR_MAX = 20;
 export const JINK_SPEED = 0.55;
 /** Ships at or above this Armor Rating count as Armored (Cruisers and up). */
 export const ARMORED_MIN = 60;
+
+/** Primary gun swivel: 45 degrees total, centered on the hull heading. */
+export const PRIMARY_AIM_HALF_ARC = Math.PI / 8;

@@ -1,0 +1,443 @@
+{
+  "sourceSize": [
+    2944,
+    1664
+  ],
+  "splitX": 835,
+  "splitY": 160,
+  "method": "manual glass outlines on 1472x832 reference",
+  "panels": {
+    "status": {
+      "glass": [
+        56,
+        52,
+        652,
+        368
+      ],
+      "radius": 32,
+      "safe": [
+        78,
+        72,
+        630,
+        352
+      ],
+      "selector": ".noir-status"
+    },
+    "combat": {
+      "glass": [
+        40,
+        440,
+        692,
+        752
+      ],
+      "radius": 20,
+      "safe": [
+        60,
+        458,
+        674,
+        732
+      ],
+      "selector": ".noir-combat"
+    },
+    "throttle": {
+      "glass": [
+        44,
+        804,
+        374,
+        938
+      ],
+      "radius": 8,
+      "safe": [
+        56,
+        816,
+        362,
+        926
+      ],
+      "selector": ".vhud-throttle"
+    },
+    "brake": {
+      "glass": [
+        420,
+        830,
+        498,
+        916
+      ],
+      "radius": 4,
+      "safe": [
+        424,
+        836,
+        494,
+        910
+      ],
+      "selector": ".noir-brake"
+    },
+    "cruise": {
+      "glass": [
+        556,
+        830,
+        686,
+        916
+      ],
+      "radius": 4,
+      "safe": [
+        564,
+        836,
+        678,
+        910
+      ],
+      "selector": ".vhud-sublight"
+    },
+    "bank": {
+      "glass": [
+        68,
+        1000,
+        698,
+        1068
+      ],
+      "radius": 8,
+      "safe": [
+        80,
+        1008,
+        686,
+        1060
+      ],
+      "selector": ".vhud-bank-strip"
+    },
+    "upgrade0": {
+      "glass": [
+        78,
+        1104,
+        204,
+        1210
+      ],
+      "radius": 4,
+      "safe": [
+        84,
+        1110,
+        198,
+        1204
+      ],
+      "selector": ".vhud-up-card[data-stat=\"0\"]"
+    },
+    "upgrade1": {
+      "glass": [
+        242,
+        1104,
+        360,
+        1210
+      ],
+      "radius": 4,
+      "safe": [
+        248,
+        1110,
+        354,
+        1204
+      ],
+      "selector": ".vhud-up-card[data-stat=\"1\"]"
+    },
+    "upgrade2": {
+      "glass": [
+        402,
+        1104,
+        524,
+        1210
+      ],
+      "radius": 4,
+      "safe": [
+        408,
+        1110,
+        518,
+        1204
+      ],
+      "selector": ".vhud-up-card[data-stat=\"2\"]"
+    },
+    "upgrade3": {
+      "glass": [
+        564,
+        1104,
+        682,
+        1210
+      ],
+      "radius": 4,
+      "safe": [
+        570,
+        1110,
+        676,
+        1204
+      ],
+      "selector": ".vhud-up-card[data-stat=\"3\"]"
+    },
+    "radar": {
+      "glass": [
+        58,
+        1302,
+        420,
+        1602
+      ],
+      "radius": 24,
+      "safe": [
+        78,
+        1322,
+        400,
+        1582
+      ],
+      "selector": ".noir-navigation"
+    },
+    "power": {
+      "glass": [
+        504,
+        1300,
+        744,
+        1468
+      ],
+      "radius": 16,
+      "safe": [
+        516,
+        1314,
+        732,
+        1456
+      ],
+      "selector": ".noir-power-readout"
+    },
+    "powerKey0": {
+      "glass": [
+        502,
+        1548,
+        538,
+        1576
+      ],
+      "radius": 2,
+      "safe": [
+        504,
+        1550,
+        536,
+        1574
+      ],
+      "selector": ".noir-power-keys > button:nth-child(1)"
+    },
+    "powerKey1": {
+      "glass": [
+        606,
+        1548,
+        642,
+        1576
+      ],
+      "radius": 2,
+      "safe": [
+        608,
+        1550,
+        640,
+        1574
+      ],
+      "selector": ".noir-power-keys > button:nth-child(2)"
+    },
+    "powerKey2": {
+      "glass": [
+        710,
+        1548,
+        746,
+        1576
+      ],
+      "radius": 2,
+      "safe": [
+        712,
+        1550,
+        744,
+        1574
+      ],
+      "selector": ".noir-power-keys > button:nth-child(3)"
+    },
+    "cobalt": {
+      "glass": [
+        946,
+        54,
+        1160,
+        116
+      ],
+      "radius": 6,
+      "safe": [
+        956,
+        60,
+        1150,
+        110
+      ],
+      "selector": ".top .team.cobalt"
+    },
+    "clock": {
+      "glass": [
+        1398,
+        54,
+        1598,
+        116
+      ],
+      "radius": 6,
+      "safe": [
+        1406,
+        60,
+        1590,
+        110
+      ],
+      "selector": ".top .clock"
+    },
+    "ember": {
+      "glass": [
+        1660,
+        54,
+        1878,
+        116
+      ],
+      "radius": 6,
+      "safe": [
+        1670,
+        60,
+        1868,
+        110
+      ],
+      "selector": ".top .team.ember"
+    },
+    "fleet": {
+      "glass": [
+        2640,
+        38,
+        2900,
+        130
+      ],
+      "radius": 10,
+      "safe": [
+        2652,
+        48,
+        2888,
+        120
+      ],
+      "selector": ".top .ms"
+    },
+    "gameplay": {
+      "glass": [
+        866,
+        184,
+        2896,
+        1594
+      ],
+      "radius": 24,
+      "safe": [
+        886,
+        204,
+        2876,
+        1574
+      ],
+      "selector": null
+    },
+    "objective0": {
+      "glass": [
+        2020,
+        50,
+        2066,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2022,
+        52,
+        2064,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(1)"
+    },
+    "objective1": {
+      "glass": [
+        2106,
+        50,
+        2146,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2108,
+        52,
+        2144,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(2)"
+    },
+    "objective2": {
+      "glass": [
+        2176,
+        50,
+        2226,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2178,
+        52,
+        2224,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(3)"
+    },
+    "objective3": {
+      "glass": [
+        2256,
+        50,
+        2306,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2258,
+        52,
+        2304,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(4)"
+    },
+    "objective4": {
+      "glass": [
+        2336,
+        50,
+        2386,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2338,
+        52,
+        2384,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(5)"
+    },
+    "objective5": {
+      "glass": [
+        2416,
+        50,
+        2466,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2418,
+        52,
+        2464,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(6)"
+    },
+    "objective6": {
+      "glass": [
+        2496,
+        50,
+        2542,
+        78
+      ],
+      "radius": 2,
+      "safe": [
+        2498,
+        52,
+        2540,
+        76
+      ],
+      "selector": ".top .pointstrip span:nth-child(7)"
+    }
+  }
+}

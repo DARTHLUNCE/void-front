@@ -1,3 +1,4 @@
+import { arrangePilotSidebar } from './sidebar';
 import {
   ABILITY,
   BASE_UPGRADES,
@@ -36,7 +37,7 @@ import {
   type TurretType,
   type UpgradeTrack,
 } from '@void-front/shared';
-import { hullThumb } from '../art/hullThumbs';
+import { hullThumb, hullBlueprint } from '../art/hullThumbs';
 import { autofireKeyLabel, statKeyLabels, type ControlScheme } from '../input';
 import type { Snap } from '../snap';
 import { Hangar } from './hangar';
@@ -85,6 +86,7 @@ interface FeedEntry {
 }
 
 export interface HudHandlers {
+  autofire?(): void;
   stat(index: number): void;
   /** Reactor Power from the Energy Output panel (POWER_INDEX: 0 equalize, 1 speed, 2 weapons, 3 shields). */
   power(mode: number): void;
@@ -255,12 +257,19 @@ export class Hud {
       <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><button data-k="again" class="primary">Play again</button></div></div>
       <div data-k="board" class="overlay board passive hidden"></div>
     `;
+    if (document.documentElement.classList.contains('sidebar-layout')) arrangePilotSidebar(root);
     root.querySelectorAll<HTMLElement>('[data-k]').forEach((n) => (this.$[n.dataset.k!] = n));
     root.querySelectorAll<HTMLButtonElement>('[data-stat]').forEach((b) => {
       this.statRows.push(b);
       b.addEventListener('click', () => this.h.stat(Number(b.dataset.stat)));
     });
-    root.querySelectorAll<HTMLElement>('[data-power]').forEach((b) => b.addEventListener('mousedown', () => this.h.power(Number(b.dataset.power))));
+    root.querySelectorAll<HTMLElement>('[data-power]').forEach((button) => {
+      button.addEventListener(button.tagName === 'BUTTON' ? 'click' : 'mousedown', () => this.h.power(Number(button.dataset.power)));
+      // Let native button activation work without Space also braking the ship.
+      button.addEventListener('keydown', (event) => {
+        if (event.code === 'Space' || event.code === 'Enter') event.stopPropagation();
+      });
+    });
     root.querySelectorAll<HTMLElement>('[data-ab]').forEach((a) => this.abilityBays.push(a));
     root.querySelectorAll<HTMLButtonElement>('.order').forEach((b) => {
       this.orderRows.push(b);
@@ -291,7 +300,10 @@ export class Hud {
     });
     this.radar = root.querySelector<HTMLCanvasElement>('.radar')!;
     this.radarCtx = this.radar.getContext('2d')!;
-    this.radar.addEventListener('mousedown', () => this.toggleMap());
+    const radarButton = this.radar.closest<HTMLButtonElement>('.noir-map');
+    if (radarButton) radarButton.addEventListener('click', () => this.toggleMap());
+    else this.radar.addEventListener('mousedown', () => this.toggleMap());
+    if (this.$.auto.tagName === 'BUTTON') this.$.auto.addEventListener('click', () => this.h.autofire?.());
   }
 
   setMatch(info: MatchInfo): void {
@@ -337,6 +349,12 @@ export class Hud {
   /** Energy Output: 12 LEDs per channel (33% = 4, 50% = 6, 100% = 12) and the mode name. */
   setPower(mode: number, levels: readonly number[]): void {
     this.set('powerMode', POWER_MODE_NAMES[mode] ?? POWER_MODE_NAMES[0]);
+    if (this.cache.get('powerSelection') !== String(mode)) {
+      this.cache.set('powerSelection', String(mode));
+      this.root.querySelectorAll<HTMLButtonElement>('button[data-power]').forEach(button => {
+        button.setAttribute('aria-pressed', String(Number(button.dataset.power) === mode));
+      });
+    }
     for (let c = 0; c < 3; c++) {
       const level = Math.min(1, levels[c]);
       this.set(`pwPct${c}`, `${Math.round(level * 100)}%`);
@@ -357,6 +375,7 @@ export class Hud {
 
   setAutofire(on: boolean): void {
     this.$.auto.classList.toggle('on', on);
+    if (this.$.auto.tagName === 'BUTTON') this.$.auto.setAttribute('aria-pressed', String(on));
   }
 
   toast(text: string, now: number, bad = false): void {
@@ -388,6 +407,8 @@ export class Hud {
     const s = snap.o.self;
     const me = snap.ship(info.selfSlot);
     const myTeam = b[me + SHIP.team];
+    const paletteTeam = String(myTeam);
+    if (this.root.dataset.team !== paletteTeam) this.root.dataset.team = paletteTeam;
     const over = b[H.over] === 1;
     const commander = b[s + SELF.commander] === 1;
     const docked = b[s + SELF.awaitingClass] === 1;
@@ -547,16 +568,25 @@ export class Hud {
     if (this.cache.get('hullStateN') !== String(state)) {
       this.cache.set('hullStateN', String(state));
       this.$.shipScreen.classList.toggle('crit', state === 2);
+      this.$.hullState.classList.toggle('normal', state === 0);
     }
     this.set('hullState', HULL_STATES[state].label);
+    this.setVar('hullState', '--hull-color', HULL_STATES[state].color);
     this.set('hullPct', `${Math.ceil(frac * 100)}%`);
     this.set('shdText', `SHD ${Math.ceil(shield)} / ${Math.round(maxShield)}`);
+    if (this.$.sidebarHullValue) {
+      this.set('sidebarShieldValue', `${Math.ceil(shield)} / ${Math.round(maxShield)}`);
+      this.set('sidebarHullValue', `${Math.ceil(hull)} / ${Math.round(maxHull)}`);
+      this.set('sidebarShieldBar', `${sfrac * 100}%`, 'width');
+      this.set('sidebarHullBar', `${frac * 100}%`, 'width');
+      this.setVar('sidebarHullBar', '--hull-color', HULL_STATES[state].color);
+    }
     // The ship as it flies: its team-painted reference sprite (vector SVG with Original art).
     const model = hullNode?.hullModel ?? cls.hullModel;
     const team = b[me + SHIP.team];
     if (this.cache.get('hullPic') !== `${model}:${team}`) {
       this.cache.set('hullPic', `${model}:${team}`);
-      const pic = hullThumb(model, team);
+      const pic = document.documentElement.classList.contains('sidebar-layout') ? hullBlueprint(model) : hullThumb(model, team);
       this.$.shipBg.innerHTML = pic;
       this.$.shipFill.innerHTML = pic;
     }
@@ -585,9 +615,19 @@ export class Hud {
       this.cache.set(key, v);
       const card = this.statRows[i];
       card.classList.toggle('can', can);
+      card.setAttribute('aria-label', `${STAT_POINTS[i].name}, level ${n} of ${STAT_POINT_MAX}, ${cost < 0 ? 'maximum level' : `${cost} shards${can ? ', available' : ', insufficient shards'}`}`);
+      if (card instanceof HTMLButtonElement) card.disabled = !can;
       card.querySelectorAll('.vhud-up-pips i').forEach((p, j) => p.classList.toggle('on', j < n));
       card.querySelector('.cost')!.textContent = cost < 0 ? 'MAX' : `◆ ${cost}`;
       card.querySelector('.lv')!.textContent = `LV ${n}/${STAT_POINT_MAX}`;
+    }
+
+    if (this.$.sidebarUpgradeCount) {
+      const affordable = STAT_POINTS.filter((_, i) => {
+        const cost = b[s + SELF.statCost0 + i];
+        return cost >= 0 && shards >= cost;
+      }).length;
+      this.set('sidebarUpgradeCount', affordable ? String(affordable) : '');
     }
 
     // MIDDLE, bottom row: primary gun (caliber, DPS, auto-turrets, quirk gauge), then the ability bays.
@@ -596,7 +636,7 @@ export class Hud {
     this.set('turretPill', turrets > 0 ? `+${turrets}× AUTO-TURRETS · ±${cls.secondary?.jitterDeg ?? 0}°` : 'AXIAL MOUNT · NO TURRETS');
     this.$.turretPill.classList.toggle('none', turrets <= 0);
     this.$.turretPill.title = cls.secondary?.name ?? '';
-    this.set('gunStats', `${Math.round(b[s + SELF.ap])} AP · ${Math.round(deckRow('dps'))} DPS`);
+    this.set('gunStats', `${Math.round(b[s + SELF.ap])} AP · ${Math.round(deckRow('dps'))} DPS${this.$.sidebarHullValue && turrets > 0 ? ` · ${turrets} turrets` : ''}`);
     const gauge = QUIRK_GAUGE[cls.quirk];
     this.show('gaugeRow', gauge !== undefined);
     if (gauge) {
@@ -642,6 +682,7 @@ export class Hud {
       el.className = `w-slot ${bayState}`;
       el.querySelector('.w-slot-title')!.textContent = name;
       el.querySelector('.sub')!.textContent = sub;
+      el.title = `${name} · ${sub}`;
       el.querySelector('.status-tag')!.textContent = tag;
       el.querySelector<HTMLElement>('.w-slot-cd')!.style.width = `${fill * 100}%`;
     });
@@ -831,6 +872,7 @@ export class Hud {
       if (this.cache.get(`pt${i}`) === v) continue;
       this.cache.set(`pt${i}`, v);
       const el = spans[i] as HTMLElement;
+      el.setAttribute('aria-label', `${KESSLER_REACH.points[i].name}: ${owner < 0 ? 'neutral' : TEAM_NAMES[owner]}${b[k + 2] ? ', contested' : ''}${locked ? ', locked' : ''}`);
       el.className = `${owner === 0 ? 'c' : owner === 1 ? 'e' : ''} ${b[k + 2] ? 'contested' : ''} ${b[k + 3] > 0 ? 'hot' : ''} ${locked ? 'locked' : ''}`;
       const fill = el.firstElementChild as HTMLElement;
       // Neutral: the capture meter. Held: the node's hull.
@@ -887,16 +929,17 @@ export class Hud {
     const mx = b[me + SHIP.x];
     const my = b[me + SHIP.y];
     const heading = b[me + SHIP.angle];
+    const noir = document.documentElement.classList.contains('sidebar-layout');
     const colors = ['#4aa8ff', '#ff7a3d'];
     c.clearRect(0, 0, W, W);
     c.save();
     c.beginPath();
     c.arc(cx, cx, R, 0, Math.PI * 2);
-    c.fillStyle = '#040914';
+    c.fillStyle = noir ? '#070b12' : '#040914';
     c.fill();
     c.clip();
     // Range rings every 1,000u and crosshairs.
-    c.strokeStyle = 'rgba(74, 168, 255, 0.22)';
+    c.strokeStyle = noir ? 'rgba(140,199,255,.3)' : 'rgba(74, 168, 255, 0.22)';
     c.lineWidth = 1;
     for (let d = 1000; d < range; d += 1000) {
       c.beginPath();
@@ -910,7 +953,7 @@ export class Hud {
     c.lineTo(cx, cx + R);
     c.stroke();
     // Forward cone along our heading, and the sweep.
-    c.fillStyle = 'rgba(74, 168, 255, 0.08)';
+    c.fillStyle = noir ? 'rgba(140,199,255,.06)' : 'rgba(74, 168, 255, 0.08)';
     c.beginPath();
     c.moveTo(cx, cx);
     c.arc(cx, cx, R, heading - 0.7, heading + 0.7);
@@ -918,8 +961,8 @@ export class Hud {
     c.fill();
     const sweep = (now / 1000) * 1.6;
     const grad = c.createRadialGradient(cx, cx, 2, cx, cx, R);
-    grad.addColorStop(0, 'rgba(92, 230, 255, 0.28)');
-    grad.addColorStop(1, 'rgba(92, 230, 255, 0)');
+    grad.addColorStop(0, noir ? 'rgba(140,199,255,.16)' : 'rgba(92, 230, 255, 0.28)');
+    grad.addColorStop(1, noir ? 'rgba(140,199,255,0)' : 'rgba(92, 230, 255, 0)');
     c.fillStyle = grad;
     c.beginPath();
     c.moveTo(cx, cx);
@@ -935,7 +978,7 @@ export class Hud {
       const pos = map.points[i].pos;
       if (!inScope(pos.x, pos.y, 300)) continue;
       const owner = b[p + POINT.owner];
-      c.fillStyle = owner < 0 ? 'rgba(138, 153, 191, 0.3)' : owner === 0 ? 'rgba(74, 168, 255, 0.35)' : 'rgba(255, 122, 61, 0.35)';
+      c.fillStyle = owner < 0 ? 'rgba(138, 153, 191, 0.3)' : owner === 0 ? (noir ? 'rgba(140,199,255,.2)' : 'rgba(74, 168, 255, 0.35)') : (noir ? 'rgba(255,177,125,.2)' : 'rgba(255, 122, 61, 0.35)');
       c.strokeStyle = b[p + POINT.contested] ? '#ffffff' : owner < 0 ? 'rgba(138, 153, 191, 0.7)' : colors[owner];
       c.beginPath();
       c.arc(px(pos.x), py(pos.y), Math.max(4, 260 * k), 0, Math.PI * 2);
@@ -961,13 +1004,13 @@ export class Hud {
       const x = b[s + SHIP.x];
       const y = b[s + SHIP.y];
       if (!inScope(x, y)) continue;
-      c.fillStyle = team === myTeam ? colors[myTeam] : '#ff5969';
+      c.fillStyle = team === myTeam ? colors[myTeam] : noir ? colors[team] : '#ff5969';
       c.fillRect(px(x) - 2, py(y) - 2, 4, 4);
     }
     // Our ship: a green chevron pointing along the heading.
     c.translate(cx, cx);
     c.rotate(heading + Math.PI / 2);
-    c.fillStyle = '#3ce68a';
+    c.fillStyle = noir ? '#e6eeff' : '#3ce68a';
     c.beginPath();
     c.moveTo(0, -6);
     c.lineTo(4.5, 4.5);
