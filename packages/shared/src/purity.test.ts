@@ -28,7 +28,7 @@ describe('packages/shared purity', () => {
   it('uses no DOM, Node, timing or unseeded randomness', () => {
     const problems: string[] = [];
     for (const file of sources(__dirname)) {
-      const lines = readFileSync(file, 'utf8').split('\n');
+      const lines = readFileSync(file, 'utf8').replace(/\r/g, '').split('\n');
       lines.forEach((line, i) => {
         const code = line.replace(/\/\/.*$/, '');
         for (const [re, why] of FORBIDDEN) if (re.test(code)) problems.push(`${file}:${i + 1} ${why}: ${line.trim()}`);
