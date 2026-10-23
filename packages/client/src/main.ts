@@ -12,8 +12,6 @@ import { backToMenu, bootToMenu } from './leave';
 import { CALLSIGN, sanitizeCallsign, type BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
 
-// Keep the previous layout available while trying the sidebar.
-document.documentElement.classList.toggle('sidebar-layout', new URLSearchParams(location.search).get('hud') !== 'bottom');
 
 const menu = document.getElementById('menu')!;
 const stage = document.getElementById('stage')!;
@@ -185,6 +183,12 @@ menu.innerHTML = `
               <option value="flat">Flat surfaces</option>
             </select>
           </label>
+          <label>Pilot HUD
+            <select id="hud-layout">
+              <option value="sidebar">Cockpit sidebar: lit frame and CRT glass on the left</option>
+              <option value="bottom">Bottom bar: ship screen, weapons and radar across the bottom</option>
+            </select>
+          </label>
           <label>Performance readout
             <select id="perf">
               <option value="on">Show fps and sim time</option>
@@ -278,6 +282,12 @@ schemeSel.value = saved('vf.scheme', 'mouse');
 lightingSel.value = saved('vf.lighting', 'on');
 normalSel.value = saved('vf.spriteNormals', 'derived');
 perfSel.value = saved('vf.perf', 'on');
+// Pilot HUD layout: the cockpit sidebar or the v2 bottom bar (a ?hud=sidebar|bottom URL overrides the setting).
+const hudLayoutSel = sel('hud-layout');
+const applyHudLayout = (layout: string) => document.documentElement.classList.toggle('sidebar-layout', layout !== 'bottom');
+hudLayoutSel.value = new URLSearchParams(location.search).get('hud') ?? saved('vf.hudLayout', 'sidebar');
+applyHudLayout(hudLayoutSel.value);
+hudLayoutSel.addEventListener('change', () => applyHudLayout(hudLayoutSel.value));
 const shipArt = saved('vf.shipArt', 'reference');
 menu.querySelectorAll<HTMLInputElement>('input[name="shipArt"]').forEach((r) => (r.checked = r.value === shipArt));
 
@@ -290,6 +300,7 @@ const bindings: [HTMLSelectElement, string][] = [
   [lightingSel, 'vf.lighting'],
   [normalSel, 'vf.spriteNormals'],
   [perfSel, 'vf.perf'],
+  [hudLayoutSel, 'vf.hudLayout'],
 ];
 for (const [el, k] of bindings) el.addEventListener('change', () => save(k, el.value));
 const radios: [string, string][] = [
