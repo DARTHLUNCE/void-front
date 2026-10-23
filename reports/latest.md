@@ -1,18 +1,18 @@
 # Void Front harness report
 
-Phase 1a (six classes, economy, capture points, Fleet Command) · 20 matches · 60 v 60 · base seed 1 · 2026-10-23T19:54:58.416Z
+Phase 1a (six classes, economy, capture points, Fleet Command) · 20 matches · 60 v 60 · base seed 1 · 2026-10-23T20:50:47.133Z
 
 | Metric | Target | Fail if | Result | Status |
 |---|---|---|---|---|
-| Side win rate (Cobalt) | 45–55% | outside 40–60% | 70.0% (14/20 decided, 0 draws) | FAIL |
-| Median match length | 20–30 min | under 15 or over 34 | 25.2 min | PASS |
-| Matches ending by time limit | under 15% | over 25% | 10.0% | PASS |
-| Comebacks (winner trailed in kills at 10 min) | 20%+ | under 10% | 45.0% | PASS |
+| Side win rate (Cobalt) | 45–55% | outside 40–60% | 50.0% (10/20 decided, 0 draws) | PASS |
+| Median match length | 20–30 min | under 15 or over 34 | 27.4 min | PASS |
+| Matches ending by time limit | under 15% | over 25% | 5.0% | PASS |
+| Comebacks (winner trailed in kills at 10 min) | 20%+ | under 10% | 40.0% | PASS |
 | Win route split (siege / territory) | both above 20% | either under 10% | — | N/A |
-| Class kills per ship (× average ship) | 0.6–1.8× each | any under 0.4× or over 2.5× | frigate 0.40× (K/D 0.30), corvette 0.67× (K/D 0.49), dreadnought 1.46× (K/D 3.38), battleship 2.00× (K/D 3.58), cruiser 1.17× (K/D 1.20), patrol 0.71× (K/D 0.67), destroyer 0.94× (K/D 0.73), carrier 0.93× (K/D 1.35), battlecruiser 1.64× (K/D 1.75) | WARN |
-| Tier option pick rate (bots) | 35–65% per option | any under 20% | min 41.8%, max 58.2% over 45 tiers | PASS |
-| Capture point flips per match | 15+ | under 8 | 54.2 | PASS |
-| Sim tick time, 100 v 100 | ≤ 12 ms | over 16 ms | mean 3.82 ms, p99 8.41 ms | PASS |
+| Class kills per ship (× average ship) | 0.6–1.8× each | any under 0.4× or over 2.5× | frigate 0.62× (K/D 0.43), corvette 0.65× (K/D 0.47), dreadnought 1.44× (K/D 3.58), battleship 1.57× (K/D 3.08), cruiser 1.18× (K/D 1.30), patrol 0.79× (K/D 0.72), destroyer 0.89× (K/D 0.71), carrier 0.95× (K/D 1.43), battlecruiser 1.66× (K/D 1.72) | PASS |
+| Tier option pick rate (bots) | 35–65% per option | any under 20% | min 41.0%, max 59.0% over 45 tiers | PASS |
+| Capture point flips per match | 15+ | under 8 | 51.5 | PASS |
+| Sim tick time, 100 v 100 | ≤ 12 ms | over 16 ms | mean 6.33 ms, p99 13.08 ms | WARN |
 
 - **Side win rate (Cobalt):** Fail band is defined over 50 matches; 20 matches has a ±22% 1σ-ish spread.
 - **Win route split (siege / territory):** A mothership is shielded until both its FOBs fall; this metric splits wins once motherships die.
@@ -20,44 +20,44 @@ Phase 1a (six classes, economy, capture points, Fleet Command) · 20 matches · 
 
 ## Match summary
 
-- Kills per match: 2391 (≈ one death per ship every 79 s)
+- Kills per match: 2514 (≈ one death per ship every 76 s)
 - Average rank (tiers owned) at end: 4.7
-- Lowest mothership hull at end: 0.0% (mean of losing side 6.8%)
-- Matches ended by mothership destroyed: 18
-- FOBs destroyed per match: 3.5 of 4; nodes destroyed per match: 49.6
-- Projectile peak: 911, pool overflows: 0
-- Sim tick (60 v 60): mean 3.948 ms, worst p99 11.01 ms
+- Lowest mothership hull at end: 0.0% (mean of losing side 4.9%)
+- Matches ended by mothership destroyed: 19
+- FOBs destroyed per match: 3.6 of 4; nodes destroyed per match: 46.5
+- Projectile peak: 893, pool overflows: 0
+- Sim tick (60 v 60): mean 8.134 ms, worst p99 26.30 ms
 
 ## Tick-time benchmarks
 
 | Scenario | Ticks | Mean | p99 | Max | Projectile peak |
 |---|---|---|---|---|---|
-| 100 v 100 match, first 5 min | 9000 | 3.82 ms | 8.41 ms | 42.24 ms | 609 |
-| 100 v 100 packed brawl (3,000 u box) | 1800 | 9.10 ms | 15.57 ms | 25.21 ms | 958 |
+| 100 v 100 match, first 5 min | 9000 | 6.33 ms | 13.08 ms | 57.42 ms | 605 |
+| 100 v 100 packed brawl (3,000 u box) | 1800 | 14.85 ms | 24.73 ms | 37.09 ms | 975 |
 
 ## Matches
 
 | # | Seed | Winner | End | Length | Kills C–E | Kills @10m | Mothership hull C / E |
 |---|---|---|---|---|---|---|---|
-| 1 | 3860308557 | Cobalt ↺ | destroyed | 24.7 min | 1117–1112 | 328–335 | 38.8% / 0.0% |
-| 2 | 3725383270 | Cobalt | destroyed | 29.1 min | 1439–1514 | 394–309 | 100.0% / 0.0% |
-| 3 | 1343487201 | Cobalt | destroyed | 29.2 min | 1396–1280 | 341–327 | 84.2% / 0.0% |
-| 4 | 3736088519 | Cobalt | destroyed | 31.6 min | 1547–1582 | 361–296 | 100.0% / 0.0% |
-| 5 | 4144923559 | Ember ↺ | destroyed | 20.2 min | 934–868 | 354–349 | 0.0% / 76.5% |
-| 6 | 3870211076 | Cobalt | destroyed | 23.1 min | 968–970 | 351–306 | 100.0% / 0.0% |
-| 7 | 3576843996 | Cobalt | destroyed | 22.0 min | 993–942 | 317–316 | 100.0% / 0.0% |
-| 8 | 3502249781 | Ember | destroyed | 26.8 min | 1063–1161 | 303–339 | 0.0% / 2.3% |
-| 9 | 1657960595 | Cobalt ↺ | timeLimit | 35.0 min | 1610–1429 | 347–348 | 100.0% / 50.2% |
-| 10 | 2144364893 | Cobalt | destroyed | 24.6 min | 1106–1002 | 323–308 | 100.0% / 0.0% |
-| 11 | 4045681393 | Cobalt | destroyed | 20.4 min | 783–804 | 320–296 | 40.2% / 0.0% |
-| 12 | 1280149015 | Cobalt ↺ | destroyed | 23.0 min | 1085–1083 | 383–414 | 83.7% / 0.0% |
-| 13 | 2820734500 | Cobalt ↺ | timeLimit | 35.0 min | 1820–1733 | 342–351 | 94.8% / 85.7% |
-| 14 | 2761165192 | Ember ↺ | destroyed | 19.9 min | 890–878 | 403–288 | 0.0% / 100.0% |
-| 15 | 1871157155 | Ember | destroyed | 24.5 min | 1052–1063 | 303–359 | 0.0% / 95.1% |
-| 16 | 3408116056 | Cobalt ↺ | destroyed | 29.4 min | 1311–1291 | 313–355 | 60.4% / 0.0% |
-| 17 | 1172630466 | Cobalt | destroyed | 26.2 min | 1204–1219 | 379–342 | 100.0% / 0.0% |
-| 18 | 3080818328 | Cobalt ↺ | destroyed | 32.3 min | 1778–1580 | 326–396 | 83.5% / 0.0% |
-| 19 | 2881777392 | Ember | destroyed | 25.7 min | 1252–1279 | 327–362 | 0.0% / 100.0% |
-| 20 | 3275476701 | Ember ↺ | destroyed | 19.7 min | 853–828 | 366–323 | 0.0% / 100.0% |
+| 1 | 3860308557 | Ember ↺ | destroyed | 20.2 min | 837–884 | 332–314 | 0.0% / 95.6% |
+| 2 | 3725383270 | Cobalt ↺ | destroyed | 33.2 min | 1998–1580 | 356–364 | 100.0% / 0.0% |
+| 3 | 1343487201 | Ember | destroyed | 33.6 min | 1641–1810 | 334–337 | 0.0% / 97.5% |
+| 4 | 3736088519 | Ember ↺ | timeLimit | 35.0 min | 1918–1750 | 355–342 | 98.3% / 100.0% |
+| 5 | 4144923559 | Cobalt ↺ | destroyed | 28.8 min | 1588–1277 | 321–376 | 100.0% / 0.0% |
+| 6 | 3870211076 | Cobalt | destroyed | 29.8 min | 1384–1243 | 351–296 | 4.0% / 0.0% |
+| 7 | 3576843996 | Ember | destroyed | 19.9 min | 864–893 | 336–360 | 0.0% / 90.4% |
+| 8 | 3502249781 | Ember ↺ | destroyed | 22.5 min | 929–956 | 382–302 | 0.0% / 100.0% |
+| 9 | 1657960595 | Ember | destroyed | 27.2 min | 1289–1291 | 338–356 | 0.0% / 78.2% |
+| 10 | 2144364893 | Cobalt | destroyed | 31.4 min | 1515–1528 | 356–302 | 100.0% / 0.0% |
+| 11 | 4045681393 | Ember | destroyed | 24.9 min | 1087–1185 | 306–337 | 0.0% / 100.0% |
+| 12 | 1280149015 | Cobalt | destroyed | 23.1 min | 1130–1060 | 432–295 | 99.1% / 0.0% |
+| 13 | 2820734500 | Cobalt ↺ | destroyed | 29.0 min | 1504–1358 | 346–369 | 100.0% / 0.0% |
+| 14 | 2761165192 | Cobalt | destroyed | 28.1 min | 1293–1358 | 354–337 | 100.0% / 0.0% |
+| 15 | 1871157155 | Cobalt ↺ | destroyed | 27.7 min | 1221–1250 | 292–322 | 86.0% / 0.0% |
+| 16 | 3408116056 | Cobalt | destroyed | 23.2 min | 1067–994 | 364–338 | 100.0% / 0.0% |
+| 17 | 1172630466 | Ember | destroyed | 19.9 min | 790–884 | 336–371 | 0.0% / 86.7% |
+| 18 | 3080818328 | Cobalt | destroyed | 23.3 min | 1128–1055 | 377–359 | 30.9% / 0.0% |
+| 19 | 2881777392 | Ember ↺ | destroyed | 23.7 min | 1087–1106 | 373–338 | 0.0% / 35.8% |
+| 20 | 3275476701 | Ember | destroyed | 27.5 min | 1161–1384 | 329–373 | 0.0% / 99.8% |
 
 ↺ = comeback (winner trailed in kills at minute 10).
