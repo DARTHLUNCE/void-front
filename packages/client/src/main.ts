@@ -1,4 +1,9 @@
 import './style.css';
+import './hud/sidebar.css';
+import './hud/cockpit.css';
+import './hud/cockpit-panels.css';
+import './hud/panelFitting.css';
+
 import type { ShipArtMode } from './art/referenceShips';
 import { BOLT_COLORS, ENGINE_TINTS } from './cosmetics';
 import { Game } from './game';
@@ -6,6 +11,7 @@ import { showIntro } from './intro';
 import { backToMenu, bootToMenu } from './leave';
 import { CALLSIGN, sanitizeCallsign, type BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
+
 
 const menu = document.getElementById('menu')!;
 const stage = document.getElementById('stage')!;
@@ -177,6 +183,12 @@ menu.innerHTML = `
               <option value="flat">Flat surfaces</option>
             </select>
           </label>
+          <label>Pilot HUD
+            <select id="hud-layout">
+              <option value="sidebar">Cockpit sidebar: lit frame and CRT glass on the left</option>
+              <option value="bottom">Bottom bar: ship screen, weapons and radar across the bottom</option>
+            </select>
+          </label>
           <label>Performance readout
             <select id="perf">
               <option value="on">Show fps and sim time</option>
@@ -270,6 +282,12 @@ schemeSel.value = saved('vf.scheme', 'mouse');
 lightingSel.value = saved('vf.lighting', 'on');
 normalSel.value = saved('vf.spriteNormals', 'derived');
 perfSel.value = saved('vf.perf', 'on');
+// Pilot HUD layout: the cockpit sidebar or the v2 bottom bar (a ?hud=sidebar|bottom URL overrides the setting).
+const hudLayoutSel = sel('hud-layout');
+const applyHudLayout = (layout: string) => document.documentElement.classList.toggle('sidebar-layout', layout !== 'bottom');
+hudLayoutSel.value = new URLSearchParams(location.search).get('hud') ?? saved('vf.hudLayout', 'sidebar');
+applyHudLayout(hudLayoutSel.value);
+hudLayoutSel.addEventListener('change', () => applyHudLayout(hudLayoutSel.value));
 const shipArt = saved('vf.shipArt', 'reference');
 menu.querySelectorAll<HTMLInputElement>('input[name="shipArt"]').forEach((r) => (r.checked = r.value === shipArt));
 
@@ -282,6 +300,7 @@ const bindings: [HTMLSelectElement, string][] = [
   [lightingSel, 'vf.lighting'],
   [normalSel, 'vf.spriteNormals'],
   [perfSel, 'vf.perf'],
+  [hudLayoutSel, 'vf.hudLayout'],
 ];
 for (const [el, k] of bindings) el.addEventListener('change', () => save(k, el.value));
 const radios: [string, string][] = [
@@ -352,6 +371,12 @@ const nextPaint = () =>
   });
 
 document.getElementById('play')!.addEventListener('click', async () => {
+  // Never leave the title skirmish simulating under the match (launching from the terminal skips its close).
+  if (disposeIntro) {
+    disposeIntro();
+    introOpen = false;
+    disposeIntro = null;
+  }
   const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? 'reference';
   const loaded = showLoading();
   menu.classList.add('hidden');
@@ -398,12 +423,17 @@ document.getElementById('play')!.addEventListener('click', async () => {
  * Shown on load and again from the terminal's "Title screen" button (or Esc).
  */
 let introOpen = false;
+/** Tears the title screen (and its live skirmish) down at once; set while it is open. */
+let disposeIntro: (() => void) | null = null;
 function openIntro(): void {
   if (introOpen) return;
   introOpen = true;
   const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? shipArt;
-  const close = () => (introOpen = false);
-  showIntro(document.body, {
+  const close = () => {
+    introOpen = false;
+    disposeIntro = null;
+  };
+  disposeIntro = showIntro(document.body, {
     setup: { callsign: callsignIn, fleet: fleetSel, difficulty: difficultySel, team: teamSel },
     team: teamSel.value === '1' ? 1 : 0,
     art: (['reference', 'neutral', 'original'].includes(art) ? art : 'reference') as ShipArtMode,

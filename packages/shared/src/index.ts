@@ -17,3 +17,5 @@ export * from './sim/systems/quirks';
 export * from './sim/systems/status';
 export * from './net/snapshot';
 export * from './sim/loadout';
+
+export { nodeRotation, nodeTurretRadius } from './sim/worldCollision';

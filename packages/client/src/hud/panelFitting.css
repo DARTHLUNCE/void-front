@@ -1,0 +1,26 @@
+/* All positioning remains in cockpit-panels.css. Only content inside the glass fits. */
+.sidebar-layout .noir-fit-panel { display: block !important; overflow: hidden !important; --content-scale: 1; }
+.sidebar-layout .noir-fit-inner {
+  position: relative; width: calc(100% / var(--content-scale)); height: calc(100% / var(--content-scale));
+  min-width: 0; min-height: 0; transform: scale(var(--content-scale)); transform-origin: left top;
+}
+.sidebar-layout .noir-status > .noir-fit-inner { display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; gap: 4px; }
+.sidebar-layout .vhud-throttle > .noir-fit-inner { display: grid; grid-template-columns: 1fr auto; align-content: center; gap: 3px; }
+.sidebar-layout .vhud-throttle .noir-fit-inner > label { grid-column: 1; font-size: 11px; }
+.sidebar-layout :is(.noir-brake,.vhud-sublight) > .noir-fit-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.sidebar-layout .vhud-sublight .noir-fit-inner > label { color: var(--noir-ink); font-size: 11px; letter-spacing: 0; }
+.sidebar-layout .vhud-bank-strip > .noir-fit-inner { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: center; gap: 6px; }
+.sidebar-layout .vhud-up-card > .noir-fit-inner { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.sidebar-layout .noir-power-readout > .noir-fit-inner { display: grid; grid-template-rows: auto minmax(0,1fr); gap: 3px; }
+.sidebar-layout .top .team > .noir-fit-inner { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.sidebar-layout .top .ms > .noir-fit-inner { display: grid; grid-template-columns: minmax(0,1fr) auto; align-content: center; gap: 4px; }
+.sidebar-layout .noir-fit-panel[data-density="compact"] > .noir-fit-inner { gap: 1px; }
+.sidebar-layout [data-density="compact"] .vhud-weapons-dash { gap: 2px; }
+.sidebar-layout [data-density="compact"] .w-slot[data-ab] { padding: 2px 0; min-height: 19px; }
+.sidebar-layout [data-density="compact"] .vhud-up-top b { flex-direction: row; gap: 2px; }
+.sidebar-layout [data-density="compact"] :is(.noir-meters,.led-cols) { gap: 2px; }
+.sidebar-layout .noir-fit-panel[data-fit-overflow="true"] { overflow: auto !important; overscroll-behavior: contain; scrollbar-width: thin; }
+.sidebar-layout [data-fit-overflow="true"] > .noir-fit-inner { height: auto; min-height: 100%; justify-content: start; }
+.sidebar-layout .noir-fit-panel :is(.w-slot-title,.w-slot-meta) { white-space: normal; overflow-wrap: anywhere; }
+.sidebar-layout .noir-fit-panel .w-slot.primary .w-slot-meta { overflow: visible; }
+.sidebar-layout .noir-fit-panel :is(.noir-armor,.vhud-up-top b,.vhud-up-top b kbd,.vhud-up-top .cost,.w-slot[data-ab] kbd,.w-slot[data-ab] .status-tag,.led-col small,.led-pct) { font-size: 11px; }

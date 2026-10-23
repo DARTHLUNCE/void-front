@@ -1,3 +1,6 @@
+import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
+import { socketPosition } from '../../content/hullGeometry';
+import { geometryOf, hitShipSegment, hitBodySegment } from '../hullCollision';
 import { COMMAND_RULES } from '../../content/command';
 import { DEPLOYABLES, DRONES, NODE, WING_LAUNCH } from '../../content/structures';
 import type { GunDef, PrimitiveDef, PrimitiveKind, StatusApply, TeamId } from '../../content/types';
@@ -114,8 +117,13 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     for (let k = 0; k < step.count; k++) {
       const off = step.count > 1 ? (k / (step.count - 1) - 0.5) * step.spread : 0;
       const a = c.angle + off;
-      beamHits(w, c, c.x, c.y, Math.cos(a), Math.sin(a), step.length, step.width / 2, step.damage * mul, hit, step.status);
-      w.emit(EventType.Beam, c.team, c.slot, c.x, c.y, a, step.length);
+      const origin = { x: c.x, y: c.y };
+      if (c.ship) {
+        const sockets = geometryOf(w, c.ship).primary;
+        socketPosition(c.ship, sockets[Math.floor(k * sockets.length / step.count)], origin);
+      }
+      beamHits(w, c, origin.x, origin.y, Math.cos(a), Math.sin(a), step.length, step.width / 2, step.damage * mul, hit, step.status);
+      w.emit(EventType.Beam, c.team, c.slot, origin.x, origin.y, a, step.length);
     }
   },
 
@@ -477,29 +485,23 @@ function beamHits(w: World, c: Caster, x: number, y: number, ux: number, uy: num
   const mx = x + (ux * len) / 2;
   const my = y + (uy * len) / 2;
   const n = w.shipHash.query(mx, my, len / 2 + halfWidth + MAX_SHIP_RADIUS, w.scratch2);
-  const onBeam = (px: number, py: number, r: number) => {
-    const t = (px - x) * ux + (py - y) * uy;
-    if (t < 0 || t > len) return false;
-    const perp = Math.abs((px - x) * uy - (py - y) * ux);
-    return perp <= halfWidth + r;
-  };
   for (let i = 0; i < n; i++) {
     const s = w.ships[w.scratch2[i]];
-    if (!s.alive || s.team === c.team || !onBeam(s.x, s.y, s.radius)) continue;
+    if (!s.alive || s.team === c.team || hitShipSegment(w, s, x, y, ux * len, uy * len, halfWidth) < 0) continue;
     damageShip(w, s, damage, c.slot, hit);
     if (status) for (const st of status) applyStatus(w, s, st);
   }
-  const m = w.droneHash.query(mx, my, len / 2 + halfWidth + 20, w.scratch2);
+  const m = w.droneHash.query(mx, my, len / 2 + halfWidth + MAX_DRONE_RADIUS, w.scratch2);
   for (let i = 0; i < m; i++) {
     const d = w.drones.items[w.scratch2[i]];
-    if (d.active && d.team !== c.team && onBeam(d.x, d.y, d.radius)) damageDrone(w, d, damage, c.slot);
+    if (d.active && d.team !== c.team && hitBodySegment(droneBody(w, d), x, y, ux * len, uy * len, halfWidth) >= 0) damageDrone(w, d, damage, c.slot);
   }
-  for (const st of w.structures) if (st.alive && st.team !== c.team && onBeam(st.x, st.y, st.radius)) damageStructure(w, st, damage, c.slot, hit.ap);
-  for (const p of w.points) if (p.owner >= 0 && p.owner !== c.team && onBeam(p.x, p.y, NODE.radius)) damageNode(w, p, damage, c.team, c.slot, hit.ap);
+  for (const st of w.structures) if (st.alive && st.team !== c.team && hitBodySegment(structureBody(w, st), x, y, ux * len, uy * len, halfWidth) >= 0) damageStructure(w, st, damage, c.slot, hit.ap);
+  for (const p of w.points) if (p.owner >= 0 && p.owner !== c.team && hitBodySegment(pointBody(w, p), x, y, ux * len, uy * len, halfWidth) >= 0) damageNode(w, p, damage, c.team, c.slot, hit.ap);
   const dep = w.deployables;
   for (let i = dep.count - 1; i >= 0; i--) {
     const d = dep.at(i);
-    if (d.team !== c.team && onBeam(d.x, d.y, d.def.radius)) damageDeployable(w, d, damage, c.slot);
+    if (d.team !== c.team && hitBodySegment(deployableBody(w, d), x, y, ux * len, uy * len, halfWidth) >= 0) damageDeployable(w, d, damage, c.slot);
   }
 }
 
@@ -547,7 +549,7 @@ export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): v
 function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>): void {
   const first = w.projectiles.count;
   const gun = mergedGun(s.cls.gun, step.gun);
-  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), s.radius);
+  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle);
   const structureMul = (step.structureMul ?? 1) * liveStat(w, s, 'structureDamage', 1);
   // v2.1: ordnance takes the ship's live caliber (Weapons calibration, node +AP, WEAPONS power) like
   // its gun does, and warheads (missiles, anything with splash) never overpenetrate.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MATCH } from '../content/match';
+import { PRIMARY_AIM_HALF_ARC } from '../content/combat';
 import { HULL_CLASS_SCALE } from '../content/thrusters';
 import { createWorld } from './step';
 import { aimAndFire } from './systems/combat';
@@ -33,7 +34,7 @@ describe('inertial movement', () => {
     }
     expect(ship.vx).toBeLessThan(0);
   });
-  it('pushes the stern opposite yaw and derives rotation from the same off-center force', () => {
+  it('pushes the stern opposite yaw while attitude jets complete the turn', () => {
     const { w, ship } = pilot();
     ship.input.steerWithAim = true;
     ship.input.moveY = 1;
@@ -44,7 +45,10 @@ describe('inertial movement', () => {
     expect(ship.vy).toBeLessThan(0);
     expect(ship.engineTorque).toBeCloseTo(-25 * HULL_CLASS_SCALE.patrol * ship.engineLateral);
     aimAndFire(w, ship);
-    expect(ship.angularVelocity).toBeCloseTo(ship.engineTorque / (ship.radius ** 2 * MATCH.movement.inertiaFactor) * DT);
+    const driveRate = ship.engineTorque / (ship.radius ** 2 * MATCH.movement.inertiaFactor) * DT;
+    expect(ship.angularVelocity).toBeGreaterThan(driveRate);
+    expect(ship.angularVelocity - driveRate).toBeLessThanOrEqual(MATCH.movement.angularAcceleration * DT);
+    expect(ship.angularVelocity).toBeLessThanOrEqual(MATCH.movement.angularAcceleration * DT);
     expect(ship.angle).toBeGreaterThan(0);
     for (let tick = 1; tick < 12; tick++) { moveShips(w); aimAndFire(w, ship); }
     expect(ship.angle).toBeGreaterThan(Math.PI / 2 - 0.3);
@@ -118,7 +122,7 @@ describe('inertial movement', () => {
     expect(Math.hypot(ship.vx, ship.vy)).toBeLessThanOrEqual(baseSpeed(w, ship) + 1e-5);
   });
 
-  it('turns hull and shots gradually and still fires while braking', () => {
+  it('turns the hull gradually and fires at the swivel limit while braking', () => {
     const { w, ship } = pilot();
     ship.input.aim = Math.PI;
     ship.input.fire = ship.input.brake = ship.input.cruise = true;
@@ -127,7 +131,7 @@ describe('inertial movement', () => {
     expect(ship.angle).toBeLessThan(MATCH.movement.aimTurnRate * DT);
     expect(w.projectiles.count).toBeGreaterThan(0);
     const shot = w.projectiles.at(0);
-    expect(Math.atan2(shot.vy, shot.vx)).toBeCloseTo(ship.angle);
+    expect(Math.atan2(shot.vy, shot.vx)).toBeCloseTo(ship.angle + PRIMARY_AIM_HALF_ARC);
   });
 
   it('finishes an existing dash, then brakes without drifting or restarting it', () => {

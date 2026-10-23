@@ -1,10 +1,14 @@
-import { ARMOR, PAINTED_JITTER_MUL, SECONDARY_MOUNT_RING } from '../../content/combat';
-import { MATCH } from '../../content/match';
+import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
+import { MAX_HULL_RADIUS, socketPosition, type HullPoint } from '../../content/hullGeometry';
+import { geometryOf, hitShipSegment, hitBodySegment } from '../hullCollision';
 import { angleDelta } from '../angles';
+import { angularAuthority, hullInertia, requestedAngularAcceleration } from '../handling';
+import { ARMOR, PAINTED_JITTER_MUL, PRIMARY_AIM_HALF_ARC } from '../../content/combat';
+import { MATCH } from '../../content/match';
 import { ECONOMY } from '../../content/progression';
 import { SCORE } from '../../content/score';
 import { QUIRK_PARAMS } from '../../content/quirks';
-import { DEPLOYABLES, NODE, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
+import { DEPLOYABLES, SALVAGE, SALVAGE_OWNER } from '../../content/structures';
 import type { GunDef, TeamId } from '../../content/types';
 import { conditionsHold, hasFlag, type HitContext, hitMul, liveStat, statValue } from '../stats';
 import { DT, EVENT_CAPACITY, EventType, type Deployable, type Projectile, type Ship, type Structure, type World } from '../world';
@@ -16,8 +20,8 @@ import { CHARGE, quirkOf } from './quirks';
 import { creditShip, scoreShipDamage, scoreStructureDamage } from './score';
 import { applyStatus, canAct, hasStatus, removeStatus, statusMagnitude } from './status';
 
-/** Largest ship radius any class can have; bounds hash queries for hits (v2 size ladder). */
-export const MAX_SHIP_RADIUS = 165;
+/** Bounds the actual silhouettes, including wings outside the class stat radius. */
+export const MAX_SHIP_RADIUS = MAX_HULL_RADIUS;
 
 /**
  * How an incoming hit meets armor: caliber, overpenetration guard, the share that skips the
@@ -30,6 +34,8 @@ export interface HitInfo {
   sternPierce: number;
   dirX: number;
   dirY: number;
+  impactX?: number;
+  impactY?: number;
 }
 
 /** Area effects, bleed and commander strikes: no caliber, so full penetration and no arc. */
@@ -116,6 +122,8 @@ export function spawnPattern(
   damageMul: number,
   lifeMul = 1,
   muzzle = 0,
+  sockets?: readonly HullPoint[],
+  bodyAngle = angle,
 ): void {
   const count = gun.count;
   const cos = Math.cos(angle);
@@ -131,6 +139,14 @@ export function spawnPattern(
     const a = gun.spread && count > 1 ? angle + (centered / (count - 1)) * gun.spread : angle;
     p.x = x + cos * muzzle - sin * off;
     p.y = y + sin * muzzle + cos * off;
+    if (sockets) {
+      const socket = sockets[Math.floor(k * sockets.length / count)];
+      const c = Math.cos(bodyAngle), sn = Math.sin(bodyAngle);
+      p.x = x + c * socket[0] - sn * socket[1];
+      p.y = y + sn * socket[0] + c * socket[1];
+    }
+    p.muzzleX = p.x;
+    p.muzzleY = p.y;
     p.speed = gun.projectileSpeed;
     p.vx = Math.cos(a) * gun.projectileSpeed;
     p.vy = Math.sin(a) * gun.projectileSpeed;
@@ -164,18 +180,17 @@ export function spawnPattern(
 /** Pass 3 for one ship: turn toward the aim and work the trigger. Abilities run from step.ts. */
 export function aimAndFire(w: World, s: Ship): void {
   const inp = s.input;
-  const tuning = MATCH.movement;
   const turnRate = turnRateOf(w, s);
-  const desiredTurn = Math.max(-turnRate, Math.min(turnRate, angleDelta(s.angle, inp.aim) * tuning.aimResponse));
+  const requestedAlpha = requestedAngularAcceleration(s, turnRate);
+  const authority = angularAuthority(turnRate);
   // Reverse throttle flies on retro-thrusters: attitude jets keep pointing the nose at the aim.
   const driven = inp.steerWithAim && inp.throttle > 0 && !inp.brake && !hasStatus(s, 'stun') && !hasStatus(s, 'rooted') && s.dashTime <= 0 && Math.hypot(inp.moveX, inp.moveY) > 0;
-  if (driven) {
-    // The aft drive's actual force produces yaw: torque / moment of inertia.
-    s.angularVelocity += s.engineTorque / (s.radius * s.radius * tuning.inertiaFactor) * DT;
-  } else {
-    // Attitude jets retain aim control while coasting, braking or using vector controls.
-    s.angularVelocity += (desiredTurn - s.angularVelocity) * (1 - Math.exp(-tuning.angularResponse * DT));
-  }
+  // The aft drive still applies its real off-center force about the hull origin.
+  // Paired attitude jets supply the remaining torque without net translation. This
+  // keeps control authority independent of nozzle leverage or forward throttle.
+  const driveAlpha = driven ? s.engineTorque / hullInertia(s) : 0;
+  const attitudeAlpha = Math.max(-authority, Math.min(authority, requestedAlpha - driveAlpha));
+  s.angularVelocity += (driveAlpha + attitudeAlpha) * DT;
   s.angularVelocity = Math.max(-turnRate, Math.min(turnRate, s.angularVelocity));
   const angle = s.angle + s.angularVelocity * DT;
   s.angle = Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -232,7 +247,9 @@ function fireVolley(w: World, s: Ship, charge: number): void {
     if (fullCharge) gun.pierce = (gun.pierce ?? 0) + p.fullChargePierce;
   }
   const first = w.projectiles.count;
-  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, mul, liveStat(w, s, 'range', 1), s.radius);
+  const gunAngle = s.angle + clamp(angleDelta(s.angle, s.input.aim), -PRIMARY_AIM_HALF_ARC, PRIMARY_AIM_HALF_ARC);
+  // Authored barrel tips rotate with the hull; only shot direction swivels toward aim.
+  spawnPattern(w, s.slot, s.team, s.x, s.y, gunAngle, gun, mul, liveStat(w, s, 'range', 1), 0, geometryOf(w, s).primary, s.angle);
   const healPower = liveStat(w, s, 'healPower', 0);
   const pierceBonus = statValue(s, 'pierceBonus', 0);
   const bypass = Math.min(1, liveStat(w, s, 'shieldBypass', 0));
@@ -257,8 +274,8 @@ function fireVolley(w: World, s: Ship, charge: number): void {
   if (fullCharge) {
     const recoil = liveStat(w, s, 'recoil', 0);
     if (recoil > 0 && !hasFlag(s, 'knockbackImmune')) {
-      s.x = clamp(s.x - Math.cos(s.angle) * recoil, s.radius, w.map.width - s.radius);
-      s.y = clamp(s.y - Math.sin(s.angle) * recoil, s.radius, w.map.height - s.radius);
+      s.x = clamp(s.x - Math.cos(gunAngle) * recoil, s.radius, w.map.width - s.radius);
+      s.y = clamp(s.y - Math.sin(gunAngle) * recoil, s.radius, w.map.height - s.radius);
     }
   }
 }
@@ -272,12 +289,10 @@ export function secondaryCount(w: World, s: Ship): number {
   return Math.max(0, Math.min(s.secondaryCd.length, def.count + Math.round(liveStat(w, s, 'secondaryCount', 0))));
 }
 
-/** World position of mount k of n: a symmetric ring around the hull, turning with it. */
-export function secondaryMount(s: Ship, k: number, n: number, out: { x: number; y: number }): void {
-  const a = s.angle + ((k + 0.5) / n) * Math.PI * 2;
-  const r = s.radius * SECONDARY_MOUNT_RING;
-  out.x = s.x + Math.cos(a) * r;
-  out.y = s.y + Math.sin(a) * r;
+/** Extra battery upgrades reuse visible mounts instead of inventing a ring in empty space. */
+export function secondaryMount(w: World, s: Ship, k: number, out: { x: number; y: number }): void {
+  const sockets = geometryOf(w, s).secondary;
+  socketPosition(s, sockets[k % sockets.length], out);
 }
 
 const mount = { x: 0, y: 0 };
@@ -306,7 +321,7 @@ export function fireSecondaries(w: World, s: Ship, force = false): void {
       if (s.secondaryCd[k] < 0) s.secondaryCd[k] = 0;
       continue;
     }
-    secondaryMount(s, k, n, mount);
+    secondaryMount(w, s, k, mount);
     // Point-defense mounts zap an incoming missile before anything else.
     if (pd && shootDownMissile(w, s.team, mount.x, mount.y, range * 0.6)) {
       s.secondaryCd[k] += interval;
@@ -389,6 +404,8 @@ function fireSecondaryShot(w: World, s: Ship, x: number, y: number, angle: numbe
   }
   p.x = x;
   p.y = y;
+  p.muzzleX = x;
+  p.muzzleY = y;
   p.speed = def.projectileSpeed;
   p.vx = Math.cos(angle) * def.projectileSpeed;
   p.vy = Math.sin(angle) * def.projectileSpeed;
@@ -434,21 +451,6 @@ export function shootDownMissile(w: World, team: TeamId, x: number, y: number, r
 
 // ─── Projectiles ────────────────────────────────────────────────────────────
 
-/** Smallest t in [0,1] where segment P0 + t·D enters the circle (C, r), or -1. */
-function segmentCircleT(x0: number, y0: number, dx: number, dy: number, cx: number, cy: number, r: number): number {
-  const fx = x0 - cx;
-  const fy = y0 - cy;
-  const c = fx * fx + fy * fy - r * r;
-  if (c <= 0) return 0;
-  const a = dx * dx + dy * dy;
-  if (a === 0) return -1;
-  const b = 2 * (fx * dx + fy * dy);
-  const disc = b * b - 4 * a * c;
-  if (disc < 0) return -1;
-  const t = (-b - Math.sqrt(disc)) / (2 * a);
-  return t >= 0 && t <= 1 ? t : -1;
-}
-
 const NOTHING = 0;
 const SHIP = 1;
 const DRONE = 2;
@@ -487,7 +489,7 @@ export function stepProjectiles(w: World): void {
       if (!s.alive || s.slot === p.owner || alreadyHit(p.hits, p.hitCount, s.slot)) continue;
       // Healing rounds stop on damaged allies; everything else only hits enemies.
       if (s.team === p.team && !(healing && s.hull < s.maxHull)) continue;
-      const t = segmentCircleT(p.x, p.y, dx, dy, s.x, s.y, s.radius + p.radius);
+      const t = hitShipSegment(w, s, p.x, p.y, dx, dy, p.radius);
       if (t < 0) continue;
       // Ties go to the lower team-relative slot so mirrored states resolve the same way.
       if (t < bestT || (t === bestT && hitShip !== null && relSlot(w, s) < relSlot(w, hitShip))) {
@@ -496,11 +498,11 @@ export function stepProjectiles(w: World): void {
         hitShip = s;
       }
     }
-    const m = w.droneHash.query(mx, my, segHalf + p.radius + 20, w.scratch);
+    const m = w.droneHash.query(mx, my, segHalf + p.radius + MAX_DRONE_RADIUS, w.scratch);
     for (let k = 0; k < m; k++) {
       const d = w.drones.items[w.scratch[k]];
       if (!d.active || d.team === p.team) continue;
-      const t = segmentCircleT(p.x, p.y, dx, dy, d.x, d.y, d.radius + p.radius);
+      const t = hitBodySegment(droneBody(w, d), p.x, p.y, dx, dy, p.radius);
       if (t >= 0 && t < bestT) {
         bestT = t;
         kind = DRONE;
@@ -510,7 +512,7 @@ export function stepProjectiles(w: World): void {
     }
     for (const st of w.structures) {
       if (!st.alive || st.team === p.team) continue;
-      const t = segmentCircleT(p.x, p.y, dx, dy, st.x, st.y, st.radius + p.radius);
+      const t = hitBodySegment(structureBody(w, st), p.x, p.y, dx, dy, p.radius);
       if (t >= 0 && t < bestT) {
         bestT = t;
         kind = STRUCTURE;
@@ -522,8 +524,7 @@ export function stepProjectiles(w: World): void {
     for (let k = 0; k < dep.count; k++) {
       const dp = dep.at(k);
       if (dp.team === p.team || dp.kind === 'mine') continue;
-      if (Math.abs(dp.x - mx) > qr + dp.def.radius || Math.abs(dp.y - my) > qr + dp.def.radius) continue;
-      const t = segmentCircleT(p.x, p.y, dx, dy, dp.x, dp.y, dp.def.radius + p.radius);
+      const t = hitBodySegment(deployableBody(w, dp), p.x, p.y, dx, dy, p.radius);
       if (t >= 0 && t < bestT) {
         bestT = t;
         kind = DEPLOYABLE;
@@ -533,8 +534,7 @@ export function stepProjectiles(w: World): void {
     }
     // v2: every asteroid node is solid cover, whoever holds it.
     for (const pt of w.points) {
-      if (Math.abs(pt.x - mx) > qr + NODE.radius || Math.abs(pt.y - my) > qr + NODE.radius) continue;
-      const t = segmentCircleT(p.x, p.y, dx, dy, pt.x, pt.y, NODE.radius + p.radius);
+      const t = hitBodySegment(pointBody(w, pt), p.x, p.y, dx, dy, p.radius);
       if (t >= 0 && t < bestT) {
         bestT = t;
         kind = NODE_HIT;
@@ -556,7 +556,7 @@ export function stepProjectiles(w: World): void {
         reflect(p, s);
         continue;
       }
-      shipHit(w, p, s);
+      shipHit(w, p, s, p.x + dx * bestT, p.y + dy * bestT);
       if (p.splash > 0) explode(w, p.team, p.owner, p.x + dx * bestT, p.y + dy * bestT, p.splash, p.damage * 0.6, p.structureMul, p.ap);
       if (p.pierceLeft > 0 && p.hitCount < p.hits.length) {
         p.pierceLeft--;
@@ -607,7 +607,7 @@ export function stepProjectiles(w: World): void {
 const hitCtx: HitContext = { target: null, fullCharge: false, stern: false };
 const projHit: HitInfo = { ap: Infinity, noOverpen: false, shieldBypass: 0, sternPierce: 0, dirX: 0, dirY: 0 };
 
-function shipHit(w: World, p: Projectile, s: Ship): void {
+function shipHit(w: World, p: Projectile, s: Ship, impactX: number, impactY: number): void {
   const owner = p.owner >= 0 ? w.ships[p.owner] : null;
   hitCtx.target = s;
   hitCtx.fullCharge = p.fullCharge;
@@ -619,6 +619,8 @@ function shipHit(w: World, p: Projectile, s: Ship): void {
   projHit.sternPierce = p.sternPierce;
   projHit.dirX = p.vx;
   projHit.dirY = p.vy;
+  projHit.impactX = impactX;
+  projHit.impactY = impactY;
   if (owner && !p.fromDrone) {
     // Target-dependent node modifiers (Executioner, Citadel Cavitator, Proximity Flak...).
     dmg *= 1 + hitMul(w, owner, 'damage', hitCtx);
@@ -774,7 +776,12 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
     // Sparks are cosmetic and only shown where a pilot cares (their own shots, or hits on them);
     // never let them crowd kills and flips out of the event buffer.
     const watched = attackerSlot >= 0 && (!w.ships[attackerSlot].isBot || !target.isBot);
-    if (watched && w.eventCount < EVENT_CAPACITY / 2) w.emit(EventType.Ricochet, target.slot, attackerSlot, target.x, target.y, Math.atan2(hit.dirY, hit.dirX));
+    if (watched && w.eventCount < EVENT_CAPACITY / 2) {
+      const direction = Math.atan2(hit.dirY, hit.dirX);
+      const x = hit.impactX ?? target.x - Math.cos(direction) * target.radius;
+      const y = hit.impactY ?? target.y - Math.sin(direction) * target.radius;
+      w.emit(EventType.Ricochet, target.slot, attackerSlot, x, y, direction);
+    }
   }
   // Cosmetic: the renderer lights each ship's hull-shaped shield where it is struck and shows it
   // collapsing. Capped so these never crowd kills and flips out of the event buffer.

@@ -681,26 +681,6 @@ button.primary:hover {
   }
 }
 
-.feed {
-  top: 232px;
-  right: 10px;
-  display: grid;
-  gap: 2px;
-  justify-items: end;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.feed > div {
-  padding: 1px 8px;
-  border-radius: 4px;
-  background: var(--panel);
-}
-
-.feed > div.mine {
-  outline: 1px solid rgba(255, 255, 255, 0.4);
-}
-
 .perf {
   left: 10px;
   top: 8px;
@@ -1303,19 +1283,7 @@ button.primary:hover {
   color: var(--dim);
 }
 
-.feed > div.big {
-  font-size: 1.05rem;
-  outline: 1px solid rgba(255, 92, 108, 0.5);
-}
-
-/* Commander: the order panel owns the right edge, so the feed moves left */
-#hud.cmdmode .feed {
-  right: auto;
-  left: 10px;
-  top: 236px;
-  justify-items: start;
-}
-
+/* Commander: the order panel owns the right edge, so the score panel moves left */
 #hud.cmdmode .livescore {
   right: auto;
   left: 10px;

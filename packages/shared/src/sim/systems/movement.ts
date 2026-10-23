@@ -1,10 +1,13 @@
+import { constrainHull, geometryOf } from '../hullCollision';
+import { bodySeparation, contactImpulse, type CollisionBody } from '../bodyCollision';
+import { collisionMass, shipBody, structureBody, pointBody, deployableBody } from '../worldCollision';
 import { THRUSTERS, HULL_CLASS_SCALE } from '../../content/thrusters';
-import { angleDelta, turnToward } from '../angles';
+import { turnToward } from '../angles';
+import { hullInertia, requestedAngularAcceleration } from '../handling';
 import { MATCH } from '../../content/match';
-import { NODE } from '../../content/structures';
 import { conditionsHold, HIT_NONE, hasFlag, liveStat, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
-import { apHit, damageShip, MAX_SHIP_RADIUS } from './combat';
+import { apHit, damageShip, MAX_SHIP_RADIUS, turnRateOf } from './combat';
 import { accelPowerMul, speedPowerMul, spoolCut } from './power';
 import { quirkOf } from './quirks';
 import { applyStatus, hasStatus, statusMagnitude } from './status';
@@ -21,8 +24,6 @@ export function reverseCeiling(w: World, s: Ship): number {
 
 /** Step 2a: integrate every ship. No ship aims or fires here (fairness rule). */
 export function moveShips(w: World): void {
-  const W = w.map.width;
-  const H = w.map.height;
   const tuning = MATCH.movement;
   for (const s of w.ships) {
     if (!s.alive) continue;
@@ -94,14 +95,13 @@ export function moveShips(w: World): void {
           let armX = 0;
           let armY = 0;
           for (const mount of mounts) { armX += mount.x * mountScale / mounts.length; armY += mount.y * mountScale / mounts.length; }
-          const inertia = s.radius * s.radius * tuning.inertiaFactor;
-          const turnRate = s.cls.turnRate ?? tuning.aimTurnRate;
-          const desiredRate = Math.max(-turnRate, Math.min(turnRate, angleDelta(s.angle, inp.aim) * tuning.aimResponse));
-          const desiredAlpha = Math.max(-tuning.angularAcceleration, Math.min(tuning.angularAcceleration,
-            (desiredRate - s.angularVelocity) * tuning.angularResponse));
-          const lateral = desiredAlpha * inertia / armX;
-          const forward = Math.max(0, (speed * cruiseMul * throttle - forwardSpeed) * tuning.velocityResponse,
-            Math.abs(lateral) / Math.tan(tuning.gimbalAngle));
+          const desiredTorque = requestedAngularAcceleration(s, turnRateOf(w, s)) * hullInertia(s);
+          // Translation sets the main-engine budget. Never add forward thrust just to turn:
+          // close-in nozzles otherwise launch the Corvette past its requested speed.
+          const forward = Math.max(0, (speed * cruiseMul * throttle - forwardSpeed) * tuning.velocityResponse);
+          const lateralLimit = forward * Math.tan(tuning.gimbalAngle);
+          const requestedLateral = Math.abs(armX) > 1e-6 ? (desiredTorque + armY * forward) / armX : 0;
+          const lateral = Math.max(-lateralLimit, Math.min(lateralLimit, requestedLateral));
           const forceScale = Math.min(1, maxForce / Math.max(1, Math.hypot(forward, lateral)));
           const engineBlend = 1 - Math.exp(-tuning.accelerationResponse * DT);
           s.engineForward += (forward * forceScale - s.engineForward) * engineBlend;
@@ -142,21 +142,7 @@ export function moveShips(w: World): void {
 
     s.x += s.vx * DT;
     s.y += s.vy * DT;
-    const r = s.radius;
-    if (s.x < r) {
-      s.x = r;
-      s.vx = 0;
-    } else if (s.x > W - r) {
-      s.x = W - r;
-      s.vx = 0;
-    }
-    if (s.y < r) {
-      s.y = r;
-      s.vy = 0;
-    } else if (s.y > H - r) {
-      s.y = H - r;
-      s.vy = 0;
-    }
+    constrainHull(w, s);
     quirkOf(s).afterMove?.(w, s);
   }
 }
@@ -186,65 +172,74 @@ function dashContacts(w: World, s: Ship): void {
   }
 }
 
-/**
- * Step 2b: push ships out of structures and apart from each other. Separation is accumulated for
- * every ship first and applied after, so update order can't favor either team.
- */
+interface Contact { a: Ship; b: Ship | null; x: number; y: number }
+
+/** Resolve solid contacts by relative momentum and inverse mass. Position repair never
+ * becomes velocity, so spawn overlap and resting contact cannot launch a ship. */
 export function resolveCollisions(w: World): void {
+  const solid: CollisionBody[] = [...w.structures.map(s=>structureBody(w,s)), ...w.points.map(p=>pointBody(w,p))];
+  for(let i=0;i<w.deployables.count;i++) {
+    const d=w.deployables.at(i);
+    // Mines are proximity triggers, not physical bollards; their trigger radius is unchanged.
+    if(d.kind!=='mine') solid.push(deployableBody(w,d));
+  }
+  const inverse=w.ships.map(s=>1/collisionMass(s));
+  const degree=new Uint16Array(w.ships.length);
+  const dvx=new Float64Array(w.ships.length),dvy=new Float64Array(w.ships.length);
+  const separation={x:0,y:0};
   rebuildShipHash(w);
-  const px = w.pushX;
-  const py = w.pushY;
-  px.fill(0);
-  py.fill(0);
-  for (const s of w.ships) {
-    if (!s.alive) continue;
-    const n = w.shipHash.query(s.x, s.y, s.radius + MAX_SHIP_RADIUS, w.scratch);
-    for (let i = 0; i < n; i++) {
-      const o = w.ships[w.scratch[i]];
-      if (o === s || !o.alive) continue;
-      const dx = s.x - o.x;
-      const dy = s.y - o.y;
-      const min = s.radius + o.radius;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= min * min || d2 < 1e-9) continue;
-      const d = Math.sqrt(d2);
-      const push = (min - d) * 0.25;
-      px[s.slot] += (dx / d) * push;
-      py[s.slot] += (dy / d) * push;
+  const bodies=w.ships.map(s=>shipBody(w,s));
+  const contacts:Contact[]=[];
+  degree.fill(0);
+  for(const s of w.ships) {
+    if(!s.alive) continue;
+    const body=bodies[s.slot];
+    const n=w.shipHash.query(s.x,s.y,geometryOf(w,s).radius+MAX_SHIP_RADIUS,w.scratch);
+    for(let i=0;i<n;i++) {
+      const o=w.ships[w.scratch[i]];
+      if(!o.alive || o.slot<=s.slot || !bodySeparation(body,bodies[o.slot],separation)) continue;
+      contacts.push({a:s,b:o,x:separation.x,y:separation.y});degree[s.slot]++;degree[o.slot]++;
+    }
+    for(const obstacle of solid) {
+      if(!bodySeparation(body,obstacle,separation)) continue;
+      contacts.push({a:s,b:null,x:separation.x,y:separation.y});degree[s.slot]++;
     }
   }
-  for (const s of w.ships) {
-    if (!s.alive) continue;
-    s.x += px[s.slot];
-    s.y += py[s.slot];
-    for (const st of w.structures) {
-      const dx = s.x - st.x;
-      const dy = s.y - st.y;
-      const min = st.radius + s.radius;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= min * min || d2 < 1e-9) continue;
-      const d = Math.sqrt(d2);
-      s.x = st.x + (dx / d) * min;
-      s.y = st.y + (dy / d) * min;
-    }
-    // v2: asteroid nodes are solid rock whoever holds them.
-    for (const p of w.points) {
-      const dx = s.x - p.x;
-      const dy = s.y - p.y;
-      const min = NODE.radius + s.radius;
-      const d2 = dx * dx + dy * dy;
-      if (d2 >= min * min) continue;
-      const d = Math.sqrt(d2);
-      const ux = d > 1e-6 ? dx / d : w.teamSign(s.team);
-      const uy = d > 1e-6 ? dy / d : 0;
-      s.x = p.x + ux * min;
-      s.y = p.y + uy * min;
-      // Kill the velocity into the rock so ships slide around it.
-      const into = s.vx * ux + s.vy * uy;
-      if (into < 0) {
-        s.vx -= into * ux;
-        s.vy -= into * uy;
+  if(contacts.length===0) return;
+  const initialX=w.ships.map(s=>s.x),initialY=w.ships.map(s=>s.y);
+  // Ships in no contact get no push or impulse in any pass, and the map-edge clamp is
+  // idempotent: clamp them once and iterate only the ships that are actually touching.
+  const touching:Ship[]=[];
+  for(const s of w.ships) {
+    if(!s.alive) continue;
+    if(degree[s.slot]>0) touching.push(s);
+    else constrainHull(w,s);
+  }
+  // Build the contact manifold once per tick. Iterations solve these constraints,
+  // not the expensive compound geometry again. New contacts are discovered next tick.
+  for(let pass=0;pass<6;pass++) {
+    w.pushX.fill(0);w.pushY.fill(0);dvx.fill(0);dvy.fill(0);
+    for(const contact of contacts) {
+      const {a,b,x,y}=contact,ia=inverse[a.slot],ib=b?inverse[b.slot]:0;
+      const distance=Math.hypot(x,y),nx=x/distance,ny=y/distance;
+      // Degree weighting keeps a crowded hull from summing dozens of full ejection impulses.
+      const relaxation=1/Math.max(degree[a.slot],b?degree[b.slot]:1);
+      const movedX=a.x-initialX[a.slot]-(b?b.x-initialX[b.slot]:0);
+      const movedY=a.y-initialY[a.slot]-(b?b.y-initialY[b.slot]:0);
+      const remaining=Math.max(0,distance-movedX*nx-movedY*ny);
+      const correction=Math.min(remaining,Math.min(a.radius,b?.radius??a.radius)*.5)*relaxation;
+      const aw=ia/(ia+ib),bw=ib/(ia+ib);
+      w.pushX[a.slot]+=nx*correction*aw;w.pushY[a.slot]+=ny*correction*aw;
+      const impulse=contactImpulse(a.vx,a.vy,b?.vx??0,b?.vy??0,nx,ny,ia,ib)*relaxation;
+      dvx[a.slot]+=nx*impulse*ia;dvy[a.slot]+=ny*impulse*ia;
+      if(b) {
+        w.pushX[b.slot]-=nx*correction*bw;w.pushY[b.slot]-=ny*correction*bw;
+        dvx[b.slot]-=nx*impulse*ib;dvy[b.slot]-=ny*impulse*ib;
       }
+    }
+    for(const s of touching) {
+      s.x+=w.pushX[s.slot];s.y+=w.pushY[s.slot];s.vx+=dvx[s.slot];s.vy+=dvy[s.slot];
+      constrainHull(w,s);
     }
   }
   rebuildShipHash(w);

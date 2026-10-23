@@ -1,3 +1,5 @@
+import { nodeRotation, nodeTurretRadius } from '@void-front/shared';
+import { clientToWorld, worldToClient, type Viewport } from './viewport';
 import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import {
   CLASS_ORDER,
@@ -274,7 +276,7 @@ export class Renderer {
 
   async init(parent: HTMLElement): Promise<void> {
     // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
-    await this.app.init({ resizeTo: window, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
+    await this.app.init({ resizeTo: parent, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
     const reference = await loadReferenceShips(this.shipArt, this.derivedNormals);
     // The HUD (picker, tier pop-up, ship screen) shows the same team-painted sprites.
@@ -325,6 +327,8 @@ export class Renderer {
       const states = art.albedo.map((albedo) => {
         const m = new Mesh({ geometry: geom, shader: this.lighting.litShader(albedo.source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
         m.position.set(p.pos.x, p.pos.y);
+        // Same turn as the collision rock (east-half nodes mirror their west twins).
+        m.rotation = nodeRotation(KESSLER_REACH, p.pos.x, p.pos.y);
         m.visible = false;
         shipyard.addChild(m);
         this.lighting.trackReceiver(m);
@@ -674,7 +678,7 @@ export class Renderer {
       if (fresh.has(i) && this.particles.length < PARTICLE_CAP) {
         // Muzzle flash where the shot left the barrel, sized by its caliber.
         const life = 0.07 + caliber * 0.05;
-        this.particles.push({ x: x - b[k + 2] / 30, y: y - b[k + 3] / 30, vx: 0, vy: 0, life, max: life, color, size: heavy ? 1.6 : 0.6 + width * 0.32 });
+        this.particles.push({ x: b[k + 9], y: b[k + 10], vx: 0, vy: 0, life, max: life, color, size: heavy ? 1.6 : 0.6 + width * 0.32 });
       }
       const size = width / 4;
       this.light(x, y, heavy ? 12 : 4 + width * 1.6, color, fade);
@@ -787,7 +791,8 @@ export class Renderer {
         this.light(f.position.x, f.position.y, e.r * (0.9 + thrust * 0.7), LIGHT.engine[team]);
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
-      s.scale.set(isMe ? 1.15 : 1);
+      // Keep the rendered player hull at its collision scale; brackets identify the pilot.
+      s.scale.set(1);
       if (cloaked) glow.alpha *= 0.3;
       // The hull-shaped energy shield: lit after hits while it holds, flaring where shots land.
       const shieldMax = b[k + SHIP.maxShield];
@@ -871,10 +876,7 @@ export class Renderer {
           this.burst(b[k + 3], b[k + 4], 0xffe0a0, 120, 700);
         } else if (type === EventType.Ricochet) {
           // A glancing hit: sparks skip off the armor where the shot struck.
-          const target = curr.ship(b[k + 1]);
-          const r = CLASSES[CLASS_ORDER[b[target + SHIP.classIndex]]]?.radius ?? 20;
-          const dir = b[k + 5];
-          this.burst(b[k + 3] - Math.cos(dir) * r, b[k + 4] - Math.sin(dir) * r, 0xffe6a0, 5, 240);
+          this.burst(b[k + 3], b[k + 4], 0xffe6a0, 5, 240);
         } else if (type === EventType.Beam) {
           this.beams.push({ x: b[k + 3], y: b[k + 4], angle: b[k + 5], length: b[k + 6], life: 0.3, color: TEAM_COLORS[b[k + 1]] });
         } else if (type === EventType.PointFlip) {
@@ -996,7 +998,11 @@ export class Renderer {
         if (fort & POINT_FORT.armor) g.circle(p.x, p.y, NODE.radius + 18).stroke({ width: 6, color: 0xc4d2e6, alpha: 0.55 });
         if (fort & POINT_FORT.respawn) g.circle(p.x, p.y, NODE.radius + 40 + 8 * Math.sin(now * 0.004)).stroke({ width: 4, color: fc, alpha: 0.7 });
         if (fort & POINT_FORT.turrets) {
-          for (const a of [0, Math.PI]) g.circle(p.x + Math.cos(a) * (NODE.radius + 10), p.y + Math.sin(a) * (NODE.radius + 10), 10).fill({ color: fc, alpha: 0.9 });
+          const rotation = nodeRotation(KESSLER_REACH, p.x, p.y);
+          for (const a of [rotation, rotation + Math.PI]) {
+            const rim = nodeTurretRadius(KESSLER_REACH.points[i].resource, this.shipArt === 'original' ? 'original' : 'reference', a, rotation);
+            g.circle(p.x + Math.cos(a) * rim, p.y + Math.sin(a) * rim, 10).fill({ color: fc, alpha: 0.9 });
+          }
         }
       }
       this.light(p.x, p.y, 22, owner < 0 ? 0x30384f : LIGHT.engine[owner]);
@@ -1457,15 +1463,21 @@ export class Renderer {
     this.camera.y += before.y - after.y;
   }
 
-  /** Screen position of a world point (for mouse steering). */
+  get frameEmitters() { return this.lighting.frameEmitters; }
+  get frameLightingEnabled(): boolean { return this.lighting.enabled; }
+
+  /** Client-space bounds of the actual game canvas, excluding the HUD sidebar. */
+  get viewport(): Viewport {
+    return this.app.canvas.getBoundingClientRect();
+  }
+
+  /** Client position of a world point, matching MouseEvent.clientX/clientY. */
   worldToScreen(x: number, y: number): { x: number; y: number } {
-    const z = this.camera.zoom;
-    return { x: (x - this.camera.x) * z + this.app.screen.width / 2, y: (y - this.camera.y) * z + this.app.screen.height / 2 };
+    return worldToClient({ x, y }, this.camera, this.viewport);
   }
 
   screenToWorld(x: number, y: number): { x: number; y: number } {
-    const z = this.camera.zoom;
-    return { x: (x - this.app.screen.width / 2) / z + this.camera.x, y: (y - this.app.screen.height / 2) / z + this.camera.y };
+    return clientToWorld({ x, y }, this.camera, this.viewport);
   }
 }
 
