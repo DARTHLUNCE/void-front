@@ -27,17 +27,20 @@ function circle(x: number, y: number, dx: number, dy: number, r: number): number
 
 /** Swept circular projectile versus a box: rectangular strips plus round corners. */
 export function hitBox(x: number, y: number, dx: number, dy: number, b: HullBox, r: number): number {
-  let best = 2;
-  const accept = (t: number) => { if (t >= 0 && t < best) best = t; };
-  accept(slab(x, y, dx, dy, b[0] - r, b[1], b[2] + r, b[3]));
-  accept(slab(x, y, dx, dy, b[0], b[1] - r, b[2], b[3] + r));
+  // Earliest non-negative hit of the strips and corner circles (no closure: this runs per shot per box).
+  let best = earlier(2, slab(x, y, dx, dy, b[0] - r, b[1], b[2] + r, b[3]));
+  best = earlier(best, slab(x, y, dx, dy, b[0], b[1] - r, b[2], b[3] + r));
   if (r > 0) {
-    accept(circle(x - b[0], y - b[1], dx, dy, r));
-    accept(circle(x - b[2], y - b[1], dx, dy, r));
-    accept(circle(x - b[0], y - b[3], dx, dy, r));
-    accept(circle(x - b[2], y - b[3], dx, dy, r));
+    best = earlier(best, circle(x - b[0], y - b[1], dx, dy, r));
+    best = earlier(best, circle(x - b[2], y - b[1], dx, dy, r));
+    best = earlier(best, circle(x - b[0], y - b[3], dx, dy, r));
+    best = earlier(best, circle(x - b[2], y - b[3], dx, dy, r));
   }
   return best <= 1 ? best : -1;
+}
+
+function earlier(best: number, t: number): number {
+  return t >= 0 && t < best ? t : best;
 }
 
 export function hitShipSegment(w: World, s: Ship, x: number, y: number, dx: number, dy: number, radius: number): number {

@@ -207,6 +207,14 @@ export function resolveCollisions(w: World): void {
   }
   if(contacts.length===0) return;
   const initialX=w.ships.map(s=>s.x),initialY=w.ships.map(s=>s.y);
+  // Ships in no contact get no push or impulse in any pass, and the map-edge clamp is
+  // idempotent: clamp them once and iterate only the ships that are actually touching.
+  const touching:Ship[]=[];
+  for(const s of w.ships) {
+    if(!s.alive) continue;
+    if(degree[s.slot]>0) touching.push(s);
+    else constrainHull(w,s);
+  }
   // Build the contact manifold once per tick. Iterations solve these constraints,
   // not the expensive compound geometry again. New contacts are discovered next tick.
   for(let pass=0;pass<6;pass++) {
@@ -229,8 +237,7 @@ export function resolveCollisions(w: World): void {
         dvx[b.slot]-=nx*impulse*ib;dvy[b.slot]-=ny*impulse*ib;
       }
     }
-    for(const s of w.ships) {
-      if(!s.alive) continue;
+    for(const s of touching) {
       s.x+=w.pushX[s.slot];s.y+=w.pushY[s.slot];s.vx+=dvx[s.slot];s.vy+=dvy[s.slot];
       constrainHull(w,s);
     }

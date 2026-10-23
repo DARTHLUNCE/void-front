@@ -1,4 +1,4 @@
-import { nodeTurretRadius } from '../worldCollision';
+import { nodeRotation, nodeTurretRadius } from '../worldCollision';
 import type { GunDef, StructureDef } from '../../content/types';
 import { EXPOSED, NODE } from '../../content/structures';
 import { BASE_UPGRADES, TURRET_REFITS, type TurretType } from '../../content/upgrades';
@@ -89,10 +89,12 @@ export function fireNodeTurrets(w: World): void {
       p.turretCd[k] -= DT;
       if (p.turretCd[k] > 0) continue;
       // Mounted on the rim; the rock itself blocks shots, so each turret covers its own side.
-      const a = (k / p.turrets) * Math.PI * 2;
+      // Turret k turns with the rock, so the mirrored node's turret k sits in the mirrored spot.
+      const rotation = nodeRotation(w.map, p.x, p.y);
+      const a = rotation + (k / p.turrets) * Math.PI * 2;
       const ux = Math.cos(a);
       const uy = Math.sin(a);
-      const rim = nodeTurretRadius(p.def.resource, w.opts.hullGeometry ?? 'reference', a);
+      const rim = nodeTurretRadius(p.def.resource, w.opts.hullGeometry ?? 'reference', a, rotation);
       const tx = p.x + ux * rim;
       const ty = p.y + uy * rim;
       const target = nearestEnemy(w, team, tx, ty, NODE.turret.range);

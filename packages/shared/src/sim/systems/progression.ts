@@ -227,6 +227,23 @@ export function processRespawns(w: World): void {
   for (const s of w.ships) if (!s.alive && !s.commander && !s.awaitingClass && w.time >= s.respawnAt) respawnShip(w, s);
 }
 
+/** Spawn spots tried before a ship accepts an overlapping one. */
+const SPAWN_TRIES = 16;
+
+/**
+ * Would a ship appearing here overlap a live friendly hull (bounding circles)? Friendly only:
+ * respawns run in slot order, so an enemy check would see the other team one tick apart and
+ * break mirrored fairness.
+ */
+function spawnBlocked(w: World, s: Ship): boolean {
+  for (const o of w.ships) {
+    if (o === s || !o.alive || o.team !== s.team) continue;
+    const r = s.radius + o.radius;
+    if ((o.x - s.x) ** 2 + (o.y - s.y) ** 2 < r * r) return true;
+  }
+  return false;
+}
+
 export function respawnShip(w: World, s: Ship): void {
   if (s.commander || s.awaitingClass) return;
   const home = w.teams[s.team].mothership;
@@ -235,32 +252,39 @@ export function respawnShip(w: World, s: Ship): void {
   const node = s.spawnChoice >= SPAWN_AT_NODE ? w.points[s.spawnChoice - SPAWN_AT_NODE] : null;
   const fob = !node && s.spawnChoice >= SPAWN_AT_STRUCTURE ? w.structures[s.spawnChoice - SPAWN_AT_STRUCTURE] : null;
   const beacon = s.spawnChoice >= 0 && !fob && !node ? w.deployables.items[s.spawnChoice] : null;
-  if (node && canSpawnAtNode(w, node, s.team)) {
-    // Node Citadel: launch from around the fortified rock.
-    const a = s.rng.next() * Math.PI * 2;
-    const d = NODE.radius + s.radius + 40 + s.rng.next() * 120;
-    s.x = node.x + Math.cos(a) * d;
-    s.y = node.y + Math.sin(a) * d;
-  } else if (fob && canSpawnAt(w, fob, s.team)) {
-    // FOBs launch ships from their enemy-facing side.
-    const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
-    const d = fob.radius + s.radius + 60 + s.rng.next() * 160;
-    s.x = fob.x + sign * Math.cos(a) * d;
-    s.y = fob.y + sign * Math.sin(a) * d;
-  } else if (beacon && beacon.active && beacon.team === s.team && beacon.def.respawn) {
-    const a = s.rng.next() * Math.PI * 2;
-    const d = beacon.def.radius + s.radius + 40 + s.rng.next() * 120;
-    s.x = beacon.x + Math.cos(a) * d;
-    s.y = beacon.y + Math.sin(a) * d;
-  } else {
-    // Spawn on the side of the mothership facing the enemy; offsets are mirrored per team.
-    const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
-    const d = home.radius + s.radius + 80 + s.rng.next() * 260;
-    s.x = home.x + sign * Math.cos(a) * d;
-    s.y = home.y + sign * Math.sin(a) * d;
+  // Try a few spots, widening the spawn band each time, and take the first that doesn't land on a
+  // live hull: a mass (re)spawn otherwise stacks ships, and the hull solver then spends seconds
+  // (hundreds of ms per tick at 100 v 100) prying them apart. Draws come from the ship's own stream.
+  for (let attempt = 0; attempt < SPAWN_TRIES; attempt++) {
+    const spread = 1 + attempt * 0.75;
+    if (node && canSpawnAtNode(w, node, s.team)) {
+      // Node Citadel: launch from around the fortified rock.
+      const a = s.rng.next() * Math.PI * 2;
+      const d = NODE.radius + s.radius + 40 + s.rng.next() * 120 * spread;
+      s.x = node.x + Math.cos(a) * d;
+      s.y = node.y + Math.sin(a) * d;
+    } else if (fob && canSpawnAt(w, fob, s.team)) {
+      // FOBs launch ships from their enemy-facing side.
+      const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
+      const d = fob.radius + s.radius + 60 + s.rng.next() * 160 * spread;
+      s.x = fob.x + sign * Math.cos(a) * d;
+      s.y = fob.y + sign * Math.sin(a) * d;
+    } else if (beacon && beacon.active && beacon.team === s.team && beacon.def.respawn) {
+      const a = s.rng.next() * Math.PI * 2;
+      const d = beacon.def.radius + s.radius + 40 + s.rng.next() * 120 * spread;
+      s.x = beacon.x + Math.cos(a) * d;
+      s.y = beacon.y + Math.sin(a) * d;
+    } else {
+      // Spawn on the side of the mothership facing the enemy; offsets are mirrored per team.
+      const a = s.rng.range(-Math.PI / 2, Math.PI / 2);
+      const d = home.radius + s.radius + 80 + s.rng.next() * 260 * spread;
+      s.x = home.x + sign * Math.cos(a) * d;
+      s.y = home.y + sign * Math.sin(a) * d;
+    }
+    s.x = Math.min(w.map.width - 40, Math.max(40, s.x));
+    s.y = Math.min(w.map.height - 40, Math.max(40, s.y));
+    if (!spawnBlocked(w, s)) break;
   }
-  s.x = Math.min(w.map.width - 40, Math.max(40, s.x));
-  s.y = Math.min(w.map.height - 40, Math.max(40, s.y));
   s.vx = 0;
   s.vy = 0;
   s.angle = s.team === 0 ? 0 : Math.PI;

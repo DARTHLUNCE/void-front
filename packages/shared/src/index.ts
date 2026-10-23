@@ -18,4 +18,4 @@ export * from './sim/systems/status';
 export * from './net/snapshot';
 export * from './sim/loadout';
 
-export { nodeTurretRadius } from './sim/worldCollision';
+export { nodeRotation, nodeTurretRadius } from './sim/worldCollision';

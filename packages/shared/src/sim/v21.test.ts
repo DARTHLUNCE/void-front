@@ -9,6 +9,8 @@ import { createWorld, step } from './step';
 import { ordnanceAp, PRIMITIVES, shipCaster } from './systems/abilities';
 import { spawnDrone } from './systems/drones';
 import { switchPower } from './systems/power';
+import { hitBodySegment } from './hullCollision';
+import { pointBody } from './worldCollision';
 
 describe('v2.1 ordnance caliber', () => {
   it('ability missiles take the ship live AP (Weapons calibration, WEAPONS power) and never overpenetrate', () => {
@@ -118,5 +120,26 @@ describe('v2.1 carrier escorts', () => {
     expect(d.x - a.x).toBeGreaterThan(a.radius * 0.7);
     expect(d.vx).toBeGreaterThan(0);
     expect(Math.abs(d.vy)).toBeLessThan(d.vx);
+  });
+});
+
+describe('merged hull collisions stay fair', () => {
+  it('asteroid rocks mirror their twins through the map center', () => {
+    const w = createWorld({ seed: 1, fleetSize: 1 });
+    let pairs = 0;
+    for (const p of w.points) {
+      const q = w.points.find((o) => o !== p && Math.abs(o.x - (w.map.width - p.x)) < 1 && Math.abs(o.y - (w.map.height - p.y)) < 1);
+      if (!q) continue;
+      pairs++;
+      for (let k = 0; k < 180; k++) {
+        const a = (k / 180) * Math.PI * 2;
+        for (let d = 40; d <= 340; d += 6) {
+          const hp = hitBodySegment(pointBody(w, p), p.x + Math.cos(a) * d, p.y + Math.sin(a) * d, 0, 0, 4) >= 0;
+          const hq = hitBodySegment(pointBody(w, q), q.x - Math.cos(a) * d, q.y - Math.sin(a) * d, 0, 0, 4) >= 0;
+          expect(hq).toBe(hp);
+        }
+      }
+    }
+    expect(pairs).toBeGreaterThan(0);
   });
 });

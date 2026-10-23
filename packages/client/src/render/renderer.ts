@@ -1,4 +1,4 @@
-import { nodeTurretRadius } from '@void-front/shared';
+import { nodeRotation, nodeTurretRadius } from '@void-front/shared';
 import { clientToWorld, worldToClient, type Viewport } from './viewport';
 import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import {
@@ -327,6 +327,8 @@ export class Renderer {
       const states = art.albedo.map((albedo) => {
         const m = new Mesh({ geometry: geom, shader: this.lighting.litShader(albedo.source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
         m.position.set(p.pos.x, p.pos.y);
+        // Same turn as the collision rock (east-half nodes mirror their west twins).
+        m.rotation = nodeRotation(KESSLER_REACH, p.pos.x, p.pos.y);
         m.visible = false;
         shipyard.addChild(m);
         this.lighting.trackReceiver(m);
@@ -996,8 +998,9 @@ export class Renderer {
         if (fort & POINT_FORT.armor) g.circle(p.x, p.y, NODE.radius + 18).stroke({ width: 6, color: 0xc4d2e6, alpha: 0.55 });
         if (fort & POINT_FORT.respawn) g.circle(p.x, p.y, NODE.radius + 40 + 8 * Math.sin(now * 0.004)).stroke({ width: 4, color: fc, alpha: 0.7 });
         if (fort & POINT_FORT.turrets) {
-          for (const a of [0, Math.PI]) {
-            const rim = nodeTurretRadius(KESSLER_REACH.points[i].resource, this.shipArt === 'original' ? 'original' : 'reference', a);
+          const rotation = nodeRotation(KESSLER_REACH, p.x, p.y);
+          for (const a of [rotation, rotation + Math.PI]) {
+            const rim = nodeTurretRadius(KESSLER_REACH.points[i].resource, this.shipArt === 'original' ? 'original' : 'reference', a, rotation);
             g.circle(p.x + Math.cos(a) * rim, p.y + Math.sin(a) * rim, 10).fill({ color: fc, alpha: 0.9 });
           }
         }

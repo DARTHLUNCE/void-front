@@ -33,6 +33,7 @@ function tree(g: BodyGeometry): Node[] {
 let projA=new Float64Array(0),projB=new Float64Array(0);
 const stackA:number[]=[],stackB:number[]=[];
 const axisX=new Float64Array(4),axisY=new Float64Array(4),velocity=new Float64Array(4);
+const candidateAxis=new Int8Array(8),candidateSign=new Int8Array(8),candidateFacing=new Float64Array(8);
 let intervalHi=0;
 
 function project(nodes:Node[],out:Float64Array,x:number,y:number,c:number,s:number,count:number):void {
@@ -132,17 +133,34 @@ export function bodySeparation(a:CollisionBody,b:CollisionBody,out:Separation):b
   project(ta,projA,0,0,1,0,count);project(tb,projB,bx,by,bc,bs,count);
   if(!traverse(ta,tb,count)) return false;
   let best=Infinity,bestX=0,bestY=0,bestFacing=-Infinity;
+  // Try exits best-facing first (pushing A away from B): the likely winner sets a tight
+  // limit early, so the other directions stop as soon as they run past it. Ties still
+  // resolve by facing, so the chosen exit is the same as an unordered search.
+  const center=Math.abs(bx)+Math.abs(by)>1e-7;
+  let n=0;
   for(let axis=0;axis<count;axis++) {
     const ux=axisX[axis],uy=axisY[axis];
     for(let signIndex=0;signIndex<2;signIndex++) {
       const sign=signIndex===0?-1:1;
-      for(let k=0;k<count;k++) velocity[k]=sign*(ux*axisX[k]+uy*axisY[k]);
-      const size=exitDistance(ta,tb,count,best+1e-5)+.001,distance=size*sign;
-      if(!Number.isFinite(size)) continue;
-      const facing=Math.sign(distance)*(Math.abs(bx)+Math.abs(by)>1e-7?-(ux*bx+uy*by):ux);
-      if(size<best-1e-6 || (Math.abs(size-best)<1e-6 && facing>bestFacing)) {
-        best=size;bestX=ux*distance;bestY=uy*distance;bestFacing=facing;
-      }
+      candidateAxis[n]=axis;candidateSign[n]=sign;
+      candidateFacing[n]=sign*(center?-(ux*bx+uy*by):ux);
+      n++;
+    }
+  }
+  for(let i=1;i<n;i++) {
+    const f=candidateFacing[i],a=candidateAxis[i],sg=candidateSign[i];
+    let j=i-1;
+    while(j>=0 && candidateFacing[j]<f) {candidateFacing[j+1]=candidateFacing[j];candidateAxis[j+1]=candidateAxis[j];candidateSign[j+1]=candidateSign[j];j--;}
+    candidateFacing[j+1]=f;candidateAxis[j+1]=a;candidateSign[j+1]=sg;
+  }
+  for(let i=0;i<n;i++) {
+    const axis=candidateAxis[i],sign=candidateSign[i],ux=axisX[axis],uy=axisY[axis];
+    for(let k=0;k<count;k++) velocity[k]=sign*(ux*axisX[k]+uy*axisY[k]);
+    const size=exitDistance(ta,tb,count,best+1e-5)+.001,distance=size*sign;
+    if(!Number.isFinite(size)) continue;
+    const facing=Math.sign(distance)*(center?-(ux*bx+uy*by):ux);
+    if(size<best-1e-6 || (Math.abs(size-best)<1e-6 && facing>bestFacing)) {
+      best=size;bestX=ux*distance;bestY=uy*distance;bestFacing=facing;
     }
   }
   if(!Number.isFinite(best)) return false;
