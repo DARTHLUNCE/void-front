@@ -7,6 +7,8 @@ import './hud/panelFitting.css';
 import type { ShipArtMode } from './art/referenceShips';
 import { BOLT_COLORS, ENGINE_TINTS } from './cosmetics';
 import { Game } from './game';
+import { showIntro } from './intro';
+import { backToMenu, bootToMenu } from './leave';
 import { CALLSIGN, sanitizeCallsign, type BotDifficulty } from '@void-front/shared';
 import type { ControlScheme } from './input';
 
@@ -53,7 +55,8 @@ const key = (...k: string[]) => k.map((x) => `<kbd>${x}</kbd>`).join(' ');
 menu.innerHTML = `
   <div class="terminal">
     <aside class="dock">
-      <div class="sys-tag">ORB-COM // VOID FRONT v2.1</div>
+      <div class="dock-body">
+      <div class="sys-tag"><span>ORB-COM // VOID FRONT v2.1</span><button id="to-title" type="button" title="Back to the title screen (Esc)">◂ Title</button></div>
       <h1>VOID <span>FRONT</span></h1>
       <p class="sub">Sector command terminal · 9 hull classes · 90 nodes</p>
       <div class="opts">
@@ -93,7 +96,8 @@ menu.innerHTML = `
         <div class="row"><span>${key('Shift')} ${key('Space')}</span><em>Sub-Light drive · brake</em></div>
         <div class="row"><span>${key('Tab')} ${key('M')}</span><em>Scoreboard · map</em></div>
       </div>
-      <button id="play" class="primary launch">Launch to sector</button>
+      </div>
+      <div class="dock-foot"><button id="play" class="primary launch">Launch to sector <kbd>Enter</kbd></button></div>
     </aside>
     <main class="viewport">
       <nav class="tabs">${TABS.map((t) => `<button data-tab="${t.id}">${t.name}</button>`).join('')}</nav>
@@ -152,7 +156,11 @@ menu.innerHTML = `
           </article>
           <article>
             <h3>Growing your ship</h3>
-            <p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor), kept all match. Dying spills 40% of unspent shards.</p>
+            <p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor), kept all match. Dying spills 40% of unspent shards. Want a different ship? <b>Change hull</b> on the respawn screen sends you back to the hangar, but your tiers, XP and shards start over.</p>
+          </article>
+          <article>
+            <h3>Score</h3>
+            <p>The live score panel (top right) ranks everyone in the match. Damage to enemy ships and healing your friends score the same. A kill goes to whoever dealt the most of the damage, not the last hit; anyone else who dealt at least 10% gets an assist worth half a kill. Capturing nodes, shooting down enemy nodes and wrecking FOBs score too. Commanders score through their orders: their strikes and wings count like a pilot's guns, and every resource they spend counts.</p>
           </article>
         </div>
       </section>
@@ -188,6 +196,16 @@ menu.innerHTML = `
       </section>
       <section class="pane notes" data-pane="notes">
         <h2>Patch Notes</h2>
+        <article>
+          <h3>Score, assists &amp; hull changes</h3>
+          <ul>
+            <li>The kill feed is replaced by a live score panel: the match top five and your own place. Hold Tab for the full board with score, kills, assists and deaths.</li>
+            <li>Kills go to the ship that dealt the most damage; others with 10% or more get an assist for half a kill.</li>
+            <li>Commanders now score: their strikes, bombs, platforms and wings earn damage, kill and assist score, and spending resources or Credits scores too.</li>
+            <li>The respawn screen says who destroyed you, with what, how much of the damage they dealt, and who assisted.</li>
+            <li>Change hull from the respawn screen: back to the hangar for a new ship (or a command seat); tiers, XP and shards restart.</li>
+          </ul>
+        </article>
         <article>
           <h3>v2.1 · Hangar, strike craft &amp; calibers</h3>
           <ul>
@@ -292,13 +310,63 @@ const showTab = (id: string): void => {
   save('vf.tab', id);
 };
 menu.querySelectorAll<HTMLButtonElement>('.tabs button').forEach((b) => b.addEventListener('click', () => showTab(b.dataset.tab!)));
-showTab(TABS.some((t) => t.id === saved('vf.tab', 'manual')) ? saved('vf.tab', 'manual') : 'manual');
+// Reopen the last tab, except the tech tree: it is a heavy page and no way to greet a new pilot.
+const lastTab = saved('vf.tab', 'manual');
+showTab(lastTab !== 'tree' && TABS.some((t) => t.id === lastTab) ? lastTab : 'manual');
+
+const TIPS = [
+  'Point your bow at the enemy: it carries +25% armor, your stern −25%.',
+  'Take the asteroid nodes: they pay your commanders every minute.',
+  'Healing friends scores exactly as much as damaging enemies.',
+  'The kill goes to whoever dealt the most damage. Help out and you still get an assist.',
+  'Both FOBs have to fall before the enemy Titan loses its shield.',
+  'Shift charges the Sub-Light drive. Any hit drops you out of it.',
+];
+
+/** "Deploying" card from Launch until the hangar (or HUD) is on screen. */
+function showLoading(): () => void {
+  const el = document.createElement('div');
+  el.id = 'loading';
+  el.innerHTML = `<div class="card"><h2>Deploying</h2><div class="bar"><i></i></div><div class="step">Baking hull sprites and lighting</div><p class="tip">${TIPS[Math.floor(Math.random() * TIPS.length)]}</p><button type="button" class="cancel">◂ Back to menu</button></div>`;
+  el.querySelector('.cancel')!.addEventListener('click', backToMenu);
+  document.body.appendChild(el);
+  return () => {
+    el.classList.add('done');
+    setTimeout(() => el.remove(), 400);
+  };
+}
+
+/** Resolves once the HUD shows the hangar, the cockpit or the command panel (or after 8 s). */
+function hudReady(): Promise<void> {
+  const t0 = performance.now();
+  return new Promise((resolve) => {
+    const check = () => {
+      const up = ['picker', 'vhud', 'command'].some((k) => {
+        const n = hud.querySelector<HTMLElement>(`[data-k="${k}"]`);
+        return n && !n.classList.contains('hidden');
+      });
+      if (up || performance.now() - t0 > 8000) resolve();
+      else setTimeout(check, 50);
+    };
+    check();
+  });
+}
+
+// Two frames (so the loading card is on screen), or 120 ms if the tab is hidden and frames are paused.
+const nextPaint = () =>
+  new Promise<void>((r) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => r()));
+    setTimeout(r, 120);
+  });
 
 document.getElementById('play')!.addEventListener('click', async () => {
   const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? 'reference';
+  const loaded = showLoading();
   menu.classList.add('hidden');
   hud.classList.remove('hidden');
   document.body.classList.toggle('no-perf', perfSel.value === 'off');
+  // Let the loading card paint before the renderer bakes its sprites.
+  await nextPaint();
   const game = new Game({
     fleet: Number(fleetSel.value),
     scheme: schemeSel.value as ControlScheme,
@@ -312,7 +380,10 @@ document.getElementById('play')!.addEventListener('click', async () => {
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   try {
     await game.start(stage, hud);
+    await hudReady();
+    loaded();
   } catch (error) {
+    loaded();
     console.error(error);
     const dock = menu.querySelector('.dock')!;
     const message = document.createElement('p');
@@ -329,3 +400,45 @@ document.getElementById('play')!.addEventListener('click', async () => {
     dock.appendChild(retry);
   }
 });
+
+/**
+ * The title screen. Launch starts with the current setup; anything else opens the terminal.
+ * Shown on load and again from the terminal's "Title screen" button (or Esc).
+ */
+let introOpen = false;
+function openIntro(): void {
+  if (introOpen) return;
+  introOpen = true;
+  const art = menu.querySelector<HTMLInputElement>('input[name="shipArt"]:checked')?.value ?? shipArt;
+  const close = () => (introOpen = false);
+  showIntro(document.body, {
+    setup: { callsign: callsignIn, fleet: fleetSel, difficulty: difficultySel, team: teamSel },
+    team: teamSel.value === '1' ? 1 : 0,
+    art: (['reference', 'neutral', 'original'].includes(art) ? art : 'reference') as ShipArtMode,
+    launch: () => {
+      close();
+      document.getElementById('play')!.click();
+    },
+    open: (tab) => {
+      close();
+      if (tab !== 'dock') showTab(tab);
+    },
+  });
+}
+document.getElementById('to-title')!.addEventListener('click', openIntro);
+// In the terminal, Enter launches and Esc goes back to the title (not while typing a call sign or
+// using a dropdown, and not in a match).
+window.addEventListener('keydown', (e) => {
+  if ((e.code !== 'Escape' && e.code !== 'Enter') || introOpen || menu.classList.contains('hidden')) return;
+  const focus = document.activeElement;
+  if (focus instanceof HTMLInputElement || focus instanceof HTMLSelectElement) return;
+  if (e.code === 'Enter') {
+    // A focused button (a tab, the dice) keeps Enter for itself.
+    if (focus instanceof HTMLButtonElement) return;
+    document.getElementById('play')!.click();
+    return;
+  }
+  openIntro();
+});
+// Coming back from a match (Back to menu) opens the terminal; a fresh visit gets the title screen.
+if (!bootToMenu()) openIntro();

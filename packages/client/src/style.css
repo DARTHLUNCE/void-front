@@ -95,6 +95,9 @@ button.primary:hover {
   min-height: 560px;
   display: grid;
   grid-template-columns: 340px 1fr;
+  /* One screen-high row: long tabs (How to Play, Patch Notes) scroll inside their pane instead of
+     stretching the page and pushing Launch to sector down. */
+  grid-template-rows: minmax(0, 1fr);
   gap: 16px;
 }
 
@@ -107,14 +110,36 @@ button.primary:hover {
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
 }
 
+/* The dock is a scrolling body (settings, controls) over a fixed footer that always holds
+   Launch to sector, so the button never overlaps or gets cut off on short screens. */
 #menu .dock {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 22px 20px;
+  min-height: 0;
   border-top: 2px solid var(--cobalt);
   clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%);
-  overflow: auto;
+  overflow: hidden;
+}
+
+#menu .dock-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(74, 168, 255, 0.35) transparent;
+  /* Fade the last lines into the footer so it reads as "more below" when scrolled. */
+  mask-image: linear-gradient(180deg, #000 calc(100% - 22px), transparent);
+}
+
+#menu .dock-foot {
+  flex-shrink: 0;
+  padding: 12px 20px 18px;
+  border-top: 1px solid var(--edge);
+  background: rgba(6, 10, 22, 0.96);
 }
 
 #menu .sys-tag {
@@ -222,13 +247,44 @@ button.primary:hover {
 }
 
 #menu .launch {
-  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7em;
   width: 100%;
   padding: 0.9em 1em;
+  white-space: nowrap;
+}
+
+#menu .launch kbd {
+  font-size: 0.55em;
+  letter-spacing: 0.04em;
+}
+
+/* Short screens: tighter dock so more of it fits before it scrolls. */
+@media (max-height: 760px) {
+  #menu {
+    padding: 10px;
+  }
+  #menu .dock-body {
+    gap: 10px;
+    padding: 16px 18px 12px;
+  }
+  #menu h1 {
+    font-size: 2.1rem;
+  }
+  #menu .dock-foot {
+    padding: 10px 18px 12px;
+  }
+  #menu .launch {
+    padding: 0.7em 1em;
+    font-size: 1.05rem;
+  }
 }
 
 #menu .viewport {
   min-width: 0;
+  min-height: 0;
   display: grid;
   grid-template-rows: auto 1fr;
   border-top: 2px solid var(--ember);
@@ -526,8 +582,107 @@ button.primary:hover {
   max-width: calc(100vw - 32px);
 }
 
-.feed {
+/* Live score (replaces the kill feed): match top five, plus your own place */
+.livescore {
   top: 56px;
+  right: 10px;
+  width: 250px;
+  padding: 6px 8px 7px;
+  border: 1px solid var(--edge);
+  border-radius: 8px;
+  background: var(--panel);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 3px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.live-head small {
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 500;
+}
+
+.live-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto 62px;
+  gap: 6px;
+  align-items: baseline;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.live-row i {
+  font-style: normal;
+  color: var(--dim);
+}
+
+.live-row .nm {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.live-row u {
+  text-decoration: none;
+  font-size: 0.75rem;
+  color: var(--dim);
+}
+
+.live-row b {
+  text-align: right;
+}
+
+.live-row.me {
+  background: rgba(255, 209, 102, 0.14);
+  outline: 1px solid rgba(255, 209, 102, 0.45);
+}
+
+.live-gap {
+  padding-left: 8px;
+  line-height: 0.8;
+  color: var(--dim);
+}
+
+.live-pops {
+  display: grid;
+  gap: 2px;
+}
+
+.live-pops:not(:empty) {
+  margin-top: 5px;
+}
+
+.live-pops > div {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--amber);
+  background: rgba(255, 209, 102, 0.1);
+  animation: live-pop 0.25s ease-out;
+}
+
+@keyframes live-pop {
+  from {
+    transform: translateX(12px);
+    opacity: 0;
+  }
+}
+
+.feed {
+  top: 232px;
   right: 10px;
   display: grid;
   gap: 2px;
@@ -616,9 +771,13 @@ button.primary:hover {
   text-align: right;
 }
 
-.board td:first-child,
-.board th:first-child {
+.board td:nth-child(2),
+.board th:nth-child(2) {
   text-align: left;
+}
+
+.board td:first-child {
+  color: var(--dim);
 }
 
 .board tr.me {
@@ -851,6 +1010,44 @@ button.primary:hover {
 .overlay.death .lost {
   color: #6ff3ff;
   font-weight: 600;
+}
+
+.overlay.death .killer {
+  margin: 6px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.overlay.death .killer small {
+  font-weight: 500;
+  color: var(--dim);
+}
+
+.overlay.death .redeploy {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--edge);
+}
+
+.overlay.death .redeploy button {
+  padding: 5px 16px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 700;
+}
+
+.overlay.death .redeploy button.armed {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: rgba(255, 209, 102, 0.12);
+}
+
+.overlay.death .redeploy small {
+  color: var(--dim);
 }
 
 .spawns {
@@ -1115,8 +1312,14 @@ button.primary:hover {
 #hud.cmdmode .feed {
   right: auto;
   left: 10px;
-  top: 60px;
+  top: 236px;
   justify-items: start;
+}
+
+#hud.cmdmode .livescore {
+  right: auto;
+  left: 10px;
+  top: 60px;
 }
 
 /*
@@ -2400,4 +2603,69 @@ button.primary:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     max-height: 40vh;
   }
+}
+
+/* Title screen links: terminal header and the end-of-match card */
+#menu .sys-tag {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+#to-title {
+  padding: 2px 8px;
+  border: 1px solid rgba(74, 168, 255, 0.35);
+  border-radius: 3px;
+  background: rgba(10, 16, 32, 0.6);
+  font: 600 0.68rem/1.4 var(--mono);
+  letter-spacing: 0.1em;
+  color: #9fd0ff;
+}
+
+#to-title:hover {
+  border-color: #8cf4ff;
+  color: #fff;
+}
+
+.over-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.over-actions .ghost {
+  padding: 0.65em 1.6em;
+  border: 1px solid var(--edge);
+  background: rgba(10, 16, 32, 0.7);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+#menu .sys-tag span,
+#to-title {
+  white-space: nowrap;
+}
+
+/* Hangar "Back to menu" (hud/hangar.ts) */
+.hb-leave {
+  margin-right: 12px;
+  padding: 1px 8px;
+  border: 1px solid rgba(74, 168, 255, 0.35);
+  border-radius: 3px;
+  background: rgba(10, 16, 32, 0.6);
+  font: inherit;
+  letter-spacing: 0.08em;
+  color: #9fd0ff;
+}
+
+.hb-leave:hover {
+  border-color: #8cf4ff;
+  color: #fff;
+}
+
+.hb-leave.armed {
+  border-color: var(--amber);
+  color: var(--amber);
 }

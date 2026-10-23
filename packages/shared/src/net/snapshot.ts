@@ -23,7 +23,7 @@ export const SNAP = {
   self: 64,
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
-  ship: 21,
+  ship: 23,
   projectile: 11, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
   crystal: 3,
   point: 10,
@@ -151,6 +151,11 @@ export const SELF = {
   armorStern: 49,
   ap: 50,
   turrets: 51,
+  /** Last death: credited killer's slot (-1 none: turrets, the environment), their share of the damage, two assisting slots (-1 none). */
+  killedBy: 52,
+  killedByShare: 53,
+  killAssist0: 54,
+  killAssist1: 55,
 } as const;
 
 export const SHIP = {
@@ -177,6 +182,9 @@ export const SHIP = {
   shield: 18,
   maxShield: 19,
   powerMode: 20,
+  /** Match score (content/score.ts) and kill assists. */
+  score: 21,
+  assists: 22,
 } as const;
 export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visible1: 16, human: 32, invulnerable: 64, retreating: 128, commander: 256, docked: 512 } as const;
 
@@ -400,6 +408,10 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     }
     b[s + SELF.reverseMax] = reverseCeiling(w, me);
     b[s + SELF.turrets] = secondaryCount(w, me);
+    b[s + SELF.killedBy] = me.killedBy;
+    b[s + SELF.killedByShare] = me.killedByShare;
+    b[s + SELF.killAssist0] = me.killAssists[0];
+    b[s + SELF.killAssist1] = me.killAssists[1];
 
     // Fleet Command: per order, seconds until ready for our seat, the current (possibly
     // discounted) cost, and whether our seat may issue it.
@@ -442,6 +454,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + SHIP.flags] = f;
     b[k + SHIP.kills] = s.kills;
     b[k + SHIP.deaths] = s.deaths;
+    b[k + SHIP.score] = s.score;
+    b[k + SHIP.assists] = s.assists;
     b[k + SHIP.team] = s.team;
     b[k + SHIP.classIndex] = CLASS_ORDER.indexOf(s.classId);
     b[k + SHIP.hullIndex] = HULL_INDEX[s.hullModel] ?? 0;

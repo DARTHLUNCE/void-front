@@ -15,6 +15,78 @@ export const REFERENCE_SHIPS: ReferenceEntry[] = [{"id":"patrol","label":"Interc
 export const REMAINING_SHIPS: ReferenceEntry[] = [{"id":"destroyer","label":"Destroyer","box":[20,35,310,190],"nozzles":[[45,113],[45,150]],"atlas":"remaining"},{"id":"cruiser","label":"Cruiser","box":[345,35,330,190],"nozzles":[[374,111],[374,134],[374,155]],"atlas":"remaining"},{"id":"battlecruiser","label":"Battlecruiser","box":[685,35,330,190],"nozzles":[[711,118],[711,145]],"atlas":"remaining"},{"id":"hunter","label":"Hunter-Killer","box":[20,315,315,190],"nozzles":[[44,383],[44,407],[44,432]],"atlas":"remaining"},{"id":"strikecruiser","label":"Strike Cruiser","box":[345,310,330,195],"nozzles":[[378,392],[378,424]],"atlas":"remaining"},{"id":"raider","label":"Raider","box":[685,315,330,190],"nozzles":[[712,394],[712,424]],"atlas":"remaining"},{"id":"escort","label":"Escort","box":[20,565,315,240],"nozzles":[[54,657],[54,687],[54,716]],"atlas":"remaining"},{"id":"commandcruiser","label":"Command Cruiser","box":[345,565,330,240],"nozzles":[[408,663],[408,689],[408,713]],"atlas":"remaining"},{"id":"ironclad","label":"Ironclad","box":[685,565,330,240],"nozzles":[[706,677],[706,699]],"atlas":"remaining"},{"id":"mothership","label":"Titan / Mothership","box":[1030,125,780,575],"nozzles":[[1065,299],[1065,355],[1065,416],[1065,474],[1065,529]],"atlas":"remaining","engineRadius":17,"lights":[[1495,415,29],[1717,413,17],[1236,207,7],[1631,207,7],[1236,610,7],[1631,610,7]]}];
 export const ALL_REFERENCE_SHIPS = [...REFERENCE_SHIPS, ...REMAINING_SHIPS, ...WORLD_ASSET_ENTRIES];
 
+/**
+ * Team paint, written into `out` (a copy of `src`): armor-mask panels take the team pigment and
+ * emissive pixels take the team tint. Shared by the in-game bake and the title screen portraits.
+ */
+export function teamPaint(out: Uint8ClampedArray, src: Uint8ClampedArray, mask: Uint8ClampedArray, material: Uint8ClampedArray, team: number, crystal = false): void {
+  const paint = crystal ? (team === 0 ? [0.25,1,1.25] : [1.35,0.85,0.25]) : (team === 0 ? [0.25,0.62,1.2] : [1.25,0.5,0.14]);
+  for (let i=0; i<src.length; i+=4) {
+    const coverage = mask[i]/255;
+    if (coverage === 0) continue;
+    const gray = 0.2126*src[i]+0.7152*src[i+1]+0.0722*src[i+2];
+    // Only code-authored armor masks receive pigment. Original seams, metal,
+    // canopies and engine lights outside those panels retain their source pixels.
+    for (let k=0;k<3;k++) out[i+k]=src[i+k]*(1-coverage)+gray*paint[k]*coverage;
+  }
+  const tint=team === 0 ? [0.48,0.74,1] : [1,0.66,0.32];
+  for (let i=0;i<out.length;i+=4) {
+    const emission=material[i+2]/255;
+    for(let k=0;k<3;k++) out[i+k]*=1-emission*(1-tint[k]);
+  }
+}
+
+/**
+ * Team-painted portraits of reference hulls as image URLs (no GPU work), for screens shown before
+ * the renderer exists. `mode` follows the Cosmetic Drydock: 'neutral' skips the paint.
+ */
+export async function shipPortraits(ids: readonly string[], mode: Exclude<ShipArtMode, 'original'>): Promise<Record<string, [string, string]>> {
+  const entries = ALL_REFERENCE_SHIPS.filter((e) => ids.includes(e.id));
+  const folders = [...new Set(entries.map((e) => e.atlas ?? ''))];
+  const load = async (file: string) => {
+    // onload rather than decode(): decode() can stall while the tab is in the background.
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(new Error(`Could not load ${file}`));
+      image.src = `/ship-test/${file}`;
+    });
+    return image;
+  };
+  const sheets = new Map(await Promise.all(folders.map(async (folder) => [folder, await Promise.all(['original-cutout-atlas.png', 'armor-mask-atlas.png', 'packed-material-atlas.png'].map((f) => load(folder ? `${folder}/${f}` : f)))] as const)));
+  const out: Record<string, [string, string]> = {};
+  for (const entry of entries) {
+    const [image, armor, materialImage] = sheets.get(entry.atlas ?? '')!;
+    const [sx, sy, sw, sh] = entry.box;
+    const crop = (img: HTMLImageElement) => {
+      const [, ctx] = canvas(sw, sh);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      return ctx.getImageData(0, 0, sw, sh).data;
+    };
+    const src = crop(image);
+    const mask = crop(armor);
+    const material = crop(materialImage);
+    // Trim to the visible hull, like the in-game bake, so widths compare across classes.
+    let x0 = sw, y0 = sh, x1 = 0, y1 = 0;
+    for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (src[(y * sw + x) * 4 + 3] > 12) {
+      x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    }
+    if (x0 > x1) continue;
+    const paint = (team: number) => {
+      const [full, g] = canvas(sw, sh);
+      const pixels = g.createImageData(sw, sh);
+      pixels.data.set(src);
+      if (mode !== 'neutral') teamPaint(pixels.data, src, mask, material, team, entry.material === 'crystal');
+      g.putImageData(pixels, 0, 0);
+      const [c, t] = canvas(x1 - x0 + 1, y1 - y0 + 1);
+      t.drawImage(full, -x0, -y0);
+      return c.toDataURL('image/png');
+    };
+    out[entry.id] = [paint(0), paint(1)];
+  }
+  return out;
+}
+
 function canvas(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   const ctx = c.getContext('2d', { willReadFrequently: true });
@@ -72,24 +144,7 @@ export async function loadReferenceShips(mode: ShipArtMode, derivedNormals = tru
       const [c,g] = canvas(w,h);
       const pixels = g.createImageData(w,h);
       pixels.data.set(data.data);
-      if (mode !== 'neutral' && team >= 0) {
-        const paint = entry.material === 'crystal' ? (team === 0 ? [0.25,1,1.25] : [1.35,0.85,0.25]) : (team === 0 ? [0.25,0.62,1.2] : [1.25,0.5,0.14]);
-        for (let i=0; i<data.data.length; i+=4) {
-          const coverage = mask[i]/255;
-          if (coverage === 0) continue;
-          const gray = 0.2126*data.data[i]+0.7152*data.data[i+1]+0.0722*data.data[i+2];
-          // Only code-authored armor masks receive pigment. Original seams, metal,
-          // canopies and engine lights outside those panels retain their source pixels.
-          for (let k=0;k<3;k++) pixels.data[i+k]=data.data[i+k]*(1-coverage)+gray*paint[k]*coverage;
-        }
-      }
-      if (mode !== 'neutral' && team >= 0) {
-        const tint=team === 0 ? [0.48,0.74,1] : [1,0.66,0.32];
-        for (let i=0;i<pixels.data.length;i+=4) {
-          const emission=materialPixels[i+2]/255;
-          for(let k=0;k<3;k++) pixels.data[i+k]*=1-emission*(1-tint[k]);
-        }
-      }
+      if (mode !== 'neutral' && team >= 0) teamPaint(pixels.data, data.data, mask, materialPixels, team, entry.material === 'crystal');
       g.putImageData(pixels,0,0);
       return texture(c);
     };

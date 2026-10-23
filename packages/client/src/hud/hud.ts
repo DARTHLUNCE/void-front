@@ -96,11 +96,15 @@ export interface HudHandlers {
   /** Spend Credits on base `base` (0 Titan, 1–2 our FOBs). */
   upgrade(base: number, track: UpgradeTrack, option: TurretType): void;
   spawn(choice: number): void;
+  /** Respawn screen "Change hull": back to the hangar, progress restarts. */
+  redeploy(): void;
   /** Commander picked an order from the panel. */
   order(id: CommandId): void;
   /** Minimap click at a world position. */
   minimap(x: number, y: number): void;
   restart(): void;
+  /** Leave the match for the menu (hangar Back to menu, end-of-match Title screen). */
+  leave(): void;
 }
 
 /**
@@ -131,6 +135,11 @@ export class Hud {
   private info: MatchInfo | null = null;
   private readonly cache = new Map<string, string>();
   private toastUntil = 0;
+  private redeployArmed = false;
+  /** Our kills and assists last frame, to pop "+100 Kill" / "+50 Assist" under the live score. */
+  private lastKills = -1;
+  private lastAssists = -1;
+  private readonly pops: FeedEntry[] = [];
   scoreboardOpen = false;
   /** Order waiting for a map click, highlighted in the panel. */
   pendingOrder: CommandId | null = null;
@@ -155,6 +164,7 @@ export class Hud {
         <div class="team ember"><span data-k="k1" class="kills">0</span><span class="tname">Ember</span></div>
       </div>
       <canvas class="minimap hud-hit hidden" width="300" height="150"></canvas>
+      <div data-k="live" class="livescore"><div class="live-head"><span>Score</span><small>Hold Tab for full board</small></div><div data-k="liveRows"></div><div data-k="livePops" class="live-pops"></div></div>
       <div data-k="feed" class="feed"></div>
       <div data-k="toast" class="toast"></div>
       <div data-k="vhud" class="vhud hidden">
@@ -249,12 +259,13 @@ export class Hud {
       </div>
       <div data-k="perf" class="perf"></div>
       <div data-k="death" class="overlay death passive hidden"><div class="card panel">
-        <h2>Destroyed</h2><p data-k="respawn"></p><p data-k="lost" class="lost"></p>
+        <h2>Destroyed</h2><p data-k="killer" class="killer"></p><p data-k="respawn"></p><p data-k="lost" class="lost"></p>
         <p class="hint">XP and everything you bought are kept. Only unspent shards spill.</p>
         <div data-k="spawns" class="spawns"></div>
+        <div class="redeploy"><button data-k="redeploy">Change hull</button><small data-k="redeployNote">Pick a new ship in the hangar. Tiers, XP and shards restart; your score stays.</small></div>
       </div></div>
       <div data-k="picker" class="overlay picker hidden"></div>
-      <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><button data-k="again" class="primary">Play again</button></div></div>
+      <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><div class="over-actions"><button data-k="again" class="primary">Play again</button><button data-k="toTitle" class="ghost">Title screen</button></div></div></div>
       <div data-k="board" class="overlay board passive hidden"></div>
     `;
     if (document.documentElement.classList.contains('sidebar-layout')) arrangePilotSidebar(root);
@@ -275,7 +286,7 @@ export class Hud {
       this.orderRows.push(b);
       b.addEventListener('click', () => this.h.order(b.dataset.order as CommandId));
     });
-    this.hangar = new Hangar(this.$.picker, { pickClass: (c) => this.h.pickClass(c), pickSeat: (seat) => this.h.pickSeat(seat) });
+    this.hangar = new Hangar(this.$.picker, { pickClass: (c) => this.h.pickClass(c), pickSeat: (seat) => this.h.pickSeat(seat), leave: () => this.h.leave() });
     this.$.upgrades.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-up]');
       if (!btn) return;
@@ -290,7 +301,20 @@ export class Hud {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-spawn]');
       if (b) this.h.spawn(Number(b.dataset.spawn));
     });
+    // Two clicks: the first arms it (progress restarts), the second docks you in the hangar.
+    this.$.redeploy.addEventListener('click', () => {
+      if (!this.redeployArmed) {
+        this.redeployArmed = true;
+        this.$.redeploy.textContent = 'Confirm: restart in a new hull';
+        this.$.redeploy.classList.add('armed');
+        return;
+      }
+      this.disarmRedeploy();
+      this.h.redeploy();
+    });
     this.$.again.addEventListener('click', () => this.h.restart());
+    // The match can't be torn down in place (renderer, worker), so the title comes back with a reload.
+    this.$.toTitle.addEventListener('click', () => location.reload());
     this.mini = root.querySelector<HTMLCanvasElement>('.minimap')!;
     this.miniCtx = this.mini.getContext('2d')!;
     this.mini.addEventListener('mousedown', (e) => {
@@ -309,6 +333,9 @@ export class Hud {
   setMatch(info: MatchInfo): void {
     this.info = info;
     this.feed.length = 0;
+    this.pops.length = 0;
+    this.lastKills = this.lastAssists = -1;
+    this.disarmRedeploy();
     this.seenTick = -1;
     this.cache.clear();
     this.pendingOrder = null;
@@ -454,22 +481,27 @@ export class Hud {
     this.show('tierPop', !commander && !docked && !over && this.tierReady(snap));
 
     // Death overlay with the shard-loss notice and respawn point choice.
-    this.show('death', !alive && !commander && !docked && !over);
+    const dead = !alive && !commander && !docked && !over;
+    this.show('death', dead);
     if (!alive && !commander && !docked) this.updateDeath(snap, myTeam);
+    else this.disarmRedeploy();
 
-    // Kill feed and notable events from this tick.
+    // Our own kills and assists pop under the live score (the kill feed is gone: the score panel replaces it).
+    const myKills = b[me + SHIP.kills];
+    const myAssists = b[me + SHIP.assists];
+    if (this.lastKills >= 0 && myKills > this.lastKills) this.pushPop('<b>Kill</b> confirmed', now);
+    if (this.lastAssists >= 0 && myAssists > this.lastAssists) this.pushPop('<b>Assist</b> · half kill score', now);
+    this.lastKills = myKills;
+    this.lastAssists = myAssists;
+    while (this.pops.length && this.pops[this.pops.length - 1].until < now) this.pops.pop();
+    this.set('livePops', this.pops.map((p) => p.html).join(''), 'html');
+
+    // Objective and command events from this tick (kills are on the score panel, not here).
     if (b[H.tick] !== this.seenTick) {
       this.seenTick = b[H.tick];
       for (let i = 0, k = snap.o.events; i < b[H.eventCount]; i++, k += SNAP.event) {
         const type = b[k];
-        if (type === EventType.Kill) {
-          const killer = b[k + 1];
-          const victim = b[k + 2];
-          const vt = b[snap.ship(victim) + SHIP.team];
-          const kname = killer >= 0 ? this.name(killer, b[snap.ship(killer) + SHIP.team]) : `<span style="color:${TEAM_CSS[1 - vt]}">Turret</span>`;
-          const mine = killer === info.selfSlot || victim === info.selfSlot;
-          this.pushFeed(`<div class="${mine ? 'mine' : ''}">${kname} <b>›</b> ${this.name(victim, vt)}</div>`, now);
-        } else if (type === EventType.PointFlip) {
+        if (type === EventType.PointFlip) {
           const p = KESSLER_REACH.points[b[k + 1]];
           const team = b[k + 2];
           this.pushFeed(`<div><span style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]}</span> took <b>${p.name}</b></div>`, now);
@@ -500,6 +532,7 @@ export class Hud {
     if (now - this.lastMini > 200) {
       this.lastMini = now;
       if (mapOn) this.drawMinimap(snap, myTeam);
+      this.renderLive(snap);
       if (this.scoreboardOpen) this.renderBoard(snap);
     }
     this.set('perf', `${fps.toFixed(0)} fps · sim ${simMs.toFixed(2)} ms · ${b[H.projectileCount]} shots`);
@@ -516,6 +549,46 @@ export class Hud {
 
   private pushFeed(html: string, now: number): void {
     this.feed.unshift({ html, until: now + 5000 });
+  }
+
+  private pushPop(html: string, now: number): void {
+    this.pops.unshift({ html: `<div>${html}</div>`, until: now + 2500 });
+    if (this.pops.length > 3) this.pops.length = 3;
+  }
+
+  private disarmRedeploy(): void {
+    if (!this.redeployArmed) return;
+    this.redeployArmed = false;
+    this.$.redeploy.textContent = 'Change hull';
+    this.$.redeploy.classList.remove('armed');
+  }
+
+  /** Every pilot and commander in the match, best score first (kills, then slot, break ties). */
+  private ranked(snap: Snap): number[] {
+    const b = snap.buf;
+    const slots = Array.from({ length: this.info!.fleetSize * 2 }, (_, i) => i);
+    const score = (s: number) => Math.floor(b[snap.ship(s) + SHIP.score]);
+    return slots.sort((a, c) => score(c) - score(a) || b[snap.ship(c) + SHIP.kills] - b[snap.ship(a) + SHIP.kills] || a - c);
+  }
+
+  /** The live score panel (top right): the match top five, and your own place if you aren't in it. */
+  private renderLive(snap: Snap): void {
+    const info = this.info!;
+    const b = snap.buf;
+    const order = this.ranked(snap);
+    const mine = order.indexOf(info.selfSlot);
+    const row = (place: number) => {
+      const slot = order[place];
+      const k = snap.ship(slot);
+      const team = b[k + SHIP.team];
+      const cmd = (b[k + SHIP.flags] & SHIP_FLAG.commander) !== 0;
+      const tag = cmd ? 'CMD' : `T${b[k + SHIP.rank]}`;
+      return `<div class="live-row${slot === info.selfSlot ? ' me' : ''}"><i>${place + 1}</i><span class="nm" style="color:${TEAM_CSS[team]}">${info.names[slot]}</span><u>${tag}</u><b>${Math.floor(b[k + SHIP.score]).toLocaleString()}</b></div>`;
+    };
+    let html = '';
+    for (let p = 0; p < Math.min(5, order.length); p++) html += row(p);
+    if (mine >= 5) html += `<div class="live-gap">…</div>${row(mine)}`;
+    this.set('liveRows', html, 'html');
   }
 
   private classOf(snap: Snap): ShipClass {
@@ -742,6 +815,7 @@ export class Hud {
     const b = snap.buf;
     const s = snap.o.self;
     this.set('respawn', `Respawning in ${b[s + SELF.respawnIn].toFixed(1)}s`);
+    this.set('killer', this.killerLine(snap), 'html');
     const lost = b[s + SELF.shardsLost];
     const keep = Math.round(this.info!.deathShardKeep * 100);
     this.set('lost', lost > 0 ? `Lost ◆ ${Math.floor(lost)} unspent shards (kept ${keep}%) — they dropped as loot where you died.` : 'No unspent shards were lost.');
@@ -760,6 +834,24 @@ export class Hud {
       options.push(`<button data-spawn="${idx}" class="${choice === idx ? 'on' : ''}">Beacon ${++n}</button>`);
     }
     this.set('spawns', `<span>Spawn at</span>${options.join('')}`, 'html');
+  }
+
+  /** "Destroyed by Sable-13 · Cruiser T2 · 64% of the damage", plus who assisted. */
+  private killerLine(snap: Snap): string {
+    const b = snap.buf;
+    const s = snap.o.self;
+    const killer = b[s + SELF.killedBy];
+    let line: string;
+    if (killer >= 0) {
+      const k = snap.ship(killer);
+      const what = b[k + SHIP.flags] & SHIP_FLAG.commander ? 'Fleet Command strike' : `${CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.name ?? ''} T${b[k + SHIP.rank]}`;
+      line = `Destroyed by ${this.name(killer, b[k + SHIP.team])} <small>· ${what} · ${Math.round(b[s + SELF.killedByShare] * 100)}% of the damage</small>`;
+    } else {
+      line = 'Destroyed by turrets and base defenses';
+    }
+    const helpers = [b[s + SELF.killAssist0], b[s + SELF.killAssist1]].filter((a) => a >= 0);
+    if (helpers.length) line += `<br><small>Assisted by ${helpers.map((a) => this.name(a, b[snap.ship(a) + SHIP.team])).join(', ')}</small>`;
+    return line;
   }
 
   private updateCommand(snap: Snap): void {
@@ -896,17 +988,23 @@ export class Hud {
     const info = this.info!;
     const b = snap.buf;
     const cols = [0, 1].map((team) => {
-      const rows: { slot: number; rank: number; cls: string; kills: number; deaths: number; flags: number }[] = [];
+      const rows: { slot: number; rank: number; cls: string; score: number; kills: number; assists: number; deaths: number; flags: number }[] = [];
+      let total = 0;
       for (let slot = team * info.fleetSize; slot < (team + 1) * info.fleetSize; slot++) {
         const k = snap.ship(slot);
-        rows.push({ slot, rank: b[k + SHIP.rank], cls: CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.name ?? '', kills: b[k + SHIP.kills], deaths: b[k + SHIP.deaths], flags: b[k + SHIP.flags] });
+        const score = Math.floor(b[k + SHIP.score]);
+        total += score;
+        rows.push({ slot, rank: b[k + SHIP.rank], cls: CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.name ?? '', score, kills: b[k + SHIP.kills], assists: b[k + SHIP.assists], deaths: b[k + SHIP.deaths], flags: b[k + SHIP.flags] });
       }
-      rows.sort((a, c) => c.rank - a.rank || c.kills - a.kills);
-      return `<div class="col"><h3 style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]} · ${b[team === 0 ? H.kills0 : H.kills1]} kills</h3><table><tr><th>Pilot</th><th>Class</th><th>T</th><th>K</th><th>D</th></tr>${rows
-        .slice(0, 20)
+      rows.sort((a, c) => c.score - a.score || c.kills - a.kills || a.slot - c.slot);
+      // Top 20, and always our own row.
+      const shown = rows.slice(0, 20);
+      const mine = rows.findIndex((r) => r.slot === info.selfSlot);
+      if (mine >= 20) shown.push(rows[mine]);
+      return `<div class="col"><h3 style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]} · ${total.toLocaleString()} score · ${b[team === 0 ? H.kills0 : H.kills1]} kills</h3><table><tr><th>#</th><th>Pilot</th><th>Class</th><th>T</th><th>Score</th><th>K</th><th>A</th><th>D</th></tr>${shown
         .map(
           (r) =>
-            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.rank}</td><td>${r.kills}</td><td>${r.deaths}</td></tr>`,
+            `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${rows.indexOf(r) + 1}</td><td>${info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.flags & SHIP_FLAG.commander ? '–' : r.rank}</td><td>${r.score.toLocaleString()}</td><td>${r.kills}</td><td>${r.assists}</td><td>${r.deaths}</td></tr>`,
         )
         .join('')}</table></div>`;
     });

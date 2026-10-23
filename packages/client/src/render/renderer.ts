@@ -38,6 +38,7 @@ import type { ArtTexture } from '../art/pixiArt';
 import type { Snap } from '../snap';
 import { Lighting, LIGHT_QUALITY, litGeometry } from './lighting';
 import { makeTextures, type LitArt, type Textures } from './textures';
+import { ShipFx } from './shipFx';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
 /** Pilot camera: at least this much of the world across, more for long-range hulls (see viewWidthFor). */
@@ -228,6 +229,11 @@ export class Renderer {
   private readonly glowLayer = new Container();
   private readonly shotLayer = new Container();
   private readonly shipLayer = new Container();
+  /** Burning wrecks (under the ships), smoke and debris, and hull-shaped shields (over them). */
+  private readonly wreckLayer = new Container();
+  private readonly smokeLayer = new Container();
+  private readonly shieldLayer = new Container();
+  private shipFx!: ShipFx;
   private readonly fxLayer = new Container();
   private readonly barLayer = new Graphics();
   private readonly labelLayer = new Container();
@@ -338,7 +344,10 @@ export class Renderer {
       this.crystalLayer,
       this.glowLayer,
       this.shotLayer,
+      this.wreckLayer,
       this.shipLayer,
+      this.smokeLayer,
+      this.shieldLayer,
       this.fxLayer,
       this.fxGraphics,
       this.barLayer,
@@ -357,6 +366,13 @@ export class Renderer {
     this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
     this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
+    this.shipFx = new ShipFx(this.app.renderer, this.wreckLayer, this.shieldLayer, this.smokeLayer, this.tex.glow, this.tex.particle, {
+      spark: (x, y, vx, vy, life, color, size) => {
+        if (this.particles.length < PARTICLE_CAP) this.particles.push({ x, y, vx, vy, life, max: life, color, size });
+      },
+      burst: (x, y, color, count, speed) => this.burst(x, y, color, count, speed),
+      light: (x, y, r, color, alpha) => this.light(x, y, r, color, alpha),
+    });
     this.drawStatic();
   }
 
@@ -365,6 +381,7 @@ export class Renderer {
     this.particles.length = 0;
     this.rings.length = 0;
     this.beams.length = 0;
+    this.shipFx?.reset();
     this.seenTick = -1;
     this.exhaustGimbals.length = 0;
     this.cmdZoom = 0;
@@ -679,6 +696,7 @@ export class Renderer {
     for (const pool of this.hullPools.values()) pool.begin();
     this.glows.begin();
     this.flares.begin();
+    this.shipFx.begin(dt);
     const bars = this.barLayer;
     bars.clear();
     const warG = this.warLayer;
@@ -730,7 +748,9 @@ export class Renderer {
 
       const art = this.hullFor(curr, slot);
       const s = this.hullPool(art.id, team).next();
-      s.position.set(x, y);
+      // Hits nudge the hull a few units (cosmetic).
+      const [jx, jy] = this.shipFx.jolt(slot, b[k + SHIP.hull] / Math.max(1, b[k + SHIP.maxHull]));
+      s.position.set(x + jx, y + jy);
       s.rotation = rot;
       const radius = CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.radius ?? 20;
       if (isMe) {
@@ -772,6 +792,9 @@ export class Renderer {
       // Keep the rendered player hull at its collision scale; brackets identify the pilot.
       s.scale.set(1);
       if (cloaked) glow.alpha *= 0.3;
+      // The hull-shaped energy shield: lit after hits while it holds, flaring where shots land.
+      const shieldMax = b[k + SHIP.maxShield];
+      this.shipFx.shield(slot, art.id, this.tex.hulls[art.id], team, x + jx, y + jy, rot, isMe ? 1.15 : 1, shieldMax > 0 ? Math.max(0, b[k + SHIP.shield]) / shieldMax : 0, cloaked);
       this.statusFx(bars, x, y, status, now);
 
       // Segmented industrial hull bar (and the energy shield above it) for anyone damaged, plus us always.
@@ -817,6 +840,7 @@ export class Renderer {
       }
     }
     for (const pool of this.hullPools.values()) pool.end();
+    this.shipFx.end(dt);
     for (const pool of this.assetPools.values()) pool.end();
     this.glows.end();
     this.flares.end();
@@ -830,6 +854,15 @@ export class Renderer {
           const victim = b[k + 2];
           const team = b[curr.ship(victim) + SHIP.team];
           this.burst(b[k + 3], b[k + 4], TEAM_COLORS[team], 22, 260);
+          // The hull doesn't just vanish: it burns out, then breaks apart.
+          const vk = curr.ship(victim);
+          const hull = this.hullFor(curr, victim);
+          const lit = this.tex.hulls[hull.id];
+          if (lit) this.shipFx.kill(lit, team, b[k + 3], b[k + 4], b[vk + SHIP.vx], b[vk + SHIP.vy], b[vk + SHIP.angle], CLASSES[CLASS_ORDER[b[vk + SHIP.classIndex]]]?.radius ?? 20);
+        } else if (type === EventType.ShieldHit) {
+          this.shipFx.shieldHit(b[k + 1], b[k + 5], b[k + 6]);
+        } else if (type === EventType.ShieldBreak) {
+          this.shipFx.shieldBreak(b[k + 1]);
         } else if (type === EventType.StructureDestroyed) {
           this.burst(b[k + 3], b[k + 4], 0xffffff, 300, 900);
         } else if (type === EventType.Explosion) {

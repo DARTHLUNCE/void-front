@@ -1,4 +1,5 @@
 import { snapshotMatchesSchema } from '@void-front/shared';
+import { backToMenu } from './leave';
 import { COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
 import type { ShipArtMode } from './art/referenceShips';
 import { Hud } from './hud/hud';
@@ -65,9 +66,11 @@ export class Game {
       pickSeat: (seat) => this.send({ type: 'pickSeat', seat }),
       upgrade: (base, track, option) => this.send({ type: 'upgrade', base, track, option }),
       spawn: (choice) => this.send({ type: 'spawn', choice }),
+      redeploy: () => this.send({ type: 'redeploy' }),
       order: (id) => this.armOrder(id),
       minimap: (x, y) => this.onMinimap(x, y),
       restart: () => this.restart(),
+      leave: () => backToMenu(),
     });
     void FrameLighting.create(hudRoot).then(frame => { this.frameLighting = frame; });
     this.input = new Input(this.opts.scheme, {
@@ -83,7 +86,8 @@ export class Game {
         else if (zoom) this.setPilotZoom(this.renderer.pilotZoom * (dy < 0 ? 1.1 : 1 / 1.1));
         else this.input.stepThrottle(dy < 0 ? 1 : -1);
       },
-      escape: () => this.armOrder(null),
+      // Esc in the hangar goes back to the menu; in a command seat it cancels an armed order.
+      escape: () => (this.mode() === 'picker' ? this.hud.hangar.leave() : this.armOrder(null)),
       confirm: () => this.mode() === 'picker' && this.hud.hangar.launch(),
     }, this.renderer.worldToScreen(this.renderer.camera.x, this.renderer.camera.y));
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
