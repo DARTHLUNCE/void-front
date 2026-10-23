@@ -1,124 +1,93 @@
-/* Gameplay-first sidebar. ?hud=bottom keeps the original bottom layout. */
-.sidebar-layout { --hud-width: clamp(300px, 24vw, 340px); --play-center: calc(50% + var(--hud-width) / 2); }
-.sidebar-layout #stage { left: var(--hud-width); }
+/* Alpha apertures and cockpit-panels.css share the hand-authored source geometry.
+ * Split the source at x835/y160 so the top readouts stay legible on short screens. */
+.sidebar-layout {
+  --hud-width: clamp(340px,28.35vw,474px);
+  --hud-top-height: clamp(80px,9.6154dvh,110px);
+  --play-left: calc(var(--hud-width) + (100vw - var(--hud-width)) * .014699);
+  --play-right: calc((100vw - var(--hud-width)) * .022759);
+  --play-top: calc(var(--hud-top-height) + (100dvh - var(--hud-top-height)) * .015957);
+  --play-bottom: calc((100dvh - var(--hud-top-height)) * .046543);
+  --play-center: calc((100% + var(--play-left) - var(--play-right)) / 2);
+  --noir-ink: #e0e4cc; --noir-dim: #b9c1ac; --noir-phosphor: #b9d2ab;
+  --noir-amber: #e2b66c; --noir-warn: #ff9b83; --noir-dark: #050908;
+  --noir-line: #505e52; --noir-step: 4px;
+  --noir-font: 'Share Tech Mono',Consolas,monospace;
+}
+.sidebar-layout #stage { left: var(--play-left); right: var(--play-right); top: var(--play-top); bottom: var(--play-bottom); }
 .sidebar-layout #stage canvas { position: absolute; }
-.sidebar-layout #hud::before {
-  content: ''; position: absolute; inset: 0 auto 0 0; width: var(--hud-width);
-  background: #080e18; border-right: 1px solid #30445c; pointer-events: auto;
+.sidebar-layout .noir-window-frame { inset: var(--hud-top-height) 0 0 var(--hud-width); z-index: 3; pointer-events: none;
+  background: url('/assets/ui/noir-window-cutout.png') center / 100% 100% no-repeat; }
+.sidebar-layout .noir-shell { inset: 0 auto 0 0; width: var(--hud-width); pointer-events: auto; z-index: 4; }
+.sidebar-layout .noir-shell > .noir-toggle { display: none; }
+.sidebar-layout .noir-rack { height: 100%; overflow: hidden; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #758374 #080b0a; }
+.sidebar-layout .noir-surface { position: relative; isolation: isolate; width: 100%; height: 100%; background: var(--noir-dark); }
+/* Real transparent glass apertures. Artwork is above content, but never intercepts input. */
+.sidebar-layout .noir-surface::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: url('/assets/ui/noir-rail-cutout.png') center / 100% 100% no-repeat; }
+.sidebar-layout .noir-window-frame, .sidebar-layout .noir-surface::after, .sidebar-layout .noir-top-surface::after { filter: url('#noir-frame-grade'); }
+.sidebar-layout .vhud { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; display: block; padding: 0;
+  color: var(--noir-ink); font-family: var(--noir-font); font-variant-numeric: tabular-nums; pointer-events: auto;
+  --gold: var(--noir-amber); --shard: var(--noir-phosphor); --live: var(--noir-phosphor); --warn: var(--noir-warn); }
+.sidebar-layout .vhud > section { min-width: 0; min-height: 0; }
+.sidebar-layout :is(.noir-flight,.noir-upgrades,.noir-power,.vhud-upgrades-bank,.vhud-up-grid,.led-power-panel,.noir-power-keys) { display: contents; }
+.sidebar-layout .noir-screen { padding: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; background: none; }
+.sidebar-layout .top { left: var(--hud-width); right: 0; top: 0; height: var(--hud-top-height); transform: none; display: block; overflow: auto; scrollbar-width: thin; z-index: 4; }
+.sidebar-layout .noir-top-surface { position: relative; isolation: isolate; width: max(100%,900px); height: 100%; background: var(--noir-dark); color: var(--noir-ink); font-family: var(--noir-font); }
+.sidebar-layout .noir-top-surface::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: url('/assets/ui/noir-top-cutout.png') center / 100% 100% no-repeat; }
+.sidebar-layout .top :is(.team,.clock,.ms) { margin: 0; padding: 0; z-index: 1; overflow: hidden; }
+.sidebar-layout .top .team { display: flex; justify-content: space-between; align-items: center; gap: 4px; border: 0; background: none; border-radius: 0; font-size: 12px; color: var(--noir-dim); }
+.sidebar-layout .top .kills { font-size: 18px; color: var(--noir-amber); min-width: 2ch; }
+.sidebar-layout .top .clock { display: grid; place-items: center; font-size: 20px; font-weight: 400; color: var(--noir-amber); }
+.sidebar-layout .top .pointstrip { display: contents; }
+.sidebar-layout .top .pointstrip span { z-index: 1; display: grid; place-items: center; padding: 0; border: 0; border-radius: 0; background: #09110e; color: var(--noir-dim); font-size: 10px; line-height: 1; min-width: 0; }
+.sidebar-layout .top .pointstrip span i { display: none; }
+.sidebar-layout .top .pointstrip span.c { color: #b9d8dc; background: #183638; }
+.sidebar-layout .top .pointstrip span.e { color: #f1c48d; background: #382a19; }
+.sidebar-layout .top .pointstrip span.contested { outline: 1px solid var(--noir-warn); outline-offset: -1px; }
+.sidebar-layout .top .ms { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px; align-content: center; }
+.sidebar-layout .noir-fleet-title { grid-column: 1/-1; font-size: 10px; color: var(--noir-ink); }
+.sidebar-layout .msbar { width: 100%; height: 5px; background: #222c25; border-radius: 0; }
+.sidebar-layout .msbar.cobalt { grid-column: 1; grid-row: 2; }
+.sidebar-layout .msbar.ember { grid-column: 1; grid-row: 3; }
+.sidebar-layout .msbar i { background: var(--noir-phosphor); }
+.sidebar-layout .msbar.ember i { background: var(--noir-amber); margin-left: 0; }
+.sidebar-layout .fobs.cobalt { grid-column: 2; grid-row: 2; }
+.sidebar-layout .fobs.ember { grid-column: 2; grid-row: 3; }
+.sidebar-layout .fobs { color: var(--noir-phosphor); }
+.sidebar-layout .fobs.ember { color: var(--noir-amber); }
+.sidebar-layout #hud { --cobalt: #abc4c1; --ember: #e2b66c; }
+.sidebar-layout #hud > .banner { top: calc(var(--play-top) + 8px); left: var(--play-center); transform: translateX(-50%); color: var(--noir-amber); }
+.sidebar-layout .toast, .sidebar-layout .minimap.big { left: var(--play-center); }
+.sidebar-layout .overlay:not(.picker) { left: var(--play-left); right: var(--play-right); }
+.sidebar-layout .minimap.big { max-width: calc(100vw - var(--play-left) - 24px); max-height: 85vh; object-fit: contain; }
+.sidebar-layout .board .cols { max-width: calc(100vw - var(--play-left) - 24px); overflow: auto; }
+.sidebar-layout .perf { left: calc(var(--play-left) + 8px); top: calc(var(--play-top) + 8px); font-size: 10px; color: var(--noir-dim); }
+.sidebar-layout .feed { top: calc(var(--play-top) + 32px); right: 24px; }
+.sidebar-layout .tierpop { left: calc(var(--play-left) + 8px); right: auto; bottom: 4%; max-height: 75vh; overflow-y: auto; }
+.sidebar-layout .command { inset: 24px auto 24px 24px; width: calc(var(--hud-width) - 48px); overflow-y: auto; }
+
+.sidebar-layout .overlay { z-index: 10; }
+@media (max-width: 760px) {
+  .sidebar-layout { --hud-width: 0px; }
+  .sidebar-layout .noir-shell { width: min(360px,100vw); z-index: 20; pointer-events: none; }
+  .sidebar-layout .noir-shell > .noir-toggle { display: block; position: fixed; bottom: 12px; left: 12px; padding: 8px 12px; background: #171f1c; color: var(--noir-ink); border: 1px solid var(--noir-line); cursor: pointer; pointer-events: auto; z-index: 3; }
+  .sidebar-layout .noir-shell:not(.drawer-open) > .noir-rack { display: none; }
+  .sidebar-layout .noir-shell.drawer-open .noir-rack { pointer-events: auto; height: calc(100% - 56px); }
+  .sidebar-layout .command { width: min(340px,calc(100vw - 32px)); }
 }
-.sidebar-layout .vhud {
-  inset: 0 auto 0 0; width: var(--hud-width); display: flex; flex-direction: column;
-  align-items: stretch; justify-content: flex-start; gap: 8px; padding: 10px;
-  overflow: auto; overscroll-behavior: contain; scrollbar-width: thin;
-  scrollbar-color: #35507e #080e18; pointer-events: auto; font-variant-numeric: tabular-nums;
-}
-.sidebar-layout .pilot-section { flex-shrink: 0; min-width: 0; }
-.sidebar-layout .pilot-section-title {
-  margin: 0 0 6px; padding: 0 0 5px; border-bottom: 1px solid #27364a;
-  color: #a5b6cd; font: 700 10px/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase;
-}
-.sidebar-layout .pilot-status .pilot-section-title { display: flex; justify-content: space-between; }
-.sidebar-layout .pilot-health-state { color: var(--hull-color, #3ce68a); font-size: 9px; letter-spacing: .04em; }
-.sidebar-layout .pilot-status > .vhud-tier-badge {
-  display: block; margin: 0 0 6px; padding: 0; border: 0; background: none;
-  color: #edf5ff; font-size: 14px; line-height: 1.2; letter-spacing: .02em; white-space: normal;
-}
-.sidebar-layout .pilot-vitals { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 10px; }
-.sidebar-layout .ship-array-screen { width: 64px; height: 64px; box-shadow: none; }
-.sidebar-layout .ship-shield-ring, .sidebar-layout .ship-hull-ring {
-  mask: radial-gradient(circle closest-side, transparent 85%, #000 88%);
-  -webkit-mask: radial-gradient(circle closest-side, transparent 85%, #000 88%); filter: none;
-}
-.sidebar-layout .ship-hull-ring { inset: 9px; }
-.sidebar-layout .ship-inner-crt { inset: 13px; }
-.sidebar-layout .ship-silhouette-wrap { inset: 0; }
-.sidebar-layout .ship-readout-overlay { display: none; }
-.sidebar-layout .pilot-readouts { display: grid; gap: 9px; }
-.sidebar-layout .pilot-meter > div:first-child { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 11px; color: #acbcd0; }
-.sidebar-layout .pilot-meter b { font-size: 13px; color: #edf5ff; }
-.sidebar-layout .pilot-meter-track { height: 6px; margin-top: 4px; background: #1c293b; border-radius: 2px; overflow: hidden; }
-.sidebar-layout .pilot-meter-track i { display: block; height: 100%; background: #69baff; transition: width .12s linear; }
-.sidebar-layout .pilot-meter.hull i { background: var(--hull-color, #3ce68a); }
-.sidebar-layout .ship-armor-arcs { justify-content: flex-end; gap: 12px; margin: 5px 0 8px; font-size: 9px; }
-.sidebar-layout .led-power-panel { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 0; background: none; border: 0; }
-.sidebar-layout .led-power-head { grid-column: 1; grid-row: 1; align-self: center; display: flex; gap: 8px; text-align: left; margin: 0; font-size: 9px; letter-spacing: .04em; color: #94a6be; }
-.sidebar-layout .led-power-head [data-k="powerMode"] { color: #d0def0; }
-.sidebar-layout .led-eq-btn { grid-column: 2; grid-row: 1; margin: 0; padding: 3px 5px; font-size: 9px; }
-.sidebar-layout .led-cols { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 5px; }
-.sidebar-layout .led-col { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 7px 6px; border: 1px solid #30415a; border-radius: 3px; background: #101c2b; }
-.sidebar-layout .led-col small { grid-column: 1 / -1; grid-row: 1; font-size: 10px; letter-spacing: 0; }
-.sidebar-layout .led-col .led-pct { grid-column: 1; grid-row: 2; font-size: 12px; }
-.sidebar-layout .led-col kbd { grid-column: 2; grid-row: 2; }
-.sidebar-layout .led-stack { display: none; }
-.sidebar-layout .led-col:hover, .sidebar-layout button:hover { border-color: #83caff; background-color: #172c42; }
-.sidebar-layout .vhud-weapons-dash, .sidebar-layout .vhud-upgrades-bank { padding: 0; border: 0; background: none; box-shadow: none; }
-.sidebar-layout .vhud-weapons-dash { display: grid; grid-template-columns: 1fr; gap: 4px; }
-.sidebar-layout .w-slot { padding: 7px 8px; gap: 4px; border-radius: 3px; }
-.sidebar-layout .w-slot.primary { display: grid; grid-template-columns: 1fr auto; gap: 4px 6px; border-color: #3b5b75; }
-.sidebar-layout .w-slot.primary .w-slot-head, .sidebar-layout .w-slot.primary .w-slot-title, .sidebar-layout .w-slot.primary .w-slot-meta, .sidebar-layout .w-quirk { grid-column: 1 / -1; }
-.sidebar-layout .w-slot.primary .turret-subpill { display: none; }
-.sidebar-layout .w-slot-title { font-size: 13px; line-height: 1.2; letter-spacing: .015em; white-space: normal; overflow-wrap: anywhere; }
-.sidebar-layout .w-slot[data-ab] { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; }
-.sidebar-layout .w-slot[data-ab] .w-slot-head { grid-column: 1; grid-row: 1; justify-content: flex-start; gap: 6px; }
-.sidebar-layout .w-slot[data-ab] .w-slot-title { grid-column: 1; grid-row: 2; }
-.sidebar-layout .w-slot[data-ab] .w-slot-meta { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-.sidebar-layout .w-slot[data-ab] .sub { display: none; }
-.sidebar-layout .w-slot .status-tag { font-size: 12px; min-width: 40px; text-align: right; }
-.sidebar-layout .w-slot.empty, .sidebar-layout .w-slot.locked { opacity: 1; background: transparent; border-color: #1e2b3d; }
-.sidebar-layout .w-slot.empty .w-slot-title, .sidebar-layout .w-slot.locked .w-slot-title { color: #8393aa; font-size: 11px; }
-.sidebar-layout .w-slot.locked .status-tag, .sidebar-layout .w-slot.empty .status-tag { color: #8393aa; font-size: 9px; }
-.sidebar-layout .w-slot.ready { border-color: #345a50; }
-.sidebar-layout .w-slot-cd { height: 2px; }
-.sidebar-layout .w-slot-meta { font-size: 10px; flex-wrap: wrap; white-space: normal; }
-.sidebar-layout .vhud-bank-strip { display: grid; gap: 5px; margin: 0 0 7px; padding: 0; border: 0; }
-.sidebar-layout .vhud-shard-counter { font-size: 11px; }
-.sidebar-layout .vhud-shard-counter b { font-size: 16px; }
-.sidebar-layout .vhud-xp-wrap { width: 100%; min-width: 0; }
-.sidebar-layout .vhud-xp-bar { width: 100%; height: 16px; }
-.sidebar-layout .vhud-xp-bar span { font-size: 9px; }
-.sidebar-layout .vhud-up-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-.sidebar-layout .vhud-up-card { padding: 6px 7px; min-height: 42px; }
-.sidebar-layout .vhud-up-top { font-size: 10px; }
-.sidebar-layout .vhud-up-top b { gap: 4px; }
-.sidebar-layout .vhud-up-pips { margin: 4px 0 2px; }
-.sidebar-layout .vhud-up-sub { font-size: 9px; }
-.sidebar-layout .vhud-up-sub span:last-child { display: none; }
-.sidebar-layout .vhud-up-card.can { border-color: #82965d; box-shadow: none; background: #19271f; }
-.sidebar-layout .pilot-navigation { margin-top: auto; }
-.sidebar-layout .pilot-nav-body { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 10px; align-items: center; }
-.sidebar-layout .vhud-radar-wrap { gap: 4px; }
-.sidebar-layout .vhud .radar { width: 112px; height: 112px; box-shadow: none; }
-.sidebar-layout .vhud-radar-head { justify-content: center; }
-.sidebar-layout .vhud-radar-head span, .sidebar-layout .vhud-radar-foot { display: none; }
-.sidebar-layout .vhud-radar-head b { font-size: 9px; color: #97adc9; }
-.sidebar-layout .pilot-flight { display: grid; gap: 7px; }
-.sidebar-layout .vhud-throttle, .sidebar-layout .vhud-sublight { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 6px; }
-.sidebar-layout .vhud-throttle > label, .sidebar-layout .vhud-sublight > label { font-size: 10px; letter-spacing: 0; }
-.sidebar-layout .thr-led-bar, .sidebar-layout .vhud-throttle > kbd, .sidebar-layout .vhud-sublight > kbd { display: none; }
-.sidebar-layout .thr-val { grid-row: 1; grid-column: 2; }
-.sidebar-layout .thr-brake { grid-column: 1 / -1; }
-.sidebar-layout .sl-status { grid-row: 1; grid-column: 2; }
-.sidebar-layout .sl-led-bar { grid-column: 1 / -1; display: flex; flex-direction: row; gap: 2px; padding: 0; border: 0; }
-.sidebar-layout .sl-led-bar i { flex: 1; width: auto; height: 4px; }
-.sidebar-layout .pilot-flight-hint { font: 9px/1.6 var(--mono); color: #91a3bc; }
-.sidebar-layout .vhud :focus-visible { outline: 2px solid #a1d8ff; outline-offset: 2px; }
-/* World-related overlays share the playable camera center. */
-.sidebar-layout .top, .sidebar-layout .toast, .sidebar-layout .minimap.big { left: var(--play-center); }
-.sidebar-layout .minimap.big { max-width: calc(100vw - var(--hud-width) - 24px); max-height: calc(100vh - 24px); object-fit: contain; }
-.sidebar-layout .overlay:not(.picker) { left: var(--hud-width); }
-.sidebar-layout .board .cols { max-width: calc(100vw - var(--hud-width) - 24px); overflow: auto; }
-.sidebar-layout .perf { left: calc(var(--hud-width) + 10px); }
-.sidebar-layout .tierpop { left: calc(var(--hud-width) + 12px); right: auto; bottom: 12px; max-height: calc(100vh - 100px); overflow-y: auto; }
-.sidebar-layout .command { inset: 10px auto 10px 10px; width: calc(var(--hud-width) - 20px); }
-@media (max-height: 800px) {
-  .sidebar-layout .vhud { gap: 6px; padding: 8px; }
-  .sidebar-layout .pilot-section-title { margin-bottom: 4px; padding-bottom: 4px; }
-  .sidebar-layout .pilot-vitals { grid-template-columns: 54px 1fr; }
-  .sidebar-layout .ship-array-screen { width: 54px; height: 54px; }
-  .sidebar-layout .w-slot { padding: 5px 7px; }
-  .sidebar-layout .vhud-up-card { padding: 5px 6px; min-height: 38px; }
-  .sidebar-layout .ship-armor-arcs { margin: 4px 0 6px; }
-  .sidebar-layout .pilot-navigation .pilot-section-title { display: none; }
-  .sidebar-layout .pilot-nav-body { grid-template-columns: 102px minmax(0, 1fr); }
-  .sidebar-layout .vhud .radar { width: 96px; height: 96px; }
-}
+@media (prefers-reduced-motion: reduce) { .sidebar-layout .vhud * { animation: none !important; transition: none !important; } }
+
+/* The material canvas replaces only decorative pixels; the original layer is the fallback. */
+.sidebar-layout #hud > .noir-lit-frame { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 5; pointer-events: none; }
+.sidebar-layout .noir-frame-lit .noir-window-frame,
+.sidebar-layout .noir-frame-lit .noir-surface::after,
+.sidebar-layout .noir-frame-lit .noir-top-surface::after { background-image: none; }
+@media (max-width: 760px) { .sidebar-layout .noir-shell { z-index: 4; } }
+
+/* Piecewise artwork fallback shares the GPU mesh and aperture geometry. */
+.sidebar-layout #hud .noir-static-frame { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; filter: url('#noir-frame-grade'); }
+.sidebar-layout .noir-window-frame.noir-frame-mapped { background-image: none; filter: none; }
+.sidebar-layout .noir-frame-mapped::after { background-image: none; }
+.sidebar-layout .noir-frame-lit .noir-static-frame { visibility: hidden; }
+
+@media (max-width: 760px) { .sidebar-layout .top { z-index: 3; } }

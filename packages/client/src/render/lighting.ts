@@ -712,6 +712,9 @@ export class Lighting {
     }
   }
 
+  /** Read-only inputs for the decorative cockpit material; no GPU readback. */
+  get frameEmitters(): readonly { x: number; y: number; radius: number; color: number; intensity: number }[] { return this.emitters; }
+
   beginFrame(): void { this.emitters.length = 0; }
 
   addEmitter(x: number, y: number, radius: number, color: number, intensity = 1): void {

@@ -1427,6 +1427,9 @@ export class Renderer {
     this.camera.y += before.y - after.y;
   }
 
+  get frameEmitters() { return this.lighting.frameEmitters; }
+  get frameLightingEnabled(): boolean { return this.lighting.enabled; }
+
   /** Client-space bounds of the actual game canvas, excluding the HUD sidebar. */
   get viewport(): Viewport {
     return this.app.canvas.getBoundingClientRect();

@@ -1,5 +1,8 @@
 import './style.css';
 import './hud/sidebar.css';
+import './hud/cockpit.css';
+import './hud/cockpit-panels.css';
+import './hud/panelFitting.css';
 
 import type { ShipArtMode } from './art/referenceShips';
 import { BOLT_COLORS, ENGINE_TINTS } from './cosmetics';

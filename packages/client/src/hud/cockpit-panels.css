@@ -1,0 +1,27 @@
+/* Generated from hand-traced panel-layout.json. Edit source geometry, not these percentages. */
+.sidebar-layout .noir-status { position: absolute; left: 9.341317%; top: 4.326923%; width: 66.107784%; height: 16.826923%; }
+.sidebar-layout .noir-combat { position: absolute; left: 7.185629%; top: 27.524038%; width: 73.532934%; height: 16.466346%; }
+.sidebar-layout .vhud-throttle { position: absolute; left: 6.706587%; top: 49.038462%; width: 36.646707%; height: 6.610577%; }
+.sidebar-layout .noir-brake { position: absolute; left: 50.778443%; top: 50.240385%; width: 8.383234%; height: 4.447115%; }
+.sidebar-layout .vhud-sublight { position: absolute; left: 67.544910%; top: 50.240385%; width: 13.652695%; height: 4.447115%; }
+.sidebar-layout .vhud-bank-strip { position: absolute; left: 9.580838%; top: 60.576923%; width: 72.574850%; height: 3.125000%; }
+.sidebar-layout .vhud-up-card[data-stat="0"] { position: absolute; left: 10.059880%; top: 66.706731%; width: 13.652695%; height: 5.649038%; }
+.sidebar-layout .vhud-up-card[data-stat="1"] { position: absolute; left: 29.700599%; top: 66.706731%; width: 12.694611%; height: 5.649038%; }
+.sidebar-layout .vhud-up-card[data-stat="2"] { position: absolute; left: 48.862275%; top: 66.706731%; width: 13.173653%; height: 5.649038%; }
+.sidebar-layout .vhud-up-card[data-stat="3"] { position: absolute; left: 68.263473%; top: 66.706731%; width: 12.694611%; height: 5.649038%; }
+.sidebar-layout .noir-navigation { position: absolute; left: 9.341317%; top: 79.447115%; width: 38.562874%; height: 15.625000%; }
+.sidebar-layout .noir-power-readout { position: absolute; left: 61.796407%; top: 78.966346%; width: 25.868263%; height: 8.533654%; }
+.sidebar-layout .noir-power-keys > button:nth-child(1) { position: absolute; left: 60.359281%; top: 93.149038%; width: 3.832335%; height: 1.442308%; }
+.sidebar-layout .noir-power-keys > button:nth-child(2) { position: absolute; left: 72.814371%; top: 93.149038%; width: 3.832335%; height: 1.442308%; }
+.sidebar-layout .noir-power-keys > button:nth-child(3) { position: absolute; left: 85.269461%; top: 93.149038%; width: 3.832335%; height: 1.442308%; }
+.sidebar-layout .top .team.cobalt { position: absolute; left: 5.737316%; top: 37.500000%; width: 9.198672%; height: 31.250000%; }
+.sidebar-layout .top .clock { position: absolute; left: 27.074443%; top: 37.500000%; width: 8.724514%; height: 31.250000%; }
+.sidebar-layout .top .team.ember { position: absolute; left: 39.592224%; top: 37.500000%; width: 9.388336%; height: 31.250000%; }
+.sidebar-layout .top .ms { position: absolute; left: 86.154576%; top: 30.000000%; width: 11.190138%; height: 45.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(1) { position: absolute; left: 56.282598%; top: 32.500000%; width: 1.991465%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(2) { position: absolute; left: 60.360360%; top: 32.500000%; width: 1.706970%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(3) { position: absolute; left: 63.679469%; top: 32.500000%; width: 2.181128%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(4) { position: absolute; left: 67.472736%; top: 32.500000%; width: 2.181128%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(5) { position: absolute; left: 71.266003%; top: 32.500000%; width: 2.181128%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(6) { position: absolute; left: 75.059270%; top: 32.500000%; width: 2.181128%; height: 15.000000%; }
+.sidebar-layout .top .pointstrip span:nth-child(7) { position: absolute; left: 78.852537%; top: 32.500000%; width: 1.991465%; height: 15.000000%; }
