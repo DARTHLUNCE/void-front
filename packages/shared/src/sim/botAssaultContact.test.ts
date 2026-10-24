@@ -73,7 +73,10 @@ describe('assault route contact', () => {
     // With no renewed blocking or damage, the bounded contact eventually yields to transit.
     w.time = 15; s.vx = baseSpeed(w, s); steer(w, s);
     expect(s.input.fire).toBe(false);
-    expect(Math.abs(angleDelta(s.input.aim, 0))).toBeLessThan(.05);
+    // Transit can now take a forward route around the still-visible blocker instead of
+    // demanding an exactly straight heading through it.
+    expect(Math.cos(s.input.aim)).toBeGreaterThan(.8);
+    expect(s.bot!.destX).toBe(15000);
   });
 
   it('drops a route contact immediately when it becomes hidden despite its commitment', () => {
@@ -82,4 +85,30 @@ describe('assault route contact', () => {
     enemy.visibleMask = 0; w.time += .1; steer(w, s); botAim(w, s);
     expect(s.bot!.targetShip).toBe(-1); expect(s.input.fire).toBe(false);
   });
+  it('bypasses a stalled route fight instead of renewing a stationary combat hold forever', () => {
+    const { w, s } = assault();
+    steer(w, s);
+    w.time = 10.5; steer(w, s); expect(s.input.fire).toBe(true);
+    // The contact remains visible and blocks the direct line, but neither side makes
+    // progress. A held trigger alone cannot justify abandoning the distant assignment.
+    for (let i = 1; i <= 8; i++) {
+      w.time = 10 + i; s.vx = s.vy = 0; steer(w, s);
+    }
+    expect(s.input.fire).toBe(false);
+    expect(s.input.throttle).toBeGreaterThan(.2);
+    expect(s.bot!.destX).toBe(15000);
+    w.time = 20; steer(w, s); expect(s.input.fire).toBe(false);
+  });
+
+  it('keeps a productive route fight while observed damage is clearing its blocker', () => {
+    const { w, s, enemy } = assault();
+    steer(w, s);
+    for (let i = 1; i <= 4; i++) {
+      w.time = 10 + i * 3;
+      enemy.hull = enemy.maxHull * (1 - i * .15);
+      rebuildShipHash(w); think(w, s); steer(w, s);
+      expect(s.input.fire).toBe(true);
+    }
+  });
+
 });

@@ -7,7 +7,7 @@ import { Job, type Ship, type Structure, type World } from './world';
 export interface SiegeDestination { x: number; y: number; admitted: boolean }
 interface Member {
   ship: Ship; radius: number; range: number; order: number; queue: number;
-  destination: SiegeDestination; arrived: number; travelUntil: number; progressDistance: number;
+  destination: SiegeDestination; arrived: number; lastFire: number; queuedAt: number; travelUntil: number; progressDistance: number;
 }
 interface Vacated { slot: number; x: number; y: number; radius: number }
 interface SiegePlan {
@@ -16,10 +16,10 @@ interface SiegePlan {
   sequence: number; members: Map<number, Member>; vacated: Vacated[];
 }
 const plans = new WeakMap<World, Map<number, SiegePlan>>();
-const CLEARANCE = 85, FIRE_DWELL = 18, ARC = 1.85, ANGLE_STEPS = 72;
+const CLEARANCE = 85, IDLE_STATION_TIME = 18, ARC = 1.85, ANGLE_STEPS = 72;
 
 /** Active assaults reserve collision-sized firing stations. Surplus hulls wait in distinct
- * approach lanes and rotate forward after a firing dwell; an outer ring is never a final goal.
+ * approach lanes and replace stalled or idle gunners; productive batteries keep their stations.
  * This only supplies a destination/admission decision. The normal pilot and player physics
  * still control steering, collision avoidance, aim, firing, abilities and retreat.
  */
@@ -75,7 +75,7 @@ function update(w: World, team: number, target: Structure, plan: SiegePlan): voi
   // Never repack existing members when a neighbour dies or retreats. Vacant slots are reusable.
   for (const s of w.ships) if (eligible(s, team) && !plan.members.has(s.slot)) {
     const member: Member = { ship: s, radius: geometryOf(w, s).radius, range: gunRange(s, w), order: plan.sequence++, queue: -1,
-      destination: { x: s.x, y: s.y, admitted: false }, arrived: -1, travelUntil: 0, progressDistance: Infinity };
+      destination: { x: s.x, y: s.y, admitted: false }, arrived: -1, lastFire: -Infinity, queuedAt: w.time, travelUntil: 0, progressDistance: Infinity };
     plan.members.set(s.slot, member); seatsChanged = true;
     queue(w, team, target, plan, member);
   }
@@ -95,15 +95,25 @@ function update(w: World, team: number, target: Structure, plan: SiegePlan): voi
     if (!m.destination.admitted) continue;
     const d = m.destination;
     const reach = Math.hypot(d.x - target.x, d.y - target.y);
-    if (changedHull || reach > body + m.range * .95 || reach < body + m.radius + 50) {
+    if ((changedHull && !free(w, target, plan, m, d.x, d.y)) || reach > body + m.range * .95 || reach < body + m.radius + 50) {
       vacate(plan, m); queue(w, team, target, plan, m); waiting = true; seatsChanged = true; continue;
     }
     const remaining = Math.hypot(m.ship.x - d.x, m.ship.y - d.y);
     if (remaining < m.progressDistance - Math.max(70, m.radius * .25)) {
       m.progressDistance = remaining; m.travelUntil = w.time + 35;
     }
-    if (m.arrived < 0 && remaining < Math.max(150, m.radius * .7)) m.arrived = w.time;
-    const finished = m.arrived >= 0 ? w.time >= m.arrived + FIRE_DWELL : w.time >= m.travelUntil;
+    // Trigger intent can stay true while disabled or blocked. Only a recent real volley
+    // renews the station, matching the director's definition of productive contact.
+    const shotAt = m.ship.lastFireTime;
+    const firing = m.ship.bot!.targetStructure === target.index && shotAt > m.lastFire &&
+      shotAt <= w.time && w.time - shotAt < .75 &&
+      Math.hypot(m.ship.x - target.x, m.ship.y - target.y) <= body + m.range + 100;
+    if (firing) m.lastFire = shotAt;
+    if (m.arrived < 0 && (remaining < Math.max(150, m.radius * .7) || firing)) m.arrived = w.time;
+    // A working gun battery is not a round-robin service queue. Ejecting it every 18s
+    // causes incoming and outgoing hulls to cross, and throws away the attack's progress.
+    // Keep productive stations; an idle/blocked gunner still yields after a bounded interval.
+    const finished = m.arrived >= 0 ? w.time >= Math.max(m.arrived, m.lastFire) + IDLE_STATION_TIME : w.time >= m.travelUntil;
     if (waiting && finished && w.time >= plan.nextRotation) {
       vacate(plan, m); queue(w, team, target, plan, m);
       plan.nextRotation = w.time + 2; seatsChanged = true;
@@ -112,11 +122,19 @@ function update(w: World, team: number, target: Structure, plan: SiegePlan): voi
   // Once a full front has been packed, ship motion alone cannot create another reserved
   // station. Retry only after membership, geometry, range or an outgoing hull changes space.
   if (!seatsChanged) return;
-  const waitingShips = [...plan.members.values()].filter(m => !m.destination.admitted).sort((a, b) => a.order - b.order);
+  const urgency = (m: Member): number => {
+    const distance = Math.max(0, Math.hypot(m.ship.x - target.x, m.ship.y - target.y) - body - m.range * .8);
+    // Fill a vacant gun position with a nearby hull, rather than reserving it for a
+    // distant low-slot ship while ready reinforcements sit outside weapon range.
+    // Waiting age eventually outweighs travel time, so nearby newcomers cannot starve an older hull.
+    return distance / Math.max(60, baseSpeed(w, m.ship)) - (w.time - m.queuedAt);
+  };
+  const waitingShips = [...plan.members.values()].filter(m => !m.destination.admitted)
+    .sort((a, b) => urgency(a) - urgency(b) || a.order - b.order);
   for (const m of waitingShips) {
     const station = findStation(w, team, target, plan, m);
     if (!station) continue;
-    m.destination = { ...station, admitted: true }; m.queue = -1; m.arrived = -1;
+    m.destination = { ...station, admitted: true }; m.queue = -1; m.arrived = -1; m.lastFire = -Infinity;
     const trip = Math.hypot(m.ship.x - station.x, m.ship.y - station.y) / Math.max(60, baseSpeed(w, m.ship) * .7);
     m.progressDistance = Math.hypot(m.ship.x - station.x, m.ship.y - station.y);
     // This is a stalled-progress lease, not a total journey limit. Crossing a contested map
@@ -148,13 +166,13 @@ function queue(w: World, team: number, target: Structure, plan: SiegePlan, m: Me
       if (Math.hypot(x - other.destination.x, y - other.destination.y) < m.radius + other.radius + CLEARANCE) { occupied = true; break; }
     }
     if (occupied) continue;
-    m.queue = index; m.order = plan.sequence++; m.arrived = -1;
+    m.queue = index; m.order = plan.sequence++; m.arrived = -1; m.queuedAt = w.time;
     m.destination = { x, y, admitted: false };
     return;
   }
   // A fully obstructed/narrow custom map can have no legal holding cell; keep a local goal
   // for normal collision avoidance rather than collapsing several ships onto a clamped edge.
-  m.queue = -1; m.order = plan.sequence++; m.arrived = -1;
+  m.queue = -1; m.order = plan.sequence++; m.arrived = -1; m.queuedAt = w.time;
   m.destination = { x: m.ship.x, y: m.ship.y, admitted: false };
 }
 

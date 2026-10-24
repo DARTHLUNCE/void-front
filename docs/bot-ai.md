@@ -1,22 +1,30 @@
 # Non-RL bot brains
 
-Bots previously chose common destinations, changed targets frequently, and steered with an independent strafe vector. The redesign separates objective assignment, small travelling squads, individual combat decisions, and legal flight controls. The fleet director assigns missions, not aim or movement; a ship can leave a mission to help an ally, defend itself or recover.
+Bots previously chose common destinations, changed targets frequently, and steered with an independent strafe vector. The redesign separates objective assignment, small travelling squads, individual combat decisions, persistent routes, and legal flight controls. The fleet director assigns missions; each ship decides how to engage, help an ally, defend itself or recover. Reducing congestion is a consequence of useful decisions and reachable destinations, not the objective of a common spacing controller.
 
 ## Individual ship behavior
 
 | Hull | Combat decisions |
 | --- | --- |
-| Patrol | Approaching attack passes and repositioning; light-target preference |
-| Corvette | Committed flank, ambush window, withdrawal and re-entry |
-| Frigate | Follow damaged allies, aim the existing repair gun, screen behind nearby allies |
-| Destroyer | Intercept incoming threats and hold an anti-armor escort position |
+| Patrol | Approach a fixed lane, briefly face and fire, finish a passing leg, then reposition; light-target preference |
+| Corvette | Commit to a flank and hold a useful ambush; withdraw for actual incoming pressure or unsafe proximity, then complete the exit before re-entry |
+| Frigate | Follow damaged allies with the existing repair gun; otherwise hold a useful support firing position |
+| Destroyer | Make a bounded intercept of an incoming threat from its own sector, then hold an anti-armor escort position |
 | Cruiser | Maintain a stable firing station and line position |
 | Battlecruiser | Line up, fire on approach, release the trigger for a clear passing lane, then recover |
 | Battleship | Keep its bow toward the fight; use ordinary reverse and braking to hold range |
 | Dreadnought | Hold a siege station, displace when crowded, refuse distant pursuit |
 | Carrier | Stay behind the local screen within real weapon reach instead of chasing |
 
-`botDoctrine.ts` holds each ship's committed maneuver state. `pilot.ts` applies class-specific target preferences, reaction time, range, support and survival decisions. Assault pilots ignore distant transit distractions but briefly commit to clearing visible enemies blocking a slow or under-fire approach. Hysteresis retains a viable target through small utility changes, but death or visibility loss releases it immediately. Soft focus reservations discourage excessive focus on one enemy while still allowing coordinated attacks.
+`botDoctrine.ts` holds each ship's committed maneuver state. Passing endpoints stay fixed during a leg, with travel-scaled deadlines, instead of turning into continuously moving orbit goals. Line and support hulls retain useful firing positions through small target motion; a moving ally centroid does not drag the whole line sideways. `pilot.ts` applies class-specific target preferences, reaction time, range, support and survival decisions. Hysteresis retains a viable target through small utility changes, but death or visibility loss releases it immediately. Soft focus reservations discourage excessive focus on one enemy while still allowing coordinated attacks.
+
+When a class acquires a new anchor, it checks a bounded set of nearby alternatives against up to 24 locally sensed hulls, fresh friendly movement intentions, public scenery and approaches through settled allies. Alternatives preserve the class's firing range or pass/flank direction. A useful occupied position takes priority, and unobstructed maneuvers retain their chosen endpoints. Existing anchors are not continuously repacked. Unaccepted proposals and destinations replaced by turret safety stop reserving space immediately.
+
+## Mission relevance
+
+A visible contact does not automatically take over the helm. Defenders keep fights near their assigned base; node crews and rally crews keep maneuvers relevant to their objective. A maneuver outside that area can still be useful if it makes progress toward the objective, supports a repair recipient or handles a close damaging threat. Individual salvage and combat choices remain distinct from squad travel.
+
+Travelling ships can briefly fight a visible opponent blocking their route. That interruption must produce ground gained toward the mission or observed damage to the contact. Six seconds without progress, or twenty seconds in one continuous interruption, triggers an eight-second attempt to bypass the encounter. Switching targets does not reset that ongoing budget. Close self-defense still has priority, so this is a limit on unproductive detours rather than an instruction to ignore enemies at any cost. An admitted attacker in actual gun reach can prioritize its base objective even with defenders nearby.
 
 ## Perception and retreat
 
@@ -26,11 +34,13 @@ Enemy ships are considered only while visible to the team. A pilot extrapolates 
 
 ## Team coordination and traffic
 
-- The director evaluates objectives at 0.5 Hz, with travel costs, role suitability, visible threats and diminishing demand. It supports multiple threatened bases, useful node staffing, bounded salvage collection, commander orders and finite assault waves with a travel allowance and a bounded engagement period.
-- Gathering uses frozen friendly-side anchors and hull-sized slots. A viable assembled group can launch without waiting forever for stragglers. Attrition, a failed objective or a home emergency can end a wave.
-- `botSquads.ts` groups up to six nearby ships with the same mission. Membership persists, durable hulls lead, escorts take flank stations, and support stays behind. Pacing is bounded. Combat, repair, retreat and mission arrival release formation guidance. Ahead followers may briefly wait but cannot be sent backward to rejoin. Assaults use assembly and siege reservations directly, so transit cohesion cannot pull a reserved gunner back toward a lagging leader.
-- `botSiege.ts` reserves physically separated firing stations within real weapon range. Surplus ships wait in side bays outside a capital-width ingress corridor and rotate in; an outer ring beyond weapon reach is no longer a permanent assignment.
-- `botFlight.ts` samples up to 24 contacts and scores 14 candidate headings using relative motion, oriented hull clearance, stopping distance and turning time. Staggered full searches run at roughly 7.5 Hz; immediate danger still interrupts the cached route. Passing-side and forward/reverse/holding hysteresis reduce oscillation.
+- The director evaluates objectives at 0.5 Hz using travel costs, role suitability, visible threats and diminishing demand. It supports multiple threatened bases, node staffing, bounded salvage collection, commander orders and finite assault waves. Gathering uses frozen friendly-side anchors and hull-sized slots; a viable assembled group can launch without waiting forever for stragglers. Attrition, a failed objective or a home emergency can end a wave.
+- `botStations.ts` preserves mission stations when another member dies or changes assignments. New arrivals fill available space instead of changing every survivor's rank. Objective clearance is calculated for each actual hull, including after upgrades; a small first claimant cannot set an unsafe inner radius for capital ships.
+- `botSquads.ts` groups up to six nearby ships sharing a mission. Durable hulls lead, escorts occupy flank stations, and support follows behind. Surviving stations remain stable, short contacts do not immediately replace the leader, and pacing/waiting are bounded. Actual pilot arbitration determines whether a contact interrupts travel; shared decisions read the preceding completed tick. Combat, repair, retreat and arrival release guidance. Ahead followers cannot be sent backward to rejoin. Assault assembly and siege reservations own their own destinations.
+- `botRoutes.ts` supplies persistent intermediate waypoints for strategic travel. A coarse A* search uses public scenery and turret exclusion areas, with soft traffic costs from teammates and team-visible enemies. Traffic is a cost rather than an impassable wall or a calculation of combat odds. Shared fields are cached for two seconds; ships retain routes until the goal or hull size changes sufficiently, or progress stalls. Route smoothing preserves the chosen traffic corridor. Local combat and collision avoidance retain authority, and the caller keeps the final objective separately.
+- `botSiege.ts` reserves hull-sized firing stations and clear gun lanes. Surplus ships wait in distinct side bays outside a capital-width ingress corridor. A vacant station favors nearby reinforcements, with waiting age preventing perpetual queue starvation. Productive batteries retain their positions; actual weapon-discharge timestamps renew the lease, while held trigger intent alone does not. Idle or stalled arrivals can yield their seats. This avoids compulsory rotation of effective gunners through incoming traffic.
+- An assault reaching its initial deadline can receive a short extension for recent real volleys or fresh approach progress by a meaningful part of the wave. A distance low-water mark prevents circling from counting as progress, and the original deadline plus a fixed allowance remains a hard limit. A single detached scout cannot extend the attack through movement alone.
+- `botFlight.ts` samples up to 24 contacts and considers 14 fixed headings plus the retained course. Relative motion, stopping distance, turn time and separating axes of oriented hull envelopes inform the choice. The clearance test avoids ejecting safely staggered long hulls just because their bounding circles overlap. Staggered full searches run at roughly 7.5 Hz, with immediate danger checked between them. Passing-side and forward/reverse/holding hysteresis reduce oscillation. A settled ship releases the brake after stopping so shared input handling does not suppress its abilities indefinitely.
 
 The flight controller emits only mouse-steered aim, throttle, reverse, brake and sublight inputs. Shared movement, firing slowdown, turning, collision and weapon code execute those inputs exactly as for the player. It never assigns velocity or position directly. There is no bot-only strafe, independent gun aim, free upgrade, stat bonus, RL policy, or ability-definition change.
 
@@ -40,6 +50,7 @@ The flight controller emits only mouse-steered aim, throttle, reverse, brake and
 
 These are practical adaptations, not implementations inheriting formal collision-avoidance guarantees.
 
+- [Reynolds: Steering Behaviors For Autonomous Characters (1999)](https://www.red3d.com/cwr/steer/gdc99/): separates action selection, steering and locomotion, and distinguishes path finding from following a route. Here coarse routing proposes waypoints, local flight chooses legal controls, and the existing player movement model executes them.
 - [Graham: An Introduction to Utility Theory](https://www.gameaipro.com/GameAIPro/GameAIPro_Chapter09_An_Introduction_to_Utility_Theory.pdf): comparable decision factors and inertia to avoid constant switching.
 - [Zielinski: Telling Paragon Bots Where to Go](https://www.gameaipro.com/GameAIPro3/GameAIPro3_Chapter24_Being_Where_It_Counts_Telling_Paragon_Bots_Where_to_Go.pdf): objective demand, suitability and decreasing assignment priority. Its perfect enemy-position knowledge is not adopted.
 - [Fray: Context Steering](https://www.gameaipro.com/GameAIPro2/GameAIPro2_Chapter18_Context_Steering_Behavior-Driven_Steering_at_the_Macro_Scale.pdf): separate danger from interest instead of cancelling steering vectors.
@@ -48,4 +59,4 @@ These are practical adaptations, not implementations inheriting formal collision
 - [1000 NPCs at 60 FPS](https://www.gameaipro.com/GameAIPro3/GameAIPro3_Chapter34_1000_NPCs_at_60_FPS.pdf): bounded work and separate decision/update rates; the source's performance is not a benchmark for this game.
 - [Hierarchical AI for Multiplayer Bots in Killzone 3](https://www.gameaipro.com/GameAIPro/GameAIPro_Chapter29_Hierarchical_AI_for_Multiplayer_Bots_in_Killzone_3.pdf): separate team, squad and individual responsibilities.
 
-The brain is deliberately heuristic and imperfect. Tests of legal controls, collision clearance and successful attack assembly do not by themselves establish strong campaign strategy. Long battle results and local timing evidence are recorded separately in `bot-ai-validation.md`.
+The brain is deliberately heuristic and imperfect. Coarse routes and bounded local choices cannot guarantee free passage through every moving crowd; exhausted station capacity, narrow geometry and close self-defense can still delay an attack. Stable destinations do not by themselves prove useful teamwork, and successful assembly or local collision tests do not establish strong campaign strategy. Long battle results and simulation timing evidence are recorded separately in `bot-ai-validation.md`; those timings are not rendered frame-rate measurements.

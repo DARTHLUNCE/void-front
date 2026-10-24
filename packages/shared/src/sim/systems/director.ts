@@ -8,6 +8,12 @@ import { gunRange } from './combat';
 import { turretRange } from './structures';
 import { EventType, Job, PingKind, type Ship, type Structure, type TeamState, type World } from '../world';
 
+interface AttackReport {
+  started: number;
+  hardDeadline: number;
+  lastVolley: number;
+  approach: Map<number, { bestDistance: number; progressAt: number }>;
+}
 interface TeamPlan {
   phase: 'idle' | 'gather' | 'attack';
   target: number;
@@ -16,12 +22,13 @@ interface TeamPlan {
   stage: { x: number; y: number } | null;
   /** Individual defense assignments avoid abandoning a second threatened base. */
   defense: Map<number, number>;
+  attack: AttackReport | null;
 }
 const plans = new WeakMap<World, [TeamPlan, TeamPlan]>();
 function planFor(w: World, team: TeamId): TeamPlan {
   let pair = plans.get(w);
   if (!pair) {
-    const make = (): TeamPlan => ({ phase: 'idle', target: -1, initialPower: 0, stage: null, defense: new Map() });
+    const make = (): TeamPlan => ({ phase: 'idle', target: -1, initialPower: 0, stage: null, defense: new Map(), attack: null });
     pair = [make(), make()];
     plans.set(w, pair);
   }
@@ -106,8 +113,16 @@ function direct(w: World, team: TeamState): void {
   const members = ready.filter(s => s.bot!.job === Job.Assault && !assigned.has(s.slot));
   const wavePower = members.reduce((v, s) => v + power(s), 0);
   const homeEmergency = threats.some(t => t.st === team.mothership && t.need > fleetPower * .5);
-  if (plan.phase !== 'idle' && (!objective?.alive || w.time >= team.pushUntil || homeEmergency || wavePower < plan.initialPower * .38)) {
+  if (plan.phase === 'attack' && objective?.alive) reportAttackProgress(w, objective, members, plan);
+  if (plan.phase !== 'idle' && (!objective?.alive || homeEmergency || wavePower < plan.initialPower * .38)) {
     cancelWave(w, team, plan);
+  } else if (plan.phase !== 'idle' && w.time >= team.pushUntil) {
+    // Arrival estimates are not a retreat order while the wave is finally making contact.
+    // Extension requires recent observed action and always respects the frozen hard limit.
+    if (plan.phase === 'attack' && productiveAttack(w, members, plan)) {
+      team.pushUntil = Math.min(plan.attack!.hardDeadline, w.time + 30);
+      team.nextPush = Math.max(team.nextPush, team.pushUntil + 55);
+    } else cancelWave(w, team, plan);
   }
   if (plan.phase === 'gather') {
     const stage = stagingPoint(w, team.id)!;
@@ -128,6 +143,8 @@ function direct(w: World, team: TeamState): void {
       }
       plan.phase = 'attack'; team.pushGatherUntil = w.time;
       team.pushUntil = w.time + attackDuration(w, objective!, mustered);
+      plan.attack = { started: w.time, hardDeadline: team.pushUntil + 120, lastVolley: -Infinity, approach: new Map() };
+      reportAttackProgress(w, objective!, members, plan);
       team.nextPush = Math.max(team.nextPush, team.pushUntil + 55);
     } else if (deadline) {
       // A failed gathering is not permission to feed ships into the enemy one by one.
@@ -206,10 +223,42 @@ function setJob(w: World, s: Ship, job: Job, point = s.bot!.jobPoint): void {
 }
 
 function cancelWave(w: World, team: TeamState, plan: TeamPlan): void {
-  plan.phase = 'idle'; plan.target = -1; plan.initialPower = 0; plan.stage = null;
+  plan.phase = 'idle'; plan.target = -1; plan.initialPower = 0; plan.stage = null; plan.attack = null;
   team.pushGatherUntil = team.pushUntil = w.time;
   team.nextPush = Math.max(team.nextPush, w.time + 45);
   for (const s of w.ships) if (s.team === team.id && s.bot?.job === Job.Assault) setJob(w, s, Job.Skirmish);
+}
+
+/** Own pilots report actual shots and new ground gained, never an opponent's hidden state.
+ * Remember a distance low-water mark so orbiting or retracing the same stretch cannot keep
+ * renewing a wave. A single detached scout cannot count as progress by the main body.
+ */
+function reportAttackProgress(w: World, target: Structure, members: Ship[], plan: TeamPlan): void {
+  const report = plan.attack;
+  if (!report) return;
+  for (const s of members) {
+    const reach = distance(s.x, s.y, target.x, target.y);
+    let progress = report.approach.get(s.slot);
+    if (!progress) {
+      progress = { bestDistance: reach, progressAt: -Infinity };
+      report.approach.set(s.slot, progress);
+    } else if (reach < progress.bestDistance - 250) {
+      progress.bestDistance = reach; progress.progressAt = w.time;
+    }
+    // lastFireTime is written only after real projectiles spawn. input.fire alone can
+    // remain true behind a blocker or during cooldown and is not productive contact.
+    if (s.bot!.targetStructure === target.index && s.lastFireTime >= report.started &&
+      s.lastFireTime <= w.time && reach <= target.radius + gunRange(s, w) + 100) {
+      report.lastVolley = Math.max(report.lastVolley, s.lastFireTime);
+    }
+  }
+}
+function productiveAttack(w: World, members: Ship[], plan: TeamPlan): boolean {
+  const report = plan.attack;
+  if (!report || w.time >= report.hardDeadline) return false;
+  if (w.time - report.lastVolley <= 12) return true;
+  const advancing = members.filter(s => w.time - (report.approach.get(s.slot)?.progressAt ?? -Infinity) <= 20).length;
+  return advancing >= Math.max(2, Math.ceil(members.length * .2));
 }
 
 /** Match the pilot's compact grid, including the physical hull beyond the outer station. */

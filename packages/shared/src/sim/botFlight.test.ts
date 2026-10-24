@@ -5,10 +5,11 @@ import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import type { ClassId } from '../content/types';
 import { angleDelta } from './angles';
 import { flyBot } from './botFlight';
-import { geometryOf } from './hullCollision';
+import { geometryOf, shipSeparation } from './hullCollision';
 import { createWorld } from './step';
 import { aimAndFire } from './systems/combat';
 import { moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
+import { setClass } from './systems/progression';
 import { DT, emptyInput, type World } from './world';
 
 function arena(classId: ClassId = 'patrol', count = 2) {
@@ -29,6 +30,41 @@ function advance(w: World) {
 }
 
 describe('mouse-flight bot controller', () => {
+  it('keeps a clear staggered capital station instead of treating diagonal bounds as a collision', () => {
+    const { w, s } = arena('cruiser');
+    const o = w.ships[1]; setClass(o, 'cruiser');
+    o.alive = true; o.x = s.x + 180; o.y = s.y + 120;
+    o.angle = o.thrustAngle = 0; o.vx = o.vy = 0;
+    rebuildShipHash(w);
+    expect(shipSeparation(w, s, o, { x: 0, y: 0 })).toBe(false);
+    const result = flyBot(w, s, { x: s.x, y: s.y, aim: 0 });
+    expect(result.avoiding).toBe(false);
+    expect(result.brake).toBe(false);
+    expect(result.throttle).toBe(0);
+    expect(result.aim).toBeCloseTo(0);
+  });
+
+  it('passes a staggered capital column through a geometrically clear lane without steering churn', () => {
+    const { w, s } = arena('cruiser', 6);
+    const origin = { x: s.x, y: s.y }, goal = { x: s.x + 2200, y: s.y };
+    for (let i = 1; i < 6; i++) {
+      const o = w.ships[i]; setClass(o, 'cruiser'); o.alive = true;
+      o.x = origin.x + 180 + (i - 1) * 360; o.y = origin.y + 120;
+      o.angle = o.thrustAngle = 0; o.vx = o.vy = 0; o.input.brake = true;
+    }
+    let contacts = 0, maxHeading = 0;
+    for (let i = 0; i < 30 * 16; i++) {
+      rebuildShipHash(w); flyBot(w, s, goal);
+      maxHeading = Math.max(maxHeading, Math.abs(angleDelta(0, s.input.aim)));
+      moveShips(w); aimAndFire(w, s);
+      for (let j = 1; j < 6; j++) contacts += Number(shipSeparation(w, s, w.ships[j], { x: 0, y: 0 }));
+      w.time += DT; w.tick++;
+    }
+    expect(s.x).toBeGreaterThan(origin.x + 2000);
+    expect(contacts).toBe(0);
+    expect(maxHeading).toBeLessThan(.1);
+  });
+
   it('preserves a committed passing lane instead of replacing it with a nearby target bearing', () => {
     const { w, s } = arena('battlecruiser');
     const bearing = .3;
@@ -115,14 +151,14 @@ describe('mouse-flight bot controller', () => {
     const o = w.ships[1]; o.alive = true; o.x = s.x + 800; o.y = s.y;
     o.vx = o.vy = 0; o.input.brake = true;
     const destination = { x: s.x + 1800, y: s.y };
-    let closest = Infinity;
+    let contacts = 0;
     for (let i = 0; i < 420; i++) {
       rebuildShipHash(w); flyBot(w, s, destination);
       moveShips(w); aimAndFire(w, s);
-      closest = Math.min(closest, Math.hypot(s.x - o.x, s.y - o.y));
+      contacts += Number(shipSeparation(w, s, o, { x: 0, y: 0 }));
       w.time += DT;
     }
-    expect(closest).toBeGreaterThan((geometryOf(w, s).radius + geometryOf(w, o).radius) * .9);
+    expect(contacts).toBe(0);
     expect(s.x).toBeGreaterThan(o.x + 200);
   });
   it('escapes an existing three-ship pileup instead of holding the same arrival point', () => {
@@ -180,9 +216,24 @@ describe('mouse-flight bot controller', () => {
       w.time += DT;
       const direction = i % 2 ? 1 : -1;
       flyBot(w, s, { x: s.x + direction * (74 + i % 3), y: s.y, arrivalRadius: 75, aim: 0 });
-      expect(s.input.brake).toBe(true);
+      expect(s.input.brake).toBe(false);
+      expect(s.input.throttle).toBe(0);
       expect(Math.abs(angleDelta(s.input.aim, 0))).toBeLessThan(.01);
     }
+  });
+  it('brakes into a firing station, then releases the brake at rest so abilities remain usable', () => {
+    const { w, s } = arena('dreadnought');
+    const goal = { x: s.x, y: s.y, arrivalRadius: 75, aim: 0 };
+    s.vx = 100;
+    flyBot(w, s, goal);
+    expect(s.input.brake).toBe(true);
+    for (let i = 0; i < 90; i++) {
+      flyBot(w, s, goal); advance(w);
+    }
+    expect(Math.hypot(s.vx, s.vy)).toBe(0);
+    expect(Math.hypot(s.x - goal.x, s.y - goal.y)).toBeLessThan(goal.arrivalRadius);
+    expect(s.input.throttle).toBe(0);
+    expect(s.input.brake).toBe(false);
   });
   it('does not chatter between reverse and a forward turn near the aim threshold', () => {
     const { w, s } = arena();

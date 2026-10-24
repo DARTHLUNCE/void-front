@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { createWorld } from './step';
 import { geometryOf } from './hullCollision';
 import { Job, PingKind, type World } from './world';
-import { defendedStructure, runDirectors, stagingPoint } from './systems/director';
+import { defendedStructure, pushTarget, runDirectors, stagingPoint } from './systems/director';
+import { aimAndFire, gunRange } from './systems/combat';
 
 function scenario(fleetSize = 20): World {
   const w = createWorld({ seed: 701, fleetSize, classId: 'destroyer' });
@@ -278,4 +279,125 @@ describe('fleet strategy', () => {
     expect(far.ships.some(s => s.team === 0 && s.bot!.job === Job.Assault)).toBe(false);
   });
 
+});
+
+
+describe('productive assault deadline', () => {
+  function attack() {
+    const w = scenario(30), t = w.teams[0];
+    w.time = 400; t.nextPush = 0;
+    runDirectors(w);
+    const wave = w.ships.filter(s => s.team === 0 && s.bot!.job === Job.Assault);
+    const stage = stagingPoint(w, 0)!;
+    for (let i = 0; i < wave.length; i++) {
+      const s = wave[i]; s.x = s.bot!.destX = stage.x; s.y = s.bot!.destY = stage.y + i * 30;
+    }
+    directAgain(w);
+    expect(t.pushGatherUntil).toBe(w.time);
+    return { w, t, wave, target: pushTarget(w, 0)!, deadline: t.pushUntil };
+  }
+  function fireAtBase(a: ReturnType<typeof attack>) {
+    const s = a.wave[0];
+    s.x = a.target.x - a.target.radius - gunRange(s, a.w) * .5; s.y = a.target.y;
+    s.angle = s.input.aim = 0; s.input.fire = true; s.fireCooldown = 0;
+    s.bot!.targetStructure = a.target.index;
+    const before = a.w.projectiles.count;
+    aimAndFire(a.w, s);
+    expect(a.w.projectiles.count).toBeGreaterThan(before);
+  }
+  it('keeps a wave firing at its base when the initial travel budget expires', () => {
+    const a = attack();
+    a.w.time = a.deadline - .1; fireAtBase(a);
+    a.w.time = a.deadline; runDirectors(a.w);
+    expect(a.t.pushUntil).toBeGreaterThan(a.deadline);
+    expect(a.wave.every(s => s.bot!.job === Job.Assault)).toBe(true);
+  });
+  it('grants collective fresh approach progress time to reach the front, then expires when stalled', () => {
+    const a = attack();
+    a.w.time = a.deadline - 18;
+    for (const s of a.wave) s.x += 350;
+    runDirectors(a.w);
+    a.w.time = a.deadline; runDirectors(a.w);
+    expect(a.t.pushUntil).toBeGreaterThan(a.deadline);
+    a.w.time = a.t.pushUntil; runDirectors(a.w);
+    expect(a.wave.some(s => s.bot!.job === Job.Assault)).toBe(false);
+  });
+  it('does not extend for a lone advancing straggler or unfulfilled trigger intent', () => {
+    const a = attack();
+    a.w.time = a.deadline - 2;
+    a.wave[0].x += 400;
+    for (const s of a.wave) { s.bot!.targetStructure = a.target.index; s.input.fire = true; }
+    runDirectors(a.w);
+    a.w.time = a.deadline; runDirectors(a.w);
+    expect(a.wave.some(s => s.bot!.job === Job.Assault)).toBe(false);
+  });
+  it('still cancels idle waves and does not recycle old approach progress', () => {
+    const a = attack();
+    for (const s of a.wave) s.x += 500;
+    directAgain(a.w);
+    for (const s of a.wave) s.x -= 500;
+    a.w.time = a.deadline - 2;
+    for (const s of a.wave) s.x += 500;
+    runDirectors(a.w);
+    a.w.time = a.deadline; runDirectors(a.w);
+    expect(a.wave.some(s => s.bot!.job === Job.Assault)).toBe(false);
+  });
+  it('bounds continued base fire to two additional minutes', () => {
+    const a = attack();
+    while (a.w.time < a.deadline + 150 && a.wave[0].bot!.job === Job.Assault) {
+      a.w.time = a.t.pushUntil;
+      fireAtBase(a); runDirectors(a.w);
+    }
+    expect(a.w.time).toBeLessThanOrEqual(a.deadline + 120);
+    expect(a.wave.some(s => s.bot!.job === Job.Assault)).toBe(false);
+  });
+  it('recalls a firing wave for a visible home emergency', () => {
+    const a = attack(); a.w.time = a.deadline - .1; fireAtBase(a);
+    for (const s of a.w.ships) if (s.team === 1) {
+      s.alive = true; s.visibleMask = 3;
+      s.x = a.t.mothership.x + 300; s.y = a.t.mothership.y;
+    }
+    a.w.time = a.deadline; runDirectors(a.w);
+    expect(a.wave.some(s => s.bot!.job === Job.Assault)).toBe(false);
+  });
+  it('gives mirrored active batteries identical deadline extensions', () => {
+    const w = createWorld({ seed: 77, fleetSize: 30, classId: 'destroyer', mirrorStreams: true });
+    w.time = 400;
+    for (const t of w.teams) { t.nextDirector = 0; t.nextPush = 0; }
+    for (const s of w.ships) { s.visibleMask = 1 << s.team; s.bot!.farmer = false; }
+    runDirectors(w);
+    for (const t of w.teams) {
+      const stage = stagingPoint(w, t.id)!;
+      const wave = w.ships.filter(s => s.team === t.id && s.bot!.job === Job.Assault);
+      for (let i = 0; i < wave.length; i++) {
+        const s = wave[i]; s.x = s.bot!.destX = stage.x;
+        s.y = s.bot!.destY = stage.y + w.teamSign(t.id) * i * 30;
+      }
+    }
+    directAgain(w);
+    const deadline = w.teams[0].pushUntil;
+    expect(w.teams[1].pushUntil).toBeCloseTo(deadline, 8);
+    w.time = deadline;
+    for (const t of w.teams) {
+      const s = w.ships.find(s => s.team === t.id && s.bot!.job === Job.Assault)!;
+      const target = pushTarget(w, t.id)!;
+      s.x = target.x - w.teamSign(t.id) * (target.radius + gunRange(s, w) * .5); s.y = target.y;
+      s.angle = s.input.aim = t.id === 0 ? 0 : Math.PI;
+      s.input.fire = true; s.fireCooldown = 0; s.bot!.targetStructure = target.index;
+      aimAndFire(w, s);
+      expect(s.lastFireTime).toBe(w.time);
+    }
+    runDirectors(w);
+    expect(w.teams[0].pushUntil).toBeGreaterThan(deadline);
+    expect(w.teams[1].pushUntil).toBeCloseTo(w.teams[0].pushUntil, 8);
+  });
+  it('does not let active fire override heavy losses or a lost objective', () => {
+    for (const failure of ['losses', 'objective'] as const) {
+      const a = attack(); a.w.time = a.deadline - .1; fireAtBase(a);
+      if (failure === 'losses') a.wave.slice(2).forEach(s => { s.alive = false; });
+      else a.target.alive = false;
+      a.w.time = a.deadline; runDirectors(a.w);
+      expect(a.wave.some(s => s.alive && s.bot!.job === Job.Assault)).toBe(false);
+    }
+  });
 });

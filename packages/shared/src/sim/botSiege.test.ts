@@ -6,7 +6,7 @@ import { flyBot } from './botFlight';
 import { getSiegeDestination } from './botSiege';
 import { geometryOf } from './hullCollision';
 import { createWorld } from './step';
-import { gunRange } from './systems/combat';
+import { aimAndFire, gunRange, stepProjectiles } from './systems/combat';
 import { moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
 import { DT, Job } from './world';
 import { worldGeometry } from './worldCollision';
@@ -87,6 +87,70 @@ describe('siege firing reservations', () => {
     expect(served.size).toBe(40);
   });
 
+  it('keeps a productive battery firing through multiple old rotation periods with real projectiles', () => {
+    const { w, ships, target } = siege(40, 'battleship');
+    for (const s of w.ships) if (s.team === 1) s.alive = false;
+    const goals = ships.map(s => ({ ...getSiegeDestination(w, s, target) }));
+    const gunners = ships.filter((_, i) => goals[i].admitted);
+    expect(gunners.length).toBeGreaterThanOrEqual(4);
+    expect(gunners.length).toBeLessThan(ships.length);
+    ships.forEach((s, i) => {
+      s.x = goals[i].x; s.y = goals[i].y; s.vx = s.vy = 0;
+      s.angle = s.thrustAngle = Math.atan2(target.y - s.y, target.x - s.x);
+      s.input.steerWithAim = true; s.input.throttle = 0; s.input.brake = true;
+    });
+    const initialHull = target.hull;
+    for (let tick = 0; tick < 30 * 40; tick++) {
+      rebuildShipHash(w);
+      for (const s of ships) {
+        const goal = getSiegeDestination(w, s, target);
+        s.bot!.targetStructure = goal.admitted ? target.index : -1;
+        flyBot(w, s, { x: goal.x, y: goal.y, aim: Math.atan2(target.y - s.y, target.x - s.x), cruise: false });
+        s.input.fire = goal.admitted;
+      }
+      moveShips(w); resolveCollisions(w);
+      for (const s of ships) aimAndFire(w, s);
+      stepProjectiles(w);
+      w.time += DT; w.tick++;
+    }
+    expect(target.hull).toBeLessThan(initialHull - 1000);
+    for (const s of gunners) {
+      expect(getSiegeDestination(w, s, target)).toEqual(goals[ships.indexOf(s)]);
+      expect(Math.hypot(s.x - goals[ships.indexOf(s)].x, s.y - goals[ships.indexOf(s)].y)).toBeLessThan(180);
+    }
+  });
+
+  it('does not retain an idle gunner merely because its trigger remains held', () => {
+    const { w, ships, target } = siege(40, 'battleship');
+    const initial = ships.map(s => ({ ...getSiegeDestination(w, s, target) }));
+    const gunners = ships.filter((_, i) => initial[i].admitted);
+    expect(gunners.length).toBeGreaterThan(0); expect(gunners.length).toBeLessThan(ships.length);
+    ships.forEach((s, i) => { s.x = initial[i].x; s.y = initial[i].y; });
+    const yielded = new Set<number>();
+    for (let seconds = .5; seconds <= 30; seconds += .5) {
+      w.time = 400 + seconds;
+      for (const s of ships) {
+        s.input.fire = true; s.bot!.targetStructure = target.index;
+        // No aimAndFire call: a disabled/blocked gun never produces an actual volley.
+        const goal = getSiegeDestination(w, s, target);
+        if (gunners.includes(s) && !goal.admitted) yielded.add(s.slot);
+        s.x = goal.x; s.y = goal.y;
+      }
+    }
+    expect(yielded.size).toBeGreaterThan(0);
+    expect(w.projectiles.count).toBe(0);
+    for (const s of ships) expect(s.lastFireTime).toBeLessThan(400);
+  });
+
+  it('fills new stations from nearby reinforcements instead of slot order alone', () => {
+    const { w, ships, target } = siege();
+    ships[0].x = 1500; ships[0].y = 5500;
+    const near = ships.at(-1)!;
+    near.x = target.x - 1600; near.y = target.y;
+    expect(getSiegeDestination(w, near, target).admitted).toBe(true);
+    expect(getSiegeDestination(w, ships[0], target).admitted).toBe(false);
+  });
+
   it('mirrors positions, admission and rotation across teams', () => {
     const { w, ships, target } = siege();
     const opposite = w.teams[0].fobs[0];
@@ -113,7 +177,8 @@ describe('siege firing reservations', () => {
   });
   it('keeps a station leased during a slow but steadily progressing approach', () => {
     const { w, ships, target } = siege();
-    const s = ships[0], first = { ...getSiegeDestination(w, s, target) };
+    const s = ships.find(ship => getSiegeDestination(w, ship, target).admitted)!;
+    const first = { ...getSiegeDestination(w, s, target) };
     expect(first.admitted).toBe(true);
     for (let seconds = 10; seconds <= 140; seconds += 10) {
       w.time = 400 + seconds;

@@ -27,7 +27,7 @@ export interface BotFlightResult {
   throttle: number;
   brake: boolean;
 }
-interface Contact { hx: number; hy: number; cos: number; sin: number; knownTo: number; id: number; x: number; y: number; vx: number; vy: number; radius: number; distance: number; rx: number; ry: number; safe: number; now: number }
+interface Contact { hx: number; hy: number; cos: number; sin: number; knownTo: number; id: number; x: number; y: number; vx: number; vy: number; radius: number; distance: number; rx: number; ry: number; safe: number; now: number; gap: number; escapeX: number; escapeY: number }
 type FlightMode = 'travel' | 'forward' | 'reverse' | 'hold';
 interface FlightMemory {
   mode: FlightMode;
@@ -62,6 +62,31 @@ function envelope(g: BodyGeometry): { hx: number; hy: number } {
 function extent(x: number, y: number, hx: number, hy: number, cos: number, sin: number, radius: number): number {
   return Math.min(radius, hx * Math.abs(x * cos + y * sin) + hy * Math.abs(-x * sin + y * cos));
 }
+/** Signed gap between oriented conservative hull envelopes. A center-to-center radius
+ * test alone falsely overlaps diagonally staggered long hulls and makes a safe firing
+ * station repeatedly eject its occupant. Separating axes also preserve clear traffic lanes.
+ * The circle cap retains round public scenery rather than treating it as a giant square.
+ */
+function clearance(px: number, py: number, hx: number, hy: number, cos: number, sin: number,
+  radius: number, c: Contact, recordExit = false): number {
+  let best = -Infinity;
+  for (let axis = 0; axis < 5; axis++) {
+    const distance = axis === 4 ? Math.max(1, Math.hypot(px, py)) : 1;
+    const nx = axis === 0 ? cos : axis === 1 ? -sin : axis === 2 ? c.cos : axis === 3 ? -c.sin : px / distance;
+    const ny = axis === 0 ? sin : axis === 1 ? cos : axis === 2 ? c.sin : axis === 3 ? c.cos : py / distance;
+    const projection = px * nx + py * ny;
+    const gap = Math.abs(projection) - extent(nx, ny, hx, hy, cos, sin, radius) -
+      extent(nx, ny, c.hx, c.hy, c.cos, c.sin, c.radius) - 22;
+    if (gap > best) {
+      best = gap;
+      if (recordExit) {
+        const direction = projection >= 0 ? -1 : 1;
+        c.escapeX = nx * direction; c.escapeY = ny * direction;
+      }
+    }
+  }
+  return best;
+}
 const MAX_CONTACTS = 24;
 /** Stagger expensive passes across fixed ticks, so a whole fleet never replans at once. */
 function nextPass(w: World, s: Ship, ticks: number): number {
@@ -76,7 +101,7 @@ function memory(s: Ship): FlightMemory {
   let m = memories.get(s);
   if (!m) {
     m = { mode: 'travel', nextSense: -1, nextPlan: -1, plannedHeading: s.angle, plannedReverse: false, sensedAt: 0, lastX: s.x, lastY: s.y,
-      contacts: Array.from({ length: MAX_CONTACTS }, () => ({ hx: 0, hy: 0, cos: 1, sin: 0, knownTo: 3, id: 0, x: 0, y: 0, vx: 0, vy: 0, radius: 0, distance: 0, rx: 0, ry: 0, safe: 0, now: 0 })),
+      contacts: Array.from({ length: MAX_CONTACTS }, () => ({ hx: 0, hy: 0, cos: 1, sin: 0, knownTo: 3, id: 0, x: 0, y: 0, vx: 0, vy: 0, radius: 0, distance: 0, rx: 0, ry: 0, safe: 0, now: 0, gap: 0, escapeX: 0, escapeY: 0 })),
       count: 0, heading: s.angle, side: 1, sideUntil: 0,
       result: { avoiding: false, aim: s.angle, throttle: 0, brake: false } };
     memories.set(s, m);
@@ -92,7 +117,7 @@ function solids(w: World): Contact[] {
   cache.at = w.time;
   let index = 0;
   const add = (id: number, x: number, y: number, radius: number, knownTo = 3): void => {
-    const c = cache!.contacts[index] ?? (cache!.contacts[index] = { hx: radius, hy: radius, cos: 1, sin: 0, knownTo, id, x, y, vx: 0, vy: 0, radius, distance: 0, rx: 0, ry: 0, safe: 0, now: 0 });
+    const c = cache!.contacts[index] ?? (cache!.contacts[index] = { hx: radius, hy: radius, cos: 1, sin: 0, knownTo, id, x, y, vx: 0, vy: 0, radius, distance: 0, rx: 0, ry: 0, safe: 0, now: 0, gap: 0, escapeX: 0, escapeY: 0 });
     c.id = id; c.x = x; c.y = y; c.radius = radius; c.knownTo = knownTo; index++;
   };
   // The collision system retains structure/node geometry after destruction, too.
@@ -191,6 +216,7 @@ export function flyBot(w: World, s: Ship, goal: BotFlightGoal): BotFlightResult 
     const nx = c.rx / Math.max(1, c.now), ny = c.ry / Math.max(1, c.now);
     c.safe = extent(nx, ny, bounds.hx, bounds.hy, hullCos, hullSin, radius) +
       extent(nx, ny, c.hx, c.hy, c.cos, c.sin, c.radius) + 22;
+    c.gap = clearance(c.rx, c.ry, bounds.hx, bounds.hy, hullCos, hullSin, radius, c, true);
   }
   let fullSearch = w.time >= m.nextPlan || w.time < m.sensedAt ||
     // Point-mirrored headings can differ by one ULP at exactly 0.25 radians.
@@ -200,8 +226,8 @@ export function flyBot(w: World, s: Ship, goal: BotFlightGoal): BotFlightResult 
   let bestScore = Infinity, bestHeading = heading, bestDanger = 0;
   let straightDanger = 0, imminent = false, overlap = false;
   // Bound the circle approximation at a comfortable spacing; physical geometry stays unchanged.
-  for (let i = 0; i < (fullSearch ? DIRECTIONS.length : 2); i++) {
-    const offset = i === 0 ? 0 : fullSearch ? DIRECTIONS[i] : cachedOffset;
+  for (let i = 0; i < (fullSearch ? DIRECTIONS.length + 1 : 2); i++) {
+    const offset = i === 0 ? 0 : fullSearch && i < DIRECTIONS.length ? DIRECTIONS[i] : cachedOffset;
     const candidate = heading + offset;
     const cx = Math.cos(candidate), cy = Math.sin(candidate);
     const desiredHull = reverse ? candidate - Math.PI : candidate;
@@ -223,17 +249,20 @@ export function flyBot(w: World, s: Ship, goal: BotFlightGoal): BotFlightResult 
         extent(nx, ny, bounds.hx, bounds.hy, reverse ? -cx : cx, reverse ? -cy : cy, radius)) +
         extent(nx, ny, c.hx, c.hy, c.cos, c.sin, c.radius) + 22;
       const now = c.now;
-      if (now < safe) {
+      if (c.gap < 0) {
         // A contact starts inside our comfort zone: favor a real exit, not a stationary jam.
-        const escaping = -(px * cx + py * cy) / Math.max(1, now);
-        danger += (1 - clamp(escaping, -1, 1)) * (1 + (safe - now) / safe) * 2;
+        const escaping = c.escapeX * cx + c.escapeY * cy;
+        danger += (1 - clamp(escaping, -1, 1)) * (1 + Math.min(1, -c.gap / Math.max(30, safe))) * 2;
         if (i === 0) overlap = true;
       } else if (separation < impactSafe && t > 0) {
-        danger += (1 - separation / impactSafe) ** 2 * (4 - 1.4 * t / horizon);
+        const gap = Math.min(clearance(sx, sy, bounds.hx, bounds.hy, hullCos, hullSin, radius, c),
+          clearance(sx, sy, bounds.hx, bounds.hy, reverse ? -cx : cx, reverse ? -cy : cy, radius, c));
+        if (gap < 0) danger += (1 - separation / impactSafe) ** 2 * (4 - 1.4 * t / horizon);
       }
       if (i === 0) {
         const closing = (px * s.vx + py * s.vy - px * c.vx - py * c.vy) / Math.max(1, now);
-        if (closing > 20 && now - safe < stopping + closing * .2 && separation < impactSafe) imminent = true;
+        if (closing > 20 && now - safe < stopping + closing * .2 && separation < impactSafe &&
+          clearance(sx, sy, bounds.hx, bounds.hy, hullCos, hullSin, radius, c) < 0) imminent = true;
       }
     }
     const edge = radius + 35;
@@ -269,7 +298,10 @@ export function flyBot(w: World, s: Ship, goal: BotFlightGoal): BotFlightResult 
   throttle *= clamp(1 - turnError / Math.PI, .12, 1);
   if (avoiding) throttle *= clamp(1 - bestDanger * .18, .18, .8);
   const overspeed = !overlap && actualSpeed > Math.max(12, arrivalSpeed * 1.15) && remaining < stopping * 1.6 + 100;
-  const brake = (remaining === 0 && !avoiding) || overspeed || (imminent && !overlap) || (turnError > 1.2 && actualSpeed > speed * .55);
+  // Holding Space also suppresses signature abilities in the shared player input path.
+  // Brake to rest, then hold the station with zero throttle and release Space.
+  const stationBrake = remaining === 0 && !avoiding && actualSpeed > MATCH.movement.stopSpeed;
+  const brake = stationBrake || overspeed || (imminent && !overlap) || (turnError > 1.2 && actualSpeed > speed * .55);
   inp.steerWithAim = true;
   inp.aim = aim;
   inp.throttle = reverse ? -Math.min(reverseCeiling(w, s), throttle) : clamp(throttle, 0, 1);

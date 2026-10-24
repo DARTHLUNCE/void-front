@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import type { ClassId } from '../content/types';
-import { getSquadOrder } from './botSquads';
+import { getSquadOrder, markSquadTransit } from './botSquads';
 import { flyBot } from './botFlight';
 import { aimAndFire } from './systems/combat';
 import { moveShips, rebuildShipHash } from './systems/movement';
@@ -38,6 +38,100 @@ function order(w: World, s: Ship) {
 }
 
 describe('persistent mission transit squads', () => {
+  it('keeps ignored off-lane contacts in transit guidance, but releases each pilot for a committed fight', () => {
+    const w = fleet(), leader = w.ships[0], follower = w.ships[3];
+    const before = { ...order(w, follower)! }, control = fleet();
+    order(control, control.ships[3]);
+    const enemy = w.ships[w.fleetSize]; enemy.alive = true; enemy.visibleMask = 1;
+    enemy.x = leader.x + 50; enemy.y = leader.y + 750;
+    leader.bot!.targetShip = follower.bot!.targetShip = enemy.slot;
+    const point = w.points[0];
+    for (let tick = 0; tick < 180; tick++) {
+      markSquadTransit(w, leader, true); markSquadTransit(w, follower, true);
+      w.time += DT;
+      const next = getSquadOrder(w, follower, point.x, point.y, true)!;
+      control.time = w.time;
+      const expected = order(control, control.ships[3])!;
+      expect(next).not.toBeNull(); expect(next.leader).toBe(before.leader);
+      expect(next.x).toBeCloseTo(expected.x); expect(next.y).toBeCloseTo(expected.y);
+    }
+    markSquadTransit(w, follower, false);
+    expect(getSquadOrder(w, follower, point.x, point.y)).toBeNull();
+    markSquadTransit(w, leader, false); w.time += DT;
+    // Even an otherwise transiting follower releases its helm behind a fighting leader.
+    expect(getSquadOrder(w, follower, point.x, point.y, true)).toBeNull();
+  });
+
+  it('does not reuse an ignored-contact report after a target change, healing choice, or missed updates', () => {
+    const w = fleet(), leader = w.ships[0], follower = w.ships[3], point = w.points[0];
+    order(w, follower);
+    const enemy = w.ships[w.fleetSize]; enemy.alive = true; enemy.visibleMask = 1;
+    enemy.x = leader.x + 50; enemy.y = leader.y + 750;
+    leader.bot!.targetShip = enemy.slot;
+    markSquadTransit(w, leader, true); w.time += DT;
+    expect(order(w, follower)).not.toBeNull();
+    w.time += DT * 2;
+    expect(order(w, follower)).toBeNull();
+    markSquadTransit(w, leader, true); w.time += DT;
+    expect(order(w, follower)).not.toBeNull();
+    const other = w.ships[w.fleetSize + 1]; other.alive = true; other.visibleMask = 1;
+    other.x = enemy.x; other.y = enemy.y; leader.bot!.targetShip = other.slot;
+    expect(order(w, follower)).toBeNull();
+    // An ignore-contact flag never suppresses an engineer's actual allied repair target.
+    follower.bot!.targetShip = leader.slot;
+    expect(getSquadOrder(w, follower, point.x, point.y, true)).toBeNull();
+  });
+
+  it('keeps the leader and stations when it spots a distant contact during transit', () => {
+    const w = fleet(), leader = w.ships[0], follower = w.ships[3];
+    const control = fleet();
+    order(w, follower); order(control, control.ships[3]);
+    const enemy = w.ships[w.fleetSize]; enemy.alive = true; enemy.visibleMask = 1;
+    enemy.x = leader.x + 4000; enemy.y = leader.y;
+    leader.bot!.targetShip = enemy.slot;
+    for (const elapsed of [0, 1, 2, 4, 6]) {
+      w.time = control.time = 20 + elapsed;
+      const next = order(w, follower)!, expected = order(control, control.ships[3])!;
+      expect(next).not.toBeNull(); expect(next.leader).toBe(leader.slot);
+      expect(next.x).toBeCloseTo(expected.x); expect(next.y).toBeCloseTo(expected.y);
+    }
+  });
+
+  it('survives a brief leader engagement without electing a new leader and swapping all stations', () => {
+    const w = fleet(), leader = w.ships[0], follower = w.ships[3];
+    const before = { ...order(w, follower)! };
+    const enemy = w.ships[w.fleetSize]; enemy.alive = true; enemy.visibleMask = 1;
+    enemy.x = leader.x + 300; enemy.y = leader.y;
+    leader.bot!.targetShip = enemy.slot;
+    for (const elapsed of [1, 2]) {
+      w.time = 20 + elapsed;
+      expect(order(w, follower)).toBeNull();
+    }
+    leader.bot!.targetShip = -1; w.time = 23;
+    const resumed = order(w, follower)!;
+    expect(resumed.leader).toBe(leader.slot);
+    expect(resumed.x).toBeCloseTo(before.x); expect(resumed.y).toBeCloseTo(before.y);
+  });
+
+  it('hands transit leadership off after a sustained local fight instead of parking escorts forever', () => {
+    const w = fleet(), leader = w.ships[0], follower = w.ships[2];
+    expect(order(w, follower)!.leader).toBe(leader.slot);
+    const enemy = w.ships[w.fleetSize]; enemy.alive = true; enemy.visibleMask = 1;
+    enemy.x = leader.x + 300; enemy.y = leader.y; leader.bot!.targetShip = enemy.slot;
+    w.time = 21; expect(order(w, follower)).toBeNull();
+    w.time = 26;
+    expect(order(w, follower)!.leader).not.toBe(leader.slot);
+  });
+
+  it('retains surviving escort stations when a different follower is lost', () => {
+    const w = fleet(), follower = w.ships[5];
+    const before = { ...order(w, follower)! };
+    w.ships[1].alive = false; w.time += 1;
+    const after = order(w, follower)!;
+    expect(after.leader).toBe(before.leader);
+    expect(after.x).toBeCloseTo(before.x); expect(after.y).toBeCloseTo(before.y);
+  });
+
   it('forms a small shared fleet with durable leadership, flank escorts and rear support', () => {
     const w = fleet();
     const orders = w.ships.slice(0, 6).map(s => order(w, s)!);

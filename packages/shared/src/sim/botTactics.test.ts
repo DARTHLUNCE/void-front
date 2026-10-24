@@ -126,6 +126,17 @@ describe('bot tactical fairness and intent', () => {
     expect(a.s.input.fire).toBe(true);
   });
 
+  it('keeps attacking the base when a nearby visible defender is not an emergency', () => {
+    const a = arena();
+    const target = a.w.teams[a.enemy.team].fobs[0];
+    target.alive = true; target.shielded = false;
+    target.x = a.s.x + gunRange(a.s, a.w) * .8; target.y = a.s.y;
+    a.s.bot!.job = Job.Assault; a.w.teams[a.s.team].pushGatherUntil = 0;
+    a.enemy.alive = true; a.enemy.x = a.s.x; a.enemy.y = a.s.y + 440;
+    rebuildShipHash(a.w); think(a.w, a.s);
+    expect(a.s.bot!.targetStructure).toBe(target.index);
+  });
+
   it('allows damaged assault ships to retreat toward recovery rather than suicide', () => {
     const a = acquireEnemy();
     a.s.bot!.job = Job.Assault; a.s.hull = a.s.maxHull * .2;
@@ -198,4 +209,27 @@ describe('bot tactical fairness and intent', () => {
     botAim(w, s);
     expect(s.input.aim).toBe(aim);
   });
+  it('keeps a distant node assignment instead of turning aside for an unrelated contact', () => {
+    const a = arena('cruiser');
+    const point = a.w.points[0]; point.def.pos.x = a.s.x + 5000; point.def.pos.y = a.s.y;
+    a.s.bot!.job = Job.Skirmish; a.s.bot!.jobPoint = point.index;
+    a.enemy.alive = true; a.enemy.x = a.s.x + 50; a.enemy.y = a.s.y + 750;
+    rebuildShipHash(a.w); think(a.w, a.s); a.w.time += .5; steer(a.w, a.s);
+    expect(a.s.bot!.targetShip).toBe(a.enemy.slot);
+    expect(a.s.input.fire).toBe(false);
+    expect(Math.cos(a.s.input.aim)).toBeGreaterThan(.8);
+    expect(a.s.input.throttle).toBeGreaterThan(.5);
+  });
+
+  it('returns a defender to its base instead of letting a fleeing contact tow it farther out', () => {
+    const a = arena('cruiser');
+    const base = a.w.teams[a.s.team].mothership;
+    base.alive = true; base.x = a.s.x - 4000; base.y = a.s.y;
+    a.s.bot!.job = Job.Defend;
+    a.enemy.alive = true; a.enemy.x = a.s.x + 750; a.enemy.y = a.s.y;
+    rebuildShipHash(a.w); think(a.w, a.s); a.w.time += .5; steer(a.w, a.s);
+    expect(a.s.input.fire).toBe(false);
+    expect(Math.cos(a.s.input.aim)).toBeLessThan(-.5);
+  });
+
 });

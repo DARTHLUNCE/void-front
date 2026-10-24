@@ -6,9 +6,11 @@ import { NODE } from '../../content/structures';
 import type { AbilityTag } from '../../content/types';
 import { angleDelta } from '../angles';
 import { flyBot, type BotFlightGoal } from '../botFlight';
-import { doctrineFor, planShipManeuver, type ShipManeuverContext } from '../botDoctrine';
-import { getSquadOrder } from '../botSquads';
+import { doctrineFor, planShipManeuver, releaseShipManeuver, type ShipManeuverContext } from '../botDoctrine';
+import { getSquadOrder, markSquadTransit } from '../botSquads';
 import { getSiegeDestination } from '../botSiege';
+import { getTravelWaypoint } from '../botRoutes';
+import { missionStation } from '../botStations';
 import { perceivedPresence as combatPower } from '../botPerception';
 import { geometryOf, hitBodySegment } from '../hullCollision';
 import { pointBody, structureBody, worldGeometry } from '../worldCollision';
@@ -23,7 +25,7 @@ import { baseSpeed } from './movement';
 interface ThinkCtx { targetDist: number; enemiesNear: number; alliesHurt: number; hostile: boolean }
 interface TacticalMemory {
   observedAt: number; key: string; x: number; y: number; vx: number; vy: number;
-  radius: number; healing: boolean; regroup: boolean; siegeAdmitted: boolean; pressureSince: number; pressureFirstDamage: number; assaultContactUntil: number; assaultContactKey: string; friendlyPower: number; enemyPower: number;
+  radius: number; healing: boolean; regroup: boolean; siegeAdmitted: boolean; pressureSince: number; pressureFirstDamage: number; routeMissionKey: string; routeContactUntil: number; routeContactKey: string; routeContactStarted: number; routeProgressAt: number; routeProgressDistance: number; routeContactHealth: number; routeBypassUntil: number; observedHealth: number; friendlyPower: number; enemyPower: number;
   supportX: number; supportY: number; approach: number; aim: number; desiredFire: boolean;
   goal: BotFlightGoal; context: ThinkCtx; maneuver: ShipManeuverContext;
 }
@@ -34,7 +36,7 @@ function memory(s: Ship): TacticalMemory {
   let m = memories.get(s);
   if (!m) {
     m = { observedAt: -1, key: '', x: 0, y: 0, vx: 0, vy: 0, radius: 0, healing: false,
-      regroup: false, siegeAdmitted: false, pressureSince: -1, pressureFirstDamage: -1, assaultContactUntil: 0, assaultContactKey: '', friendlyPower: 1, enemyPower: 0, supportX: s.x, supportY: s.y,
+      regroup: false, siegeAdmitted: false, pressureSince: -1, pressureFirstDamage: -1, routeMissionKey: '', routeContactUntil: 0, routeContactKey: '', routeContactStarted: -1, routeProgressAt: 0, routeProgressDistance: 0, routeContactHealth: 1, routeBypassUntil: 0, observedHealth: 1, friendlyPower: 1, enemyPower: 0, supportX: s.x, supportY: s.y,
       approach: s.angle + Math.PI, aim: s.angle, desiredFire: false, goal: { x: s.x, y: s.y },
       context: { targetDist: Infinity, enemiesNear: 0, alliesHurt: 0, hostile: false },
       maneuver: { targetX: 0, targetY: 0, targetVx: 0, targetVy: 0, targetRadius: 0, range: 0, approach: 0,
@@ -189,8 +191,12 @@ export function think(w: World, s: Ship): void {
       clearTarget(b); b.targetShip = healing.slot;
     } else if (b.job === Job.Assault && w.time >= w.teams[s.team].pushGatherUntil) {
       const st = pushTarget(w, s.team);
-      if (st && !st.shielded && getSiegeDestination(w, s, st).admitted &&
-        Math.hypot(s.x - st.x, s.y - st.y) < st.radius + range + 150 && nearest > 450) {
+      // Nearby defenders do not make the base cease to be a valid objective. Break off for
+      // an immediate damaging threat, not merely because any ship is inside a fixed 450-unit circle.
+      const immediateThreat = best && underFire && hp < .6 &&
+        Math.hypot(best.x - s.x, best.y - s.y) < geometryOf(w, s).radius + geometryOf(w, best).radius + 120;
+      if (st && !st.shielded && !immediateThreat && getSiegeDestination(w, s, st).admitted &&
+        structureDistance(w, s, st.index) <= range) {
         clearTarget(b); b.targetStructure = st.index;
       }
     } else if (b.job === Job.Skirmish) {
@@ -207,6 +213,7 @@ export function think(w: World, s: Ship): void {
     const t = w.ships[b.targetShip];
     m.x = t.x; m.y = t.y; m.vx = t.vx; m.vy = t.vy;
     m.radius = geometryOf(w, t).radius; m.healing = t.team === s.team;
+    m.observedHealth = (t.hull + t.shield) / Math.max(1, t.maxHull + t.maxShield);
   } else if (b.targetDrone >= 0) {
     const t = w.drones.items[b.targetDrone]; m.x = t.x; m.y = t.y; m.vx = t.vx; m.vy = t.vy; m.radius = t.radius;
   } else if (b.targetStructure >= 0) {
@@ -286,16 +293,8 @@ function formation(w: World, s: Ship, b: BotBrain, x: number, y: number, baseRad
     b.destY = y + sign * (rank % columns - (columns - 1) / 2) * step;
     return;
   }
-  let radius = baseRadius;
-  let slots = capture ? POINTS.maxShips : Math.max(4, Math.floor(Math.PI * radius / step));
-  while (rank >= slots) {
-    rank -= slots; radius += step;
-    slots = Math.max(4, Math.floor((capture ? Math.PI * 2 : Math.PI) * radius / step));
-  }
-  const a = capture ? rank / slots * Math.PI * 2 + Math.PI / 4 :
-    Math.PI + (rank - (slots - 1) / 2) * step / Math.max(1, radius);
-  b.destX = x + sign * Math.cos(a) * radius;
-  b.destY = y + sign * Math.sin(a) * radius;
+  const station = missionStation(w, s, x, y, baseRadius, capture);
+  b.destX = station.x; b.destY = station.y;
 }
 function chooseDestination(w: World, s: Ship, b: BotBrain, m: TacticalMemory): void {
   const team = w.teams[s.team], sign = w.teamSign(s.team), size = geometryOf(w, s).radius;
@@ -372,6 +371,12 @@ export function steer(w: World, s: Ship): void {
   goal.x = b.destX; goal.y = b.destY; goal.arrivalRadius = b.job === Job.Farm ? 22 : 65;
   goal.cruise = b.cruise; goal.throttle = 1; goal.aim = undefined; goal.preserveCourse = false;
   m.desiredFire = false;
+  let strategicTravel = true;
+  const routeMission = `${b.job}:${b.jobPoint}:${b.job === Job.Assault ? w.teams[s.team].pushGatherUntil : b.job === Job.Defend ? defendedStructure(w, s).index : ''}`;
+  if (m.routeMissionKey !== routeMission) {
+    m.routeMissionKey = routeMission; m.routeContactStarted = -1;
+    m.routeContactUntil = m.routeBypassUntil = 0; m.routeContactKey = '';
+  }
   if (!validTarget(w, s)) {
     clearTarget(b); m.key = ''; clearTargetedAbilities(s);
   } else {
@@ -383,39 +388,64 @@ export function steer(w: World, s: Ship): void {
     const missionX = b.destX - s.x, missionY = b.destY - s.y, missionDistance = Math.hypot(missionX, missionY);
     const along = (dx * missionX + dy * missionY) / Math.max(1, missionDistance);
     const lateral = Math.abs(dx * missionY - dy * missionX) / Math.max(1, missionDistance);
-    const blockedApproach = b.job === Job.Assault && w.time >= w.teams[s.team].pushGatherUntil && !m.healing &&
+    const missionTravel = b.job === Job.Skirmish || b.job === Job.Defend || b.job === Job.Rally ||
+      b.job === Job.Assault;
+    const blockedApproach = missionTravel && !m.healing &&
       b.targetShip >= 0 && along > 0 && along < missionDistance + m.radius &&
       lateral < geometryOf(w, s).radius + m.radius + 140 && distance - m.radius < gunRange(s, w) * .95 &&
       (Math.hypot(s.vx, s.vy) < baseSpeed(w, s) * .5 || w.time - s.lastDamageTime < 1.5);
-    if (blockedApproach) { m.assaultContactUntil = w.time + 2.5; m.assaultContactKey = m.key; }
-    const clearingApproach = m.assaultContactKey === m.key && w.time < m.assaultContactUntil;
+    if (blockedApproach && w.time >= m.routeBypassUntil) {
+      if (m.routeContactStarted < 0) {
+        m.routeContactStarted = m.routeProgressAt = w.time;
+        m.routeProgressDistance = missionDistance; m.routeContactHealth = m.observedHealth;
+      }
+      // Clearing a route should produce movement or observed damage, not a permanent
+      // firing station kilometres from the objective. New targets do not reset this budget.
+      const sameContact = m.routeContactKey === m.key;
+      if (missionDistance < m.routeProgressDistance - 150 || sameContact && m.observedHealth < m.routeContactHealth - .08) {
+        m.routeProgressAt = w.time; m.routeProgressDistance = missionDistance; m.routeContactHealth = m.observedHealth;
+      }
+      if (!sameContact) m.routeContactHealth = m.observedHealth;
+      m.routeContactKey = m.key;
+      if (w.time - m.routeProgressAt > 6 || w.time - m.routeContactStarted > 20) {
+        // Try the observed-traffic route around an unproductive engagement before
+        // considering another interruption. Immediate close self-defense still wins.
+        m.routeContactUntil = 0; m.routeContactStarted = -1; m.routeBypassUntil = w.time + 8;
+      } else m.routeContactUntil = w.time + 2.5;
+    } else if (w.time >= m.routeContactUntil) m.routeContactStarted = -1;
+    const clearingApproach = m.routeContactKey === m.key && w.time < m.routeContactUntil;
     // Transit ignores distant distractions, but cannot pretend a defended lane is empty space.
-    const assaultTransit = b.job === Job.Assault && b.targetStructure < 0 && distance > 400 &&
-      missionDistance > 650 && !clearingApproach;
+    const immediateFight = w.time - s.lastDamageTime < 2 && distance < geometryOf(w, s).radius + m.radius + 350;
+    const missionTransit = missionTravel && b.targetShip >= 0 && !m.healing && distance > 400 &&
+      missionDistance > (b.job === Job.Assault ? 650 : 1200) && !clearingApproach && !immediateFight;
     let combatAim = false;
     if (b.targetStructure >= 0 && b.job === Job.Assault && !b.retreating && !m.regroup) {
       // Admission reserves both room for the hull and a usable gun lane; don't replace it with a generic orbit.
       combatAim = m.siegeAdmitted;
-      if (combatAim) { goal.aim = m.aim; goal.arrivalRadius = 75; }
-    } else if (!b.retreating && !m.regroup && !assaultTransit) {
+      if (combatAim) { goal.aim = m.aim; goal.arrivalRadius = 75; strategicTravel = false; }
+    } else if (!b.retreating && !m.regroup && !missionTransit) {
       const c = m.maneuver;
       c.targetX = tx; c.targetY = ty; c.targetVx = m.vx; c.targetVy = m.vy; c.targetRadius = m.radius;
       c.range = gunRange(s, w); c.approach = m.approach; c.healing = m.healing;
       c.alliedX = m.supportX; c.alliedY = m.supportY;
       c.friendlyPower = m.friendlyPower; c.enemyPower = m.enemyPower; c.targetKey = m.key;
       const maneuver = planShipManeuver(w, s, c);
-      if (maneuver) {
+      if (maneuver && usefulMissionManeuver(w, s, maneuver.x, maneuver.y, m.healing)) {
+        strategicTravel = false;
         goal.x = maneuver.x; goal.y = maneuver.y; goal.throttle = maneuver.throttle;
         goal.arrivalRadius = 75; combatAim = maneuver.aimAtTarget;
         goal.preserveCourse = maneuver.preserveCourse;
         if (combatAim) goal.aim = m.aim;
       }
     }
-    m.desiredFire = combatAim && distance - m.radius <= gunRange(s, w) && triggerReady(w, b);
+    const shotDistance = b.targetStructure >= 0 ? structureDistance(w, s, b.targetStructure) : distance - m.radius;
+    m.desiredFire = combatAim && shotDistance <= gunRange(s, w) && triggerReady(w, b);
     if (!combatAim) clearTargetedAbilities(s);
   }
-  if (!validTarget(w, s) && !b.retreating && !m.regroup) {
-    const order = getSquadOrder(w, s, goal.x, goal.y);
+  const ignoringContact = strategicTravel && validTarget(w, s) && !m.healing && !m.desiredFire;
+  markSquadTransit(w, s, ignoringContact);
+  if (strategicTravel && !b.retreating && !m.regroup) {
+    const order = getSquadOrder(w, s, goal.x, goal.y, ignoringContact);
     if (order) {
       goal.x = order.x; goal.y = order.y;
       goal.throttle = Math.min(goal.throttle ?? 1, order.throttle);
@@ -431,7 +461,14 @@ export function steer(w: World, s: Ship): void {
     if (d < safe) {
       goal.x = st.x + dx / d * (safe + 200); goal.y = st.y + dy / d * (safe + 200);
       goal.aim = undefined; goal.cruise = false; m.desiredFire = false;
+      // Safety replaced the accepted tactical destination; do not advertise its abandoned space.
+      releaseShipManeuver(s);
     }
+  }
+  if (strategicTravel) {
+    releaseShipManeuver(s);
+    const route = getTravelWaypoint(w, s, goal.x, goal.y, assault?.index ?? -1);
+    goal.x = route.x; goal.y = route.y;
   }
   flyBot(w, s, goal);
   if (validTarget(w, s) && Math.abs(angleDelta(s.input.aim, m.aim)) < .18) {
@@ -445,6 +482,39 @@ export function steer(w: World, s: Ship): void {
   s.input.fire = m.desiredFire && Math.abs(angleDelta(s.input.aim, m.aim)) < .18 &&
     Math.abs(angleDelta(s.angle, m.aim)) < PRIMARY_AIM_HALF_ARC + .05;
   if (s.cls.quirk === 'chargeShot' && s.quirk[CHARGE] >= 1) s.input.fire = false;
+}
+/** A local fight must still serve the assignment. Defenders protect their base and node
+ * crews contest their node; a fleeing contact cannot tow them across the map. Allow useful
+ * motion toward the objective even when starting outside its area, plus close self-defense.
+ * This only rejects a pursuit destination; steering, target visibility and weapons stay shared.
+ */
+function usefulMissionManeuver(w: World, s: Ship, x: number, y: number, healing: boolean): boolean {
+  const b = s.bot!;
+  if (healing || b.job === Job.Assault || b.job === Job.Farm) return true;
+  let cx: number, cy: number, radius: number;
+  const range = gunRange(s, w);
+  if (b.job === Job.Defend) {
+    const base = defendedStructure(w, s);
+    cx = base.x; cy = base.y; radius = worldGeometry(w, base.def.id).radius + Math.max(1000, range * 1.2);
+  } else if (b.job === Job.Skirmish) {
+    const point = w.points[b.jobPoint];
+    if (!point) return true;
+    cx = point.x; cy = point.y; radius = Math.max(1400, range * 1.45);
+  } else {
+    cx = w.teams[s.team].rallyX; cy = w.teams[s.team].rallyY; radius = Math.max(1000, range);
+  }
+  const current = Math.hypot(s.x - cx, s.y - cy), proposed = Math.hypot(x - cx, y - cy);
+  if (proposed <= radius || proposed < current - 150) return true;
+  const m = memory(s);
+  return w.time - s.lastDamageTime < 2 && Math.hypot(s.x - m.x, s.y - m.y) < geometryOf(w, s).radius + m.radius + 350;
+}
+
+/** Measure the visible silhouette in the firing direction, not a legacy radius that is
+ * much smaller than some PBR bases (or a bounding circle that overstates corner reach). */
+function structureDistance(w: World, s: Ship, index: number): number {
+  const st = w.structures[index], dx = st.x - s.x, dy = st.y - s.y;
+  const hit = hitBodySegment(structureBody(w, st), s.x, s.y, dx, dy, 0);
+  return Math.hypot(dx, dy) * (hit >= 0 ? hit : 1);
 }
 function offensiveAbilityReady(w: World, s: Ship, b: BotBrain, m: TacticalMemory): boolean {
   return validTarget(w, s) && w.time - b.targetSince >= Math.max(.22, b.skill.reaction) &&
