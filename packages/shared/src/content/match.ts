@@ -9,7 +9,7 @@ export const MATCH = {
   /** Max ships per team, sizes the entity pools. */
   maxFleet: 100,
   /** Sub-Light drive (Shift): charges for `spool` s, then runs at `speedMul`× top speed. */
-  cruise: { spool: 1.5, speedMul: 2.5 },
+  cruise: { spool: 0.7, speedMul: 2.5 },
   /** v2: default reverse-throttle ceiling (share of top speed); nodes raise it via `reverseMax`. */
   reverseMax: 0.4,
   /**
@@ -41,6 +41,11 @@ export const MATCH = {
     brakeDeceleration: 1.8,
     brakeResponse: 4,
     stopSpeed: 0.5,
+    /** Main weapons divert drive power: gradual slowdown while firing/charging. */
+    firingSpeedMul: 0.30,
+    firingHold: 0.24,
+    firingDrag: 5,
+    firingDeceleration: 2.2,
   },
 } as const;
 

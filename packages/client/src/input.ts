@@ -1,4 +1,5 @@
 import type { InputFrame } from './protocol';
+import { PilotAim, type PilotAimContext } from './pilotAim';
 
 export type ControlScheme = 'mouse' | 'wasd';
 
@@ -32,19 +33,26 @@ export interface InputHandlers {
   escape(): void;
   /** Enter or Space: launch from the hangar. */
   confirm(): void;
+  /** Mouse flight only; Game gates this action while in menus/command seats. */
+  reverse?(): void;
 }
 
 /** Turns mouse and keyboard state into one InputFrame per animation frame. */
 export class Input {
   private mouseX = 0;
   private mouseY = 0;
+  private readonly pilotAim = new PilotAim();
   private left = false;
   private right = false;
   private readonly keys = new Set<string>();
   autofire = false;
   pointerOverHud = false;
+  private pointerResumed = false;
+  /** Raw pointer for camera framing; HUD input suppression still uses the gameplay pointer. */
+  readonly viewPointer = { x: 0, y: 0 };
   /** Signed share of top speed: positive drives toward W/A/S/D or the mouse, negative backs up on the retro-thrusters. */
   throttle = 1;
+  private throttleBeforeReverse: number | null = null;
   /** Deepest reverse this ship allows (0.4 base; nodes raise it). Kept in sync from the snapshot. */
   reverseMax = 0.4;
   /** Reactor Power switch waiting to go out with the next frame (POWER_INDEX), or -1. */
@@ -66,7 +74,11 @@ export class Input {
   ) {
     this.mouseX = initialPointer.x;
     this.mouseY = initialPointer.y;
-    this.on(window, 'mousemove', (e: MouseEvent) => {
+    this.viewPointer.x = initialPointer.x; this.viewPointer.y = initialPointer.y;
+    const trackPointer = (e: MouseEvent) => {
+      if (window.document?.visibilityState === 'hidden') return;
+      this.pointerResumed = true;
+      this.viewPointer.x = e.clientX; this.viewPointer.y = e.clientY;
       this.pointerOverHud = overHud(e.target);
       if (this.pointerOverHud) {
         this.left = this.right = false;
@@ -74,8 +86,15 @@ export class Input {
       }
       this.mouseX = e.clientX;
       this.mouseY = e.clientY;
+    };
+    this.on(window, 'mousemove', trackPointer);
+    // Webviews can deliver hover again before document.hasFocus() turns true.
+    this.on(window, 'mouseover', trackPointer);
+    this.on(window, 'mouseout', (e: MouseEvent) => {
+      if (!e.relatedTarget) this.pointerResumed = false;
     });
     this.on(window, 'mousedown', (e: MouseEvent) => {
+      if (Number.isFinite(e.clientX) && Number.isFinite(e.clientY)) trackPointer(e);
       if (overHud(e.target)) return;
       if (e.button === 0) this.left = true;
       if (e.button === 2) this.right = true;
@@ -97,9 +116,25 @@ export class Input {
       if (e.button === 2) this.right = false;
     });
     this.on(window, 'contextmenu', (e: Event) => e.preventDefault());
-    this.on(window, 'blur', () => {
+    const release = () => {
       this.keys.clear();
       this.left = this.right = false;
+      this.pointerResumed = false;
+      this.power = -1;
+      this.pilotAim.reset();
+      this.h.scoreboard(false);
+    };
+    this.on(window, 'blur', release);
+    this.on(window, 'focus', () => {
+      this.pilotAim.reset();
+      const hit=window.document?.elementFromPoint(this.viewPointer.x,this.viewPointer.y);
+      this.pointerOverHud=overHud(hit ?? null);
+      if (!this.pointerOverHud) {
+        this.mouseX=this.viewPointer.x;this.mouseY=this.viewPointer.y;
+      }
+    });
+    if (window.document) this.on(window.document, 'visibilitychange', () => {
+      if (window.document.visibilityState === 'hidden') release();
     });
     this.on(window, 'keydown', (e: KeyboardEvent) => {
       if (e.code === 'Tab') {
@@ -111,6 +146,12 @@ export class Input {
       const power = POWER_KEYS[e.code];
       if (e.code === 'Space' || power !== undefined) e.preventDefault();
       if (e.repeat) return;
+      if (e.code === 'KeyS' && this.scheme === 'mouse') {
+        if ((e.target as Element | null)?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+        e.preventDefault();
+        if (this.h.reverse) this.h.reverse(); else this.toggleReverse();
+        return;
+      }
       if (power !== undefined) {
         this.power = power;
         this.powerMode = power;
@@ -142,15 +183,28 @@ export class Input {
     });
   }
 
-  private on<E extends Event>(target: Window, type: string, fn: (e: E) => void, opts?: AddEventListenerOptions): void {
+  private on<E extends Event>(target: Window | Document, type: string, fn: (e: E) => void, opts?: AddEventListenerOptions): void {
     target.addEventListener(type, fn as EventListener, opts);
     this.off.push(() => target.removeEventListener(type, fn as EventListener));
   }
 
   /** Move the throttle up (+1) or down (-1) one 10% step, through zero into reverse. */
   stepThrottle(dir: number): void {
+    this.throttleBeforeReverse = null;
     const min = -Math.round(this.reverseMax * 100) / 100;
     this.throttle = Math.min(1, Math.max(min, Math.round((this.throttle + dir * THROTTLE_STEP) * 10) / 10));
+  }
+
+  get reverseToggled(): boolean { return this.throttleBeforeReverse !== null; }
+
+  toggleReverse(): void {
+    if (this.throttleBeforeReverse === null) {
+      this.throttleBeforeReverse = this.throttle;
+      this.throttle = -this.reverseMax;
+    } else {
+      this.throttle = Math.max(-this.reverseMax, Math.min(1, this.throttleBeforeReverse));
+      this.throttleBeforeReverse = null;
+    }
   }
 
   /**
@@ -158,16 +212,17 @@ export class Input {
    * @param zoom  screen pixels per world unit
    * @param toWorld converts a screen point to world coordinates
    */
-  frame(ship: { x: number; y: number }, zoom: number, toWorld: (x: number, y: number) => { x: number; y: number }): InputFrame {
+  frame(ship: { x: number; y: number }, zoom: number, toWorld: (x: number, y: number) => { x: number; y: number }, aimContext?: PilotAimContext,dt=1/60): InputFrame {
     const dx = this.mouseX - ship.x;
     const dy = this.mouseY - ship.y;
-    const aim = Math.atan2(dy, dx);
+    const stabilized = aimContext ? this.pilotAim.update(this.mouse,ship,aimContext,dt) : null;
+    const aim = stabilized?.angle ?? Math.atan2(dy, dx);
     let moveX = 0;
     let moveY = 0;
     if (this.scheme === 'mouse') {
       // Point where you want to go: full thrust beyond ~180 world units from the ship.
       const d = Math.hypot(dx, dy) / zoom;
-      const mag = Math.min(1, Math.max(0, (d - 30) / 150));
+      const mag = (stabilized?.influence ?? 1) * Math.min(1, Math.max(0, (d - 30) / 150));
       if (d > 0) {
         moveX = (dx / zoom / d) * mag;
         moveY = (dy / zoom / d) * mag;
@@ -203,6 +258,14 @@ export class Input {
       steerWithAim: this.scheme === 'mouse',
     };
   }
+
+  /** Resume camera hover without requiring a click; never track a hidden tab. */
+  get pointerActive(): boolean {
+    const doc=window.document;
+    return doc?.visibilityState !== 'hidden' && (!!doc?.hasFocus() || this.pointerResumed);
+  }
+
+  resetAim(): void { this.pilotAim.reset(); }
 
   get braking(): boolean { return this.keys.has('Space'); }
 

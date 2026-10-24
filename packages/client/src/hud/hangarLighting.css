@@ -1,0 +1,16 @@
+.hangar { background:#020408; }
+.hangar .hg-bar,.hangar .hg-foot { background:#04070b; border-color:#1c2733; }
+.hangar .hg-rail,.hangar .hg-dossier { background:rgba(3,6,10,.96); border-color:#1c2733; }
+.hangar .hg-stage { background:radial-gradient(ellipse 60% 48% at 43% 40%,#101b26 0%,#060b11 42%,#010204 78%); border-color:#1a2633; }
+.hangar .hg-stage::before,.hangar .hg-stage::after { opacity:.12; filter:none; }
+.hangar .st-sky { opacity:.1; }
+.hangar .st-deck { opacity:.12; }
+.hangar .st-ghost { opacity:.13; }
+.hangar .st-art::after { background:radial-gradient(ellipse,rgba(70,110,145,.13),transparent 70%); }
+.hangar .st-float::after { display:none; }
+.hangar .st-art .hull-thumb { filter:drop-shadow(0 10px 18px #000b); }
+.hangar .st-ruler { opacity:.55; }
+.hangar .st-name h3 { text-shadow:0 0 12px #7399bb28; }
+.hangar .hg-row,.hangar .hg-seat { background:#060a10; }
+.hangar .hg-row.on { background:#0b1520; border-color:#597e9e; }
+.hangar .hg-launch { background:linear-gradient(100deg,#09251b,#0d3528); box-shadow:inset 0 0 20px #38cc8920; }

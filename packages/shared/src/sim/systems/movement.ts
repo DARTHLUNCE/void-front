@@ -10,11 +10,20 @@ import { DT, type Ship, type World } from '../world';
 import { apHit, damageShip, MAX_SHIP_RADIUS, turnRateOf } from './combat';
 import { accelPowerMul, speedPowerMul, spoolCut } from './power';
 import { quirkOf } from './quirks';
-import { applyStatus, hasStatus, statusMagnitude } from './status';
+import { applyStatus, canAct, hasStatus, statusMagnitude } from './status';
 
 export function baseSpeed(w: World, s: Ship): number {
   const quirk = quirkOf(s).speedBonus?.(s) ?? 0;
   return liveStat(w, s, 'speed', s.cls.speed) * (1 + quirk + statusMagnitude(s, 'haste')) * (1 - statusMagnitude(s, 'slow')) * speedPowerMul(w, s);
+}
+
+/** Shared by simulation and HUD. Automatic defensive turrets do not load the main drive.
+ * Keep a short hold after a volley so releasing between shots cannot bypass the tradeoff. */
+export function firingSpeedMultiplier(w: World, s: Ship): number {
+  if (!s.alive || s.dashTime > 0 || (s.input.cruise && !s.input.brake)) return 1;
+  const workingTrigger = s.input.fire && canAct(s) && (quirkOf(s).canFire?.(w, s) ?? true);
+  const sinceShot = w.time - s.lastFireTime;
+  return workingTrigger || (sinceShot >= 0 && sinceShot < MATCH.movement.firingHold) ? MATCH.movement.firingSpeedMul : 1;
 }
 
 /** v2: how far back the retro-thrusters may drive this ship (share of top speed). */
@@ -43,6 +52,8 @@ export function moveShips(w: World): void {
     }
 
     const speed = baseSpeed(w, s);
+    const firingMul = firingSpeedMultiplier(w, s);
+    const driveSpeed = speed * firingMul;
     if (s.dashTime > 0 && !stuck) {
       s.engineForward = s.engineLateral = 0;
       s.ax = s.ay = 0;
@@ -98,7 +109,7 @@ export function moveShips(w: World): void {
           const desiredTorque = requestedAngularAcceleration(s, turnRateOf(w, s)) * hullInertia(s);
           // Translation sets the main-engine budget. Never add forward thrust just to turn:
           // close-in nozzles otherwise launch the Corvette past its requested speed.
-          const forward = Math.max(0, (speed * cruiseMul * throttle - forwardSpeed) * tuning.velocityResponse);
+          const forward = Math.max(0, (driveSpeed * cruiseMul * throttle - forwardSpeed) * tuning.velocityResponse);
           const lateralLimit = forward * Math.tan(tuning.gimbalAngle);
           const requestedLateral = Math.abs(armX) > 1e-6 ? (desiredTorque + armY * forward) / armX : 0;
           const lateral = Math.max(-lateralLimit, Math.min(lateralLimit, requestedLateral));
@@ -109,7 +120,7 @@ export function moveShips(w: World): void {
           s.engineTorque = armX * s.engineLateral - armY * s.engineForward;
           s.thrustAngle = s.angle + Math.atan2(s.engineLateral, Math.max(1e-6, s.engineForward));
           // Stabilizing jets damp sideslip; excess forward speed is shed gradually.
-          const forwardDrag = Math.max(0, forwardSpeed - speed * cruiseMul * throttle) * tuning.velocityResponse;
+          const forwardDrag = Math.max(0, forwardSpeed - driveSpeed * cruiseMul * throttle) * tuning.velocityResponse;
           const lateralDrag = sideSpeed * tuning.lateralDamping;
           ax = cos * (s.engineForward - forwardDrag) - sin * (s.engineLateral - lateralDrag);
           ay = sin * (s.engineForward - forwardDrag) + cos * (s.engineLateral - lateralDrag);
@@ -119,7 +130,7 @@ export function moveShips(w: World): void {
             s.thrustAngle = turnToward(s.thrustAngle, reverse > 0 ? s.angle + Math.PI : Math.atan2(inp.moveY, inp.moveX),
               tuning.thrustTurnRate * DT, 1 - Math.exp(-tuning.thrustResponse * DT));
             const cruiseMul = s.cruising ? MATCH.cruise.speedMul : 1;
-            const top = speed * cruiseMul * throttle;
+            const top = driveSpeed * cruiseMul * throttle;
             ax = (Math.cos(s.thrustAngle) * top - s.vx) * tuning.velocityResponse;
             ay = (Math.sin(s.thrustAngle) * top - s.vy) * tuning.velocityResponse;
             const force = Math.hypot(ax, ay);
@@ -134,6 +145,16 @@ export function moveShips(w: World): void {
         s.ay += (ay - s.ay) * blend;
         s.vx += s.ax * DT;
         s.vy += s.ay * DT;
+      }
+      // Vector drag consumes real momentum, including when coasting or strafing.
+      // It never reverses velocity or restores a stored pre-shot speed on release.
+      if (firingMul < 1 && !inp.brake) {
+        const velocity = Math.hypot(s.vx, s.vy);
+        const excess = Math.max(0, velocity - driveSpeed);
+        const deceleration = Math.min(speed * tuning.firingDeceleration, excess * tuning.firingDrag);
+        const scale = velocity > 0 ? Math.max(0, 1 - deceleration * DT / velocity) : 1;
+        s.vx *= scale;
+        s.vy *= scale;
       }
       if (throttle === 0 && Math.hypot(s.vx, s.vy) < tuning.stopSpeed) {
         s.vx = s.vy = s.ax = s.ay = 0;

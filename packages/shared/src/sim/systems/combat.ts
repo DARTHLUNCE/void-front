@@ -1,3 +1,4 @@
+import { reportHit } from '../combatFeedback';
 import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
 import { MAX_HULL_RADIUS, socketPosition, type HullPoint } from '../../content/hullGeometry';
 import { geometryOf, hitShipSegment, hitBodySegment } from '../hullCollision';
@@ -791,6 +792,10 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
   }
   if (broke && w.eventCount < EVENT_CAPACITY - 32) w.emit(EventType.ShieldBreak, target.slot, attackerSlot, target.x, target.y);
   const dealt = shieldDealt + hullDealt;
+  // Point back along actual incoming travel; area effects have no invented direction.
+  const bearing = hit.dirX || hit.dirY ? Math.atan2(-hit.dirY, -hit.dirX) : 10;
+  reportHit(w, target.slot, attackerSlot, hit.impactX ?? target.x, hit.impactY ?? target.y,
+    hullDealt > 0 ? dealt : -dealt, bearing);
   // A commander's order credits the commander (score, kills); only flying ships earn XP and on-hit effects.
   const credited = creditShip(w, attackerSlot);
   scoreShipDamage(w, target, credited, dealt);
@@ -814,6 +819,7 @@ export function damageStructure(w: World, st: Structure, amount: number, attacke
   const attacker = attackerSlot >= 0 ? w.ships[attackerSlot] : null;
   const dmg = Math.min(amount * armorMul(ap, st.armor, true), st.hull);
   st.hull -= dmg;
+  reportHit(w, -1, attackerSlot, st.x, st.y, dmg);
   st.lastDamageTime = w.time;
   if (attacker) {
     attacker.structureDamage += dmg;
@@ -857,6 +863,7 @@ export function damageDeployable(w: World, d: Deployable, amount: number, attack
   if (!d.active || amount <= 0) return 0;
   const dmg = Math.min(amount, d.hull);
   d.hull -= amount;
+  reportHit(w, -1, attackerSlot, d.x, d.y, dmg);
   if (attackerSlot >= 0) grantXp(w, w.ships[attackerSlot], dmg * ECONOMY.xp.damageToStructures);
   scoreStructureDamage(creditShip(w, attackerSlot), dmg);
   if (d.hull <= 0) {

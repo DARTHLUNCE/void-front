@@ -1,4 +1,4 @@
-import { BOT_TIER_PREFS, DIRECTOR } from '../../content/bots';
+import { DIRECTOR } from '../../content/bots';
 import { getClass, teamCap } from '../../content/classes/index';
 import { COMMAND_RULES } from '../../content/command';
 import { CRYSTALS } from '../../content/crystals';
@@ -12,6 +12,7 @@ import { classCount, EventType, Job, SPAWN_AT_NODE, SPAWN_AT_STRUCTURE, TIERS, t
 import { inOwnedPoint, pointBuff } from './points';
 import { pushTarget } from './director';
 import { quirkOf } from './quirks';
+import { chooseBotTier, chooseBotStat } from '../botEquipment';
 import { awardKill, clearHits, scoreHealing } from './score';
 import { isExposed } from './structures';
 import { applyStatus, clearStatuses } from './status';
@@ -113,27 +114,15 @@ export function redeploy(ship: Ship): boolean {
   return true;
 }
 
-/** Bots buy tiers as soon as they can afford them, then spend shards by their stat weighting. */
+/** Bots spend only earned resources, choosing existing upgrades to suit their role and situation. */
 export function botShop(w: World, ship: Ship): void {
   const b = ship.bot;
   if (!b) return;
   while (ship.tiersOwned < TIERS && ship.xp >= tierCost(ship.tiersOwned)) {
-    const pref = BOT_TIER_PREFS[ship.classId]?.[ship.tiersOwned] ?? 0.5;
-    buyTier(w, ship, ship.rng.next() < pref ? 0 : 1);
+    buyTier(w, ship, chooseBotTier(w, ship));
   }
-  const weights = b.statWeights;
   for (let guard = 0; guard < 8; guard++) {
-    let total = 0;
-    for (let i = 0; i < weights.length; i++) if (ship.statPoints[i] < STAT_POINT_MAX && ship.shards >= statCost(ship.statPoints[i])) total += weights[i];
-    if (total <= 0) return;
-    let r = ship.rng.next() * total;
-    let pick = -1;
-    for (let i = 0; i < weights.length; i++) {
-      if (ship.statPoints[i] >= STAT_POINT_MAX || ship.shards < statCost(ship.statPoints[i])) continue;
-      pick = i;
-      r -= weights[i];
-      if (r < 0) break;
-    }
+    const pick = chooseBotStat(w, ship);
     if (pick < 0 || !buyStat(ship, pick)) return;
   }
 }

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'vitest';
 import panelLayout from '../../public/assets/ui/noir-panel-layout.json';
-import { buildFrameGeometry,mapFrameRect,frameVertices,excludeFrameRect,type FramePiece,type Rect } from './frameGeometry';
+import { buildFrameGeometry,mapFrameRect,frameVertices,excludeFrameRect,topFrameHeight,type FramePiece,type Rect } from './frameGeometry';
 
 const panels = panelLayout.panels as unknown as Record<string,{safe:Rect;glass:Rect}>;
 const scenarios = [
@@ -11,11 +11,11 @@ const scenarios = [
 for (const {width,height} of scenarios) {
   const mobile = width<=760;
   const rail = mobile ? Math.min(360,width) : Math.min(474,Math.max(340,width*.2835));
-  const top = Math.min(110,Math.max(80,height*.096154));
   const origin = mobile ? 0 : rail;
+  const top = topFrameHeight(width-origin);
   const pieces = [
     {kind:'rail' as FramePiece, width:rail, height:mobile ? height-56 : height, x:0,y:0},
-    {kind:'top' as FramePiece, width:Math.max(900,width-origin), height:top,x:origin,y:0},
+    {kind:'top' as FramePiece, width:width-origin, height:top,x:origin,y:0},
     {kind:'window' as FramePiece, width:width-origin,height:height-top,x:origin,y:top},
   ].map(piece => ({...piece,geometry:buildFrameGeometry(piece.kind,piece.width,piece.height)}));
   test(`frame fills sections and preserves apertures at ${width}x${height}`,() => {

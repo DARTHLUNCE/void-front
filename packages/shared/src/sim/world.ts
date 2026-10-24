@@ -550,6 +550,11 @@ export const EventType = {
   ShieldHit: 15,
   /** Cosmetic: the energy shield collapsed. a = target slot, b = attacker slot. */
   ShieldBreak: 16,
+  /** Confirmed damage: a target slot (-1 non-ship), b attacker, x/y impact,
+   * c incoming bearing (10 = directionless), d damage (negative = shield only). */
+  CombatHit: 17,
+  /** Actual crystal pickup: a collector slot, b unused, c awarded shards. */
+  ShardPickup: 18,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 

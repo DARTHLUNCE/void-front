@@ -1,4 +1,12 @@
+import { SublightFxState } from './sublightFxState';
+import { SublightScreen } from './sublightScreen';
+import { sublightShake } from './sublightCamera';
+import { EmissiveBloom } from './emissiveBloom';
 import { nodeRotation, nodeTurretRadius } from '@void-front/shared';
+import { cameraBlend, PilotCameraOffset } from './pilotCamera';
+import { clampPilotZoom, PILOT_ZOOM, shipFramingZoom, SUBLIGHT_VIEW_RATIO } from './pilotFraming';
+import { exhaustPosition, plumeDimensions, ThrusterPlumes } from './thrusterPlumes';
+import { observeCanvasSize } from './canvasSize';
 import { clientToWorld, worldToClient, type Viewport } from './viewport';
 import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import {
@@ -41,13 +49,13 @@ import { makeTextures, type LitArt, type Textures } from './textures';
 import { ShipFx } from './shipFx';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
-/** Pilot camera: at least this much of the world across, more for long-range hulls (see viewWidthFor). */
+/** Legacy range framing retained for the commander map and docked view. */
 const VIEW_W = 1650;
 const VIEW_ASPECT = 937.5 / 1650;
 /** Long guns need to see their targets: frame ~1.9× the gun's reach plus margin, up to this. */
 const VIEW_W_MAX = 3400;
 
-/** World units the pilot camera shows across for a hull class (index into CLASS_ORDER). */
+/** World units used for commander/docked framing (index into CLASS_ORDER). */
 export function viewWidthFor(classIndex: number): number {
   const cls = CLASSES[CLASS_ORDER[classIndex]];
   if (!cls) return VIEW_W;
@@ -62,11 +70,13 @@ const TICK_MS = 1000 / 30;
 /** Lazily grown sprite pool for one layer. Unused sprites are hidden, never destroyed. */
 class SpritePool {
   private readonly sprites: Sprite[] = [];
+  private readonly bloomSprites: Sprite[] = [];
   used = 0;
   constructor(
     private readonly layer: Container,
     private readonly texture: Texture | ArtTexture,
     private readonly blend: 'normal' | 'add' = 'normal',
+    private readonly bloomLayer?: Container,
   ) {}
 
   begin(): void {
@@ -98,6 +108,21 @@ class SpritePool {
 
   end(): void {
     for (let i = this.used; i < this.sprites.length; i++) this.sprites[i].visible = false;
+    if (this.bloomLayer) {
+      for (let i=0;i<this.used;i++) {
+        const source=this.sprites[i];
+        let glow=this.bloomSprites[i];
+        if (!glow) {
+          glow=new Sprite(); glow.blendMode='add';
+          this.bloomSprites[i]=glow; this.bloomLayer.addChild(glow);
+        }
+        glow.texture=source.texture; glow.anchor.copyFrom(source.anchor);
+        glow.position.copyFrom(source.position); glow.scale.copyFrom(source.scale);
+        glow.rotation=source.rotation; glow.tint=source.tint; glow.alpha=source.alpha;
+        glow.visible=source.visible;
+      }
+      for(let i=this.used;i<this.bloomSprites.length;i++) this.bloomSprites[i].visible=false;
+    }
   }
 }
 
@@ -259,12 +284,29 @@ export class Renderer {
   private info: MatchInfo | null = null;
   private seenTick = -1;
   private lastFrame = 0;
-  private readonly exhaustGimbals: number[] = [];
-  /** Pilot's mouse-wheel zoom on top of the class framing (>1 = closer). */
-  pilotZoom = 1;
+  private readonly exhaustDrive: number[] = [];
+  private readonly exhaustSpeed: number[] = [];
+  private plumes!: ThrusterPlumes;
+  private bloom!: EmissiveBloom;
+  private plumeBloom!: ThrusterPlumes['mesh'];
+  private sublightVibration = 0;
+  private readonly sublightStates: SublightFxState[] = [];
+  private readonly impactLights: {x:number;y:number;radius:number;color:number;life:number;max:number}[] = [];
+  private readonly sublightMotes = new Graphics();
+  private sublightScreen!: SublightScreen;
+  // Filters capture children, not the renderer clear colour. Keep the backdrop inside
+  // the capture so additive lighting cannot change background brightness on activation.
+  private readonly sceneBackdrop = new Graphics().rect(0,0,1,1).fill(0x04060c);
+  private readonly reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  private pilotZoomFactor: number = PILOT_ZOOM.default;
+  /** Pilot's mouse-wheel zoom on top of the visible hull framing (>1 = closer). */
+  pilotZoom: number = PILOT_ZOOM.default;
   /** Commander mode: free war-map camera instead of following a ship. */
   commander = false;
   private cmdZoom = 0;
+  private readonly pilotOffset = new PilotCameraOffset();
+  cameraFocus: { x: number; y: number } | null = null;
+  readonly pilotPosition = { x: 0, y: 0 };
   /** Order waiting for a click (draws its footprint at the cursor). */
   pendingOrder: CommandId | null = null;
   private readonly cursor = { x: 0, y: 0 };
@@ -276,19 +318,32 @@ export class Renderer {
 
   async init(parent: HTMLElement): Promise<void> {
     // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
-    await this.app.init({ resizeTo: parent, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
+    await this.app.init({ background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
+    observeCanvasSize(parent,(width,height) => {
+      this.app.renderer.resize(width,height);
+      // Cover fractional CSS bounds exactly; the backing buffer follows above.
+      this.app.canvas.style.width = '100%';
+      this.app.canvas.style.height = '100%';
+    });
     const reference = await loadReferenceShips(this.shipArt, this.derivedNormals);
     // The HUD (picker, tier pop-up, ship screen) shows the same team-painted sprites.
     setHullThumbArt(reference);
     this.tex = makeTextures(this.app.renderer, reference);
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
     this.lighting = new Lighting(this.app.renderer, this.lightingOn);
+    this.plumes = new ThrusterPlumes();
+    this.glowLayer.addChild(this.plumes.mesh, this.sublightMotes);
+    this.sublightMotes.blendMode='add';
+    this.bloom=new EmissiveBloom();this.bloom.source.addChild(this.lighting.bloomScene);
+    this.plumeBloom=new Mesh({geometry:this.plumes.mesh.geometry,shader:this.plumes.mesh.shader});
+    this.plumeBloom.blendMode='add';this.bloom.source.addChild(this.plumeBloom);
     // Faint light spill on space itself; ships get their lighting from the lit shader instead.
     this.lightOverlay = new Sprite();
     this.lightOverlay.blendMode = 'add';
     this.lightOverlay.alpha = 0.32;
-    this.app.stage.addChild(this.stars, this.lightOverlay, this.world);
+    this.sublightScreen=new SublightScreen(this.app.stage);
+    this.app.stage.addChild(this.sceneBackdrop, this.stars, this.lightOverlay, this.world, this.bloom.sprite);
     this.lighting.occluders.addChild(this.occluderLayer);
     const shipyard = new Container();
     const msArt = this.tex.mothership;
@@ -363,11 +418,11 @@ export class Renderer {
     this.drones = new SpritePool(this.shipLayer, this.tex.drone);
     this.crystals = new SpritePool(this.crystalLayer, this.tex.crystal);
     this.crystalsBig = new SpritePool(this.crystalLayer, this.tex.crystalBig);
-    this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add');
-    this.boltGlows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
+    this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add', this.bloom.source);
+    this.boltGlows = new SpritePool(this.glowLayer, this.tex.glow, 'add', this.bloom.source);
     this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
-    this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
-    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
+    this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add', this.bloom.source);
+    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add', this.bloom.source);
     this.shipFx = new ShipFx(this.app.renderer, this.wreckLayer, this.shieldLayer, this.smokeLayer, this.tex.glow, this.tex.particle, {
       spark: (x, y, vx, vy, life, color, size) => {
         if (this.particles.length < PARTICLE_CAP) this.particles.push({ x, y, vx, vy, life, max: life, color, size });
@@ -381,11 +436,17 @@ export class Renderer {
   setMatch(info: MatchInfo): void {
     this.info = info;
     this.particles.length = 0;
+    this.impactLights.length = 0;
     this.rings.length = 0;
     this.beams.length = 0;
     this.shipFx?.reset();
     this.seenTick = -1;
-    this.exhaustGimbals.length = 0;
+    this.exhaustDrive.length = 0;
+    this.exhaustSpeed.length = 0;
+    this.plumes?.reset();
+    this.sublightStates.length=0;this.sublightVibration=0;
+    this.sublightMotes.clear();
+    this.sublightScreen?.reset();
     this.cmdZoom = 0;
     const home = KESSLER_REACH.motherships[0];
     this.camera.x = home.x;
@@ -527,7 +588,13 @@ export class Renderer {
 
     const dt = this.lastFrame ? Math.min(0.1, (now - this.lastFrame) / 1000) : 1 / 60;
     this.lastFrame = now;
-    const exhaustBlend = 1 - Math.exp(-dt / 0.1);
+    const exhaustBlend = 1 - Math.exp(-dt / 0.12);
+    for(let slot=0;slot<b[H.shipCount];slot++){
+      const k=curr.ship(slot),flags=b[k+SHIP.flags];
+      const fx=this.sublightStates[slot] ??= new SublightFxState();
+      fx.update(b[k+SHIP.cruiseSpool],!!(flags&SHIP_FLAG.cruising),!!(flags&SHIP_FLAG.alive) && !(flags&SHIP_FLAG.docked),dt);
+    }
+    this.sublightMotes.clear();
 
     // Pilots: the camera follows our ship and pulls back while cruising. Docked: it looks at our
     // mothership. Commander: a free war-map camera (pan / zoom from Game).
@@ -537,37 +604,71 @@ export class Renderer {
     const meAlive = (meFlags & SHIP_FLAG.alive) !== 0;
     const sw = this.app.screen.width;
     const sh = this.app.screen.height;
+    this.sceneBackdrop.scale.set(sw,sh);
     const viewW = viewWidthFor(b[me + SHIP.classIndex]);
-    const baseZoom = Math.min(sw / viewW, sh / (viewW * VIEW_ASPECT)) * this.pilotZoom;
+    const legacyFraming = Math.min(sw / viewW, sh / (viewW * VIEW_ASPECT));
+    const hullArt = this.hullFor(curr, info.selfSlot);
+    const hull = this.tex.hulls[hullArt.id];
+    const framingZoom = shipFramingZoom(sw, sh, hullArt.classId, hull, this.tex.hulls.destroyer);
+    const legacyBaseZoom = legacyFraming * clampPilotZoom(this.pilotZoom) / 1.10;
     const map = KESSLER_REACH;
     if (this.commander) {
+      this.pilotOffset.reset();
       const fit = Math.min(sw / map.width, sh / map.height) * 0.95;
       if (this.cmdZoom === 0) {
         this.cmdZoom = fit;
         this.camera.x = map.width / 2;
         this.camera.y = map.height / 2;
       }
-      this.cmdZoom = Math.min(baseZoom * 1.2, Math.max(fit * 0.9, this.cmdZoom));
-      this.camera.zoom += (this.cmdZoom - this.camera.zoom) * 0.25;
+      this.cmdZoom = Math.min(legacyBaseZoom * 1.2, Math.max(fit * 0.9, this.cmdZoom));
+      this.camera.zoom += (this.cmdZoom - this.camera.zoom) * cameraBlend(.06,dt);
       this.camera.x = Math.min(map.width, Math.max(0, this.camera.x));
       this.camera.y = Math.min(map.height, Math.max(0, this.camera.y));
     } else {
-      if (meAlive) {
-        this.camera.x = lerp(pb[pme + SHIP.x], b[me + SHIP.x], alpha);
-        this.camera.y = lerp(pb[pme + SHIP.y], b[me + SHIP.y], alpha);
-      } else if (meFlags & SHIP_FLAG.docked) {
-        const home = map.motherships[b[me + SHIP.team]];
-        this.camera.x += (home.x - this.camera.x) * 0.1;
-        this.camera.y += (home.y - this.camera.y) * 0.1;
+      const factor = clampPilotZoom(this.pilotZoom) / ((meFlags & SHIP_FLAG.cruising) ? SUBLIGHT_VIEW_RATIO : 1);
+      // Ease normalized screen occupancy, not absolute world zoom. A hull swap must not
+      // inherit the previous ship's world scale, even at the minimum/maximum zoom stops.
+      this.pilotZoomFactor += (factor - this.pilotZoomFactor) * cameraBlend(.12, dt);
+      if (meFlags & SHIP_FLAG.docked) {
+        this.camera.zoom += (legacyBaseZoom - this.camera.zoom) * cameraBlend(.12, dt);
+      } else {
+        this.camera.zoom = framingZoom * this.pilotZoomFactor;
       }
-      const cruising = (meFlags & SHIP_FLAG.cruising) !== 0;
-      const targetZoom = cruising ? baseZoom / 1.4 : baseZoom;
-      this.camera.zoom += (targetZoom - this.camera.zoom) * 0.08;
+      if (meAlive) {
+        const continuous = !!(pb[pme + SHIP.flags] & SHIP_FLAG.alive);
+        if (!continuous) this.pilotOffset.reset();
+        this.pilotPosition.x = lerp(pb[pme + SHIP.x], b[me + SHIP.x], continuous ? alpha : 1);
+        this.pilotPosition.y = lerp(pb[pme + SHIP.y], b[me + SHIP.y], continuous ? alpha : 1);
+        const heading = lerpAngle(pb[pme+SHIP.angle], b[me+SHIP.angle], continuous ? alpha : 1);
+        const viewport=this.viewport;
+        // Use the ship's displayed offset, excluding world translation/interpolation.
+        const offsetScale=this.camera.zoom/Math.max(.001,framingZoom);
+        const shipScreen={
+          x:viewport.left+viewport.width/2-this.pilotOffset.value.x*offsetScale,
+          y:viewport.top+viewport.height/2-this.pilotOffset.value.y*offsetScale,
+        };
+        const look = this.pilotOffset.update(this.cameraFocus, viewport, heading, dt, shipScreen);
+        this.camera.x = this.pilotPosition.x + look.x / Math.max(.001, framingZoom);
+        this.camera.y = this.pilotPosition.y + look.y / Math.max(.001, framingZoom);
+      } else if (meFlags & SHIP_FLAG.docked) {
+        this.pilotOffset.reset();
+        const home = map.motherships[b[me + SHIP.team]];
+        this.camera.x += (home.x - this.camera.x) * cameraBlend(.14,dt);
+        this.camera.y += (home.y - this.camera.y) * cameraBlend(.14,dt);
+      }
     }
     const cruising = (meFlags & SHIP_FLAG.cruising) !== 0;
     const z = this.camera.zoom;
+    const vibrating=cruising && meAlive && !this.commander && !this.reduceMotion.matches;
+    this.sublightVibration+=((vibrating ? 1 : 0)-this.sublightVibration)*cameraBlend(.45,dt);
+    if (meAlive && !this.commander && !this.reduceMotion.matches) {
+      const shake=sublightShake(now/1000,this.sublightVibration);
+      // Convert pixels to world units so vibration stays subtle at every hull/zoom.
+      this.camera.x+=shake.x/Math.max(.001,z);
+      this.camera.y+=shake.y/Math.max(.001,z);
+    }
     // Commander zoomed out: draw units as markers so the war map stays readable.
-    const war = this.commander && z < baseZoom * 0.6;
+    const war = this.commander && z < legacyBaseZoom * 0.6;
     this.world.scale.set(z);
     this.world.position.set(sw / 2 - this.camera.x * z, sh / 2 - this.camera.y * z);
     this.stars.width = sw;
@@ -645,25 +746,33 @@ export class Renderer {
         // Missiles, torpedoes and structure shells keep their warhead sprite, sized by radius.
         const size = Math.max(0.8, radius / 5) * boost;
         s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
+        if(f & PROJ_FLAG.missile) {
+          // The warhead stays metallic, but its motor must glow independently of hull lighting.
+          const rear=asset ? asset.widthWorld*asset.anchorX*s.scale.x : radius*2;
+          const motor=this.boltGlows.next();
+          motor.position.set(x-Math.cos(angle)*rear,y-Math.sin(angle)*rear);
+          motor.rotation=angle; motor.tint=color; motor.alpha=.7*fade;
+          motor.scale.set(radius*5/GLOW_PX,radius*2.5/GLOW_PX);
+        }
       } else {
         // v2.1 laser bolts: length and thickness follow the caliber (AP, which grows with WEAPONS
         // power and calibration) and the gun's bore, from 20 AP needles to 135 AP capital lances.
         const baseL = asset ? asset.widthWorld : BOLT_TEX.length;
         const baseW = asset ? asset.heightWorld : BOLT_TEX.width;
         s.scale.set(((length * boost) / baseL) * (0.55 + 0.45 * fade), ((width * boost) / baseW) * (0.3 + 0.7 * fade));
-        if (caliber > 0.3) {
+        { // Every energy bolt gets an additive sheath, including small calibers.
           // Heavy line and capital calibers: a team-colored plasma sheath, a white-hot core and a wake.
           const sheath = this.boltGlows.next();
           sheath.position.set(x, y);
           sheath.rotation = angle;
           sheath.tint = color;
-          sheath.alpha = Math.min(0.55, caliber * 0.42) * fade;
+          sheath.alpha = Math.min(0.55, .2 + caliber * 0.35) * fade;
           sheath.scale.set((length * boost * 1.7) / GLOW_PX, (width * boost * 3.2) / GLOW_PX);
           const core = this.boltGlows.next();
           core.position.set(x, y);
           core.rotation = angle;
           core.tint = 0xffffff;
-          core.alpha = Math.min(0.8, caliber * 0.55) * fade;
+          core.alpha = Math.min(0.8, .35 + caliber * 0.45) * fade;
           core.scale.set((length * boost * 0.9) / GLOW_PX, (width * boost * 0.7) / GLOW_PX);
           if (caliber > 0.55) {
             const wake = this.boltGlows.next();
@@ -698,6 +807,7 @@ export class Renderer {
     for (const pool of this.hullPools.values()) pool.begin();
     this.glows.begin();
     this.flares.begin();
+    this.plumes.begin(now/1000,z);
     this.shipFx.begin(dt);
     const bars = this.barLayer;
     bars.clear();
@@ -743,6 +853,7 @@ export class Renderer {
       glow.position.set(x, y);
       const dashing = (flags & SHIP_FLAG.dashing) !== 0;
       const cruisingShip = (flags & SHIP_FLAG.cruising) !== 0;
+      const sublight=this.sublightStates[slot];
       glow.tint = dashing ? 0xffffff : color;
       glow.alpha = dashing ? 0.8 : isMe ? 0.45 : 0.3;
       glow.scale.set(cruisingShip ? 1.3 : dashing ? 1.1 : 0.7, dashing || cruisingShip ? 0.55 : 0.7);
@@ -751,7 +862,9 @@ export class Renderer {
       const art = this.hullFor(curr, slot);
       const s = this.hullPool(art.id, team).next();
       // Hits nudge the hull a few units (cosmetic).
-      const [jx, jy] = this.shipFx.jolt(slot, b[k + SHIP.hull] / Math.max(1, b[k + SHIP.maxHull]));
+      let [jx, jy] = this.shipFx.jolt(slot, b[k + SHIP.hull] / Math.max(1, b[k + SHIP.maxHull]));
+      const launchKick=this.reduceMotion.matches ? 0 : sublight.ignition*(CLASSES[CLASS_ORDER[b[k+SHIP.classIndex]]]?.radius ?? 20)*.045;
+      jx-=Math.cos(rot)*launchKick;jy-=Math.sin(rot)*launchKick;
       s.position.set(x + jx, y + jy);
       s.rotation = rot;
       const radius = CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.radius ?? 20;
@@ -770,25 +883,41 @@ export class Renderer {
         bars.stroke({ width: 2, color: 0x8cf4ff, alpha: 0.55 });
       }
 
-      // Engine flares at the hull's exhaust points, stretched by speed.
-      const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
-      const thrust = Math.max(b[k + SHIP.enginePower], Math.min(1, speed / 320) * 0.25) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
-      const cos = Math.cos(rot);
-      const sin = Math.sin(rot);
-      const forceAngle = lerpAngle(pb[pk + SHIP.thrustAngle], b[k + SHIP.thrustAngle], a);
-      const gimbal = b[k + SHIP.enginePower] > 0.01 ? Math.atan2(Math.sin(forceAngle - rot), Math.cos(forceAngle - rot)) : 0;
-      // Smooth the plume relative to the hull so gyro corrections don't wag the entire trail.
-      const exhaustGimbal = (this.exhaustGimbals[slot] ?? gimbal) + (gimbal - (this.exhaustGimbals[slot] ?? gimbal)) * exhaustBlend;
-      this.exhaustGimbals[slot] = exhaustGimbal;
+      // Socket and hull use the exact same origin, scale and cosmetic jolt.
+      const targetSpeed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
+      const speed=(this.exhaustSpeed[slot] ?? targetSpeed)+(targetSpeed-(this.exhaustSpeed[slot] ?? targetSpeed))*exhaustBlend;
+      this.exhaustSpeed[slot]=speed;
+      const targetDrive = b[k+SHIP.enginePower];
+      const drive = (this.exhaustDrive[slot] ?? targetDrive)+(targetDrive-(this.exhaustDrive[slot] ?? targetDrive))*exhaustBlend;
+      this.exhaustDrive[slot]=drive;
+      const engineColor = isMe && this.cosmetics.engine >= 0 ? this.cosmetics.engine : team === 0 ? 0x7df9ff : 0xffc061;
+      let nozzleIndex=0;
       for (const e of this.tex.hulls[art.id].engines ?? art.engines) {
-        const f = this.flares.next();
-        const hullScale = isMe ? 1.15 : 1;
-        f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
-        f.rotation = rot + exhaustGimbal;
-        f.tint = isMe && this.cosmetics.engine >= 0 ? this.cosmetics.engine : team === 0 ? 0x7df9ff : 0xffc061;
-        f.alpha = 0.55 + 0.35 * thrust;
-        f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
-        this.light(f.position.x, f.position.y, e.r * (0.9 + thrust * 0.7), LIGHT.engine[team]);
+        const p=exhaustPosition(x+jx,y+jy,rot,e);
+        const plume=plumeDimensions(e.r,speed,drive,CLASSES[CLASS_ORDER[b[k+SHIP.classIndex]]].speed,dashing?1.15:1+sublight.travel*.15+sublight.ignition*.25);
+        const index=nozzleIndex++;
+        const phase=slot*.731+index*2.17;
+        const intensity=Math.min(1.4,plume.intensity+sublight.charge*.25+sublight.ignition*.45)*(cloaked ? .3 : 1);
+        plume.length*=1-sublight.charge*.12;
+        plume.width*=1+sublight.charge*.18+sublight.ignition*.16;
+        this.plumes.trail(slot*8+index,p.x,p.y,rot,plume.length,plume.width*(1+.06*Math.sin(now*.009+phase)),engineColor,intensity,phase,b[k+SHIP.vx],b[k+SHIP.vy]);
+        // A compact throat glow; the one-sided shader carries the long exhaust aft.
+        const f=this.flares.next();f.position.set(p.x,p.y);f.tint=engineColor;
+        f.alpha=intensity*.8;
+        const core=1+sublight.charge*.7+sublight.ignition*1.3+sublight.travel*.18;
+        f.scale.set(e.r*core/22,e.r*core/22);
+        this.light(p.x,p.y,e.r*(.9+drive*.7+sublight.charge*.45+sublight.ignition*.85),LIGHT.engine[team]);
+        if(sublight.charge>.03 && !cloaked && !war && e.r*z>.6 && !this.reduceMotion.matches){
+          // Sparse energy motes converge on the actual nozzle, then vanish at ignition.
+          const c=Math.cos(rot),si=Math.sin(rot);
+          for(let n=0;n<4;n++){
+            const t=(now*.001*2.2+n*.25+phase)%1;
+            const back=e.r*(1.5+(1-t)*7),side=Math.sin(n*2.4+phase)*e.r*(1-t)*2.2;
+            const mx=p.x-c*back-si*side,my=p.y-si*back+c*side;
+            this.sublightMotes.circle(mx,my,Math.max(.55/z,e.r*.12))
+              .fill({color:engineColor,alpha:sublight.charge*Math.sin(t*Math.PI)*.55});
+          }
+        }
       }
       s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
       // Keep the rendered player hull at its collision scale; brackets identify the pilot.
@@ -846,6 +975,7 @@ export class Renderer {
     for (const pool of this.assetPools.values()) pool.end();
     this.glows.end();
     this.flares.end();
+    this.plumes.end();
 
     // New events this tick → particles
     if (b[H.tick] !== this.seenTick) {
@@ -861,6 +991,9 @@ export class Renderer {
           const hull = this.hullFor(curr, victim);
           const lit = this.tex.hulls[hull.id];
           if (lit) this.shipFx.kill(lit, team, b[k + 3], b[k + 4], b[vk + SHIP.vx], b[vk + SHIP.vy], b[vk + SHIP.angle], CLASSES[CLASS_ORDER[b[vk + SHIP.classIndex]]]?.radius ?? 20);
+        } else if (type === EventType.CombatHit && b[k+6]>0) {
+          // Positive damage is a hull hit; shield hits already have their own contact flash.
+          this.burst(b[k+3],b[k+4],0xffd49a,4,110);
         } else if (type === EventType.ShieldHit) {
           this.shipFx.shieldHit(b[k + 1], b[k + 5], b[k + 6]);
         } else if (type === EventType.ShieldBreak) {
@@ -895,12 +1028,28 @@ export class Renderer {
         }
       }
     }
+    for(let i=this.impactLights.length-1;i>=0;i--) {
+      const flash=this.impactLights[i];
+      flash.life-=dt;
+      if(flash.life<=0) { this.impactLights.splice(i,1); continue; }
+      const t=flash.life/flash.max;
+      this.light(flash.x,flash.y,flash.radius,flash.color,t*t*(3-2*t));
+    }
     this.drawParticles(dt, inView);
     this.drawRings(dt);
     if (this.commander && this.pendingOrder) this.drawOrderPreview(z);
     this.lights.end();
 
     this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
+    this.bloom.sprite.visible=this.lighting.enabled;
+    this.plumeBloom.visible=this.plumes.mesh.visible;
+    if(this.lighting.enabled)this.bloom.update(this.app.renderer,this.camera.x,this.camera.y,z,sw,sh);
+    const pilotFx=this.sublightStates[info.selfSlot];
+    if(pilotFx){
+      const focusX=sw/2+(this.pilotPosition.x-this.camera.x)*z;
+      const focusY=sh/2+(this.pilotPosition.y-this.camera.y)*z;
+      this.sublightScreen.update(sw,sh,now/1000,focusX,focusY,pilotFx,meAlive && !this.commander && !(meFlags&SHIP_FLAG.docked),this.reduceMotion.matches);
+    }
     this.lightOverlay.visible = this.lighting.enabled;
     if (this.lighting.enabled) {
       this.lightOverlay.texture = this.lighting.irradiance;
@@ -1179,14 +1328,12 @@ export class Renderer {
         const sin = Math.sin(rot);
         const engine = team === 0 ? 0x7df9ff : 0xffc061;
         craft.engines!.forEach((e, n) => {
-          const f = this.flares.next();
-          f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
-          f.rotation = rot;
-          f.tint = engine;
-          f.alpha = 0.85;
-          f.scale.set((e.r / 14) * 2.4, (e.r / 18) * (1 + 0.25 * Math.sin(now * 0.05 + i + n)));
-          // Light from the nozzles (behind the hull), not the hull's center, or it washes the paint out.
-          this.light(f.position.x - cos * e.r, f.position.y - sin * e.r, e.r * 1.6, LIGHT.engine[team]);
+          const p=exhaustPosition(x,y,rot,e);
+          const plume=plumeDimensions(e.r,1,.75,1);
+          this.plumes.trail(100000+i*8+n,p.x,p.y,rot,plume.length,plume.width,engine,plume.intensity,1000+i*.731+n*2.17,b[k+2],b[k+3]);
+          const f=this.flares.next();f.position.set(p.x,p.y);f.tint=engine;
+          f.alpha=.65;f.scale.set(e.r/22,e.r/22);
+          this.light(p.x-cos*e.r,p.y-sin*e.r,e.r*1.6,LIGHT.engine[team]);
         });
         const dome = CRAFT[behavior].dome;
         if (dome) {
@@ -1261,7 +1408,12 @@ export class Renderer {
       const ey = bm.y + Math.sin(bm.angle) * bm.length;
       g.moveTo(bm.x, bm.y).lineTo(ex, ey).stroke({ width: 22 * t, color: bm.color, alpha: 0.35 * t });
       g.moveTo(bm.x, bm.y).lineTo(ex, ey).stroke({ width: 6 * t, color: 0xffffff, alpha: 0.9 * t });
-      this.light((bm.x + ex) / 2, (bm.y + ey) / 2, 30 * t, bm.color);
+      // Sample along the beam rather than lighting only its midpoint.
+      const count=Math.max(1,Math.min(12,Math.ceil(bm.length/120)));
+      for(let j=0;j<count;j++) {
+        const along=(j+.5)/count;
+        this.light(bm.x+(ex-bm.x)*along,bm.y+(ey-bm.y)*along,18,bm.color,t*.7);
+      }
     }
   }
 
@@ -1373,7 +1525,8 @@ export class Renderer {
       const art = this.tex.assets[id];
       const geometry = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
       pool = new MeshPool(layer, () => {
-        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
+        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source, id === 'bolt') });
+        if (id === 'bolt') mesh.blendMode = 'add';
         this.lighting.trackReceiver(mesh);
         return mesh;
       });
@@ -1403,6 +1556,16 @@ export class Renderer {
   }
 
   private burst(x: number, y: number, color: number, count: number, speed: number): void {
+    const reach=600;
+    if(Math.abs(x-this.camera.x)>this.app.screen.width/this.camera.zoom/2+reach ||
+       Math.abs(y-this.camera.y)>this.app.screen.height/this.camera.zoom/2+reach) return;
+    const radius=Math.min(60,12+Math.sqrt(count)*2.5);
+    const existing=this.impactLights.find(f=>f.color===color && (f.x-x)**2+(f.y-y)**2<24**2);
+    if(existing) { existing.life=existing.max; existing.radius=Math.max(existing.radius,radius); }
+    else {
+      if(this.impactLights.length>=128) this.impactLights.shift();
+      this.impactLights.push({x,y,radius,color,life:.32,max:.32});
+    }
     for (let i = 0; i < count && this.particles.length < PARTICLE_CAP; i++) {
       const a = Math.random() * Math.PI * 2;
       const v = speed * (0.3 + Math.random() * 0.7);
@@ -1424,8 +1587,9 @@ export class Renderer {
       }
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.96;
-      p.vy *= 0.96;
+      const drag=Math.exp(Math.log(.96)*dt*60);
+      p.vx *= drag;
+      p.vy *= drag;
       if (!inView(p.x, p.y)) continue;
       if (p.castLight !== false && p.life / p.max > 0.4) this.light(p.x, p.y, 7 * p.size * (p.life / p.max), p.color);
       const s = this.sparks.next();

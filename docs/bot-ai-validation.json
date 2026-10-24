@@ -1,0 +1,271 @@
+{
+  "before": [
+    {
+      "fleet": 20,
+      "seed": 41,
+      "seconds": 180,
+      "p50": 0.2800999999999476,
+      "p95": 0.5479000000000269,
+      "p99": 0.8671999999999116,
+      "mean": 0.31636061797752757,
+      "nearAllyFraction": 0.10861990607483715,
+      "nonMouseFlightFraction": 1,
+      "kills": [
+        25,
+        12
+      ],
+      "points": 7,
+      "tiers": 44,
+      "upgrades": 212,
+      "fobs": 0
+    },
+    {
+      "fleet": 20,
+      "seed": 82,
+      "seconds": 180,
+      "p50": 0.23179999999956635,
+      "p95": 0.4171000000001186,
+      "p99": 0.554700000000139,
+      "mean": 0.25206136704119725,
+      "nearAllyFraction": 0.14883507050889025,
+      "nonMouseFlightFraction": 1,
+      "kills": [
+        28,
+        27
+      ],
+      "points": 8,
+      "tiers": 42,
+      "upgrades": 183,
+      "fobs": 0
+    },
+    {
+      "fleet": 100,
+      "seed": 41,
+      "seconds": 90,
+      "p50": 2.543100000000777,
+      "p95": 3.7331000000012864,
+      "p99": 4.369599999999991,
+      "mean": 2.604493181818179,
+      "nearAllyFraction": 0.3371368614335366,
+      "nonMouseFlightFraction": 1,
+      "kills": [
+        81,
+        90
+      ],
+      "points": 7,
+      "tiers": 118,
+      "upgrades": 533,
+      "fobs": 0
+    }
+  ],
+  "after": [
+    {
+      "fleet": 20,
+      "seed": 41,
+      "seconds": 180,
+      "p50": 0.3547000000000935,
+      "p95": 0.5978000000000065,
+      "p99": 0.9216000000000122,
+      "mean": 0.3866521535580541,
+      "nearAllyFraction": 0.0005954153021732659,
+      "nonMouseFlightFraction": 0,
+      "kills": [
+        4,
+        10
+      ],
+      "points": 8,
+      "tiers": 27,
+      "upgrades": 138,
+      "fobs": 0
+    },
+    {
+      "fleet": 20,
+      "seed": 82,
+      "seconds": 180,
+      "p50": 0.516399999999976,
+      "p95": 0.7507999999997992,
+      "p99": 0.9381000000003041,
+      "mean": 0.49628252808988094,
+      "nearAllyFraction": 0.0002982848620432513,
+      "nonMouseFlightFraction": 0,
+      "kills": [
+        8,
+        9
+      ],
+      "points": 8,
+      "tiers": 32,
+      "upgrades": 126,
+      "fobs": 0
+    },
+    {
+      "fleet": 100,
+      "seed": 41,
+      "seconds": 90,
+      "p50": 3.5681000000004133,
+      "p95": 5.5438000000012835,
+      "p99": 6.829999999999927,
+      "mean": 3.7808466666666627,
+      "nearAllyFraction": 0.0018852510525985044,
+      "nonMouseFlightFraction": 0,
+      "kills": [
+        10,
+        8
+      ],
+      "points": 7,
+      "tiers": 17,
+      "upgrades": 511,
+      "fobs": 0
+    }
+  ],
+  "releaseCampaign": {
+    "fleet": 100,
+    "seed": 41,
+    "time": 500,
+    "pushes": [
+      {
+        "time": 120.03333333333333,
+        "team": 1
+      },
+      {
+        "time": 192.03333333333333,
+        "team": 0
+      },
+      {
+        "time": 480.0333333333333,
+        "team": 1
+      }
+    ],
+    "attacks": [
+      {
+        "time": 166.03333333333333,
+        "team": 1,
+        "count": 42,
+        "target": 2
+      },
+      {
+        "time": 272.0333333333333,
+        "team": 0,
+        "count": 40,
+        "target": 5
+      }
+    ],
+    "failed": [],
+    "targetChanges": [
+      7595,
+      7320
+    ],
+    "shipClassSeconds": {
+      "patrol": 16872.16666658944,
+      "corvette": 15908.233333270133,
+      "carrier": 9177.933333368072,
+      "destroyer": 11187.90000000549,
+      "battlecruiser": 10478.666666682477,
+      "frigate": 11794.033333330002,
+      "dreadnought": 4418.9333333343775,
+      "battleship": 7321.400000038001,
+      "cruiser": 10523.966666681818
+    },
+    "siegeFireSamples": [
+      0,
+      0
+    ],
+    "structureHullLoss": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "minimumHullFraction": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "stats": {
+      "projectilePeak": 485,
+      "projectileOverflow": 0,
+      "nodesDestroyed": 5,
+      "fobsDestroyed": 0,
+      "crystalsCollected": 6785,
+      "killsByClass": {
+        "cruiser": 103,
+        "corvette": 3,
+        "dreadnought": 33,
+        "carrier": 38,
+        "battlecruiser": 38,
+        "destroyer": 61,
+        "battleship": 29,
+        "frigate": 35,
+        "patrol": 5,
+        "structure": 1
+      },
+      "tierPicks": {
+        "cruiser.t1.broadsideSponsons": 11,
+        "battlecruiser.t1.plasmaCanister": 11,
+        "destroyer.t1.proximityFlak": 10,
+        "dreadnought.t1.superconductor": 5,
+        "frigate.t1.naniteInjector": 24,
+        "cruiser.t1.lanceCollimators": 11,
+        "cruiser.t2.slopedBelt": 22,
+        "battleship.t1.superheavySabot": 14,
+        "destroyer.t1.sabotAutoloader": 12,
+        "dreadnought.t1.shatterSabot": 4,
+        "carrier.t1.apInterceptorPods": 8,
+        "battlecruiser.t1.armorPiercingCores": 11,
+        "cruiser.t3.commandCruiser": 11,
+        "corvette.t1.silencedEmitter": 6,
+        "dreadnought.t2.blisterGrid": 8,
+        "battleship.t2.citadelBelt": 9,
+        "frigate.t2.magneticMines": 17,
+        "frigate.t2.turretKit": 7,
+        "carrier.t1.heavyTorpedoBombers": 10,
+        "battlecruiser.t2.casemateGunners": 11,
+        "cruiser.t3.strikeCruiser": 4,
+        "frigate.t3.fortress": 5,
+        "destroyer.t2.fireControlRadar": 19,
+        "frigate.t3.warden": 19,
+        "patrol.t1.scatterCapacitors": 7,
+        "corvette.t1.nullifierRounds": 10,
+        "carrier.t2.ciwsPhalanx": 6,
+        "battleship.t2.secondaryDirector": 3,
+        "frigate.t4.reactorConduit": 4,
+        "frigate.t4.nodeHardening": 4,
+        "cruiser.t4.aegisFireControl": 2,
+        "dreadnought.t3.eclipse": 4,
+        "carrier.t3.hive": 1,
+        "dreadnought.t3.railstorm": 3,
+        "battlecruiser.t3.ironclad": 3,
+        "carrier.t2.hangarExpansion": 3,
+        "destroyer.t3.hunterKiller": 3,
+        "dreadnought.t4.fortressPlating": 1,
+        "frigate.t5.aegisSanctuary": 1,
+        "carrier.t3.overlord": 2,
+        "battlecruiser.t4.kineticConversion": 1,
+        "battleship.t3.bastion": 1,
+        "patrol.t1.focusedLenses": 5,
+        "cruiser.t4.sensorSuite": 2,
+        "destroyer.t3.escort": 2,
+        "battlecruiser.t2.twinBurners": 1,
+        "battleship.t4.reverseAnchor": 1,
+        "battleship.t1.shrapnelCanister": 1,
+        "dreadnought.t4.capitalKiller": 1
+      },
+      "pointFlips": 12
+    },
+    "match": {
+      "over": false,
+      "winner": -1,
+      "endReason": "",
+      "endTime": 0,
+      "killsAtCheck": null,
+      "vp": [
+        0,
+        0
+      ]
+    }
+  }
+}

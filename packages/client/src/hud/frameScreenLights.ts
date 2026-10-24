@@ -40,10 +40,19 @@ export class FrameScreenLights {
       const amber=enemy||(!friendly&&this.root.dataset.team==='1');
       let color=amber?[.8,.25,.07]:[.09,.36,.8];
       if (panel.name==='clock') color=[.35,.44,.55];
-      if (panel.name==='status'&&panel.element.querySelector('.hull-state.crit')) color=[.9,.045,.025];
+      const hit=Number(this.root.dataset.hitEnergy)||0;
+      const braking=panel.name==='brake'&&this.root.dataset.braking==='true';
+      const danger=(panel.name==='status'&&(this.root.dataset.hull==='critical'||this.root.dataset.shieldsDown==='true'||hit>0))||
+        (panel.name==='clock'&&hit>0)||braking||(panel.name==='radar'&&this.root.dataset.jammed==='true');
+      const ready=panel.element.classList.contains('can')||panel.element.dataset.ready==='true'||
+        (panel.name==='combat'&&!!panel.element.querySelector('.just-ready'));
+      if (panel.name==='cruise'&&(this.root.dataset.driveState==='charging'||this.root.dataset.driveState==='active')) color=[.02,.65,1];
+      if (panel.name==='combat'&&panel.element.querySelector('.just-used')) color=[.25,.6,1];
+      if (ready) color=[.015,1,.18];
+      if (danger) color=[1,.015,.05];
       const disabled=panel.element instanceof HTMLButtonElement && panel.element.disabled;
       const area=(right-left)*(bottom-top);
-      const strength=(disabled?.12:.45)*Math.min(1,Math.sqrt(area)/80);
+      const strength=(disabled?.12:danger?.85:ready?.72:.5)*Math.min(1,Math.sqrt(area)/80);
       this.rectangles.set([left,top,right,bottom],this.count*4);
       // Keep full display geometry, not the clipped visible portion: scrolling
       // and the mobile drawer must not reshape a screen's lens.
