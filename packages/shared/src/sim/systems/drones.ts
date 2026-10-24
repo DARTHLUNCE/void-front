@@ -1,3 +1,4 @@
+import { reportHit } from '../combatFeedback';
 import { BOT_SKILL } from '../../content/bots';
 import { POWER_INDEX } from '../../content/power';
 import { QUIRK_PARAMS } from '../../content/quirks';
@@ -103,6 +104,7 @@ export function damageDrone(w: World, d: Drone, amount: number, attackerSlot: nu
   if (!d.active || amount <= 0) return 0;
   const dealt = Math.min(d.hull, amount);
   d.hull -= amount;
+  reportHit(w, -1, attackerSlot, d.x, d.y, dealt);
   d.lastHitBy = attackerSlot;
   const credited = creditShip(w, attackerSlot);
   if (credited && credited.team !== d.team) scoreStructureDamage(credited, dealt);

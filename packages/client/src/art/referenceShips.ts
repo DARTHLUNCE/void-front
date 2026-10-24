@@ -1,3 +1,5 @@
+import { hullCoverage } from './hullCoverage';
+import { pbrPreview } from './pbrPreview';
 import { CanvasSource, Texture } from 'pixi.js';
 import type { LitArt } from '../render/textures';
 import { HULL_BY_ID } from './hulls';
@@ -53,10 +55,10 @@ export async function shipPortraits(ids: readonly string[], mode: Exclude<ShipAr
     });
     return image;
   };
-  const sheets = new Map(await Promise.all(folders.map(async (folder) => [folder, await Promise.all(['original-cutout-atlas.png', 'armor-mask-atlas.png', 'packed-material-atlas.png'].map((f) => load(folder ? `${folder}/${f}` : f)))] as const)));
+  const sheets = new Map(await Promise.all(folders.map(async (folder) => [folder, await Promise.all(['original-cutout-atlas.png', 'armor-mask-atlas.png', 'packed-material-atlas.png', 'packed-normal-atlas.png'].map((f) => load(folder ? `${folder}/${f}` : f)))] as const)));
   const out: Record<string, [string, string]> = {};
   for (const entry of entries) {
-    const [image, armor, materialImage] = sheets.get(entry.atlas ?? '')!;
+    const [image, armor, materialImage, normalImage] = sheets.get(entry.atlas ?? '')!;
     const [sx, sy, sw, sh] = entry.box;
     const crop = (img: HTMLImageElement) => {
       const [, ctx] = canvas(sw, sh);
@@ -66,6 +68,8 @@ export async function shipPortraits(ids: readonly string[], mode: Exclude<ShipAr
     const src = crop(image);
     const mask = crop(armor);
     const material = crop(materialImage);
+    const [normalCanvas,normalCtx]=canvas(sw,sh);normalCtx.drawImage(normalImage,sx,sy,sw,sh,0,0,sw,sh);
+    const [materialCanvas,materialCtx]=canvas(sw,sh);materialCtx.drawImage(materialImage,sx,sy,sw,sh,0,0,sw,sh);
     // Trim to the visible hull, like the in-game bake, so widths compare across classes.
     let x0 = sw, y0 = sh, x1 = 0, y1 = 0;
     for (let y = 0; y < sh; y++) for (let x = 0; x < sw; x++) if (src[(y * sw + x) * 4 + 3] > 12) {
@@ -79,7 +83,7 @@ export async function shipPortraits(ids: readonly string[], mode: Exclude<ShipAr
       if (mode !== 'neutral') teamPaint(pixels.data, src, mask, material, team, entry.material === 'crystal');
       g.putImageData(pixels, 0, 0);
       const [c, t] = canvas(x1 - x0 + 1, y1 - y0 + 1);
-      t.drawImage(full, -x0, -y0);
+      t.drawImage(pbrPreview(full,normalCanvas,materialCanvas), -x0, -y0);
       return c.toDataURL('image/png');
     };
     out[entry.id] = [paint(0), paint(1)];
@@ -151,7 +155,7 @@ export async function loadReferenceShips(mode: ShipArtMode, derivedNormals = tru
     const albedo: [Texture,Texture] = [recolor(0),recolor(1)];
     const old=entry.worldMax ? undefined : bounds(entry.id === 'mothership' ? MOTHERSHIP_ART : HULL_BY_ID[entry.id].shapes);
     const units=(entry.worldMax ?? Math.max(old!.x1-old!.x0,old!.y1-old!.y0))/Math.max(w-pad*2,h-pad*2);
-    result[entry.id]={ albedo, material:texture(material), reliefRange:entry.heightRange ?? 128, neutralAlbedo:entry.neutralState ? recolor(-1) : undefined, normal:texture(normal), relief:derivedNormals ? texture(relief) : undefined, widthWorld:w*units, heightWorld:h*units, anchorX:0.5, anchorY:0.5,
+    result[entry.id]={ albedo, material:texture(material), reliefRange:entry.heightRange ?? 128, neutralAlbedo:entry.neutralState ? recolor(-1) : undefined, normal:texture(normal), relief:derivedNormals ? texture(relief) : undefined, visibleAreaWorld:hullCoverage(data.data,units), widthWorld:w*units, heightWorld:h*units, anchorX:0.5, anchorY:0.5,
       engines:entry.nozzles.map(([x,y])=>({ x:(x-sx-x0+pad-w/2)*units, y:(y-sy-y0+pad-h/2)*units, r:Math.max(1,(entry.engineRadius ?? 5)*units) })),
       lights:entry.lights?.map(([x,y,r])=>({ x:(x-sx-x0+pad-w/2)*units, y:(y-sy-y0+pad-h/2)*units, r:r*units })) };
   }

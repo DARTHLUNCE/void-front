@@ -9,6 +9,9 @@ interface Region { source: Rect; x: Axis; y: Axis }
 export interface FrameGeometry { width: number; height: number; patches: FramePatch[]; regions: Region[] }
 export type FramePiece = 'rail' | 'top' | 'window';
 export const SOURCE_WIDTH = 2944, SOURCE_HEIGHT = 1664;
+export const TOP_WRAP_WIDTH = 720;
+/** Narrow windows reflow physical modules into two rows instead of squeezing one strip. */
+export const topFrameHeight = (width: number): number => width < TOP_WRAP_WIDTH ? 96 : 64;
 
 function axis(start: number, end: number, targetStart: number, targetEnd: number, scale: number, flexible: readonly Span[]): Axis {
   const length = end - start, destination = targetEnd - targetStart;
@@ -55,28 +58,65 @@ export function buildFrameGeometry(piece: FramePiece, width: number, height: num
     }
   };
   if (piece === 'rail') {
-    const scale = Math.min(width / 835, height / 1664);
-    const extraY = height - 1664 * scale, extraX = width - 835 * scale;
+    // Reserve legible glass heights for small controls, then share the remainder
+    // between the two main screens. All bevels still use one uniform detail scale.
+    const scale = Math.min(width / 835, height / 2000);
+    const extraX = width - 835 * scale;
     const mainWidth = width - 105 * scale;
-    const rows = [0, 412*scale+extraY*.35, 780*scale+extraY*.7, 964*scale+extraY*.7, 1260*scale+extraY*.7, height];
+    const flightHeight = 110*scale + 26;
+    const bankHeight = 72*scale + 20;
+    const upgradeHeight = 78*scale + 34;
+    const keyHeight = 134*scale + 14;
+    const bottomHeight = 104*scale + 40 + keyHeight;
+    const screenHeight = (height-flightHeight-bankHeight-upgradeHeight-bottomHeight)/2;
+    const rows = [0, screenHeight, screenHeight*2, screenHeight*2+flightHeight,
+      screenHeight*2+flightHeight+bankHeight+upgradeHeight, height];
     // Large instrument screens resize in the glass/straight edge runs.
     add([0,0,730,412],[0,0,mainWidth,rows[1]],scale,[[160,560]],[[120,300]]);
     add([730,0,835,412],[mainWidth,0,width,rows[1]],scale,[],[[350,380]]);
     add([0,412,730,780],[0,rows[1],mainWidth,rows[2]],scale,[[140,590]],[[500,690]]);
     add([730,412,835,780],[mainWidth,rows[1],width,rows[2]],scale,[],[[604,620]]);
     // Short flight/upgrade rows keep their height. Each control has a protected bezel.
-    add([0,780,730,964],[0,rows[2],mainWidth,rows[3]],scale,[[100,300],[440,478],[580,658]],[]);
+    // Flight displays are separate nine-slice modules, not one stretched row.
+    for (const [left,right,flex] of [[0,396,[100,300]],[396,530,[440,478]],[530,730,[580,658]]] as const) {
+      add([left,780,right,964],[left/730*mainWidth,rows[2],right/730*mainWidth,rows[3]],scale,[flex],[[844,900]]);
+    }
     add([730,780,835,964],[mainWidth,rows[2],width,rows[3]],scale,[],[]);
-    add([0,964,730,1260],[0,rows[3],mainWidth,rows[4]],scale,[[110,172],[274,328],[434,492],[596,650]],[]);
+    const bankBottom = rows[3] + bankHeight;
+    add([0,964,730,1088],[0,rows[3],mainWidth,bankBottom],scale,[[110,650]],[[1016,1054]]);
+    for (const [left,right,flex] of [[0,224,[110,172]],[224,384,[274,328]],[384,546,[434,492]],[546,730,[596,650]]] as const) {
+      add([left,1088,right,1260],[left/730*mainWidth,bankBottom,right/730*mainWidth,rows[4]],scale,[flex],[[1120,1190]]);
+    }
     add([730,964,835,1260],[mainWidth,rows[3],width,rows[4]],scale,[],[]);
-    const divideX = 458*scale+extraX*.55, keyTop = height-158*scale;
+    const divideX = 458*scale+extraX*.55, keyTop = height-keyHeight;
     add([0,1260,458,1664],[0,rows[4],divideX,height],scale,[[120,350]],[[1390,1510]]);
     add([458,1260,835,1506],[divideX,rows[4],width,keyTop],scale,[[574,590],[676,694],[780,810]],[[1360,1410]]);
-    add([458,1506,835,1664],[divideX,keyTop,width,height],scale,[[574,590],[676,694],[780,810]],[]);
+    for (const [left,right] of [[458,572],[572,676],[676,835]] as const) {
+      const x = (value: number) => divideX + (value-458)/377*(width-divideX);
+      // Each key keeps its own bezel; empty margins absorb width changes.
+      add([left,1506,right,1664],[x(left),keyTop,x(right),height],scale,[[right-20,right-4]],[[1552,1572]]);
+    }
   } else if (piece === 'top') {
-    // Indicator/switch banks are rigid; only empty readout spans absorb width.
-    const scale = Math.min(height/160,width/2109);
-    add([835,0,2944,160],[0,0,width,height],scale,[[980,1110],[1440,1550],[1700,1830],[2690,2850]],[[135,145]]);
+    // Independently packed score, clock, enemy, objective and fleet modules.
+    // The same source rectangles drive the texture, normals, glass and DOM bounds.
+    const wrapped = width < TOP_WRAP_WIDTH;
+    const rowHeight = height / (wrapped ? 2 : 1);
+    const scale = rowHeight / 160;
+    const row = (start: number, end: number): ((x: number) => number) =>
+      x => (x-start)/(end-start)*width;
+    const first = row(835, wrapped ? 1985 : 2944);
+    const second = wrapped ? row(1985,2944) : first;
+    for (const [left,right,flex] of [[835,1350,[[970,1130],[1190,1310]]], [1350,1630,[[1430,1560]]], [1630,1985,[[1690,1850]]]] as const) {
+      add([left,0,right,160],[first(left),0,first(right),rowHeight],scale,flex,[]);
+    }
+    const y = wrapped ? rowHeight : 0;
+    const objectives = [1985,2086,2160,2240,2320,2400,2480,2608];
+    const glassEnd = [2066,2146,2226,2306,2386,2466,2542];
+    for (let i=0; i<objectives.length-1; i++) {
+      const left=objectives[i],right=objectives[i+1];
+      add([left,0,right,160],[second(left),y,second(right),y+rowHeight],scale,[[glassEnd[i]+2,right-1]],[]);
+    }
+    add([2608,0,2944,160],[second(2608),y,second(2944),y+rowHeight],scale,[[2670,2870]],[]);
   } else {
     const scale = Math.min(.55,width/2109,height/1504);
     add([835,160,2944,1664],[0,0,width,height],scale,[[960,2790]],[[280,1510]]);

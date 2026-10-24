@@ -1,6 +1,8 @@
+import { MATCH } from '../content/match';
+import { spoolCut } from '../sim/systems/power';
 import { describe, expect, it } from 'vitest';
 import { duelWorld } from '../test-utils';
-import { encodeSnapshot, readOffsets, SNAP, H, SNAPSHOT_SCHEMA, snapshotMatchesSchema } from './snapshot';
+import { encodeSnapshot, readOffsets, SNAP, H, SHIP, SELF, SNAPSHOT_SCHEMA, snapshotMatchesSchema } from './snapshot';
 
 describe('projectile visual lifetime snapshot', () => {
   it('encodes each lifetime without shifting or corrupting subsequent sections', () => {
@@ -49,4 +51,43 @@ describe('worker/client snapshot compatibility', () => {
     expect(snapshotMatchesSchema(data)).toBe(false);
     expect(snapshotMatchesSchema(new Float32Array(0))).toBe(false);
   });
+});
+
+it('reports the simulation firing limit to the HUD without shifting snapshot sections', () => {
+  const {w,a}=duelWorld();
+  a.input.fire=true;
+  const firing=encodeSnapshot(w,a.slot);
+  expect(firing[readOffsets(firing).self+SELF.firingSpeedMul]).toBeCloseTo(.3);
+  a.input.fire=false;
+  const cruising=encodeSnapshot(w,a.slot);
+  expect(cruising[readOffsets(cruising).self+SELF.firingSpeedMul]).toBe(1);
+  expect(snapshotMatchesSchema(cruising)).toBe(true);
+});
+
+it('normalizes Sub-Light charging against its actual power-adjusted spool duration', () => {
+  const {w,a}=duelWorld();
+  const duration=Math.max(.2,MATCH.cruise.spool-spoolCut(w,a));
+  a.cruiseSpool=duration*.5;
+  let data=encodeSnapshot(w,a.slot);
+  expect(data[readOffsets(data).self+SELF.cruiseSpool]).toBeCloseTo(.5);
+  a.cruiseSpool=duration;
+  a.cruising=false;
+  data=encodeSnapshot(w,a.slot);
+  expect(data[readOffsets(data).self+SELF.cruiseSpool]).toBeLessThan(1);
+  a.cruising=true;
+  a.lastDamageTime=12.5;
+  data=encodeSnapshot(w,a.slot);
+  expect(data[readOffsets(data).self+SELF.cruiseSpool]).toBe(1);
+  expect(data[readOffsets(data).self+SELF.damageTime]).toBe(12.5);
+});
+
+it('includes charge progress for other ships without disturbing snapshot sections', () => {
+  const {w,a,b}=duelWorld();
+  b.cruiseSpool=Math.max(.2,MATCH.cruise.spool-spoolCut(w,b))*.75;
+  let data=encodeSnapshot(w,a.slot);
+  expect(data[readOffsets(data).ships+b.slot*SNAP.ship+SHIP.cruiseSpool]).toBeCloseTo(.75);
+  b.cruising=true;
+  data=encodeSnapshot(w,a.slot);
+  expect(data[readOffsets(data).ships+b.slot*SNAP.ship+SHIP.cruiseSpool]).toBe(1);
+  expect(snapshotMatchesSchema(data)).toBe(true);
 });

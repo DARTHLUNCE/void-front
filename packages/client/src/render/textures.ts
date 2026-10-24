@@ -1,3 +1,4 @@
+import { hullCoverage } from '../art/hullCoverage';
 import { CanvasSource, Graphics, Texture, type Renderer } from 'pixi.js';
 import { CRAFT, CRAFT_PALETTES, type CraftId } from '../art/craft';
 import { HULLS } from '../art/hulls';
@@ -21,6 +22,8 @@ export interface LitArt {
   relief?: Texture;
   /** RG16 decode range in source texels; legacy maps use 128. */
   reliefRange?: number;
+  /** Alpha-weighted silhouette area, excluding transparent holes and padding. */
+  visibleAreaWorld?: number;
   widthWorld: number;
   heightWorld: number;
   anchorX: number;
@@ -122,6 +125,7 @@ function litArt(shapes: Shape[], scale: number, bevel = 1): LitArt {
 function litStates(shapes: Shape[], scale: number, bevel: number, palettes: readonly Palette[]): LitStates {
   const baked: BakedArt[] = palettes.map((p) => bakeArtCanvas(shapes, p, scale, 3, bevel));
   return {
+    visibleAreaWorld: hullCoverage(baked[0].albedo.getContext('2d')!.getImageData(0, 0, baked[0].width, baked[0].height).data, 1 / scale),
     albedo: baked.map((b) => mip(b.albedo)),
     normal: mip(baked[0].normal),
     relief: mip(baked[0].relief),

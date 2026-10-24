@@ -274,6 +274,8 @@ export class ShipFx {
     for (const imp of s.impacts) {
       const t = imp.life / IMPACT_LIFE;
       this.patch(sh, cx, cy, rot, scale, imp.a, t * (0.45 + 0.55 * frac));
+      const [hx,hy]=side(imp.a);
+      this.hooks.light(hx,hy,Math.max(9,radius*.22),SHIELD_TINT_HEX[team],t*t*.8);
     }
   }
 

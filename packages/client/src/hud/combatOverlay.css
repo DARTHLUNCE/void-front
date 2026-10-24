@@ -1,0 +1,40 @@
+.combat-feedback { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:2; color:#eaf8ff; font:600 12px/1.3 'Share Tech Mono',monospace; text-shadow:0 1px 3px #000,0 0 6px #000; }
+.combat-feedback [hidden],.combat-feedback[hidden] { display:none!important; }
+.combat-hit { position:absolute; width:40px; height:40px; transform:translate(-50%,-50%); color:#eaf8ff; }
+.combat-hit svg { width:40px; height:40px; overflow:visible; filter:drop-shadow(0 1px 2px #000); }
+.combat-hit path { fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:square; }
+.combat-hit span { position:absolute; top:39px; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:10px; }
+.combat-hit[data-kind=shield] { color:#82dfff; }
+.combat-hit[data-kind=kill] { color:#42ff86; }
+.combat-hit[data-kind=kill] path { stroke-width:3; }
+.combat-incoming { position:absolute; width:160px; height:160px; transform:translate(-50%,-50%); }
+.combat-incoming svg { width:100%; height:100%; overflow:visible; filter:drop-shadow(0 1px 1px #000); }
+.combat-incoming path { fill:none; stroke:#ff3658; stroke-width:2; stroke-linecap:butt; stroke-linejoin:miter; opacity:0; }
+.combat-incoming path[data-kind=shield] { stroke:#ffae64; }
+.combat-incoming span { opacity:0; visibility:hidden; transform:translateY(5px); transition:opacity .22s ease,transform .22s ease,visibility 0s .22s; position:absolute; top:100%; width:100%; text-align:center; color:#ff8b9e; font-size:10px; }
+.combat-incoming[data-area=true] span { opacity:1; visibility:visible; transform:translateY(0); transition:opacity .16s ease-out,transform .16s ease-out,visibility 0s; }
+.combat-notice,.combat-pickup { position:absolute; left:50%; transform:translateX(-50%); text-align:center; max-width:calc(100% - 32px); padding:4px 8px; background:#040911b8; border-bottom:1px solid currentColor; letter-spacing:.08em; }
+.combat-notice { top:12%; color:#42ff86; }
+.combat-notice[data-kind=danger] { color:#ff6b83; }
+.combat-notice[data-kind=shield] { color:#82dfff; }
+.combat-pickup { bottom:8%; color:#8beaff; font-size:11px; }
+@media (max-width:600px) { .combat-notice { top:16%; font-size:10px; } }
+
+/* Fade/slide the message layer, leaving the cockpit frame and hit chevrons crisp. */
+.combat-notice,.combat-pickup {
+  opacity:0; visibility:hidden; transform:translate(-50%,8px) scale(.98);
+  transition:opacity .22s ease-in,transform .22s ease-in,visibility 0s .22s;
+}
+.combat-notice.show,.combat-pickup.show {
+  opacity:1; visibility:visible; transform:translate(-50%,0) scale(1);
+  transition:opacity .16s ease-out,transform .2s cubic-bezier(.16,1,.3,1),visibility 0s;
+}
+@media (prefers-reduced-motion:reduce) {
+  .combat-notice,.combat-pickup,.combat-notice.show,.combat-pickup.show { transform:translateX(-50%); }
+  .combat-incoming span,.combat-incoming[data-area=true] span { transform:none; }
+  .combat-notice,.combat-pickup,.combat-notice.show,.combat-pickup.show,
+  .combat-incoming span,.combat-incoming[data-area=true] span {
+    transition:opacity .08s linear,visibility 0s .08s;
+  }
+  .combat-notice.show,.combat-pickup.show,.combat-incoming[data-area=true] span { transition-delay:0s; }
+}

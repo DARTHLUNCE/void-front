@@ -1,0 +1,218 @@
+/* Priority: survival, ready actions, then navigation. The traced frame owns all bounds. */
+.sidebar-layout .noir-fit-panel { container-type: size; }
+.sidebar-layout .noir-status > .noir-fit-inner { display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; gap: 6px; }
+.sidebar-layout .noir-status .noir-armor { display: none; }
+.sidebar-layout .noir-identity { align-items: center; min-width: 0; }
+.sidebar-layout .vhud-tier-badge { font-size: 13px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+.sidebar-layout .noir-identity .hull-state { display: none; }
+.sidebar-layout .ship-array-screen { min-height: 0; opacity: .55; }
+.sidebar-layout .noir-meters { gap: 8px; }
+.sidebar-layout .noir-meter { grid-template-columns: 52px minmax(0,1fr) 42px; gap: 6px; font-size: 12px; }
+.sidebar-layout .noir-meter b { grid-column: 3; grid-row: 1; font-size: 16px; text-align: right; color: var(--noir-ink); }
+.sidebar-layout .noir-meter > div { grid-column: 2; grid-row: 1; height: 14px; background: #202c39; }
+.sidebar-layout .noir-meter i { height: 100%; mask-image: none; transition: width 120ms linear; }
+.sidebar-layout .noir-meter.hull i { background: #b7c7d9; }
+.sidebar-layout .pilot-status { min-height: 14px; font-size: 12px; line-height: 1.15; font-weight: 700; letter-spacing: .04em; color: var(--noir-warn); }
+.sidebar-layout #hud[data-hull="critical"] .noir-meter.hull :is(b,span),
+.sidebar-layout #hud[data-shields-down="true"] .noir-meter:not(.hull) :is(b,span) { color: var(--noir-warn); }
+.sidebar-layout #hud[data-hull="critical"] .noir-meter.hull i { background: var(--noir-warn); }
+.sidebar-layout #hud[data-hit="true"] .noir-status { background-color: #ff6f7e14; }
+.sidebar-layout #hud[data-hit="true"] .ship-array-screen { opacity: .9; }
+.sidebar-layout #hud[data-hull="critical"] .pilot-status { animation: instrument-alert 900ms ease-in-out infinite alternate; }
+.sidebar-layout .vhud-weapons-dash { height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.sidebar-layout .w-slot.primary { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px; }
+.sidebar-layout .w-slot.primary .w-slot-title { grid-column: 1; grid-row: 1; font-size: 14px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-layout .w-slot.primary .w-slot-head { grid-column: 2; grid-row: 1; gap: 4px; }
+.sidebar-layout .w-slot.primary :is(.turret-subpill,.w-slot-meta) { display: none; }
+.sidebar-layout .auto-tag { padding: 2px 4px; font-size: 11px; }
+.sidebar-layout .auto-tag kbd { display: none; }
+.sidebar-layout .w-quirk { grid-column: 1/-1; font-size: 11px; min-height: 12px; }
+.sidebar-layout .w-slot[data-ab] { position: relative; grid-template-columns: 28px minmax(0,1fr) 48px; min-height: 28px; padding: 4px 0 6px; gap: 4px; border-color: #35445470; }
+.sidebar-layout .w-slot[data-ab] .w-slot-title { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sidebar-layout .w-slot[data-ab] :is(kbd,.status-tag) { font-size: 12px; }
+.sidebar-layout .w-slot[data-ab] .w-slot-cd { position: absolute; left: 0; bottom: 0; height: 3px; max-width: 100%; transition: width 100ms linear; background: var(--hud-accent); }
+.sidebar-layout .w-slot.ready .status-tag { font-weight: 700; }
+.sidebar-layout .w-slot.ready .w-slot-cd { opacity: .55; }
+.sidebar-layout .w-slot:is(.empty,.locked) { min-height: 18px; padding: 2px 0; opacity: .48; }
+.sidebar-layout .w-slot:is(.empty,.locked) .w-slot-title { font-size: 11px; }
+.sidebar-layout .w-slot:is(.empty,.locked) .w-slot-cd { display: none; }
+.sidebar-layout .w-slot.just-ready { animation: instrument-ready 700ms ease-out 2; }
+.sidebar-layout .vhud-bank-strip > .noir-fit-inner { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(0,1fr); gap: 6px; align-items: center; }
+.sidebar-layout .vhud-shard-counter { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.sidebar-layout .vhud-shard-counter b { font-size: 17px; }
+.sidebar-layout .upgrade-prompt { font-size: 10px; line-height: 1.1; white-space: nowrap; }
+.sidebar-layout .vhud-bank-strip[data-ready="true"] .upgrade-prompt { color: var(--hud-soft); font-weight: 700; }
+.sidebar-layout .vhud-bank-strip[data-notice="true"] { animation: instrument-ready 800ms ease-out 3; }
+.sidebar-layout .vhud-xp-bar { min-height: 18px; height: 100%; }
+.sidebar-layout .vhud-xp-bar span { font-size: 11px; line-height: 1.1; }
+.sidebar-layout .vhud-xp-bar i { height: 3px; }
+.sidebar-layout .vhud-up-card > .noir-fit-inner { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 4px; }
+.sidebar-layout .vhud-up-top b { flex-direction: row; gap: 4px; font-size: 12px; }
+.sidebar-layout .vhud-up-top b kbd { font-size: 11px; border: 0; padding: 0; color: var(--noir-dim); }
+.sidebar-layout .vhud-up-top .cost { font-size: 12px; }
+.sidebar-layout .vhud-up-card { opacity: 1; }
+.sidebar-layout .vhud-up-card:disabled { opacity: .6; }
+.sidebar-layout .vhud-up-card.can { background: var(--hud-hover); box-shadow: inset 0 0 0 1px var(--hud-selected); }
+.sidebar-layout .vhud-up-card.can .cost::before { content: '↑ '; font-size: 10px; font-weight: 700; }
+.sidebar-layout .vhud-up-card.can :is(b,.cost) { color: var(--hud-soft); }
+.sidebar-layout .vhud-up-pips { height: 4px; }
+.sidebar-layout .vhud-up-pips i { height: 4px; }
+.sidebar-layout .vhud-up-card::after { content: ''; position: absolute; left: 0; bottom: 0; width: calc(100% * var(--upgrade-progress,0)); height: 2px; background: var(--hud-accent); opacity: .45; pointer-events: none; }
+.sidebar-layout .vhud-throttle > .noir-fit-inner { grid-template-columns: minmax(0,1fr) auto; gap: 3px; }
+.sidebar-layout .thr-val { font-size: 18px; }
+.sidebar-layout .thr-led-bar { height: 5px; }
+.sidebar-layout .flight-state { grid-column: 1/-1; font-size: 10px; color: var(--hud-soft); line-height: 1; white-space: nowrap; }
+.sidebar-layout .flight-state:empty { display: none; }
+.sidebar-layout #hud[data-braking="true"] .noir-brake { color: var(--hud-soft); background: var(--hud-hover); }
+.sidebar-layout #hud[data-braking="true"] .noir-brake kbd { color: var(--hud-soft); }
+.sidebar-layout .led-col[aria-pressed="true"] { background: var(--hud-hover); outline: none !important; }
+.sidebar-layout .top .team { font-size: 12px; }
+.sidebar-layout .top .team .kills { font-size: 18px; }
+.sidebar-layout .top .clock { font-size: 18px; white-space: nowrap; }
+.sidebar-layout .top .pointstrip span { font-size: clamp(7px,1vw,10px); line-height: 1; overflow: hidden; }
+.sidebar-layout .top .ms .noir-fleet-title { font-size: 10px; white-space: nowrap; }
+.sidebar-layout .noir-screen, .sidebar-layout .noir-fit-panel,
+.sidebar-layout .top, .sidebar-layout .noir-top-surface { scrollbar-width: none; overflow: hidden !important; }
+.sidebar-layout .noir-screen::-webkit-scrollbar, .sidebar-layout .top::-webkit-scrollbar { display: none; }
+@container (max-height: 150px) {
+  .noir-status > .noir-fit-inner { grid-template-rows: auto minmax(0,1fr) auto auto; gap: 4px; }
+  .noir-meters { gap: 5px; }
+  .noir-meter > div { height: 12px; }
+  .vhud-weapons-dash { gap: 3px; }
+  .w-slot[data-ab] { min-height: 22px; padding: 3px 0 4px; }
+}
+@container (max-height: 110px) {
+  .noir-status > .noir-fit-inner { grid-template-rows: auto minmax(0,1fr) auto; }
+  .noir-status .ship-array-screen { display: none; }
+  .noir-status .noir-meters { align-content: center; gap: 6px; }
+  .w-slot[data-ab] { min-height: 19px; padding: 2px 0 3px; }
+  .w-slot:is(.empty,.locked) { min-height: 15px; }
+}
+@container (max-width: 80px) {
+  .team .tname { display: none; }
+  .top .team > .noir-fit-inner { justify-content: center; }
+  .top .ms .noir-fleet-title { display: none; }
+  .vhud-up-card .vhud-up-top b { font-size: 11px; gap: 3px; }
+  .vhud-up-card .cost { font-size: 11px; }
+}
+@container (max-height: 46px) {
+  .vhud-up-card > .noir-fit-inner { gap: 2px; }
+  .vhud-up-card .vhud-up-pips { height: 3px; }
+  .vhud-up-card .vhud-up-pips i { height: 3px; }
+  .vhud-throttle > .noir-fit-inner { gap: 2px; }
+  .vhud-throttle:has(.flight-state:not(:empty)) .thr-led-bar { display: none; }
+  .vhud-throttle label { display: none; }
+  .vhud-throttle .thr-val { grid-column: 1/-1; grid-row: 1; font-size: 16px; }
+  .noir-power-readout .led-power-head { display: none; }
+  .noir-power-readout > .noir-fit-inner { grid-template-rows: minmax(0,1fr); }
+}
+.sidebar-layout [data-density="compact"] .ship-array-screen,
+.sidebar-layout [data-density="minimal"] .ship-array-screen { display: none; }
+.sidebar-layout .noir-status:is([data-density="compact"],[data-density="minimal"]) > .noir-fit-inner { grid-template-rows: auto minmax(0,1fr) auto; }
+.sidebar-layout [data-density="minimal"] .w-slot:is(.empty,.locked) { display: none; }
+.sidebar-layout [data-density="minimal"] .w-slot[data-ab] { min-height: 18px; padding: 2px 0 3px; }
+.sidebar-layout [data-density="minimal"] .w-slot[data-ab] .w-slot-title { font-size: 12px; }
+.sidebar-layout [data-density="minimal"] .upgrade-prompt { font-size: 9px; }
+@keyframes instrument-ready { from { background-color: var(--hud-selected); } to { background-color: transparent; } }
+@keyframes instrument-alert { from { opacity: 1; } to { opacity: .6; } }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-layout #hud :is(.pilot-status,.w-slot,.vhud-bank-strip) { animation: none !important; }
+  .sidebar-layout #hud .noir-meter i { transition: none; }
+}
+
+.sidebar-layout .vhud-sublight > .noir-fit-inner { gap: 2px; }
+.sidebar-layout .vhud-sublight .noir-fit-inner > label { display: none; }
+.sidebar-layout .vhud-sublight :is(kbd,.sl-status) { font-size: 11px; line-height: 1; white-space: nowrap; }
+
+/* Override any previously loaded fixed-width rule during Vite style replacement. */
+.sidebar-layout #hud .noir-top-surface { width: 100%; min-width: 0; max-width: 100%; }
+.sidebar-layout .noir-fit-inner { font-size: 12px; line-height: 1.15; }
+.sidebar-layout .vhud-bank-strip .noir-fit-inner { line-height: 1; }
+.sidebar-layout .vhud-bank-strip .vhud-shard-counter { line-height: 1; }
+.sidebar-layout .vhud-bank-strip .vhud-shard-counter b { line-height: 1; }
+.sidebar-layout .vhud-bank-strip .vhud-xp-wrap { height: 100%; min-height: 0; line-height: 1; }
+.sidebar-layout .vhud-bank-strip .vhud-xp-bar { min-height: 0; }
+.sidebar-layout .noir-power-readout .led-cols { min-height: 0; grid-template-rows: repeat(3,minmax(0,1fr)); }
+.sidebar-layout .noir-power-readout .led-col { min-height: 0; line-height: 1; }
+@container (max-height: 64px) {
+  .noir-power-readout .led-power-head { display: none; }
+  .noir-power-readout > .noir-fit-inner { grid-template-rows: minmax(0,1fr); }
+}
+
+/* Signals belong to the live controls, independent of faction paint. */
+.sidebar-layout #hud { --hud-ready: #8ee9b0; --hud-ready-bg: #174e3338; --hud-danger: #ff7c88; }
+.sidebar-layout .w-slot.ready .status-tag { color: var(--hud-ready); }
+.sidebar-layout .w-slot.ready .w-slot-cd { background: var(--hud-ready); }
+.sidebar-layout .vhud-up-card.can { background: var(--hud-ready-bg); box-shadow: inset 0 0 0 1px #8ee9b066; }
+.sidebar-layout .vhud .vhud-up-card.can :is(b,.cost),
+.sidebar-layout .vhud-bank-strip[data-ready="true"] .upgrade-prompt { color: var(--hud-ready); }
+.sidebar-layout .vhud-bank-strip[data-ready="true"] { box-shadow: inset 0 -2px 0 #8ee9b066; }
+.sidebar-layout .w-slot.just-ready, .sidebar-layout .vhud-bank-strip[data-notice="true"] { animation-name: action-ready; }
+.sidebar-layout .pilot-status { color: var(--hud-danger); }
+.sidebar-layout .top .clock > .noir-fit-inner { display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.sidebar-layout .top .team > .noir-fit-inner { align-items: center; }
+.sidebar-layout .top .team .kills { font-size: 16px; line-height: 1; }
+.sidebar-layout .top .tname { font-size: 11px; }
+.sidebar-layout .top .ms > .noir-fit-inner { gap: 2px; }
+.sidebar-layout .top .msbar { height: 4px; }
+.sidebar-layout .top .ms .noir-fleet-title { display: none; }
+.sidebar-layout .noir-fit-panel :is(.w-slot-title,.vhud-tier-badge) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container (max-width: 90px) {
+  .top .team .tname { display: block; font-size: 0; }
+  .top .team .tname::before { content: 'C'; font-size: 11px; }
+  .top .team.ember .tname::before { content: 'E'; }
+  .top .team > .noir-fit-inner { justify-content: space-between; gap: 3px; }
+  .top .clock > .noir-fit-inner { font-size: 13px; }
+}
+@container (max-height: 20px) {
+  .top .team .kills { font-size: 13px; }
+  .top .team > .noir-fit-inner { line-height: 1; }
+}
+@keyframes action-ready { from { background-color: #8ee9b044; } to { background-color: transparent; } }
+
+.sidebar-layout .top .clock { display: grid; place-items: center; font-size: 16px; line-height: 1; }
+.sidebar-layout #hud[data-top-rows="2"] .top .clock { font-size: 13px; }
+
+.sidebar-layout .noir-status:is([data-density="compact"],[data-density="minimal"]) > .noir-fit-inner {
+  grid-template-rows: auto auto auto; align-content: center; gap: 4px;
+}
+.sidebar-layout .noir-status[data-density="minimal"] .noir-meter { grid-template-columns: 46px minmax(0,1fr) 38px; font-size: 11px; }
+.sidebar-layout .noir-status[data-density="minimal"] .noir-meter b { font-size: 14px; }
+.sidebar-layout .noir-status[data-density="minimal"] .noir-meters { gap: 6px; }
+.sidebar-layout .noir-status[data-density="minimal"] .pilot-status { font-size: 11px; min-height: 12px; }
+.sidebar-layout #hud .vhud .w-slot.ready .status-tag { color: var(--hud-ready); }
+@container (max-height: 112px) {
+  .noir-combat .vhud-weapons-dash { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-content: center; gap: 5px; }
+  .noir-combat .w-slot.primary { grid-column: 1/-1; }
+  .noir-combat .w-slot[data-ab] { display: grid; grid-template-columns: minmax(0,1fr); grid-template-rows: auto auto auto; min-height: 0; padding: 3px 0 5px; gap: 3px; }
+  .noir-combat .w-slot[data-ab] .w-slot-head { grid-column: 1; grid-row: 1; }
+  .noir-combat .w-slot[data-ab] .w-slot-title { grid-column: 1; grid-row: 2; font-size: 11px; }
+  .noir-combat .w-slot[data-ab] .w-slot-meta { grid-column: 1; grid-row: 3; justify-content: start; }
+  .noir-combat .w-slot[data-ab] .w-slot-cd { left: 0; }
+  .noir-combat .w-slot[data-ab] .status-tag { font-size: 11px; }
+  .noir-combat .w-slot:is(.empty,.locked) { display: none; }
+}
+
+/* Bright phosphor colors; keep the white glyph core sharp and the halo restrained. */
+.sidebar-layout #hud { --hud-ready: #42ff86; --hud-danger: #ff3658; --noir-warn: var(--hud-danger); }
+.sidebar-layout #hud .vhud .w-slot.ready .status-tag,
+.sidebar-layout #hud .vhud-up-card.can :is(b,.cost),
+.sidebar-layout #hud .vhud-bank-strip[data-ready="true"] .upgrade-prompt {
+  color: var(--hud-ready); text-shadow: 0 0 2px #42ff8670,0 0 6px #42ff8638;
+}
+.sidebar-layout #hud .pilot-status,
+.sidebar-layout #hud[data-hull="critical"] .noir-meter.hull :is(b,span),
+.sidebar-layout #hud[data-shields-down="true"] .noir-meter:not(.hull) :is(b,span) {
+  color: var(--hud-danger); text-shadow: 0 0 2px #ff365880,0 0 6px #ff365840;
+}
+.sidebar-layout #hud .vhud-up-card.can { box-shadow: inset 0 0 0 1px #42ff8670; background: #42ff8612; }
+.sidebar-layout #hud .w-quirk-bar.hot i { background: var(--hud-danger); }
+.sidebar-layout #hud:has(.vhud-up-card[data-stat="0"].can) .noir-screen-glow[data-screen="upgrade0"],
+.sidebar-layout #hud:has(.vhud-up-card[data-stat="1"].can) .noir-screen-glow[data-screen="upgrade1"],
+.sidebar-layout #hud:has(.vhud-up-card[data-stat="2"].can) .noir-screen-glow[data-screen="upgrade2"],
+.sidebar-layout #hud:has(.vhud-up-card[data-stat="3"].can) .noir-screen-glow[data-screen="upgrade3"] {
+  background: radial-gradient(ellipse at 50% 40%,#07391b,#07130d 85%);
+}
+.sidebar-layout #hud[data-hull="critical"] .noir-screen-glow[data-screen="status"] {
+  background: radial-gradient(ellipse at 50% 40%,#3a0712,#14070c 85%);
+}

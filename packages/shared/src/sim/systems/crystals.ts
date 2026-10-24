@@ -1,5 +1,5 @@
 import { CRYSTALS } from '../../content/crystals';
-import { CRYSTAL_CAPACITY, DT, type Ship, type World } from '../world';
+import { EVENT_CAPACITY, EventType, CRYSTAL_CAPACITY, DT, type Ship, type World } from '../world';
 import { MAX_SHIP_RADIUS } from './combat';
 import { grantShards } from './progression';
 
@@ -87,7 +87,10 @@ export function collectCrystals(w: World): void {
       }
     }
     if (best) {
+      const before = best.shards;
       grantShards(w, best, c.shards);
+      if (!best.isBot && w.eventCount < EVENT_CAPACITY / 2)
+        w.emit(EventType.ShardPickup, best.slot, 0, c.x, c.y, best.shards-before);
       w.stats.crystalsCollected++;
       pool.release(c);
     }

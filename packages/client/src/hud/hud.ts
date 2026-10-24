@@ -1,4 +1,5 @@
 import { arrangePilotSidebar } from './sidebar';
+import { driveChargeProgress, PilotFeedback } from './pilotFeedback';
 import {
   ABILITY,
   BASE_UPGRADES,
@@ -115,6 +116,7 @@ export class Hud {
   private readonly $: Record<string, HTMLElement> = {};
   private readonly statRows: HTMLElement[] = [];
   private readonly abilityBays: HTMLElement[] = [];
+  private readonly feedback: PilotFeedback;
   private readonly radar: HTMLCanvasElement;
   private readonly radarCtx: CanvasRenderingContext2D;
   private lastRadar = 0;
@@ -162,7 +164,7 @@ export class Hud {
         <div class="team ember"><span data-k="k1" class="kills">0</span><span class="tname">Ember</span></div>
       </div>
       <canvas class="minimap hud-hit hidden" width="300" height="150"></canvas>
-      <div data-k="live" class="livescore"><div class="live-head"><span>Score</span><small>Hold Tab for full board</small></div><div data-k="liveRows"></div><div data-k="livePops" class="live-pops"></div></div>
+      <div data-k="live" class="livescore"><div class="live-head"><span>LEADERS</span><small><kbd>Tab</kbd> BOARD</small></div><div data-k="liveRows"></div><div data-k="livePops" class="live-pops"></div></div>
       <div data-k="toast" class="toast"></div>
       <div data-k="vhud" class="vhud hidden">
         <div class="vhud-left">
@@ -223,6 +225,7 @@ export class Hud {
             <span data-k="thrVal" class="thr-val">100%</span>
             <span class="thr-brake"><i data-k="brake" class="led"></i>BRK</span>
             <kbd>Space</kbd>
+            ${scheme === 'mouse' ? '<span class="reverse-hint"><kbd>S</kbd> <span data-k="reverseHint">REVERSE</span></span>' : ''}
           </div>
           <div class="vhud-sublight" title="Hold Shift to spool the Sub-Light drive">
             <label>SUB-L</label>
@@ -266,6 +269,7 @@ export class Hud {
       <div data-k="board" class="overlay board passive hidden"></div>
     `;
     if (document.documentElement.classList.contains('sidebar-layout')) arrangePilotSidebar(root);
+    this.feedback = new PilotFeedback(root);
     root.querySelectorAll<HTMLElement>('[data-k]').forEach((n) => (this.$[n.dataset.k!] = n));
     root.querySelectorAll<HTMLButtonElement>('[data-stat]').forEach((b) => {
       this.statRows.push(b);
@@ -346,10 +350,11 @@ export class Hud {
     this.lastMini = 0;
   }
 
-  setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); }
+  setBraking(on: boolean): void { this.$.brake.classList.toggle('on', on); if (this.root.dataset.braking !== String(on)) this.root.dataset.braking = String(on); }
 
   /** Throttle column: 10 forward LEDs rise from the zero line, 6 red reverse LEDs fall below it. */
-  setThrottle(t: number, reverseMax: number): void {
+  setThrottle(t: number, reverseMax: number, reverseToggled = false): void {
+    if (this.$.reverseHint) this.set('reverseHint', reverseToggled ? 'RESTORE' : 'REVERSE');
     const lit = Math.round(t * 10);
     const pct = Math.round(t * 100);
     this.set('thrVal', pct > 0 ? `+${pct}%` : pct < 0 ? `−${-pct}% REV` : '0%');
@@ -468,6 +473,7 @@ export class Hud {
     // Pilots read the ship-scoped radar; the sector map shows on M (or a radar click). Commanders keep it docked top-right.
     const mapOn = commander || this.bigMap;
     this.mini.classList.toggle('hidden', !mapOn);
+    if (!pilot) this.feedback.deactivate();
     if (commander) this.updateCommand(snap);
     else if (!docked) this.updatePilot(snap);
     if (pilot && now - this.lastRadar > 33) {
@@ -546,7 +552,7 @@ export class Hud {
     return slots.sort((a, c) => score(c) - score(a) || b[snap.ship(c) + SHIP.kills] - b[snap.ship(a) + SHIP.kills] || a - c);
   }
 
-  /** The live score panel (top right): the match top five, and your own place if you aren't in it. */
+  /** A quiet top-three glance panel; the pilot's own row always stays visible. */
   private renderLive(snap: Snap): void {
     const info = this.info!;
     const b = snap.buf;
@@ -561,8 +567,8 @@ export class Hud {
       return `<div class="live-row${slot === info.selfSlot ? ' me' : ''}"><i>${place + 1}</i><span class="nm" style="color:${TEAM_CSS[team]}">${info.names[slot]}</span><u>${tag}</u><b>${Math.floor(b[k + SHIP.score]).toLocaleString()}</b></div>`;
     };
     let html = '';
-    for (let p = 0; p < Math.min(5, order.length); p++) html += row(p);
-    if (mine >= 5) html += `<div class="live-gap">…</div>${row(mine)}`;
+    for (let p = 0; p < Math.min(3, order.length); p++) html += row(p);
+    if (mine >= 3) html += `<div class="live-gap">…</div>${row(mine)}`;
     this.set('liveRows', html, 'html');
   }
 
@@ -623,8 +629,10 @@ export class Hud {
     this.set('hullPct', `${Math.ceil(frac * 100)}%`);
     this.set('shdText', `SHD ${Math.ceil(shield)} / ${Math.round(maxShield)}`);
     if (this.$.sidebarHullValue) {
-      this.set('sidebarShieldValue', `${Math.ceil(shield)} / ${Math.round(maxShield)}`);
-      this.set('sidebarHullValue', `${Math.ceil(hull)} / ${Math.round(maxHull)}`);
+      this.set('sidebarShieldValue', maxShield > 0 ? `${Math.ceil(sfrac * 100)}%` : '—');
+      this.$.sidebarShieldValue.title = `${Math.ceil(shield)} / ${Math.round(maxShield)} shield`;
+      this.set('sidebarHullValue', `${Math.ceil(frac * 100)}%`);
+      this.$.sidebarHullValue.title = `${Math.ceil(hull)} / ${Math.round(maxHull)} hull`;
       this.set('sidebarShieldBar', `${sfrac * 100}%`, 'width');
       this.set('sidebarHullBar', `${frac * 100}%`, 'width');
       this.setVar('sidebarHullBar', '--hull-color', HULL_STATES[state].color);
@@ -652,7 +660,10 @@ export class Hud {
     const next = b[s + SELF.nextTierCost];
     const xp = b[s + SELF.xp];
     this.set('xp', `${next < 0 ? 100 : Math.min(100, (100 * xp) / next)}%`, 'width');
-    this.set('xptext', next < 0 ? 'ALL TIERS OWNED' : `${Math.floor(xp)} / ${next} XP → T${tiers + 1}`);
+    this.set('xptext', this.$.sidebarHullValue
+      ? next < 0 ? 'MAX TIER' : xp >= next ? `T${tiers + 1} READY` : `T${tiers + 1} · ${Math.floor(xp / next * 100)}%`
+      : next < 0 ? 'ALL TIERS OWNED' : `${Math.floor(xp)} / ${next} XP → T${tiers + 1}`);
+    this.$.xptext.title = next < 0 ? 'All tiers owned' : `${Math.floor(xp)} / ${next} XP for Tier ${tiers + 1}`;
     for (let i = 0; i < this.statRows.length; i++) {
       const n = statLevels[i];
       const cost = b[s + SELF.statCost0 + i];
@@ -667,9 +678,15 @@ export class Hud {
       if (card instanceof HTMLButtonElement) card.disabled = !can;
       card.querySelectorAll('.vhud-up-pips i').forEach((p, j) => p.classList.toggle('on', j < n));
       card.querySelector('.cost')!.textContent = cost < 0 ? 'MAX' : `◆ ${cost}`;
+      card.dataset.ready = String(can);
+      card.style.setProperty('--upgrade-progress', String(cost > 0 ? Math.min(1, shards / cost) : 1));
       card.querySelector('.lv')!.textContent = `LV ${n}/${STAT_POINT_MAX}`;
     }
 
+    const affordable = STAT_POINTS.filter((_, i) => {
+      const cost = b[s + SELF.statCost0 + i];
+      return cost >= 0 && shards >= cost;
+    }).length;
     if (this.$.sidebarUpgradeCount) {
       const affordable = STAT_POINTS.filter((_, i) => {
         const cost = b[s + SELF.statCost0 + i];
@@ -707,9 +724,9 @@ export class Hud {
       let fill = 0;
       if (!def) {
         bayState = i === 2 ? 'locked' : 'empty';
-        name = i === 2 ? 'Tier 5 Ultimate' : 'No Secondary';
+        name = this.$.sidebarHullValue ? i === 2 ? 'ULTIMATE' : 'AUXILIARY' : i === 2 ? 'Tier 5 Ultimate' : 'No Secondary';
         sub = i === 2 ? 'Unlocks at Tier 5' : 'Tier 2 / 4 node';
-        tag = i === 2 ? 'LOCKED' : 'EMPTY';
+        tag = this.$.sidebarHullValue ? i === 2 ? 'T5' : 'T2 / 4' : i === 2 ? 'LOCKED' : 'EMPTY';
       } else {
         const k = s + bay.at;
         const charges = b[k + ABILITY.charges];
@@ -720,30 +737,42 @@ export class Hud {
         bayState = ready ? 'ready' : 'on-cd';
         name = def.name;
         sub = maxCharges > 1 ? `${Math.floor(charges)}/${maxCharges} CHARGES` : `CD ${Math.round(cdMax)}s`;
-        tag = ready ? 'READY' : `${cd.toFixed(1)}s`;
+        tag = ready ? maxCharges > 1 ? `×${Math.floor(charges)}` : 'READY' : `${cd.toFixed(1)}s`;
         fill = charges >= maxCharges ? 1 : Math.max(0, 1 - cd / Math.max(0.01, cdMax));
       }
       const v = `${bayState}|${name}|${sub}|${tag}|${Math.round(fill * 100)}`;
       if (this.cache.get(`bay${i}`) === v) return;
       this.cache.set(`bay${i}`, v);
       const el = this.abilityBays[i];
-      el.className = `w-slot ${bayState}`;
+      el.classList.remove('ready', 'on-cd', 'locked', 'empty');
+      el.classList.add(bayState);
       el.querySelector('.w-slot-title')!.textContent = name;
       el.querySelector('.sub')!.textContent = sub;
       el.title = `${name} · ${sub}`;
+      el.setAttribute('aria-label', `${bay.key}: ${name}, ${tag}`);
       el.querySelector('.status-tag')!.textContent = tag;
       el.querySelector<HTMLElement>('.w-slot-cd')!.style.width = `${fill * 100}%`;
     });
 
+    this.feedback.update({
+      time: b[H.time], damageTime: b[s + SELF.damageTime], alive: b[s + SELF.alive] === 1, identity: `${cls.id}:${model}`,
+      hull: frac, shield: sfrac, shielded: maxShield > 0, affordable,
+      tierReady: this.tierReady(snap), firingMul: b[s + SELF.firingSpeedMul] || 1,
+      abilityReady: ABILITY_BAYS.map(bay => b[s + bay.at + ABILITY.charges] >= 1),
+      charges: ABILITY_BAYS.map(bay => b[s + bay.at + ABILITY.charges]),
+      statLevels, spool: b[s + SELF.cruiseSpool], jammed: b[H.jammed] > 0,
+    });
+    this.$.gunName.title = `${cls.gun.name ?? cls.name} · ${Math.round(b[s + SELF.ap])} AP · ${Math.round(deckRow('dps'))} DPS`;
+
     // RIGHT: Sub-Light LEDs fill while Shift spools the drive, then glow green once it engages.
-    const spool = b[s + SELF.cruiseSpool];
+    const spool = driveChargeProgress(b[s + SELF.cruiseSpool]);
     const slLit = spool >= 1 ? SUBLIGHT_LEDS : Math.floor(spool * SUBLIGHT_LEDS);
     if (this.cache.get('slLit') !== `${slLit}:${spool >= 1}`) {
       this.cache.set('slLit', `${slLit}:${spool >= 1}`);
       Array.from(this.$.slLeds.children).forEach((led, i) => led.classList.toggle('on', i < slLit));
       this.$.slLeds.classList.toggle('engaged', spool >= 1);
     }
-    this.set('slStatus', spool >= 1 ? `${MATCH.cruise.speedMul}× ON` : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
+    this.set('slStatus', spool >= 1 ? `${MATCH.cruise.speedMul}×` : spool > 0 ? `${Math.floor(spool * 100)}%` : 'READY');
     // Radar scope: class base, stretched by the ship's vision modifiers; bigger hulls get a bigger bezel.
     const scope = RADAR_SCOPES[cls.id];
     this.radarRange = scope.range * (deckRow('vision') / MATCH.shipVision || 1);
@@ -962,6 +991,13 @@ export class Hud {
   private renderBoard(snap: Snap): void {
     const info = this.info!;
     const b = snap.buf;
+    const stage = document.getElementById('stage');
+    const width = stage?.clientWidth || window.innerWidth || 1024;
+    const height = stage?.clientHeight || window.innerHeight || 768;
+    const stacked = width < 740;
+    // Reserve a row for the pilot if they fall below the visible leaders.
+    const rowLimit = Math.max(3, Math.min(20, Math.floor(((height - 32) / (stacked ? 2 : 1) - 72) / 20) - 1));
+    this.$.board.dataset.stacked = String(stacked);
     const cols = [0, 1].map((team) => {
       const rows: { slot: number; rank: number; cls: string; score: number; kills: number; assists: number; deaths: number; flags: number }[] = [];
       let total = 0;
@@ -972,18 +1008,18 @@ export class Hud {
         rows.push({ slot, rank: b[k + SHIP.rank], cls: CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.name ?? '', score, kills: b[k + SHIP.kills], assists: b[k + SHIP.assists], deaths: b[k + SHIP.deaths], flags: b[k + SHIP.flags] });
       }
       rows.sort((a, c) => c.score - a.score || c.kills - a.kills || a.slot - c.slot);
-      // Top 20, and always our own row.
-      const shown = rows.slice(0, 20);
+      // Fit the current window, always retaining our own rank and statistics.
+      const shown = rows.slice(0, rowLimit);
       const mine = rows.findIndex((r) => r.slot === info.selfSlot);
-      if (mine >= 20) shown.push(rows[mine]);
-      return `<div class="col"><h3 style="color:${TEAM_CSS[team]}">${TEAM_NAMES[team]} · ${total.toLocaleString()} score · ${b[team === 0 ? H.kills0 : H.kills1]} kills</h3><table><tr><th>#</th><th>Pilot</th><th>Class</th><th>T</th><th>Score</th><th>K</th><th>A</th><th>D</th></tr>${shown
+      if (mine >= rowLimit) shown.push(rows[mine]);
+      return `<div class="col" data-team="${team}"><header class="board-team"><h3>${TEAM_NAMES[team]}</h3><b>${total.toLocaleString()}<small>TEAM SCORE</small></b><span>${b[team === 0 ? H.kills0 : H.kills1]} KILLS</span></header><table aria-label="${TEAM_NAMES[team]} standings"><tr><th>#</th><th>PILOT</th><th>HULL</th><th>T</th><th>SCORE</th><th title="Kills">K</th><th title="Assists">A</th><th title="Deaths">D</th></tr>${shown
         .map(
           (r) =>
             `<tr class="${r.slot === info.selfSlot ? 'me' : ''}"><td>${rows.indexOf(r) + 1}</td><td>${info.names[r.slot]}</td><td>${r.flags & SHIP_FLAG.commander ? 'Command' : r.cls}</td><td>${r.flags & SHIP_FLAG.commander ? '–' : r.rank}</td><td>${r.score.toLocaleString()}</td><td>${r.kills}</td><td>${r.assists}</td><td>${r.deaths}</td></tr>`,
         )
-        .join('')}</table></div>`;
+        .join('')}</table><footer class="board-note">TOP ${Math.min(rowLimit, rows.length)} / ${rows.length}${mine >= rowLimit ? ' · YOUR ROW PINNED' : ''}</footer></div>`;
     });
-    this.$.board.innerHTML = `<div class="cols">${cols.join('')}</div>`;
+    this.$.board.innerHTML = `<div class="board-shell"><header class="board-title"><span>SECTOR STANDINGS</span><small>YOUR ROW IS HIGHLIGHTED · RELEASE <kbd>Tab</kbd></small></header><div class="cols">${cols.join('')}</div></div>`;
   }
 
   /**

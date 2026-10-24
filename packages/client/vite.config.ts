@@ -50,5 +50,5 @@ export default defineConfig({
   plugins: [inspectSaver(), synchronizedWorkerReload()],
   worker: { format: 'es' },
   server: { port: 5173, strictPort: true },
-  build: { target: 'es2022', rollupOptions: { input: { game: resolve(__dirname, 'index.html'), ships: resolve(__dirname, 'ship-test.html') } } },
+  build: { target: 'es2022', rollupOptions: { input: { game: resolve(__dirname, 'index.html'), ships: resolve(__dirname, 'ship-test.html'), zoom: resolve(__dirname, 'zoom-check.html') } } },
 });
