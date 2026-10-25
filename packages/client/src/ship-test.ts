@@ -1,3 +1,4 @@
+import { pbrPreview } from './art/pbrPreview';
 import { loadReferenceShips, ALL_REFERENCE_SHIPS, type ShipArtMode } from './art/referenceShips';
 type MapKind = 'normal' | 'height' | 'roughness' | 'metallic' | 'emissive';
 async function show(mode: ShipArtMode, map: MapKind | undefined = undefined) {
@@ -7,7 +8,7 @@ async function show(mode: ShipArtMode, map: MapKind | undefined = undefined) {
     const card=document.createElement('article'); const title=document.createElement('h2'); title.textContent=entry.label; card.appendChild(title);
     for(const tex of map ? [map === 'normal' ? ships[entry.id].normal : map === 'height' ? ships[entry.id].relief! : ships[entry.id].material!] : ships[entry.id].albedo) {
       const source=tex.source.resource as HTMLCanvasElement;
-      const c=document.createElement('canvas'); c.width=source.width;c.height=source.height;c.getContext('2d')!.drawImage(source,0,0);
+      const c=document.createElement('canvas'); c.width=source.width;c.height=source.height;c.getContext('2d')!.drawImage(!map && ships[entry.id].material ? pbrPreview(source,ships[entry.id].normal.source.resource as HTMLCanvasElement,ships[entry.id].material!.source.resource as HTMLCanvasElement) : source,0,0);
       if (map === 'normal') {
         const ctx=c.getContext('2d')!; const pixels=ctx.getImageData(0,0,c.width,c.height);
         for(let i=0;i<pixels.data.length;i+=4) {

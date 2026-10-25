@@ -1,0 +1,3370 @@
+{
+  "snapshot": {
+    "builtAt": "2026-10-24T12:58:12.583Z",
+    "ref": "LIVE",
+    "sources": [
+      {
+        "path": "packages/harness/src/siege-benchmark.ts",
+        "sha256": "7682fac7bd8cd41a8035577ca1e7264f0cf3d8541d5a00b666b51f7a5390a01c"
+      },
+      {
+        "path": "packages/shared/src/sim/hullCollision.ts",
+        "sha256": "32e97c2f36be69f43be80e5ea1f5f4cc08ae67e664b06002d739c0fdbc33ddb0"
+      },
+      {
+        "path": "packages/shared/src/sim/worldCollision.ts",
+        "sha256": "58588997bd76b69a03786cc186048d4e13adada4a33b9fc1d455ac8086466733"
+      },
+      {
+        "path": "packages/shared/src/index.ts",
+        "sha256": "0472f304ebaa347dd4db54599a3edc5308047fa4e220a4f50bace4552d2f0757"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/director.ts",
+        "sha256": "158c34b87c8cff368932178f08661f3eedc491d26a2f3d8d3a40f92b12eb84b4"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/combat.ts",
+        "sha256": "b235b3320f09d99476491ba848a440d0d6c464bc75fb7e16d8760c87dae964d9"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/movement.ts",
+        "sha256": "fea3b187b762f2b3e1ac30605fff58dd1d16a3837d46cb22fb003daadbb68a59"
+      },
+      {
+        "path": "packages/shared/src/content/hullGeometry.ts",
+        "sha256": "8f78a0d1b7e3de3517b4b1721e62bd9b3cf2d1b0a92d069493657d205cde9e3b"
+      },
+      {
+        "path": "packages/shared/src/sim/bodyCollision.ts",
+        "sha256": "3a4ad3556ebf24a09ef9a1a8bca158efd2577365909fd9b9645876a98d134b5d"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/status.ts",
+        "sha256": "b109f19afb02b628a356e6275915802625ec342f0f26d17e4ac8642efde6e815"
+      },
+      {
+        "path": "packages/shared/src/sim/stats.ts",
+        "sha256": "568589e9878755c58b0a400a30012594cc9e493df964dfc31d9a980a9f45f03b"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/quirks.ts",
+        "sha256": "bddac5c7def851661391c53576e7ab4813c451af32ef008282a8d1935a982410"
+      },
+      {
+        "path": "packages/shared/src/content/match.ts",
+        "sha256": "583e5d0fb7142eb41c82cd57ea0027e064a5652747999aa0b3597f603b6a4988"
+      },
+      {
+        "path": "packages/shared/src/sim/angles.ts",
+        "sha256": "e39f30962418404bc0c26bead246f66d1928a1e9bcc8d9aedb9e62403e3f245a"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/power.ts",
+        "sha256": "c26f821957888c2fb14fcab4688ff96207b7d40e20a6a5ad50f10336a8d72757"
+      },
+      {
+        "path": "packages/shared/src/content/thrusters.ts",
+        "sha256": "97420d9679f3f33227997b63337828bede1366d49455c0788237aef4cb307944"
+      },
+      {
+        "path": "packages/shared/src/sim/world.ts",
+        "sha256": "2aacc12dcf56136e1ce288c07c27b9c2f516a439cfdae15357eb182b7616b763"
+      },
+      {
+        "path": "packages/shared/src/sim/handling.ts",
+        "sha256": "c4eaeacbd7c24ceeefc9147644fdab16e6a238a5a02110a487b48da50cb2a3b9"
+      },
+      {
+        "path": "packages/shared/src/sim/step.ts",
+        "sha256": "8f1e0ff3c253a7526567268f2dd4fca2adcd2ce9d8ded9683a4a0a35d67ebdd1"
+      },
+      {
+        "path": "packages/shared/src/sim/hash.ts",
+        "sha256": "96854e97b8140972d5e97f9f526bc8d33283e6e36fc3de6f3d105dd1148bc354"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/abilities.ts",
+        "sha256": "9ac4b3c07efabfdebc7e3249ab759590b7f255e468f42b404f1a94635388698d"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/command.ts",
+        "sha256": "13567352ad1fe44ae7df31b9c69caefd08bb58c9cdb82edb2bfc98f0c2265ba5"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/drones.ts",
+        "sha256": "194382b6c5eb49843f2a025639bd308408ea46ee60dc0917550127c8f96ed26e"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/points.ts",
+        "sha256": "227a43b9f0344935810076e4e8e8ecc5e96ac083a90547cb8916dcad079523a4"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/progression.ts",
+        "sha256": "418d058da1c9a4f3de870d66a0395e3e79e7e33e1b7474df9abd1b01bfaf05a5"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/score.ts",
+        "sha256": "173e0c4f80d668c616c588f8358cc1451c28f5f5a61e7c3828b1ec5e8b571e37"
+      },
+      {
+        "path": "packages/shared/src/net/snapshot.ts",
+        "sha256": "54ee0517b317d94ba46812fdcf575cbcb7788e131765d74ab37cde0d9145a7f4"
+      },
+      {
+        "path": "packages/shared/src/sim/loadout.ts",
+        "sha256": "a5d8cdfc2282ed206baef3a07285dbe6b860bc336d9120591b1e9da307e53425"
+      },
+      {
+        "path": "packages/shared/src/sim/rng.ts",
+        "sha256": "a72569f89d07b94c1e3fd1b42d02879f6d60845b2f1f7194b0932fd9c4c1c122"
+      },
+      {
+        "path": "packages/shared/src/content/index.ts",
+        "sha256": "a35846d563b6c4dc65ca27d9e712e104e24e7bdaedbc7efc012a2633ff67de1a"
+      },
+      {
+        "path": "packages/shared/src/sim/spatialHash.ts",
+        "sha256": "8205daecc1a04010b9838141955c3989ec12dbdbe5d3743c08582d6f929d1d67"
+      },
+      {
+        "path": "packages/shared/src/sim/pool.ts",
+        "sha256": "e6f03bc6cf3b23070d245f9f7b84fafe5f62d8ae7a31fd3562fa269b8e063c34"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/structures.ts",
+        "sha256": "e96dc910f28d61e8455121033dacbb64590777ec8bbf6c3061fa1c8fa20e0b87"
+      },
+      {
+        "path": "packages/shared/src/content/bots.ts",
+        "sha256": "499580f6d56eba1d040058fcd318053dc5f5fb3f22996eade2aa2ad2a34aad7a"
+      },
+      {
+        "path": "packages/shared/src/content/command.ts",
+        "sha256": "d5e3d732ac8a324d3902009ed120550dca28b076ec5960cf7e24f89e5a0fed67"
+      },
+      {
+        "path": "packages/shared/src/sim/botPerception.ts",
+        "sha256": "b869524f35a9790ed1794ebac313d43a58b89da18235af63e7d18dac4c942b6e"
+      },
+      {
+        "path": "packages/shared/src/content/structures.ts",
+        "sha256": "b825e320d7d9ed5936b94888b2d4ae31ff99adab41db394d6720d288eea67e58"
+      },
+      {
+        "path": "packages/shared/src/sim/combatFeedback.ts",
+        "sha256": "7872bc7416071ee97303deb881919f31db7354b53c72307506392ae66abf9274"
+      },
+      {
+        "path": "packages/shared/src/content/combat.ts",
+        "sha256": "c4598947a1bca7dbc4ff46ec7b8cc82885ba8788a9222456b90c82c00b4a6655"
+      },
+      {
+        "path": "packages/shared/src/content/progression.ts",
+        "sha256": "34d9cdf480132423f69cf40f81db74c5c86cb1d38bc9a8119458f9ad4fba03ab"
+      },
+      {
+        "path": "packages/shared/src/content/quirks.ts",
+        "sha256": "8ddf89788353b63853c481673e44606eb1f732da5082a3ad15602d52531c0481"
+      },
+      {
+        "path": "packages/shared/src/content/score.ts",
+        "sha256": "84a7db81f6d6492a09c5082a631e1a2ec629cae34ae9d4a922e4a212e4b46e5d"
+      },
+      {
+        "path": "packages/shared/src/content/statuses.ts",
+        "sha256": "742a0c51fdea00ea40ef986b19bd805197381d86920df9253cd7b70d7cbd20ac"
+      },
+      {
+        "path": "packages/shared/src/content/power.ts",
+        "sha256": "83b52f39b21b42b923e5258af34646a437931c6e39dd40bb1cfb56b40a993fcc"
+      },
+      {
+        "path": "packages/shared/src/content/classes/index.ts",
+        "sha256": "9ab1a74f781f599924161e2f378003e65c2429f4e62b3c5f11510efff5c12452"
+      },
+      {
+        "path": "packages/shared/src/content/upgrades.ts",
+        "sha256": "38810fcc0afc63d02afe430edc9d4d2ac0ce1f518e586d64d20769d03428f5e1"
+      },
+      {
+        "path": "packages/shared/src/content/classes/battlecruiser.ts",
+        "sha256": "9e7880155214379305eae73f0564db29ea5379c1e08be8513467e586a77da2ef"
+      },
+      {
+        "path": "packages/shared/src/content/classes/carrier.ts",
+        "sha256": "da61a518d722cf9f401f93cb7a0f86968fb1dea34066049487a2b88d77a15083"
+      },
+      {
+        "path": "packages/shared/src/content/classes/battleship.ts",
+        "sha256": "59a767e239c7d9f3fd0df65583a30ee96fc31e8917a07adef940237fb79696ae"
+      },
+      {
+        "path": "packages/shared/src/content/classes/cruiser.ts",
+        "sha256": "0f5e6bb0678562e8fb057ac381915f5fad64185383d8f92dd51e849eaad844fd"
+      },
+      {
+        "path": "packages/shared/src/content/classes/dreadnought.ts",
+        "sha256": "5d0411941f9abf29ecf61c5eecd8b7adc63ac9f1f2e0dcf897627138ea3c9e10"
+      },
+      {
+        "path": "packages/shared/src/content/classes/corvette.ts",
+        "sha256": "6b5af605cf149540d65db36fc26b4526bf2590af61083ad2035d9949e6ea3f29"
+      },
+      {
+        "path": "packages/shared/src/content/classes/frigate.ts",
+        "sha256": "7da193a7e5701309e0b87b8e3f2785714429a6ff600d78e0654fb08ccd68c91c"
+      },
+      {
+        "path": "packages/shared/src/content/classes/destroyer.ts",
+        "sha256": "07a3a29356720e78f0f025474d33bbc2ac8a7043927389cd02ada98d16d50a00"
+      },
+      {
+        "path": "packages/shared/src/content/classes/patrol.ts",
+        "sha256": "b7cc3299c330856ef4223c62616ad872d8c90789f51465888be04301f45e845f"
+      },
+      {
+        "path": "packages/shared/src/content/crystals.ts",
+        "sha256": "265f3cb28e757964c3e1e9337816ad5d7b2b8a45ecc350b94f2b6913fc34d69a"
+      },
+      {
+        "path": "packages/shared/src/sim/botEquipment.ts",
+        "sha256": "3ff58b725775a91a097e2c0a7295b47278b313f9581e0371b0ec05f809a395b2"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/crystals.ts",
+        "sha256": "b764d18a4ca89c85aea38e8e2c60f8740dc30415c6b70ff20836c4363eb50682"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/pilot.ts",
+        "sha256": "c2b4a9fae4dc054e56562b9531ea229ddbd44523166d09358cf26ac15d183994"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/match.ts",
+        "sha256": "8b6d552d093753f82c0bf1b78cbf30dc95b822d70caa1ea1d86ac6a3f558e71a"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/vision.ts",
+        "sha256": "ceac25b55f2bf1e1bffffc3121e3820418883f26fd13714925f6b192e5a859ee"
+      },
+      {
+        "path": "packages/shared/src/sim/systems/zones.ts",
+        "sha256": "3422bcc0e1ea8308be04349ccbdac70ebf3d5ea8a8461dbe7ef883547906f700"
+      },
+      {
+        "path": "packages/shared/src/content/types.ts",
+        "sha256": "167a659db6d942c1d7e83c4bb2f0d8041352130a4c9bd45d082aec9a69505225"
+      },
+      {
+        "path": "packages/shared/src/content/maps/kesslerReach.ts",
+        "sha256": "0f85127c4c299de4bcb8b17e12138000d64edfd8066a6795cbcecbd9dd0f38fb"
+      },
+      {
+        "path": "packages/shared/src/sim/botFlight.ts",
+        "sha256": "0be1f115fb2ca8d5381b309353537c103f764102523cb991856305536c6b0c2e"
+      },
+      {
+        "path": "packages/shared/src/sim/botSquads.ts",
+        "sha256": "3a1410be6adff02638b2c8910bd3be35e397da4c397f32d4ab2a3ab906716ea5"
+      },
+      {
+        "path": "packages/shared/src/sim/botStations.ts",
+        "sha256": "9f0d625d7646ba9a56208a8777c0f68be9dd48fa33e06bbe291908743f8b4247"
+      },
+      {
+        "path": "packages/shared/src/sim/botSiege.ts",
+        "sha256": "33a40fc79ae789c7f0b870179aa972e6915fc8d18b62ee386b21ac48d7046ad1"
+      },
+      {
+        "path": "packages/shared/src/sim/botDoctrine.ts",
+        "sha256": "a09987767ce47ad7e5f94599a7d17a752bab71d536f10933fc46d2441181f48b"
+      },
+      {
+        "path": "packages/shared/src/sim/botRoutes.ts",
+        "sha256": "884294a06114af28fbb572a7ff3fc4802480f1f00540ac2e06af43574d083a0e"
+      }
+    ]
+  },
+  "bundleSHA256": "9045ca24fbe8c8a4d728890172a31517e565ff0bdf79c8e22e576f6c7eccb259",
+  "geometry": [
+    {
+      "path": "packages/shared/src/content/hull-geometry.generated.json",
+      "sha256": "be0b0683f71da53dd7f88ccc6218cec71fe71be958e6bcda78ed82cdb2c17a06",
+      "unchangedFromPublishedRevision": "3cbb13f6c85ed4ec0374a42feec6e06f7fd8c8dc"
+    },
+    {
+      "path": "packages/shared/src/content/world-geometry.generated.json",
+      "sha256": "c5701a30e3f71d9760fb7c86d0997873cc98c216a56deab29244b513e731853a",
+      "unchangedFromPublishedRevision": "3cbb13f6c85ed4ec0374a42feec6e06f7fd8c8dc"
+    }
+  ],
+  "baselineSharedRevision": "3cbb13f6c85ed4ec0374a42feec6e06f7fd8c8dc",
+  "releaseChecks": {
+    "testsPassed": 903,
+    "testFiles": 52,
+    "typechecks": [
+      "shared",
+      "client",
+      "server",
+      "harness"
+    ],
+    "productionBuildModules": 798
+  },
+  "baseline": [
+    {
+      "options": {
+        "fleet": 40,
+        "seed": 41,
+        "seconds": 500,
+        "trace": false
+      },
+      "stateHash": null,
+      "structureVolleys": [
+        42,
+        29
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        856.3194884320983,
+        0,
+        428.07862337915867,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        0.9762133475435528,
+        1,
+        0.9881089271283567,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 38606,
+        "assaultSamples": 5882,
+        "assaultTravelSamples": 5142,
+        "slowAssaultTravelSamples": 606,
+        "slowAssaultTravelFraction": 0.11785297549591599,
+        "postSolverHullOverlapPairs": 123,
+        "contactShipFraction": 0.005776304201419468,
+        "crowdedSlowFraction": 0.07944360980158524,
+        "nonMouseSamples": 0,
+        "motionWindows": 5214,
+        "lowEfficiencyFraction": 0.10241657077100115,
+        "medianNetPathRatio": 0.813507126398974
+      },
+      "stepTimeMs": {
+        "mean": 0.7423201673360024,
+        "p95": 1.0932999999999993,
+        "p99": 1.61850000000004
+      },
+      "byClass": {
+        "patrol": {
+          "alive": 7457,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 5475,
+          "assault": 203,
+          "assaultTravel": 176,
+          "slowAssaultTravel": 4,
+          "fireOrders": 145,
+          "structureVolleys": 18
+        },
+        "carrier": {
+          "alive": 3817,
+          "assault": 1247,
+          "assaultTravel": 1051,
+          "slowAssaultTravel": 48,
+          "fireOrders": 95,
+          "structureVolleys": 18
+        },
+        "destroyer": {
+          "alive": 6161,
+          "assault": 897,
+          "assaultTravel": 832,
+          "slowAssaultTravel": 52,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 2794,
+          "assault": 334,
+          "assaultTravel": 286,
+          "slowAssaultTravel": 3,
+          "fireOrders": 39,
+          "structureVolleys": 6
+        },
+        "frigate": {
+          "alive": 2944,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 1935,
+          "assault": 756,
+          "assaultTravel": 668,
+          "slowAssaultTravel": 114,
+          "fireOrders": 8,
+          "structureVolleys": 2
+        },
+        "battleship": {
+          "alive": 2402,
+          "assault": 717,
+          "assaultTravel": 635,
+          "slowAssaultTravel": 100,
+          "fireOrders": 273,
+          "structureVolleys": 23
+        },
+        "cruiser": {
+          "alive": 5621,
+          "assault": 1728,
+          "assaultTravel": 1494,
+          "slowAssaultTravel": 285,
+          "fireOrders": 18,
+          "structureVolleys": 4
+        }
+      },
+      "attacks": [
+        {
+          "time": 148.03333333333333,
+          "team": 1,
+          "count": 14,
+          "target": 2
+        },
+        {
+          "time": 236.03333333333333,
+          "team": 0,
+          "count": 14,
+          "target": 4
+        }
+      ],
+      "gathers": [
+        {
+          "time": 120.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 210.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 492.0333333333333,
+          "team": 1
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {},
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 87,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 42,
+            "jobs": [
+              3,
+              35,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 94,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 29,
+            "jobs": [
+              2,
+              37,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          856.3194884320983,
+          0,
+          428.07862337915867,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 20
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 87,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 42,
+            "jobs": [
+              3,
+              35,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 94,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 29,
+            "jobs": [
+              2,
+              37,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          856.3194884320983,
+          0,
+          428.07862337915867,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 20
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 40,
+        "seed": 82,
+        "seconds": 500,
+        "trace": false
+      },
+      "stateHash": null,
+      "structureVolleys": [
+        2,
+        14
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        1768.1039999999775,
+        0,
+        64.51199999998789,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        0.9508860000000007,
+        1,
+        0.9982080000000003,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 38555,
+        "assaultSamples": 5131,
+        "assaultTravelSamples": 4001,
+        "slowAssaultTravelSamples": 400,
+        "slowAssaultTravelFraction": 0.09997500624843789,
+        "postSolverHullOverlapPairs": 118,
+        "contactShipFraction": 0.005343016469977953,
+        "crowdedSlowFraction": 0.0839320451303333,
+        "nonMouseSamples": 0,
+        "motionWindows": 5379,
+        "lowEfficiencyFraction": 0.08942182561814464,
+        "medianNetPathRatio": 0.8145528154308007
+      },
+      "stepTimeMs": {
+        "mean": 0.7643279585006733,
+        "p95": 1.255299999997078,
+        "p99": 1.7767000000021653
+      },
+      "byClass": {
+        "destroyer": {
+          "alive": 8061,
+          "assault": 992,
+          "assaultTravel": 768,
+          "slowAssaultTravel": 78,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "patrol": {
+          "alive": 4468,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battleship": {
+          "alive": 2364,
+          "assault": 865,
+          "assaultTravel": 679,
+          "slowAssaultTravel": 65,
+          "fireOrders": 43,
+          "structureVolleys": 4
+        },
+        "dreadnought": {
+          "alive": 1908,
+          "assault": 543,
+          "assaultTravel": 440,
+          "slowAssaultTravel": 64,
+          "fireOrders": 182,
+          "structureVolleys": 12
+        },
+        "corvette": {
+          "alive": 5458,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 6360,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 3759,
+          "assault": 794,
+          "assaultTravel": 587,
+          "slowAssaultTravel": 10,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 4750,
+          "assault": 1378,
+          "assaultTravel": 1018,
+          "slowAssaultTravel": 135,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "carrier": {
+          "alive": 1427,
+          "assault": 559,
+          "assaultTravel": 509,
+          "slowAssaultTravel": 48,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        }
+      },
+      "attacks": [
+        {
+          "time": 192.03333333333333,
+          "team": 0,
+          "count": 14,
+          "target": 4
+        },
+        {
+          "time": 314.0333333333333,
+          "team": 1,
+          "count": 15,
+          "target": 2
+        }
+      ],
+      "gathers": [
+        {
+          "time": 166.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 286.0333333333333,
+          "team": 1
+        },
+        {
+          "time": 478.0333333333333,
+          "team": 0
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {},
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 115,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 2,
+            "jobs": [
+              1,
+              20,
+              17,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 86,
+            "wave": 12,
+            "target": 2,
+            "targetDistance": 6762.029203885136,
+            "stationDistance": 6124.786256309923,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 13,
+            "jobs": [
+              0,
+              25,
+              12,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          1768.1039999999775,
+          0,
+          64.51199999998789,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 20
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 115,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 2,
+            "jobs": [
+              1,
+              20,
+              17,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 86,
+            "wave": 12,
+            "target": 2,
+            "targetDistance": 6762.029203885136,
+            "stationDistance": 6124.786256309923,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 13,
+            "jobs": [
+              0,
+              25,
+              12,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          1768.1039999999775,
+          0,
+          64.51199999998789,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 20
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 100,
+        "seed": 41,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": null,
+      "structureVolleys": [
+        0,
+        0
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 97676,
+        "assaultSamples": 18092,
+        "assaultTravelSamples": 6321,
+        "slowAssaultTravelSamples": 1892,
+        "slowAssaultTravelFraction": 0.29931972789115646,
+        "postSolverHullOverlapPairs": 811,
+        "contactShipFraction": 0.0139338220238339,
+        "crowdedSlowFraction": 0.1283222081166305,
+        "nonMouseSamples": 0,
+        "motionWindows": 14538,
+        "lowEfficiencyFraction": 0.13392488650433348,
+        "medianNetPathRatio": 0.7349748845876026
+      },
+      "stepTimeMs": {
+        "mean": 3.859583902275753,
+        "p95": 5.245200000004843,
+        "p99": 6.443099999996775
+      },
+      "byClass": {
+        "patrol": {
+          "alive": 16870,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 15903,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "carrier": {
+          "alive": 9178,
+          "assault": 3165,
+          "assaultTravel": 867,
+          "slowAssaultTravel": 131,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "destroyer": {
+          "alive": 11186,
+          "assault": 1251,
+          "assaultTravel": 457,
+          "slowAssaultTravel": 93,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 10477,
+          "assault": 3956,
+          "assaultTravel": 678,
+          "slowAssaultTravel": 53,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 11795,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 4419,
+          "assault": 1897,
+          "assaultTravel": 1636,
+          "slowAssaultTravel": 671,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battleship": {
+          "alive": 7323,
+          "assault": 3082,
+          "assaultTravel": 1027,
+          "slowAssaultTravel": 358,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 10525,
+          "assault": 4741,
+          "assaultTravel": 1656,
+          "slowAssaultTravel": 586,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        }
+      },
+      "attacks": [
+        {
+          "time": 166.03333333333333,
+          "team": 1,
+          "count": 42,
+          "target": 2
+        },
+        {
+          "time": 272.0333333333333,
+          "team": 0,
+          "count": 40,
+          "target": 5
+        }
+      ],
+      "gathers": [
+        {
+          "time": 120.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 192.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 480.0333333333333,
+          "team": 1
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {},
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 143,
+            "wave": 32,
+            "target": 5,
+            "targetDistance": 9340.68547154866,
+            "stationDistance": 7038.776666504047,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              9,
+              52,
+              33,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 194,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              8,
+              88,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 119
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 143,
+            "wave": 32,
+            "target": 5,
+            "targetDistance": 9340.68547154866,
+            "stationDistance": 7038.776666504047,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              9,
+              52,
+              33,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 194,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              8,
+              88,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 119
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 100,
+        "seed": 82,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": null,
+      "structureVolleys": [
+        0,
+        24
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        869.783722421198,
+        0,
+        0,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        0.9903357364175422,
+        1,
+        1,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 97609,
+        "assaultSamples": 20114,
+        "assaultTravelSamples": 6601,
+        "slowAssaultTravelSamples": 1232,
+        "slowAssaultTravelFraction": 0.18663838812301167,
+        "postSolverHullOverlapPairs": 824,
+        "contactShipFraction": 0.012867665891464927,
+        "crowdedSlowFraction": 0.12414838795602864,
+        "nonMouseSamples": 0,
+        "motionWindows": 14303,
+        "lowEfficiencyFraction": 0.12004474585751242,
+        "medianNetPathRatio": 0.7580835617328805
+      },
+      "stepTimeMs": {
+        "mean": 2.220339297188736,
+        "p95": 2.8981999999996333,
+        "p99": 3.966999999996915
+      },
+      "byClass": {
+        "destroyer": {
+          "alive": 16954,
+          "assault": 647,
+          "assaultTravel": 251,
+          "slowAssaultTravel": 44,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "patrol": {
+          "alive": 14376,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battleship": {
+          "alive": 8788,
+          "assault": 4412,
+          "assaultTravel": 1592,
+          "slowAssaultTravel": 307,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 4884,
+          "assault": 2475,
+          "assaultTravel": 2143,
+          "slowAssaultTravel": 563,
+          "fireOrders": 287,
+          "structureVolleys": 13
+        },
+        "corvette": {
+          "alive": 12903,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 9882,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 8569,
+          "assault": 3262,
+          "assaultTravel": 651,
+          "slowAssaultTravel": 30,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 13003,
+          "assault": 5774,
+          "assaultTravel": 1360,
+          "slowAssaultTravel": 237,
+          "fireOrders": 80,
+          "structureVolleys": 11
+        },
+        "carrier": {
+          "alive": 8250,
+          "assault": 3544,
+          "assaultTravel": 604,
+          "slowAssaultTravel": 51,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        }
+      },
+      "attacks": [
+        {
+          "time": 168.03333333333333,
+          "team": 1,
+          "count": 38,
+          "target": 2
+        },
+        {
+          "time": 212.03333333333333,
+          "team": 0,
+          "count": 43,
+          "target": 4
+        }
+      ],
+      "gathers": [
+        {
+          "time": 120.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 168.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 482.0333333333333,
+          "team": 1
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {
+        "battleship": [
+          122
+        ],
+        "cruiser": [
+          24,
+          130
+        ],
+        "dreadnought": [
+          114,
+          118,
+          185
+        ],
+        "carrier": [
+          147
+        ]
+      },
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 182,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              3,
+              90,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 162,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 24,
+            "jobs": [
+              2,
+              94,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          869.783722421198,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 107
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 182,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              3,
+              90,
+              0,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 162,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 24,
+            "jobs": [
+              2,
+              94,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          869.783722421198,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 107
+      },
+      "actualDistinctShooterCount": null
+    }
+  ],
+  "final": [
+    {
+      "options": {
+        "fleet": 40,
+        "seed": 41,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": "8144d2d8",
+      "structureVolleys": [
+        0,
+        30
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        5148.100435747525,
+        0,
+        0,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        0.8569972101181244,
+        1,
+        1,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 38468,
+        "assaultSamples": 5113,
+        "assaultTravelSamples": 4227,
+        "slowAssaultTravelSamples": 650,
+        "slowAssaultTravelFraction": 0.15377336172226166,
+        "postSolverHullOverlapPairs": 102,
+        "contactShipFraction": 0.004887178953935738,
+        "crowdedSlowFraction": 0.06972028699178538,
+        "nonMouseSamples": 0,
+        "motionWindows": 4848,
+        "lowEfficiencyFraction": 0.0721947194719472,
+        "medianNetPathRatio": 0.8994085710186716
+      },
+      "stepTimeMs": {
+        "mean": 0.8607698058902203,
+        "p95": 1.313400000000911,
+        "p99": 1.7590999999993073,
+        "p999": 3.0493999999998778,
+        "max": 6.561099999999897
+      },
+      "byClass": {
+        "patrol": {
+          "alive": 7459,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 5462,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "carrier": {
+          "alive": 3876,
+          "assault": 1176,
+          "assaultTravel": 808,
+          "slowAssaultTravel": 106,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "destroyer": {
+          "alive": 5875,
+          "assault": 189,
+          "assaultTravel": 177,
+          "slowAssaultTravel": 24,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 2852,
+          "assault": 863,
+          "assaultTravel": 779,
+          "slowAssaultTravel": 16,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 2949,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 1904,
+          "assault": 779,
+          "assaultTravel": 702,
+          "slowAssaultTravel": 105,
+          "fireOrders": 611,
+          "structureVolleys": 27
+        },
+        "battleship": {
+          "alive": 2435,
+          "assault": 864,
+          "assaultTravel": 664,
+          "slowAssaultTravel": 207,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 5656,
+          "assault": 1242,
+          "assaultTravel": 1097,
+          "slowAssaultTravel": 192,
+          "fireOrders": 22,
+          "structureVolleys": 3
+        }
+      },
+      "attacks": [
+        {
+          "time": 166.03333333333333,
+          "team": 1,
+          "count": 13,
+          "target": 2
+        },
+        {
+          "time": 376.0333333333333,
+          "team": 0,
+          "count": 11,
+          "target": 4
+        }
+      ],
+      "gathers": [
+        {
+          "time": 120.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 342.0333333333333,
+          "team": 0
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {
+        "battleship": [
+          51
+        ],
+        "dreadnought": [
+          64
+        ],
+        "cruiser": [
+          70
+        ]
+      },
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 92,
+            "wave": 9,
+            "target": 4,
+            "targetDistance": 4431.478143162708,
+            "stationDistance": 3766.5391671016664,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              0,
+              19,
+              10,
+              8,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 103,
+            "wave": 9,
+            "target": 2,
+            "targetDistance": 4773.076848711865,
+            "stationDistance": 3772.259283069049,
+            "inWeaponRange": 1,
+            "actualStructureVolleys": 4,
+            "jobs": [
+              0,
+              24,
+              11,
+              2,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          447.31643574749614,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 14
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 92,
+            "wave": 9,
+            "target": 4,
+            "targetDistance": 4431.478143162708,
+            "stationDistance": 3766.5391671016664,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              0,
+              19,
+              10,
+              8,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 103,
+            "wave": 9,
+            "target": 2,
+            "targetDistance": 4773.076848711865,
+            "stationDistance": 3772.259283069049,
+            "inWeaponRange": 1,
+            "actualStructureVolleys": 4,
+            "jobs": [
+              0,
+              24,
+              11,
+              2,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          447.31643574749614,
+          0,
+          0,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 14
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 40,
+        "seed": 82,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": "c80dc73d",
+      "structureVolleys": [
+        49,
+        71
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        5498.179126146715,
+        0,
+        1045.4534839897387,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        0.8472728020514801,
+        1,
+        0.9709596254447295,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 38201,
+        "assaultSamples": 6303,
+        "assaultTravelSamples": 4451,
+        "slowAssaultTravelSamples": 512,
+        "slowAssaultTravelFraction": 0.11503033026286227,
+        "postSolverHullOverlapPairs": 90,
+        "contactShipFraction": 0.0040574854061412,
+        "crowdedSlowFraction": 0.051595507970995526,
+        "nonMouseSamples": 0,
+        "motionWindows": 4723,
+        "lowEfficiencyFraction": 0.056743595172559814,
+        "medianNetPathRatio": 0.9252522226929683
+      },
+      "stepTimeMs": {
+        "mean": 0.7607154685408368,
+        "p95": 1.1520000000018626,
+        "p99": 1.4903999999987718,
+        "p999": 2.3778999999994994,
+        "max": 6.519399999999223
+      },
+      "byClass": {
+        "destroyer": {
+          "alive": 7840,
+          "assault": 1376,
+          "assaultTravel": 1157,
+          "slowAssaultTravel": 138,
+          "fireOrders": 118,
+          "structureVolleys": 19
+        },
+        "patrol": {
+          "alive": 4470,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battleship": {
+          "alive": 2378,
+          "assault": 937,
+          "assaultTravel": 429,
+          "slowAssaultTravel": 80,
+          "fireOrders": 187,
+          "structureVolleys": 16
+        },
+        "dreadnought": {
+          "alive": 1898,
+          "assault": 408,
+          "assaultTravel": 222,
+          "slowAssaultTravel": 22,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 5484,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 6308,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 3755,
+          "assault": 1170,
+          "assaultTravel": 970,
+          "slowAssaultTravel": 17,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 4642,
+          "assault": 1773,
+          "assaultTravel": 1302,
+          "slowAssaultTravel": 219,
+          "fireOrders": 511,
+          "structureVolleys": 74
+        },
+        "carrier": {
+          "alive": 1426,
+          "assault": 639,
+          "assaultTravel": 371,
+          "slowAssaultTravel": 36,
+          "fireOrders": 54,
+          "structureVolleys": 11
+        }
+      },
+      "attacks": [
+        {
+          "time": 166.03333333333333,
+          "team": 0,
+          "count": 14,
+          "target": 4
+        },
+        {
+          "time": 210.03333333333333,
+          "team": 1,
+          "count": 16,
+          "target": 2
+        }
+      ],
+      "gathers": [
+        {
+          "time": 134.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 178.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 482.0333333333333,
+          "team": 0
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {
+        "cruiser": [
+          14,
+          24,
+          72
+        ],
+        "destroyer": [
+          70
+        ],
+        "carrier": [
+          22
+        ],
+        "battleship": [
+          51
+        ]
+      },
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 119,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 49,
+            "jobs": [
+              1,
+              39,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 121,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 71,
+            "jobs": [
+              0,
+              36,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          5498.179126146715,
+          0,
+          1045.4534839897387,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 15
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 119,
+            "wave": 0,
+            "target": 5,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 49,
+            "jobs": [
+              1,
+              39,
+              0,
+              0,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 121,
+            "wave": 0,
+            "target": 3,
+            "targetDistance": 0,
+            "stationDistance": 0,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 71,
+            "jobs": [
+              0,
+              36,
+              0,
+              0,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          5498.179126146715,
+          0,
+          1045.4534839897387,
+          0
+        ],
+        "contacts": 0,
+        "crowded": 15
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 100,
+        "seed": 41,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": "a705384d",
+      "structureVolleys": [
+        67,
+        382
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        0,
+        55267.87322233829,
+        0,
+        5224.3319836733135
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        1,
+        0.3859125197517968,
+        1,
+        0.9419518668480743
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 97338,
+        "assaultSamples": 19632,
+        "assaultTravelSamples": 6312,
+        "slowAssaultTravelSamples": 891,
+        "slowAssaultTravelFraction": 0.1411596958174905,
+        "postSolverHullOverlapPairs": 621,
+        "contactShipFraction": 0.010612504879903019,
+        "crowdedSlowFraction": 0.10629969795968687,
+        "nonMouseSamples": 0,
+        "motionWindows": 13210,
+        "lowEfficiencyFraction": 0.09417108251324754,
+        "medianNetPathRatio": 0.8295059034675125
+      },
+      "stepTimeMs": {
+        "mean": 2.4807257496653254,
+        "p95": 3.4672999999966123,
+        "p99": 4.42949999999837,
+        "p999": 7.175699999999779,
+        "max": 22.548899999997957
+      },
+      "byClass": {
+        "patrol": {
+          "alive": 16861,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 15885,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "carrier": {
+          "alive": 9352,
+          "assault": 4076,
+          "assaultTravel": 523,
+          "slowAssaultTravel": 79,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "destroyer": {
+          "alive": 10760,
+          "assault": 1197,
+          "assaultTravel": 578,
+          "slowAssaultTravel": 83,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 10415,
+          "assault": 4261,
+          "assaultTravel": 1655,
+          "slowAssaultTravel": 51,
+          "fireOrders": 20,
+          "structureVolleys": 4
+        },
+        "frigate": {
+          "alive": 11742,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 4461,
+          "assault": 2201,
+          "assaultTravel": 1410,
+          "slowAssaultTravel": 220,
+          "fireOrders": 8184,
+          "structureVolleys": 425
+        },
+        "battleship": {
+          "alive": 7358,
+          "assault": 3646,
+          "assaultTravel": 334,
+          "slowAssaultTravel": 116,
+          "fireOrders": 69,
+          "structureVolleys": 6
+        },
+        "cruiser": {
+          "alive": 10504,
+          "assault": 4251,
+          "assaultTravel": 1812,
+          "slowAssaultTravel": 342,
+          "fireOrders": 93,
+          "structureVolleys": 14
+        }
+      },
+      "attacks": [
+        {
+          "time": 206.03333333333333,
+          "team": 1,
+          "count": 40,
+          "target": 3
+        },
+        {
+          "time": 268.0333333333333,
+          "team": 0,
+          "count": 40,
+          "target": 5
+        },
+        {
+          "time": 474.0333333333333,
+          "team": 1,
+          "count": 39,
+          "target": 3
+        }
+      ],
+      "gathers": [
+        {
+          "time": 160.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 224.03333333333333,
+          "team": 0
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {
+        "cruiser": [
+          64,
+          109,
+          141
+        ],
+        "dreadnought": [
+          13,
+          79,
+          123,
+          144,
+          158
+        ],
+        "battleship": [
+          16,
+          121
+        ],
+        "battlecruiser": [
+          4
+        ]
+      },
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 202,
+            "wave": 31,
+            "target": 5,
+            "targetDistance": 5803.474050572288,
+            "stationDistance": 3706.118215345538,
+            "inWeaponRange": 2,
+            "actualStructureVolleys": 41,
+            "jobs": [
+              2,
+              45,
+              35,
+              12,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 190,
+            "wave": 36,
+            "target": 3,
+            "targetDistance": 5143.828314037561,
+            "stationDistance": 2358.44668402406,
+            "inWeaponRange": 2,
+            "actualStructureVolleys": 341,
+            "jobs": [
+              3,
+              44,
+              39,
+              9,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          49722.33471893696,
+          0,
+          3632.4047999998584
+        ],
+        "contacts": 0,
+        "crowded": 66
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 202,
+            "wave": 31,
+            "target": 5,
+            "targetDistance": 5803.474050572288,
+            "stationDistance": 3706.118215345538,
+            "inWeaponRange": 2,
+            "actualStructureVolleys": 41,
+            "jobs": [
+              2,
+              45,
+              35,
+              12,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 190,
+            "wave": 36,
+            "target": 3,
+            "targetDistance": 5143.828314037561,
+            "stationDistance": 2358.44668402406,
+            "inWeaponRange": 2,
+            "actualStructureVolleys": 341,
+            "jobs": [
+              3,
+              44,
+              39,
+              9,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          49722.33471893696,
+          0,
+          3632.4047999998584
+        ],
+        "contacts": 0,
+        "crowded": 66
+      },
+      "actualDistinctShooterCount": null
+    },
+    {
+      "options": {
+        "fleet": 100,
+        "seed": 82,
+        "seconds": 500,
+        "trace": true
+      },
+      "stateHash": "3889a1f0",
+      "structureVolleys": [
+        0,
+        0
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "structures": [
+        {
+          "index": 0,
+          "team": 0,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 1,
+          "team": 1,
+          "kind": "mothership",
+          "alive": true
+        },
+        {
+          "index": 2,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 3,
+          "team": 0,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 4,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        },
+        {
+          "index": 5,
+          "team": 1,
+          "kind": "fob",
+          "alive": true
+        }
+      ],
+      "movement": {
+        "aliveSamples": 96577,
+        "assaultSamples": 19337,
+        "assaultTravelSamples": 8172,
+        "slowAssaultTravelSamples": 1725,
+        "slowAssaultTravelFraction": 0.21108663729809105,
+        "postSolverHullOverlapPairs": 842,
+        "contactShipFraction": 0.013719622684490096,
+        "crowdedSlowFraction": 0.1112066019859801,
+        "nonMouseSamples": 0,
+        "motionWindows": 13436,
+        "lowEfficiencyFraction": 0.0826883000893123,
+        "medianNetPathRatio": 0.8380570515597002
+      },
+      "stepTimeMs": {
+        "mean": 2.6128534939758885,
+        "p95": 3.6970000000001164,
+        "p99": 4.772799999991548,
+        "p999": 7.221199999999953,
+        "max": 23.23859999999695
+      },
+      "byClass": {
+        "destroyer": {
+          "alive": 16479,
+          "assault": 638,
+          "assaultTravel": 590,
+          "slowAssaultTravel": 108,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "patrol": {
+          "alive": 14347,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battleship": {
+          "alive": 8691,
+          "assault": 4018,
+          "assaultTravel": 695,
+          "slowAssaultTravel": 191,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "dreadnought": {
+          "alive": 4801,
+          "assault": 2088,
+          "assaultTravel": 1968,
+          "slowAssaultTravel": 478,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "corvette": {
+          "alive": 12880,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "frigate": {
+          "alive": 9868,
+          "assault": 0,
+          "assaultTravel": 0,
+          "slowAssaultTravel": 0,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "battlecruiser": {
+          "alive": 8464,
+          "assault": 3938,
+          "assaultTravel": 1624,
+          "slowAssaultTravel": 88,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "cruiser": {
+          "alive": 12794,
+          "assault": 5337,
+          "assaultTravel": 2995,
+          "slowAssaultTravel": 815,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        },
+        "carrier": {
+          "alive": 8253,
+          "assault": 3318,
+          "assaultTravel": 300,
+          "slowAssaultTravel": 45,
+          "fireOrders": 0,
+          "structureVolleys": 0
+        }
+      },
+      "attacks": [
+        {
+          "time": 198.03333333333333,
+          "team": 1,
+          "count": 39,
+          "target": 2
+        },
+        {
+          "time": 258.0333333333333,
+          "team": 0,
+          "count": 44,
+          "target": 5
+        }
+      ],
+      "gathers": [
+        {
+          "time": 154.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 206.03333333333333,
+          "team": 0
+        }
+      ],
+      "fobsDestroyed": 0,
+      "distinctStructureTargetShipsSampledEvery5Seconds": {},
+      "timeline480": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 238,
+            "wave": 34,
+            "target": 5,
+            "targetDistance": 6463.802933915476,
+            "stationDistance": 4413.794039186534,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              3,
+              50,
+              38,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 233,
+            "wave": 29,
+            "target": 2,
+            "targetDistance": 7018.738214674447,
+            "stationDistance": 5026.43363599549,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              5,
+              57,
+              32,
+              1,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "contacts": 2,
+        "crowded": 76
+      },
+      "timelineFinal": {
+        "time": 480,
+        "teams": [
+          {
+            "team": 0,
+            "kills": 238,
+            "wave": 34,
+            "target": 5,
+            "targetDistance": 6463.802933915476,
+            "stationDistance": 4413.794039186534,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              3,
+              50,
+              38,
+              1,
+              0
+            ]
+          },
+          {
+            "team": 1,
+            "kills": 233,
+            "wave": 29,
+            "target": 2,
+            "targetDistance": 7018.738214674447,
+            "stationDistance": 5026.43363599549,
+            "inWeaponRange": 0,
+            "actualStructureVolleys": 0,
+            "jobs": [
+              5,
+              57,
+              32,
+              1,
+              0
+            ]
+          }
+        ],
+        "hullLoss": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "contacts": 2,
+        "crowded": 76
+      },
+      "actualDistinctShooterCount": null
+    }
+  ],
+  "extendedFinal100Seed82": {
+    "options": {
+      "fleet": 100,
+      "seed": 82,
+      "seconds": 900,
+      "trace": true
+    },
+    "stateHash": "858971f5",
+    "structureVolleys": [
+      67,
+      39
+    ],
+    "structureHullLoss": [
+      0,
+      0,
+      0,
+      1160.3175145542627,
+      0,
+      3819.3614011398167
+    ],
+    "minimumHullFraction": [
+      1,
+      1,
+      1,
+      0.9871075831716193,
+      1,
+      0.9575626510984465
+    ],
+    "structures": [
+      {
+        "index": 0,
+        "team": 0,
+        "kind": "mothership",
+        "alive": true
+      },
+      {
+        "index": 1,
+        "team": 1,
+        "kind": "mothership",
+        "alive": true
+      },
+      {
+        "index": 2,
+        "team": 0,
+        "kind": "fob",
+        "alive": true
+      },
+      {
+        "index": 3,
+        "team": 0,
+        "kind": "fob",
+        "alive": true
+      },
+      {
+        "index": 4,
+        "team": 1,
+        "kind": "fob",
+        "alive": true
+      },
+      {
+        "index": 5,
+        "team": 1,
+        "kind": "fob",
+        "alive": true
+      }
+    ],
+    "movement": {
+      "aliveSamples": 172477,
+      "assaultSamples": 40000,
+      "assaultTravelSamples": 16370,
+      "slowAssaultTravelSamples": 3202,
+      "slowAssaultTravelFraction": 0.1956017104459377,
+      "postSolverHullOverlapPairs": 1149,
+      "contactShipFraction": 0.010766652945030352,
+      "crowdedSlowFraction": 0.10415301750378311,
+      "nonMouseSamples": 0,
+      "motionWindows": 23680,
+      "lowEfficiencyFraction": 0.08690878378378378,
+      "medianNetPathRatio": 0.841745404911809
+    },
+    "stepTimeMs": {
+      "mean": 2.706860085374902,
+      "p95": 3.6909000000005108,
+      "p99": 4.776299999999992,
+      "p999": 7.6480999999999995,
+      "max": 15.063799999999901
+    },
+    "byClass": {
+      "destroyer": {
+        "alive": 29006,
+        "assault": 2427,
+        "assaultTravel": 1755,
+        "slowAssaultTravel": 314,
+        "fireOrders": 66,
+        "structureVolleys": 14
+      },
+      "patrol": {
+        "alive": 25823,
+        "assault": 0,
+        "assaultTravel": 0,
+        "slowAssaultTravel": 0,
+        "fireOrders": 0,
+        "structureVolleys": 0
+      },
+      "battleship": {
+        "alive": 15478,
+        "assault": 8327,
+        "assaultTravel": 1586,
+        "slowAssaultTravel": 355,
+        "fireOrders": 48,
+        "structureVolleys": 4
+      },
+      "dreadnought": {
+        "alive": 8619,
+        "assault": 3924,
+        "assaultTravel": 3443,
+        "slowAssaultTravel": 727,
+        "fireOrders": 22,
+        "structureVolleys": 4
+      },
+      "corvette": {
+        "alive": 23208,
+        "assault": 0,
+        "assaultTravel": 0,
+        "slowAssaultTravel": 0,
+        "fireOrders": 0,
+        "structureVolleys": 0
+      },
+      "frigate": {
+        "alive": 17599,
+        "assault": 0,
+        "assaultTravel": 0,
+        "slowAssaultTravel": 0,
+        "fireOrders": 0,
+        "structureVolleys": 0
+      },
+      "battlecruiser": {
+        "alive": 15157,
+        "assault": 6828,
+        "assaultTravel": 2573,
+        "slowAssaultTravel": 138,
+        "fireOrders": 19,
+        "structureVolleys": 3
+      },
+      "cruiser": {
+        "alive": 22779,
+        "assault": 11346,
+        "assaultTravel": 6407,
+        "slowAssaultTravel": 1584,
+        "fireOrders": 523,
+        "structureVolleys": 81
+      },
+      "carrier": {
+        "alive": 14808,
+        "assault": 7148,
+        "assaultTravel": 606,
+        "slowAssaultTravel": 84,
+        "fireOrders": 0,
+        "structureVolleys": 0
+      }
+    },
+    "attacks": [
+      {
+        "time": 198.03333333333333,
+        "team": 1,
+        "count": 39,
+        "target": 2
+      },
+      {
+        "time": 258.0333333333333,
+        "team": 0,
+        "count": 44,
+        "target": 5
+      },
+      {
+        "time": 618.0333333333333,
+        "team": 1,
+        "count": 37,
+        "target": 3
+      },
+      {
+        "time": 674.0333333333333,
+        "team": 0,
+        "count": 44,
+        "target": 5
+      },
+      {
+        "time": 888.0333333333333,
+        "team": 1,
+        "count": 33,
+        "target": 3
+      }
+    ],
+    "gathers": [
+      {
+        "time": 154.03333333333333,
+        "team": 1
+      },
+      {
+        "time": 206.03333333333333,
+        "team": 0
+      },
+      {
+        "time": 562.0333333333333,
+        "team": 1
+      },
+      {
+        "time": 620.0333333333333,
+        "team": 0
+      }
+    ],
+    "fobsDestroyed": 0,
+    "distinctStructureTargetShipsSampledEvery5Seconds": {
+      "destroyer": [
+        120
+      ],
+      "battlecruiser": [
+        150
+      ],
+      "cruiser": [
+        48,
+        60,
+        95,
+        130,
+        162,
+        199
+      ],
+      "battleship": [
+        93,
+        172
+      ],
+      "dreadnought": [
+        36,
+        114,
+        187
+      ]
+    },
+    "timeline480": {
+      "time": 480,
+      "teams": [
+        {
+          "team": 0,
+          "kills": 238,
+          "wave": 34,
+          "target": 5,
+          "targetDistance": 6463.802933915476,
+          "stationDistance": 4413.794039186534,
+          "inWeaponRange": 0,
+          "actualStructureVolleys": 0,
+          "jobs": [
+            3,
+            50,
+            38,
+            1,
+            0
+          ]
+        },
+        {
+          "team": 1,
+          "kills": 233,
+          "wave": 29,
+          "target": 2,
+          "targetDistance": 7018.738214674447,
+          "stationDistance": 5026.43363599549,
+          "inWeaponRange": 0,
+          "actualStructureVolleys": 0,
+          "jobs": [
+            5,
+            57,
+            32,
+            1,
+            0
+          ]
+        }
+      ],
+      "hullLoss": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "contacts": 2,
+      "crowded": 76
+    },
+    "timelineFinal": {
+      "time": 900,
+      "teams": [
+        {
+          "team": 0,
+          "kills": 491,
+          "wave": 34,
+          "target": 5,
+          "targetDistance": 4284.656568427049,
+          "stationDistance": 1949.8061899909167,
+          "inWeaponRange": 5,
+          "actualStructureVolleys": 67,
+          "jobs": [
+            2,
+            48,
+            40,
+            8,
+            0
+          ]
+        },
+        {
+          "team": 1,
+          "kills": 469,
+          "wave": 31,
+          "target": 3,
+          "targetDistance": 5051.133547763605,
+          "stationDistance": 3005.89018954062,
+          "inWeaponRange": 1,
+          "actualStructureVolleys": 39,
+          "jobs": [
+            0,
+            44,
+            33,
+            15,
+            0
+          ]
+        }
+      ],
+      "hullLoss": [
+        0,
+        0,
+        0,
+        1160.3175145542627,
+        0,
+        3819.3614011398167
+      ],
+      "contacts": 2,
+      "crowded": 80
+    },
+    "actualDistinctShooterCount": null
+  },
+  "browserWorker": {
+    "scenario": {
+      "seed": 41,
+      "fleetPerTeam": 100,
+      "difficulty": [
+        "normal",
+        "normal"
+      ],
+      "humanSlots": [
+        0
+      ],
+      "commander": "admiral",
+      "hullGeometry": "reference",
+      "simulatedSeconds": 120,
+      "warmupSeconds": 20
+    },
+    "actualGameWorkerWithoutRenderer": {
+      "sourceSnapshot": "final-review-snapshot.json",
+      "wallSeconds": 120.0884,
+      "sampledSteps": 3001,
+      "stepMs": {
+        "mean": 5.4770076641020315,
+        "p50": 5.7,
+        "p95": 7.2,
+        "p99": 8.1,
+        "max": 13.5
+      },
+      "snapshotArrivalMs": {
+        "mean": 33.33188937020993,
+        "p95": 37.2,
+        "p99": 38.6,
+        "max": 42.2
+      },
+      "finalTick": 3600,
+      "finalProjectiles": 445
+    },
+    "earlierInstrumentedModuleWorker": {
+      "wallSeconds": 55.9236,
+      "sampledSteps": 3001,
+      "stepMs": {
+        "mean": 9.583372209301812,
+        "p50": 10.2,
+        "p95": 12.2,
+        "p99": 13.7,
+        "max": 18.3
+      },
+      "phaseMeanMs": {
+        "movement": 3.24858,
+        "pilots": 2.7942,
+        "collision": 2.15035,
+        "weaponsAbilities": 0.57641,
+        "projectiles": 0.44672
+      },
+      "finalHash": "ff671ae5",
+      "caveat": "Instrumented timing overhead; this diagnostic preceded the last siege lease and maneuver release fixes. Not an exact final-source comparison."
+    },
+    "limits": [
+      "Read from the diagnostic page DOM through the browser tool; no renderer ran in either diagnostic.",
+      "User confirmed a concurrent GPU image-generation workload. Earlier rendered match FPS and worker spikes are not clean performance benchmarks.",
+      "These CPU wall timings are not game FPS or proof of qualitative strategy. No GPU workload was stopped or modified."
+    ]
+  },
+  "historicalPreviousAIRelease": {
+    "before": [
+      {
+        "fleet": 20,
+        "seed": 41,
+        "seconds": 180,
+        "p50": 0.2800999999999476,
+        "p95": 0.5479000000000269,
+        "p99": 0.8671999999999116,
+        "mean": 0.31636061797752757,
+        "nearAllyFraction": 0.10861990607483715,
+        "nonMouseFlightFraction": 1,
+        "kills": [
+          25,
+          12
+        ],
+        "points": 7,
+        "tiers": 44,
+        "upgrades": 212,
+        "fobs": 0
+      },
+      {
+        "fleet": 20,
+        "seed": 82,
+        "seconds": 180,
+        "p50": 0.23179999999956635,
+        "p95": 0.4171000000001186,
+        "p99": 0.554700000000139,
+        "mean": 0.25206136704119725,
+        "nearAllyFraction": 0.14883507050889025,
+        "nonMouseFlightFraction": 1,
+        "kills": [
+          28,
+          27
+        ],
+        "points": 8,
+        "tiers": 42,
+        "upgrades": 183,
+        "fobs": 0
+      },
+      {
+        "fleet": 100,
+        "seed": 41,
+        "seconds": 90,
+        "p50": 2.543100000000777,
+        "p95": 3.7331000000012864,
+        "p99": 4.369599999999991,
+        "mean": 2.604493181818179,
+        "nearAllyFraction": 0.3371368614335366,
+        "nonMouseFlightFraction": 1,
+        "kills": [
+          81,
+          90
+        ],
+        "points": 7,
+        "tiers": 118,
+        "upgrades": 533,
+        "fobs": 0
+      }
+    ],
+    "after": [
+      {
+        "fleet": 20,
+        "seed": 41,
+        "seconds": 180,
+        "p50": 0.3547000000000935,
+        "p95": 0.5978000000000065,
+        "p99": 0.9216000000000122,
+        "mean": 0.3866521535580541,
+        "nearAllyFraction": 0.0005954153021732659,
+        "nonMouseFlightFraction": 0,
+        "kills": [
+          4,
+          10
+        ],
+        "points": 8,
+        "tiers": 27,
+        "upgrades": 138,
+        "fobs": 0
+      },
+      {
+        "fleet": 20,
+        "seed": 82,
+        "seconds": 180,
+        "p50": 0.516399999999976,
+        "p95": 0.7507999999997992,
+        "p99": 0.9381000000003041,
+        "mean": 0.49628252808988094,
+        "nearAllyFraction": 0.0002982848620432513,
+        "nonMouseFlightFraction": 0,
+        "kills": [
+          8,
+          9
+        ],
+        "points": 8,
+        "tiers": 32,
+        "upgrades": 126,
+        "fobs": 0
+      },
+      {
+        "fleet": 100,
+        "seed": 41,
+        "seconds": 90,
+        "p50": 3.5681000000004133,
+        "p95": 5.5438000000012835,
+        "p99": 6.829999999999927,
+        "mean": 3.7808466666666627,
+        "nearAllyFraction": 0.0018852510525985044,
+        "nonMouseFlightFraction": 0,
+        "kills": [
+          10,
+          8
+        ],
+        "points": 7,
+        "tiers": 17,
+        "upgrades": 511,
+        "fobs": 0
+      }
+    ],
+    "releaseCampaign": {
+      "fleet": 100,
+      "seed": 41,
+      "time": 500,
+      "pushes": [
+        {
+          "time": 120.03333333333333,
+          "team": 1
+        },
+        {
+          "time": 192.03333333333333,
+          "team": 0
+        },
+        {
+          "time": 480.0333333333333,
+          "team": 1
+        }
+      ],
+      "attacks": [
+        {
+          "time": 166.03333333333333,
+          "team": 1,
+          "count": 42,
+          "target": 2
+        },
+        {
+          "time": 272.0333333333333,
+          "team": 0,
+          "count": 40,
+          "target": 5
+        }
+      ],
+      "failed": [],
+      "targetChanges": [
+        7595,
+        7320
+      ],
+      "shipClassSeconds": {
+        "patrol": 16872.16666658944,
+        "corvette": 15908.233333270133,
+        "carrier": 9177.933333368072,
+        "destroyer": 11187.90000000549,
+        "battlecruiser": 10478.666666682477,
+        "frigate": 11794.033333330002,
+        "dreadnought": 4418.9333333343775,
+        "battleship": 7321.400000038001,
+        "cruiser": 10523.966666681818
+      },
+      "siegeFireSamples": [
+        0,
+        0
+      ],
+      "structureHullLoss": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "minimumHullFraction": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "stats": {
+        "projectilePeak": 485,
+        "projectileOverflow": 0,
+        "nodesDestroyed": 5,
+        "fobsDestroyed": 0,
+        "crystalsCollected": 6785,
+        "killsByClass": {
+          "cruiser": 103,
+          "corvette": 3,
+          "dreadnought": 33,
+          "carrier": 38,
+          "battlecruiser": 38,
+          "destroyer": 61,
+          "battleship": 29,
+          "frigate": 35,
+          "patrol": 5,
+          "structure": 1
+        },
+        "tierPicks": {
+          "cruiser.t1.broadsideSponsons": 11,
+          "battlecruiser.t1.plasmaCanister": 11,
+          "destroyer.t1.proximityFlak": 10,
+          "dreadnought.t1.superconductor": 5,
+          "frigate.t1.naniteInjector": 24,
+          "cruiser.t1.lanceCollimators": 11,
+          "cruiser.t2.slopedBelt": 22,
+          "battleship.t1.superheavySabot": 14,
+          "destroyer.t1.sabotAutoloader": 12,
+          "dreadnought.t1.shatterSabot": 4,
+          "carrier.t1.apInterceptorPods": 8,
+          "battlecruiser.t1.armorPiercingCores": 11,
+          "cruiser.t3.commandCruiser": 11,
+          "corvette.t1.silencedEmitter": 6,
+          "dreadnought.t2.blisterGrid": 8,
+          "battleship.t2.citadelBelt": 9,
+          "frigate.t2.magneticMines": 17,
+          "frigate.t2.turretKit": 7,
+          "carrier.t1.heavyTorpedoBombers": 10,
+          "battlecruiser.t2.casemateGunners": 11,
+          "cruiser.t3.strikeCruiser": 4,
+          "frigate.t3.fortress": 5,
+          "destroyer.t2.fireControlRadar": 19,
+          "frigate.t3.warden": 19,
+          "patrol.t1.scatterCapacitors": 7,
+          "corvette.t1.nullifierRounds": 10,
+          "carrier.t2.ciwsPhalanx": 6,
+          "battleship.t2.secondaryDirector": 3,
+          "frigate.t4.reactorConduit": 4,
+          "frigate.t4.nodeHardening": 4,
+          "cruiser.t4.aegisFireControl": 2,
+          "dreadnought.t3.eclipse": 4,
+          "carrier.t3.hive": 1,
+          "dreadnought.t3.railstorm": 3,
+          "battlecruiser.t3.ironclad": 3,
+          "carrier.t2.hangarExpansion": 3,
+          "destroyer.t3.hunterKiller": 3,
+          "dreadnought.t4.fortressPlating": 1,
+          "frigate.t5.aegisSanctuary": 1,
+          "carrier.t3.overlord": 2,
+          "battlecruiser.t4.kineticConversion": 1,
+          "battleship.t3.bastion": 1,
+          "patrol.t1.focusedLenses": 5,
+          "cruiser.t4.sensorSuite": 2,
+          "destroyer.t3.escort": 2,
+          "battlecruiser.t2.twinBurners": 1,
+          "battleship.t4.reverseAnchor": 1,
+          "battleship.t1.shrapnelCanister": 1,
+          "dreadnought.t4.capitalKiller": 1
+        },
+        "pointFlips": 12
+      },
+      "match": {
+        "over": false,
+        "winner": -1,
+        "endReason": "",
+        "endTime": 0,
+        "killsAtCheck": null,
+        "vp": [
+          0,
+          0
+        ]
+      }
+    }
+  },
+  "limits": [
+    "All final comparisons are 500 simulated seconds, unmodified real campaign physics/stats/defenders.",
+    "Actual distinct firing ship IDs were not recorded; sampled target IDs are only a proxy.",
+    "Baseline slow-assault-travel used the older legacy structure-radius gate; do not compare that fraction directly.",
+    "Exact post-solver hull overlaps sampled at 1 Hz omit contacts already resolved between samples.",
+    "Headless timings are whole step() CPU wall time, not game FPS; browser rendering is separately confounded by concurrent GPU image generation.",
+    "Earlier contact-release 900-second FOB destructions are superseded candidate evidence, not final-review outcomes."
+  ]
+}

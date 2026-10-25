@@ -1,3 +1,4 @@
+import { MATCH } from '../content/match';
 import { CLASS_ORDER, HULL_INDEX } from '../content/classes/index';
 import { COMMAND_RULES, COMMANDS, type SeatId } from '../content/command';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../content/progression';
@@ -6,8 +7,8 @@ import type { DeployKind, DroneBehavior } from '../content/types';
 import { TURRET_TYPES } from '../content/upgrades';
 import { abilityCooldown } from '../sim/systems/abilities';
 import { ARC_BOW, ARC_FLANK, ARC_STERN, gunFor, secondaryCount, shipArmor } from '../sim/systems/combat';
-import { reverseCeiling } from '../sim/systems/movement';
-import { powerLevels } from '../sim/systems/power';
+import { firingSpeedMultiplier, reverseCeiling } from '../sim/systems/movement';
+import { powerLevels, spoolCut } from '../sim/systems/power';
 import { commandCost, seatCanIssue } from '../sim/systems/command';
 import { nextIncomeIn } from '../sim/systems/points';
 import { quirkGauge } from '../sim/systems/quirks';
@@ -23,17 +24,17 @@ export const SNAP = {
   self: 64,
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
-  ship: 23,
-  projectile: 11, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
+  ship: 26,
+  projectile: 13, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
   crystal: 3,
   point: 10,
   structure: 8,
-  drone: 7,
-  deployable: 6,
-  zone: 6,
+  drone: 10, // includes stable cosmetic identity for trail history
+  deployable: 9,
+  zone: 8,
   strike: 5,
-  tether: 2,
-  event: 7,
+  tether: 4,
+  event: 9,
 } as const;
 
 export const H = {
@@ -156,6 +157,10 @@ export const SELF = {
   killedByShare: 53,
   killAssist0: 54,
   killAssist1: 55,
+  /** Live main-weapon drive limit (1 when not firing). */
+  firingSpeedMul: 56,
+  /** Actual damage event time; capacity/upgrade changes are not hits. */
+  damageTime: 57,
 } as const;
 
 export const SHIP = {
@@ -185,6 +190,11 @@ export const SHIP = {
   /** Match score (content/score.ts) and kill assists. */
   score: 21,
   assists: 22,
+  /** Normalized live Sub-Light charge for visible ship effects. */
+  cruiseSpool: 23,
+  /** Cosmetic identity/time of the last right-click cast (for live status-bound visuals). */
+  abilityVisual: 24,
+  visualStartedAt: 25,
 } as const;
 export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visible1: 16, human: 32, invulnerable: 64, retreating: 128, commander: 256, docked: 512 } as const;
 
@@ -262,7 +272,7 @@ export function readOffsets(buf: Float32Array): SnapshotOffsets {
 
 /** 24-bit fingerprint is exactly representable in the Float32 wire header.
  * Bump the seed when meanings change without changing section strides. */
-export const SNAPSHOT_SCHEMA = Object.values(SNAP).reduce((hash,stride)=>(Math.imul(hash,31)+stride)&0xffffff,2);
+export const SNAPSHOT_SCHEMA = Object.values(SNAP).reduce((hash,stride)=>(Math.imul(hash,31)+stride)&0xffffff,5);
 export function snapshotMatchesSchema(buf:Float32Array):boolean {
   if(buf.length<SNAP.header || buf[H.schema]!==SNAPSHOT_SCHEMA) return false;
   for(const field of [H.structureCount,H.shipCount,H.projectileCount,H.crystalCount,H.pointCount,H.droneCount,H.deployableCount,H.zoneCount,H.strikeCount,H.tetherCount,H.eventCount]) {
@@ -386,7 +396,7 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[s + SELF.respawnIn] = me.alive || me.commander || me.awaitingClass ? 0 : Math.max(0, me.respawnAt - w.time);
     b[s + SELF.respawnMax] = respawnTime(me.rank);
     b[s + SELF.quirkGauge] = quirkGauge(me);
-    b[s + SELF.cruiseSpool] = me.cruising ? 1 : Math.min(1, me.cruiseSpool);
+    b[s + SELF.cruiseSpool] = me.cruising ? 1 : Math.min(.999, me.cruiseSpool / Math.max(.2, MATCH.cruise.spool-spoolCut(w,me)));
     b[s + SELF.awaitingClass] = me.awaitingClass ? 1 : 0;
     b[s + SELF.commander] = me.commander ? 1 : 0;
     b[s + SELF.classIndex] = CLASS_ORDER.indexOf(me.classId);
@@ -412,6 +422,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[s + SELF.killedByShare] = me.killedByShare;
     b[s + SELF.killAssist0] = me.killAssists[0];
     b[s + SELF.killAssist1] = me.killAssists[1];
+    b[s + SELF.firingSpeedMul] = firingSpeedMultiplier(w, me);
+    b[s + SELF.damageTime] = me.lastDamageTime;
 
     // Fleet Command: per order, seconds until ready for our seat, the current (possibly
     // discounted) cost, and whether our seat may issue it.
@@ -456,11 +468,14 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + SHIP.deaths] = s.deaths;
     b[k + SHIP.score] = s.score;
     b[k + SHIP.assists] = s.assists;
+    b[k + SHIP.cruiseSpool] = s.cruising ? 1 : Math.min(.999, s.cruiseSpool / Math.max(.2, MATCH.cruise.spool-spoolCut(w,s)));
     b[k + SHIP.team] = s.team;
     b[k + SHIP.classIndex] = CLASS_ORDER.indexOf(s.classId);
     b[k + SHIP.hullIndex] = HULL_INDEX[s.hullModel] ?? 0;
     b[k + SHIP.status] = statusBits(s);
     b[k + SHIP.quirkGauge] = quirkGauge(s);
+    b[k + SHIP.abilityVisual] = s.abilityVisual;
+    b[k + SHIP.visualStartedAt] = s.visualStartedAt;
     k += SNAP.ship;
   }
 
@@ -487,6 +502,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 8] = Number.isFinite(p.ap) ? p.ap : 0;
     b[k + 9] = p.muzzleX;
     b[k + 10] = p.muzzleY;
+    b[k + 11] = p.abilityVisual;
+    b[k + 12] = p.index * 128 + p.visualGeneration;
     k += SNAP.projectile;
   }
 
@@ -524,6 +541,9 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 4] = d.team;
     b[k + 5] = DRONE_BEHAVIORS.indexOf(d.behavior);
     b[k + 6] = d.maxHull > 0 ? d.hull / d.maxHull : 1;
+    b[k + 7] = d.abilityVisual;
+    b[k + 8] = d.visualStartedAt;
+    b[k + 9] = d.index*128+d.visualGeneration;
     k += SNAP.drone;
   }
 
@@ -536,6 +556,9 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 3] = DEPLOY_KINDS.indexOf(d.kind);
     b[k + 4] = d.maxHull > 0 ? d.hull / d.maxHull : 1;
     b[k + 5] = d.index;
+    b[k + 6] = d.abilityVisual;
+    b[k + 7] = d.visualStartedAt;
+    b[k + 8] = Number.isFinite(d.expires) ? Math.max(0,d.expires-w.time) : -1;
     k += SNAP.deployable;
   }
 
@@ -555,6 +578,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     if (z.status) f |= ZONE_FLAG.status;
     b[k + 4] = f;
     b[k + 5] = Math.max(0, z.expires - w.time);
+    b[k + 6] = z.abilityVisual;
+    b[k + 7] = z.visualStartedAt;
     k += SNAP.zone;
   }
 
@@ -574,6 +599,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     const t = w.tethers.at(i);
     b[k] = t.owner;
     b[k + 1] = t.target;
+    b[k + 2] = t.visualStartedAt;
+    b[k + 3] = Math.max(0,t.expires-w.time);
     k += SNAP.tether;
   }
 
@@ -587,6 +614,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 4] = e.y;
     b[k + 5] = e.c;
     b[k + 6] = e.d;
+    b[k + 7] = e.abilityVisual ?? 0;
+    b[k + 8] = e.visualStartedAt ?? w.time;
     k += SNAP.event;
   }
   return b;

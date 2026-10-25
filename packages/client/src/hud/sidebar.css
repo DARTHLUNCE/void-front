@@ -30,9 +30,9 @@
   --gold: var(--noir-amber); --shard: var(--noir-phosphor); --live: var(--noir-phosphor); --warn: var(--noir-warn); }
 .sidebar-layout .vhud > section { min-width: 0; min-height: 0; }
 .sidebar-layout :is(.noir-flight,.noir-upgrades,.noir-power,.vhud-upgrades-bank,.vhud-up-grid,.led-power-panel,.noir-power-keys) { display: contents; }
-.sidebar-layout .noir-screen { padding: 0; overflow: auto; overscroll-behavior: contain; scrollbar-width: thin; background: none; }
-.sidebar-layout .top { left: var(--hud-width); right: 0; top: 0; height: var(--hud-top-height); transform: none; display: block; overflow: auto; scrollbar-width: thin; z-index: 4; }
-.sidebar-layout .noir-top-surface { position: relative; isolation: isolate; width: max(100%,900px); height: 100%; background: var(--noir-dark); color: var(--noir-ink); font-family: var(--noir-font); }
+.sidebar-layout .noir-screen { padding: 0; overflow: hidden; background: none; }
+.sidebar-layout .top { left: var(--hud-width); right: 0; top: 0; height: var(--hud-top-height); transform: none; display: block; overflow: hidden; z-index: 4; }
+.sidebar-layout .noir-top-surface { position: relative; isolation: isolate; width: 100%; height: 100%; background: var(--noir-dark); color: var(--noir-ink); font-family: var(--noir-font); }
 .sidebar-layout .noir-top-surface::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: url('/assets/ui/noir-top-cutout.png') center / 100% 100% no-repeat; }
 .sidebar-layout .top :is(.team,.clock,.ms) { margin: 0; padding: 0; z-index: 1; overflow: hidden; }
 .sidebar-layout .top .team { display: flex; justify-content: space-between; align-items: center; gap: 4px; border: 0; background: none; border-radius: 0; font-size: 12px; color: var(--noir-dim); }

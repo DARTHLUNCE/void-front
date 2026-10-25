@@ -6,8 +6,12 @@
 export interface ShieldShell {
   rim: HTMLCanvasElement;
   hex: HTMLCanvasElement;
+  /** Solid enclosed field for scene refraction, with the same antialiased contour. */
+  field: HTMLCanvasElement;
   /** Padding (px of the source drawing) the shell extends beyond the sprite on every side. */
   pad: number;
+  /** Radius of the baked lattice cells in source pixels. */
+  hexRadius: number;
   /** Points on the rim (px from the shell centre), for collapse sparks. */
   pts: [number, number][];
 }
@@ -18,7 +22,7 @@ export const SHIELD_TINT_HEX = [0x6ff3ff, 0xffc478] as const;
 
 /** How far the shell stands off a hull drawn `length` px long. */
 export function shellPad(length: number): number {
-  return Math.max(7, length * 0.07);
+  return Math.max(1, length * 0.13);
 }
 
 function canvasOf(w: number, h: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -41,19 +45,26 @@ export function bakeShieldShell(image: CanvasImageSource, length: number, height
   sg.fillStyle = '#fff';
   sg.fillRect(0, 0, sil.width, sil.height);
   const [halo, hg] = canvasOf(W, HH);
-  hg.filter = `blur(${(pad * 0.55).toFixed(1)}px)`;
+  // Smooth small protrusions more strongly; padding contains the wider filter footprint.
+  hg.filter = `blur(${(L * 0.08).toFixed(1)}px)`;
   for (let i = 0; i < 3; i++) hg.drawImage(sil, 0, 0);
   // Rim: the halo minus a tighter blur of the hull, so a thin band follows the outline.
   const [rim, rg] = canvasOf(W, HH);
-  rg.drawImage(halo, 0, 0);
-  rg.globalCompositeOperation = 'destination-out';
-  rg.filter = `blur(${(pad * 0.18).toFixed(1)}px)`;
-  rg.drawImage(sil, 0, 0);
-  rg.drawImage(sil, 0, 0);
-  rg.filter = 'none';
-  rg.globalCompositeOperation = 'source-in';
-  rg.fillStyle = `rgb(${rgb})`;
-  rg.fillRect(0, 0, rim.width, rim.height);
+  const field=hg.getImageData(0,0,halo.width,halo.height),pixels=rg.createImageData(rim.width,rim.height);
+  const [coverage,cg]=canvasOf(W,HH),cover=cg.createImageData(rim.width,rim.height);
+  const tint=rgb.split(',').map(Number),smooth=(v:number)=>{const t=Math.max(0,Math.min(1,v));return t*t*(3-2*t);};
+  // A one-pixel antialiased outer contour; energy falls only inward toward the plating.
+  for(let y=1;y<rim.height-1;y++)for(let x=1;x<rim.width-1;x++){
+    const i=(y*rim.width+x)*4,u=field.data[i+3]/255;
+    const gx=(field.data[i+7]-field.data[i-1])/510,gy=(field.data[i+rim.width*4+3]-field.data[i-rim.width*4+3])/510;
+    const aa=Math.max(1/255,Math.hypot(gx,gy)*.5);
+    const outer=smooth((u-.28+aa)/(2*aa));
+    // Start losing energy immediately inside the contour: no broad, bright plateau.
+    const inner=Math.exp(-10.5*Math.max(0,u-.28));
+    cover.data[i]=cover.data[i+1]=cover.data[i+2]=255;cover.data[i+3]=255*outer;
+    pixels.data[i]=tint[0];pixels.data[i+1]=tint[1];pixels.data[i+2]=tint[2];pixels.data[i+3]=255*outer*inner;
+  }
+  rg.putImageData(pixels,0,0);cg.putImageData(cover,0,0);
   // Hex lattice across the whole field, fading over the hull itself.
   const [hex, xg] = canvasOf(W, HH);
   const r = Math.max(3.5, L * 0.03);
@@ -76,13 +87,21 @@ export function bakeShieldShell(image: CanvasImageSource, length: number, height
   xg.globalCompositeOperation = 'destination-out';
   xg.globalAlpha = 0.55;
   xg.drawImage(sil, 0, 0);
-  // Points on the rim for the collapse sparks.
-  const data = rg.getImageData(0, 0, rim.width, rim.height).data;
+  // Trace every bearing deterministically. Random sparse rim samples left the smaller
+  // hulls with misplaced arcs and lights, sometimes jumping to the opposite rim.
   const pts: [number, number][] = [];
-  for (let tries = 0; tries < 4000 && pts.length < 48; tries++) {
-    const px = Math.floor(Math.random() * rim.width);
-    const py = Math.floor(Math.random() * rim.height);
-    if (data[(py * rim.width + px) * 4 + 3] > 110) pts.push([px - rim.width / 2, py - rim.height / 2]);
+  const data=pixels.data,cx=rim.width/2,cy=rim.height/2;
+  for(let j=0;j<64;j++){
+    const angle=j*Math.PI/32,dx=Math.cos(angle),dy=Math.sin(angle);
+    const limit=Math.min(cx/Math.max(.0001,Math.abs(dx)),cy/Math.max(.0001,Math.abs(dy)))-1;
+    let best=0,dist=0;
+    for(let r=limit;r>=0;r-=.5){
+      const x=Math.max(0,Math.min(rim.width-1,Math.round(cx+dx*r)));
+      const y=Math.max(0,Math.min(rim.height-1,Math.round(cy+dy*r)));
+      const a=data[(y*rim.width+x)*4+3];
+      if(a>best){best=a;dist=r;}
+    }
+    pts.push([dx*dist,dy*dist]);
   }
-  return { rim, hex, pad, pts };
+  return { rim, hex, field:coverage, pad, pts, hexRadius:r };
 }

@@ -2,11 +2,13 @@ import { snapshotMatchesSchema } from '@void-front/shared';
 import { backToMenu } from './leave';
 import { COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
 import type { ShipArtMode } from './art/referenceShips';
+import { CombatOverlay } from './hud/combatOverlay';
 import { Hud } from './hud/hud';
 import { FrameLighting } from './hud/frameLighting';
 import { Input, type ControlScheme } from './input';
 import type { FromWorker, ToWorker } from './protocol';
 import { Renderer } from './render/renderer';
+import { clampPilotZoom, PILOT_ZOOM } from './render/pilotFraming';
 import { edgePan } from './render/viewport';
 import { carryEvents, Snap } from './snap';
 
@@ -32,6 +34,7 @@ export class Game {
   private readonly worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   private readonly renderer: Renderer;
   private hud!: Hud;
+  private combatOverlay!: CombatOverlay;
   private frameLighting: FrameLighting | null = null;
   private input!: Input;
   private info: MatchInfo | null = null;
@@ -49,8 +52,10 @@ export class Game {
 
   async start(stage: HTMLElement, hudRoot: HTMLElement): Promise<void> {
     await this.renderer.init(stage);
+    this.combatOverlay = new CombatOverlay(stage);
     try {
-      this.setPilotZoom(Number(localStorage.getItem('vf.pilotZoom') ?? 1) || 1);
+      const saved=localStorage.getItem('vf.pilotZoom.v3');
+      this.setPilotZoom(saved!==null ? Number(saved) : PILOT_ZOOM.default);
     } catch {
       /* storage unavailable */
     }
@@ -89,6 +94,7 @@ export class Game {
       // Esc in the hangar goes back to the menu; in a command seat it cancels an armed order.
       escape: () => (this.mode() === 'picker' ? this.hud.hangar.leave() : this.armOrder(null)),
       confirm: () => this.mode() === 'picker' && this.hud.hangar.launch(),
+      reverse: () => { if (this.mode() === 'pilot') this.input.toggleReverse(); },
     }, this.renderer.worldToScreen(this.renderer.camera.x, this.renderer.camera.y));
     this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.onMessage(e.data);
     let lit = this.opts.lighting;
@@ -108,9 +114,9 @@ export class Game {
 
   /** Pilot wheel zoom, kept between sessions. */
   private setPilotZoom(z: number): void {
-    this.renderer.pilotZoom = Math.min(1.5, Math.max(0.6, z));
+    this.renderer.pilotZoom = clampPilotZoom(z);
     try {
-      localStorage.setItem('vf.pilotZoom', String(this.renderer.pilotZoom));
+      localStorage.setItem('vf.pilotZoom.v3', String(this.renderer.pilotZoom));
     } catch {
       /* storage unavailable: zoom just won't persist */
     }
@@ -254,6 +260,8 @@ export class Game {
     const myTeam = curr.buf[me + SHIP.team];
     const mode = this.mode();
     this.renderer.commander = mode === 'commander';
+    const focus = mode === 'pilot' && !this.input.pointerOverHud && this.input.pointerActive ? this.input.mouse : null;
+    this.renderer.cameraFocus = mode === 'pilot' && this.input.pointerActive ? this.input.viewPointer : null;
     if (mode === 'commander') this.panCamera(deltaMs / 1000);
     this.renderer.render(this.prev, curr, now, myTeam);
     if (this.frameLighting) {
@@ -264,21 +272,24 @@ export class Game {
       }, deltaMs, this.renderer.frameLightingEnabled, now);
     }
     this.hud.update(curr, now, this.fps, this.simMs);
+    this.combatOverlay.update(curr, info.selfSlot, now, mode === 'pilot', focus,
+      this.renderer.worldToScreen(this.renderer.pilotPosition.x,this.renderer.pilotPosition.y), this.renderer.viewport);
     this.hud.setBraking(this.input.braking);
     // The reverse ceiling comes from the ship's nodes (−40% base, −55% max).
     const reverseMax = curr.buf[curr.o.self + SELF.reverseMax];
     if (reverseMax > 0) {
       this.input.reverseMax = reverseMax;
+      if (this.input.reverseToggled) this.input.throttle = -reverseMax;
       if (this.input.throttle < -reverseMax) this.input.throttle = -Math.round(reverseMax * 10) / 10;
     }
-    this.hud.setThrottle(this.input.throttle, this.input.reverseMax);
+    this.hud.setThrottle(this.input.throttle, this.input.reverseMax, this.input.reverseToggled);
 
     const alive = (curr.buf[me + SHIP.flags] & SHIP_FLAG.alive) !== 0;
     if (mode === 'pilot' && alive && curr.buf[H.over] !== 1) {
       const cam = this.renderer.camera;
-      const shipScreen = this.renderer.worldToScreen(cam.x, cam.y);
-      this.send({ type: 'input', input: this.input.frame(shipScreen, cam.zoom, (x, y) => this.renderer.screenToWorld(x, y)) });
-    }
+      const shipScreen = this.renderer.worldToScreen(this.renderer.pilotPosition.x, this.renderer.pilotPosition.y);
+      this.send({ type: 'input', input: this.input.frame(shipScreen, cam.zoom, (x, y) => this.renderer.screenToWorld(x, y), { center: this.renderer.worldToScreen(cam.x,cam.y), heading: curr.buf[me+SHIP.angle] }, deltaMs/1000) });
+    } else this.input.resetAim();
   }
 
   /** War-map camera: WASD / arrows / screen edges. */

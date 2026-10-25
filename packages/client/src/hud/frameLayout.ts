@@ -1,5 +1,5 @@
 import panelLayout from '../../public/assets/ui/noir-panel-layout.json';
-import { buildFrameGeometry, mapFrameRect, type FrameGeometry, type FramePiece, type Rect } from './frameGeometry';
+import { buildFrameGeometry, mapFrameRect, topFrameHeight, TOP_WRAP_WIDTH, type FrameGeometry, type FramePiece, type Rect } from './frameGeometry';
 
 const geometries = new WeakMap<HTMLElement, FrameGeometry>();
 export const frameGeometryFor = (element: HTMLElement): FrameGeometry | undefined => geometries.get(element);
@@ -42,7 +42,13 @@ export function installFrameLayout(root: HTMLElement): void {
   const update = (): void => {
     scheduled = 0;
     if (!root.isConnected) { observer.disconnect(); window.removeEventListener('resize',queue); return; }
-    // Read all sizes first; writes below only affect artwork/contents, not panel bounds.
+    // One shared responsive decision controls frame packing and the gameplay aperture.
+    const topWidth = pieces.find(piece => piece.kind === 'top')!.element.parentElement!.clientWidth;
+    root.dataset.topRows = topWidth < TOP_WRAP_WIDTH ? "2" : "1";
+    const topHeight = `${topFrameHeight(topWidth)}px`;
+    if (document.documentElement.style.getPropertyValue('--hud-top-height') !== topHeight) {
+      document.documentElement.style.setProperty('--hud-top-height',topHeight);
+    }
     const measured = pieces.map(piece => ({ piece, rect: piece.element.getBoundingClientRect() }));
     for (const { piece,rect } of measured) {
       if (!(rect.width > 0 && rect.height > 0)) continue;

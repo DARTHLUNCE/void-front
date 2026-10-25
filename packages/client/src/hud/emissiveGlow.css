@@ -1,0 +1,5 @@
+/* Scatter the display pixels beneath the glass, preserving the sharp text core. */
+.sidebar-layout #hud .noir-fit-inner { filter:url('#phosphor-scatter'); }
+.sidebar-layout #hud .top .clock,.sidebar-layout #hud .top .score { filter:url('#phosphor-scatter'); }
+.hull-thumb { filter:url('#phosphor-scatter'); }
+.hangar .st-art .hull-thumb { filter:url('#phosphor-scatter') drop-shadow(0 10px 18px #000b); }

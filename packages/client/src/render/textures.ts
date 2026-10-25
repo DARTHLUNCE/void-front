@@ -1,4 +1,5 @@
-import { CanvasSource, Graphics, Texture, type Renderer } from 'pixi.js';
+import { hullCoverage } from '../art/hullCoverage';
+import { CanvasSource, Graphics, Rectangle, Texture, type Renderer } from 'pixi.js';
 import { CRAFT, CRAFT_PALETTES, type CraftId } from '../art/craft';
 import { HULLS } from '../art/hulls';
 import { bakeArt, type ArtTexture } from '../art/pixiArt';
@@ -21,6 +22,8 @@ export interface LitArt {
   relief?: Texture;
   /** RG16 decode range in source texels; legacy maps use 128. */
   reliefRange?: number;
+  /** Alpha-weighted silhouette area, excluding transparent holes and padding. */
+  visibleAreaWorld?: number;
   widthWorld: number;
   heightWorld: number;
   anchorX: number;
@@ -54,6 +57,8 @@ export interface Textures {
   craft: Record<CraftId, LitArt>;
   glow: Texture;
   particle: Texture;
+  /** Jagged metal pieces share one cached atlas, including the cheap ember fallback. */
+  fragments: readonly Texture[];
   disc: Texture;
   stars: Texture;
 }
@@ -68,6 +73,29 @@ function radialTexture(size: number, stops: [number, string][]): Texture {
   g.fillStyle = grad;
   g.fillRect(0, 0, size, size);
   return Texture.from(c);
+}
+
+/** Four chipped silhouettes with metal facets; generated once, never per particle. */
+function fragmentTextures(): readonly Texture[] {
+  const c=document.createElement('canvas');c.width=128;c.height=32;
+  const g=c.getContext('2d')!;
+  const shapes=[
+    [[-13,-2],[-3,-10],[7,-7],[13,1],[3,9],[-9,5]],
+    [[-13,1],[-5,-8],[2,-5],[10,-8],[12,3],[0,7],[-7,11]],
+    [[-12,-6],[-2,-9],[12,-1],[5,4],[7,9],[-8,6]],
+    [[-13,-1],[-4,-10],[10,-6],[13,2],[2,4],[-3,10],[-10,7]],
+  ];
+  shapes.forEach((pts,i)=>{
+    g.save();g.translate(i*32+16,16);g.beginPath();g.moveTo(...pts[0] as [number,number]);
+    for(const p of pts.slice(1))g.lineTo(...p as [number,number]);g.closePath();
+    g.fillStyle='#a3acb5';g.fill();g.clip();
+    g.fillStyle='#606b77';g.beginPath();g.moveTo(-15,10);g.lineTo(1,-2);g.lineTo(15,3);g.lineTo(15,15);g.closePath();g.fill();
+    g.strokeStyle='#e7ebed';g.lineWidth=1.3;g.beginPath();g.moveTo(-11,-2);g.lineTo(-3,-7);g.lineTo(8,-4);g.stroke();
+    g.strokeStyle='#3f4854';g.lineWidth=1;g.beginPath();g.moveTo(-8,3);g.lineTo(6,-1);g.stroke();
+    g.fillStyle='#d1d7db';g.fillRect(2,2,1.3,1.3);g.restore();
+  });
+  const source=new CanvasSource({resource:c,autoGenerateMipmaps:true});
+  return shapes.map((_,i)=>new Texture({source,frame:new Rectangle(i*32,0,32,32)}));
 }
 
 function starTexture(size: number): Texture {
@@ -122,6 +150,7 @@ function litArt(shapes: Shape[], scale: number, bevel = 1): LitArt {
 function litStates(shapes: Shape[], scale: number, bevel: number, palettes: readonly Palette[]): LitStates {
   const baked: BakedArt[] = palettes.map((p) => bakeArtCanvas(shapes, p, scale, 3, bevel));
   return {
+    visibleAreaWorld: hullCoverage(baked[0].albedo.getContext('2d')!.getImageData(0, 0, baked[0].width, baked[0].height).data, 1 / scale),
     albedo: baked.map((b) => mip(b.albedo)),
     normal: mip(baked[0].normal),
     relief: mip(baked[0].relief),
@@ -166,6 +195,7 @@ export function makeTextures(renderer: Renderer, replacements: Record<string, Li
     crystal: bakeArt(renderer, CRYSTAL_ART[0], CRYSTAL_PALETTES[0]),
     crystalBig: bakeArt(renderer, CRYSTAL_ART[1], CRYSTAL_PALETTES[1]),
     particle: renderer.generateTexture({ target: particle, resolution: 2 }),
+    fragments: fragmentTextures(),
     drone: renderer.generateTexture({ target: drone, resolution: 3 }),
     craft: Object.fromEntries(
       (Object.keys(CRAFT) as CraftId[]).map((id) => {

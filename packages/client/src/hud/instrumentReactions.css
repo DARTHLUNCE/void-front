@@ -1,0 +1,82 @@
+/* Motion describes the current system state. Text stays still and unobscured. */
+.sidebar-layout .noir-fit-panel { isolation: isolate; }
+.sidebar-layout .noir-fit-inner { z-index: 1; }
+.sidebar-layout .vhud :is(.noir-brake,.vhud-sublight,.noir-navigation,.noir-status) { transition: background-color 140ms; }
+.sidebar-layout .noir-meter > div { position: relative; overflow: hidden; }
+.sidebar-layout .noir-meter > div::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: var(--shield-trail,100%); background: #ff365890; }
+.sidebar-layout .noir-meter.hull > div::before { width: var(--hull-trail,100%); }
+.sidebar-layout .noir-meter i { position: relative; z-index: 1; }
+.sidebar-layout .noir-status::after { content: ''; pointer-events: none; position: absolute; inset: 0; z-index: 2; opacity: var(--hit-energy,0); background: linear-gradient(180deg,#ff365855,transparent 35%,transparent 65%,#ff365830); box-shadow: inset 0 0 16px #ff365855; }
+.sidebar-layout #hud[data-hit="true"] .ship-silhouette-bg svg { filter: drop-shadow(0 0 3px #ff3658); }
+.sidebar-layout #hud[data-hit="true"] .top .clock { color: var(--hud-danger); text-shadow: 0 0 5px #ff365860; }
+.sidebar-layout #hud[data-hull="critical"] .noir-status { box-shadow: inset 0 0 0 1px #ff365880; }
+.sidebar-layout #hud[data-braking="true"] .noir-brake { background: #ff36581c; box-shadow: inset 0 0 0 1px #ff365888; animation: brake-warning 1s ease-in-out infinite; }
+.sidebar-layout #hud[data-braking="true"] .noir-brake :is(kbd,.thr-brake) { color: #ff657b; text-shadow: 0 0 5px #ff365880; }
+.sidebar-layout #hud[data-braking="true"] .thr-brake .led.on { background: #ff3658; box-shadow: 0 0 7px #ff3658; }
+.sidebar-layout .vhud-sublight::before { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(0deg,#13c9ff44 var(--drive-charge,0%),transparent var(--drive-charge,0%)); transition: background 80ms; }
+.sidebar-layout .vhud-sublight::after { content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none; opacity: 0; }
+.sidebar-layout #hud[data-drive-state="charging"] .vhud-sublight { box-shadow: inset 0 -2px #35d9ff; }
+.sidebar-layout #hud[data-drive-state="charging"] .vhud-sublight .sl-status { color: #70e5ff; text-shadow: 0 0 5px #35d9ff60; }
+.sidebar-layout #hud[data-drive-state="active"] .vhud-sublight { background: #08354b; box-shadow: inset 0 0 0 1px #35d9ff99; }
+.sidebar-layout #hud[data-drive-state="active"] .vhud-sublight::after { opacity: 1; background: repeating-linear-gradient(120deg,transparent 0 8px,#35d9ff28 8px 12px,transparent 12px 20px); background-size: 40px 40px; animation: drive-stream 1.2s linear infinite; }
+.sidebar-layout #hud[data-drive-state="active"] .vhud-sublight .sl-status { color: #a2f2ff; font-weight: 700; text-shadow: 0 0 5px #35d9ff88; }
+.sidebar-layout .w-slot.just-used { animation: system-used .5s ease-out; }
+.sidebar-layout .w-slot.on-cd .w-slot-title { color: #a4b2c2; }
+.sidebar-layout .w-slot.on-cd .w-slot-cd { opacity: .8; height: 3px; box-shadow: 0 0 4px #4aa8ff44; }
+.sidebar-layout .vhud-up-card.just-purchased { animation: purchase-confirm .8s ease-out; }
+.sidebar-layout .vhud-up-card.just-purchased .cost::before { content: '+1 '; color: #e4ffef; }
+.sidebar-layout #hud[data-tier-ready="true"] .upgrade-prompt::before { content: '▶ '; color: #42ff86; }
+.sidebar-layout .led-col[aria-pressed="true"] .led-stack i.on { animation: power-feed 1.6s ease-in-out infinite alternate; }
+.sidebar-layout .led-col[aria-pressed="true"] .led-stack i.on:nth-child(3n) { animation-delay: -.5s; }
+.sidebar-layout .led-col[aria-pressed="true"] .led-stack i.on:nth-child(3n+1) { animation-delay: -1s; }
+.sidebar-layout #hud[data-jammed="true"] .noir-navigation::after { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: repeating-linear-gradient(0deg,transparent 0 5px,#ff365819 5px 6px); animation: radar-interference 2s linear infinite; }
+/* Clearly drawn keycaps: the required input is a first-class part of each action. */
+.sidebar-layout #hud .vhud :is(.w-slot-head kbd,.vhud-up-top b kbd,.noir-brake kbd,.vhud-sublight kbd) {
+  display: inline-grid; place-items: center; box-sizing: border-box; color: #f1f6ff; background: #233449;
+  border: 1px solid #91a8c0; border-bottom-width: 2px; border-radius: 0; font-weight: 700;
+  font-size: 12px; line-height: 1; padding: 1px 3px; min-width: 18px; height: 18px; text-shadow: none;
+}
+.sidebar-layout #hud .vhud .w-slot[data-ab] { grid-template-columns: 30px minmax(0,1fr) 48px; }
+.sidebar-layout #hud .vhud .w-slot-head kbd { padding: 1px 2px; font-size: 12px; }
+.sidebar-layout #hud .vhud .vhud-up-top b { gap: 3px; font-size: 11px; }
+.sidebar-layout #hud .vhud .vhud-up-top b kbd { width: 16px; min-width: 16px; height: 16px; padding: 0; font-size: 13px; }
+.sidebar-layout #hud .vhud .vhud-up-card > .noir-fit-inner { gap: 2px; }
+.sidebar-layout #hud .vhud .vhud-up-card:disabled { opacity: .8; }
+.sidebar-layout #hud .vhud .vhud-up-card.can kbd,
+.sidebar-layout #hud .vhud .w-slot.ready kbd { border-color: #42ff86; background: #123e26; color: #e8fff0; box-shadow: 0 0 5px #42ff8630; }
+.sidebar-layout #hud .vhud .noir-brake > .noir-fit-inner { gap: 0; }
+.sidebar-layout #hud .vhud .noir-brake kbd { height: 14px; min-width: 0; font-size: 10px; letter-spacing: -.04em; padding: 0 1px; }
+.sidebar-layout #hud .vhud .noir-brake .thr-brake { line-height: 10px; font-size: 10px; }
+.sidebar-layout #hud .vhud .vhud-sublight kbd { height: 14px; min-width: 0; font-size: 11px; padding: 0 2px; }
+.sidebar-layout #hud .vhud .vhud-sublight .sl-status { line-height: 10px; font-size: 11px; }
+.sidebar-layout #hud[data-braking="true"] .vhud .noir-brake kbd { border-color: #ff3658; color: #ff657b; background: #44131d; }
+.sidebar-layout #hud .vhud .noir-power-keys button { font-size: 14px; color: #e4eef9; font-weight: 700; }
+@container (max-height: 150px) {
+  .sidebar-layout #hud .vhud .w-slot[data-ab] { min-height: 22px; padding: 2px 0 4px; }
+  .sidebar-layout #hud .vhud .w-slot[data-ab] kbd { height: 16px; }
+}
+@container (max-height: 112px) {
+  .sidebar-layout #hud .vhud .noir-combat .w-slot[data-ab] { grid-template-columns: minmax(0,1fr); }
+}
+@keyframes brake-warning { 0%,100% { background-color: #ff36580c; } 50% { background-color: #ff365843; } }
+@keyframes drive-stream { to { background-position: 40px -40px; } }
+@keyframes system-used { from { background-color: #6cbcff55; } to { background-color: transparent; } }
+@keyframes purchase-confirm { from { background-color: #42ff8680; box-shadow: inset 0 0 0 1px #e4ffef; } to { background-color: #42ff8612; } }
+@keyframes power-feed { from { opacity: .55; } to { opacity: 1; } }
+@keyframes radar-interference { to { background-position: 0 24px; } }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-layout #hud :is(.noir-brake,.vhud-sublight::after,.w-slot,.vhud-up-card,.led-stack i,.noir-navigation::after) { animation: none !important; }
+}
+
+.sidebar-layout #hud .vhud .vhud-up-card > .noir-fit-inner { gap: 1px; }
+.sidebar-layout #hud .vhud .vhud-up-card .cost { line-height: 1; font-size: 11px; }
+.sidebar-layout #hud .vhud .vhud-up-pips, .sidebar-layout #hud .vhud .vhud-up-pips i { height: 3px; }
+@container (max-height: 112px) {
+  .sidebar-layout #hud .noir-combat .vhud-weapons-dash { gap: 3px; }
+  .sidebar-layout #hud .noir-combat .w-slot.primary { gap: 2px; }
+  .sidebar-layout #hud .noir-combat .w-slot.primary .w-slot-title { font-size: 12px; line-height: 1.1; }
+  .sidebar-layout #hud .noir-combat .w-quirk { font-size: 10px; line-height: 1; }
+  .sidebar-layout #hud .noir-combat .w-slot[data-ab] { gap: 2px; padding: 2px 0 3px; }
+}
+
+.sidebar-layout #hud .vhud .vhud-sublight > .noir-fit-inner { gap: 0; }

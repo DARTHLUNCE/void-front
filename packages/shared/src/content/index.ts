@@ -1,4 +1,5 @@
 export * from './types';
+export * from './abilityVisuals';
 export * from './statuses';
 export * from './progression';
 export * from './quirks';
@@ -14,3 +15,5 @@ export * from './upgrades';
 export * from './combat';
 export * from './power';
 export * from './score';
+
+export { hullGeometry } from './hullGeometry';

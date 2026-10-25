@@ -268,14 +268,14 @@ export class Hangar {
     const row = (pick: Pick) => {
       const cls = CLASSES[pick as ClassId];
       return `<button type="button" class="hg-row" data-sel="${pick}"><kbd>${CLASS_ORDER.indexOf(cls.id) + 1}</kbd>
-        <span class="hg-thumb">${hullThumb(cls.hullModel, team)}</span>
+        <span class="hg-thumb">${hullThumb(cls.hullModel, team, 'hangar')}</span>
         <span class="hg-name"><b>${cls.name}</b><small>${cls.role}</small></span>
         <span class="hg-count" data-cap="${pick}"></span></button>`;
     };
     this.$.roster.innerHTML = GROUPS.map((g) => `<div class="hg-group" data-group="${g.id}"><h5><span>${g.name}</span></h5>${g.items.map(row).join('')}</div>`).join('');
     // High Command: its own panel under the hulls, so taking a command seat is always in view.
     const seat = (s: number) => {
-      const url = hullThumbUrl(SEAT_INFO[s === 0 ? 0 : 1].art, team);
+      const url = hullThumbUrl(SEAT_INFO[s === 0 ? 0 : 1].art, team, 'hangar');
       return `<button type="button" class="hg-seat${s === 0 ? ' admiral' : ''}" data-sel="seat${s}"><kbd>${SEAT_KEYS[s]}</kbd>
         <span class="hg-thumb">${url ? `<img class="hull-thumb" src="${url}" alt="" draggable="false" />` : ''}</span>
         <b>${s === 0 ? 'Admiral' : `FOB ${fobName(team, s - 1)}`}</b>
@@ -352,14 +352,14 @@ export class Hangar {
     const k = 0.3 + 0.7 * (cls.radius / MAX.radius) ** 0.75;
     return `<div class="st-ghost" aria-hidden="true" style="--len:${cls.name.length}">${cls.name}</div>
       <div class="st-head"><span class="st-index">${String(i + 1).padStart(2, '0')}<i>/ ${String(CLASS_ORDER.length).padStart(2, '0')}</i></span><span class="st-group">${group.name}</span></div>
-      <div class="st-art" style="--k:${k.toFixed(2)};${size(cls.hullModel)}" title="Double-click to launch"><span class="st-float">${hullThumb(cls.hullModel, this.team)}</span></div>
+      <div class="st-art" style="--k:${k.toFixed(2)};${size(cls.hullModel)}" title="Double-click to launch"><span class="st-float">${hullThumb(cls.hullModel, this.team, 'hangar')}</span></div>
       <div class="st-ruler" style="--w:${(cls.radius / MAX.radius).toFixed(3)}"><i></i><span>HULL RADIUS ${cls.radius}u · ×${(cls.radius / CLASSES.patrol.radius).toFixed(1)} PATROL</span></div>
       <div class="st-name" style="--len:${cls.name.length}"><h3>${cls.name}</h3><small>${cls.role}</small></div>`;
   }
 
   private seatStage(s: number): string {
     const info = SEAT_INFO[s === 0 ? 0 : 1];
-    const url = hullThumbUrl(info.art, this.team);
+    const url = hullThumbUrl(info.art, this.team, 'hangar');
     return `<div class="st-ghost" aria-hidden="true" style="--len:${info.name.length}">${info.name}</div>
       <div class="st-head"><span class="st-index">C${s + 1}<i>/ C3</i></span><span class="st-group">High Command</span></div>
       <div class="st-art seat" style="--k:0.9;${size(info.art)}">${url ? `<span class="st-float"><img class="hull-thumb" src="${url}" alt="" draggable="false" /></span>` : ''}</div>
@@ -377,7 +377,7 @@ export class Hangar {
     const spec = (label: string, value: string, sub = '') => `<div class="spec"><label>${label}</label><b>${value}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
     const t3 = cls.tiers[ECONOMY.hullTier - 1].options
       .map(
-        (o, k) => `<div class="t3"><span class="t3-art">${o.hullModel ? hullThumb(o.hullModel, this.team) : ''}</span><span><u>T${ECONOMY.hullTier}-${k === 0 ? 'A' : 'B'}</u><b>${o.name}</b></span></div>`,
+        (o, k) => `<div class="t3"><span class="t3-art">${o.hullModel ? hullThumb(o.hullModel, this.team, 'hangar') : ''}</span><span><u>T${ECONOMY.hullTier}-${k === 0 ? 'A' : 'B'}</u><b>${o.name}</b></span></div>`,
       )
       .join('');
     return `<section class="dz-block"><h4>Combat profile</h4>

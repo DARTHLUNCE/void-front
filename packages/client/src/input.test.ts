@@ -48,6 +48,53 @@ describe.each<ControlScheme>(['mouse', 'wasd'])('%s brake controls', (scheme) =>
     expect(frame()).toEqual(moving);
   });
 
+  it('tracks the raw camera pointer over HUD without firing or changing the gameplay aim', () => {
+    event('mousedown', { button: 0 });
+    const aim = input.mouse;
+    Object.assign(target, { closest: () => ({}) });
+    event('mousemove', { clientX: 5, clientY: 100 });
+    expect(input.viewPointer).toEqual({ x: 5, y: 100 });
+    expect(input.mouse).toEqual(aim);
+    expect(input.pointerOverHud).toBe(true);
+    expect(frame().fire).toBe(false);
+  });
+
+  it('keeps near-center aim stable while the camera carries the ship across the cursor', () => {
+    const context = {center:{x:800,y:364},heading:Math.PI};
+    event('mousemove', {clientX:400,clientY:364});
+    const first=input.frame({x:800,y:364},1,(x,y)=>({x,y}),context);
+    expect(first.aim).toBeCloseTo(Math.PI);
+    event('mousemove', {clientX:795,clientY:364});
+    for(const x of [680,740,795,815]) {
+      const f=input.frame({x,y:364},1,(x,y)=>({x,y}),context);
+      expect(f.aim).toBeCloseTo(Math.PI);
+      if(scheme==='mouse')expect(Math.hypot(f.moveX,f.moveY)).toBe(0);
+    }
+    event('mousemove', {clientX:1100,clientY:364});
+    for(let i=0;i<12;i++)input.frame({x:815,y:364},1,(x,y)=>({x,y}),context);
+    expect(input.frame({x:815,y:364},1,(x,y)=>({x,y}),context).aim).toBe(0);
+    input.resetAim();
+    event('mousemove', {clientX:800,clientY:364});
+    expect(input.frame({x:800,y:364},1,(x,y)=>({x,y}),{...context,heading:1}).aim).toBe(1);
+  });
+
+  it('restores mouse thrust gradually as the pointer leaves the center zone',()=>{
+    if(scheme!=='mouse')return;
+    const context={center:{x:800,y:364},heading:0},ship={x:600,y:364};
+    event('mousemove',{clientX:800,clientY:364});
+    input.frame(ship,1,(x,y)=>({x,y}),context);
+    let previous=0;
+    for(let x=865;x<=925;x+=2){
+      event('mousemove',{clientX:x,clientY:364});
+      const f=input.frame(ship,1,(x,y)=>({x,y}),context);
+      const magnitude=Math.hypot(f.moveX,f.moveY);
+      expect(magnitude).toBeGreaterThanOrEqual(previous);
+      expect(magnitude-previous).toBeLessThan(.06);
+      previous=magnitude;
+    }
+    expect(previous).toBe(1);
+  });
+
   it('clears a held brake and cruise when the window loses focus', () => {
     event('keydown', { code: 'Space' });
     event('blur');
@@ -160,5 +207,59 @@ describe('v2 throttle and Reactor Power', () => {
     turn(false);
     turn(true);
     expect(wheel.mock.calls.map((c) => c[3])).toEqual([false, true]);
+  });
+});
+
+
+describe('pointer focus recovery and reverse toggle',()=>{
+  let target: EventTarget, doc: EventTarget, input: Input;
+  const emit=(type:string,fields:Record<string,unknown>={})=>{
+    const e=new Event(type,{cancelable:true});Object.assign(e,fields);target.dispatchEvent(e);return e;
+  };
+  const frame=()=>input.frame({x:400,y:300},1,(x,y)=>({x,y}));
+  beforeEach(()=>{
+    target=new EventTarget();doc=new EventTarget();
+    Object.assign(doc,{visibilityState:'visible',hasFocus:()=>false,elementFromPoint:()=>null});
+    Object.assign(target,{innerWidth:800,innerHeight:600,closest:()=>null,document:doc});
+    vi.stubGlobal('window',target);
+    input=new Input('mouse',{stat:vi.fn(),digit:vi.fn(),press:vi.fn(),wheel:vi.fn(),escape:vi.fn(),confirm:vi.fn(),scoreboard:vi.fn(),bigMap:vi.fn(),autofire:vi.fn()});
+  });
+  afterEach(()=>{input.dispose();vi.unstubAllGlobals();});
+  it('resumes camera tracking on hover without browser focus or a click',()=>{
+    emit('mousemove',{clientX:650,clientY:300});expect(input.pointerActive).toBe(true);
+    emit('mousedown',{button:0});emit('keydown',{code:'ShiftLeft'});emit('blur');
+    expect(input.pointerActive).toBe(false);
+    emit('mouseover',{clientX:700,clientY:320});
+    expect(input.pointerActive).toBe(true);expect(input.mouse).toEqual({x:700,y:320});
+    expect(frame().fire).toBe(false);expect(frame().cruise).toBe(false);
+  });
+  it('clears stale HUD suppression on reentry and never tracks a hidden tab',()=>{
+    Object.assign(target,{closest:()=>({})});emit('mousemove',{clientX:10,clientY:10});
+    expect(input.pointerOverHud).toBe(true);emit('blur');
+    Object.assign(target,{closest:()=>null});emit('mouseover',{clientX:650,clientY:300});
+    expect(input.pointerOverHud).toBe(false);expect(input.pointerActive).toBe(true);
+    Object.assign(doc,{visibilityState:'hidden'});doc.dispatchEvent(new Event('visibilitychange'));
+    emit('mousemove',{clientX:750,clientY:300});expect(input.pointerActive).toBe(false);
+    Object.assign(doc,{visibilityState:'visible'});emit('mousemove',{clientX:660,clientY:300});
+    expect(input.pointerActive).toBe(true);
+    emit('mouseout',{relatedTarget:null});expect(input.pointerActive).toBe(false);
+  });
+  it('toggles full reverse then restores the exact previous throttle and ignores repeats',()=>{
+    input.throttle=.7;input.reverseMax=.55;
+    emit('keydown',{code:'KeyS'});expect(input.throttle).toBe(-.55);expect(input.reverseToggled).toBe(true);
+    emit('keydown',{code:'KeyS',repeat:true});expect(input.throttle).toBe(-.55);
+    emit('keyup',{code:'KeyS'});emit('keydown',{code:'KeyS'});
+    expect(input.throttle).toBe(.7);expect(input.reverseToggled).toBe(false);
+    input.throttle=0;emit('keydown',{code:'KeyS'});emit('keydown',{code:'KeyS'});expect(input.throttle).toBe(0);
+  });
+  it('lets manual throttle adjustment override reverse, and respects editable fields',()=>{
+    emit('keydown',{code:'KeyS'});input.stepThrottle(1);expect(input.reverseToggled).toBe(false);
+    expect(input.throttle).toBeCloseTo(-.3);
+    Object.assign(target,{closest:()=>({})});emit('keydown',{code:'KeyS'});expect(input.throttle).toBeCloseTo(-.3);
+  });
+  it('keeps S as directional movement in WASD mode',()=>{
+    input.dispose();
+    input=new Input('wasd',{stat:vi.fn(),digit:vi.fn(),press:vi.fn(),wheel:vi.fn(),escape:vi.fn(),confirm:vi.fn(),scoreboard:vi.fn(),bigMap:vi.fn(),autofire:vi.fn()});
+    emit('keydown',{code:'KeyS'});expect(frame().moveY).toBe(1);expect(input.throttle).toBe(1);
   });
 });

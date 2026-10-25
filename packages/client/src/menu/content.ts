@@ -18,6 +18,7 @@ export interface Chapter {
 
 export const CONTROLS: { keys: string; what: string }[] = [
   { keys: key('←', '↑', '→', '↓'), what: 'Reactor Power: speed / weapons / shields / equalize' },
+  { keys: key('S'), what: 'Full reverse / restore throttle (mouse steering only)' },
   { keys: key('Wheel'), what: 'Throttle −40% … +100% (reverse below zero)' },
   { keys: key('Ctrl', 'Wheel'), what: `Zoom (also ${key('-')} ${key('=')})` },
   { keys: key('Q', 'W', 'E', 'R'), what: `Shard Calibration (WASD steering: ${key('Z', 'X', 'C', 'V')})` },

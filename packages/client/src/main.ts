@@ -3,6 +3,13 @@ import './hud/sidebar.css';
 import './hud/cockpit.css';
 import './hud/cockpit-panels.css';
 import './hud/panelFitting.css';
+import './hud/combatReadouts.css';
+import './hud/scoreboard.css';
+import './hud/instrumentReactions.css';
+import './hud/combatOverlay.css';
+import './hud/hangarLighting.css';
+import './hud/emissiveGlow.css';
+import { installEmissiveGlow } from './hud/emissiveGlow';
 
 import type { ShipArtMode } from './art/referenceShips';
 import { Game } from './game';
@@ -13,6 +20,7 @@ import type { ControlScheme } from './input';
 import { initTerminal, terminalMarkup } from './menu/screens';
 
 
+installEmissiveGlow();
 const menu = document.getElementById('menu')!;
 const stage = document.getElementById('stage')!;
 const hud = document.getElementById('hud')!;

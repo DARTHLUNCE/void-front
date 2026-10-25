@@ -1,264 +1,437 @@
 import { DIRECTOR } from '../../content/bots';
 import { COMMAND_RULES } from '../../content/command';
 import type { TeamId } from '../../content/types';
+import { geometryOf } from '../hullCollision';
+import { perceivedPresence as power } from '../botPerception';
+import { baseSpeed } from './movement';
+import { gunRange } from './combat';
+import { turretRange } from './structures';
 import { EventType, Job, PingKind, type Ship, type Structure, type TeamState, type World } from '../world';
 
-/**
- * Fleet Director: one per team, every 2 s, assigns each bot a job: farm, take or hold a node,
- * defend the mothership, push the enemy FOBs then mothership, or answer the commander's rally and
- * pings.
+interface AttackReport {
+  started: number;
+  hardDeadline: number;
+  lastVolley: number;
+  approach: Map<number, { bestDistance: number; progressAt: number }>;
+}
+interface TeamPlan {
+  phase: 'idle' | 'gather' | 'attack';
+  target: number;
+  initialPower: number;
+  /** Frozen for a wave: a moving assembly point causes endless chasing and formation churn. */
+  stage: { x: number; y: number } | null;
+  /** Individual defense assignments avoid abandoning a second threatened base. */
+  defense: Map<number, number>;
+  attack: AttackReport | null;
+}
+const plans = new WeakMap<World, [TeamPlan, TeamPlan]>();
+function planFor(w: World, team: TeamId): TeamPlan {
+  let pair = plans.get(w);
+  if (!pair) {
+    const make = (): TeamPlan => ({ phase: 'idle', target: -1, initialPower: 0, stage: null, defense: new Map(), attack: null });
+    pair = [make(), make()];
+    plans.set(w, pair);
+  }
+  return pair[team];
+}
+
+/** Evaluate strategy at 0.5 Hz, using public objectives and the team's visible contacts only.
+ * Marginal objective value falls as ships are assigned; incumbency offsets small score changes.
+ * Pilots retain responsibility for legal steering, combat, collision avoidance and retreat.
  */
 export function runDirectors(w: World): void {
   for (const team of w.teams) {
     if (w.time < team.nextDirector) continue;
-    team.nextDirector += DIRECTOR.interval;
+    team.nextDirector = w.time + DIRECTOR.interval;
     direct(w, team);
   }
 }
 
-const pointCount = new Int32Array(32);
-const pointWeight = new Float64Array(32);
+
+function distance(ax: number, ay: number, bx: number, by: number): number {
+  return Math.hypot(ax - bx, ay - by);
+}
+
+/** A strategic report cannot inspect cloaked or otherwise unobserved enemy positions. */
+function enemyPower(w: World, team: TeamId, x: number, y: number, radius: number): number {
+  let total = 0;
+  for (const s of w.ships) {
+    if (!s.alive || s.commander || s.team === team || !(s.visibleMask & (1 << team))) continue;
+    const d = distance(s.x, s.y, x, y);
+    if (d < radius) total += power(s) * (1 - .35 * d / radius);
+  }
+  return total;
+}
+
+function humanPower(w: World, team: TeamId, x: number, y: number, radius: number): number {
+  let total = 0;
+  for (const s of w.ships) if (s.alive && !s.commander && !s.bot && s.team === team && distance(s.x, s.y, x, y) < radius) total += power(s);
+  return total;
+}
+
+export function defendedStructure(w: World, s: Ship): Structure {
+  const index = planFor(w, s.team).defense.get(s.slot) ?? w.teams[s.team].defendTarget;
+  const st = w.structures[index];
+  return st?.alive ? st : w.teams[s.team].mothership;
+}
 
 function direct(w: World, team: TeamState): void {
-  const n = w.fleetSize;
-  const cap = Math.floor(DIRECTOR.objectiveCapFrac * n);
-  const exposed = !w.enemyOf(team.id).mothership.shielded;
+  const plan = planFor(w, team.id);
+  if (plan.phase === 'idle') plan.target = choosePushTarget(w, team.id)?.index ?? -1;
+  const own = w.ships.filter(s => s.team === team.id && s.alive && !s.commander && s.bot);
+  const ready = own.filter(s => !s.bot!.retreating && s.hull >= .45 * s.maxHull);
+  const assigned = new Set<number>();
+  const fleetPower = ready.reduce((v, s) => v + power(s), 0);
+  const pendingPing = !team.pingHandled && w.time - team.pingAt < COMMAND_RULES.pingLife;
+  const attackOrder = pendingPing && team.pingKind === PingKind.Attack && team.pingPoint < 0;
 
-  // An attack ping on an enemy structure calls the next push now.
-  const pinged = !team.pingHandled && w.time - team.pingAt < COMMAND_RULES.pingLife;
-  if (pinged && team.pingKind === PingKind.Attack && team.pingPoint < 0 && w.time >= team.pushUntil) team.nextPush = w.time;
-
-  if (w.time >= team.nextPush) {
-    // The wave gathers at the staging point until most of it has arrived (or the gather runs out),
-    // then attacks together.
-    team.pushGatherUntil = w.time + DIRECTOR.pushGather;
-    team.pushUntil = team.pushGatherUntil + DIRECTOR.pushDuration;
-    const gap = team.rng.range(DIRECTOR.pushIntervalMin, DIRECTOR.pushIntervalMax);
-    team.nextPush = team.pushUntil + (exposed ? gap * DIRECTOR.allIn.intervalMul : gap);
-    w.emit(EventType.PushStart, team.id, 0);
-  } else if (w.time < team.pushGatherUntil && waveReady(w, team)) {
-    team.pushGatherUntil = w.time;
-    team.pushUntil = w.time + DIRECTOR.pushDuration;
-  }
-  // Recruit only while gathering so the wave hits together.
-  const pushing = w.time < team.pushGatherUntil;
-
-  // Defenders guard whichever of our structures (mothership or a standing FOB) is most threatened.
-  let home: Structure = team.mothership;
-  let threat = countEnemiesNear(w, team.id, home.x, home.y, DIRECTOR.threatRadius);
-  for (const f of team.fobs) {
-    if (!f.alive) continue;
-    const t = countEnemiesNear(w, team.id, f.x, f.y, DIRECTOR.threatRadius);
-    if (t > threat) {
-      threat = t;
-      home = f;
+  // No standing guard quota. Respond to actual visible attacks, considering multiple bases.
+  const threats = [team.mothership, ...team.fobs].filter(st => st.alive).map(st => ({
+    st, need: Math.max(0, enemyPower(w, team.id, st.x, st.y, DIRECTOR.threatRadius) * 1.15 -
+      humanPower(w, team.id, st.x, st.y, DIRECTOR.threatRadius)),
+  })).sort((a, b) => b.need - a.need);
+  team.defendTarget = threats[0]?.st.index ?? team.mothership.index;
+  const oldDefense = new Map(plan.defense);
+  plan.defense.clear();
+  const defenseCap = Math.ceil(ready.length * .55);
+  for (const { st, need } of threats) {
+    let filled = 0;
+    while (filled < need && plan.defense.size < defenseCap) {
+      const s = bestAvailable(ready, assigned, s => {
+        const eta = distance(s.x, s.y, st.x, st.y) / Math.max(100, s.cls.speed);
+        const incumbent = oldDefense.get(s.slot) === st.index ? 1.35 : 1;
+        return incumbent * Math.sqrt(power(s)) / (8 + eta);
+      });
+      if (!s) break;
+      assigned.add(s.slot); plan.defense.set(s.slot, st.index);
+      setJob(w, s, Job.Defend);
+      filled += power(s);
     }
   }
-  team.defendTarget = home.index;
-  const defendWant = Math.min(cap, Math.max(Math.ceil(DIRECTOR.defendMinFrac * n), threat + 2));
-  // Enemy mothership exposed (both its FOBs down): go all in.
-  const assaultWant = pushing ? (exposed ? Math.floor(DIRECTOR.allIn.assaultFrac * n) : cap) : 0;
 
-  // Farmers: low-level bots that rolled the farming habit at spawn, up to a share of the team.
-  const farmCap = Math.floor(DIRECTOR.farmCapFrac * n);
-  let farmers = 0;
-  let defenders = 0;
-  let assaulters = 0;
-  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
-    const s = w.ships[slot];
-    const b = s.bot;
-    if (!b) continue;
-    if (b.farmer && s.rank < DIRECTOR.farmBelowRank && farmers < farmCap) {
-      b.job = Job.Farm;
-      farmers++;
-      continue;
+  const objective = plan.target >= 0 ? w.structures[plan.target] : null;
+  const members = ready.filter(s => s.bot!.job === Job.Assault && !assigned.has(s.slot));
+  const wavePower = members.reduce((v, s) => v + power(s), 0);
+  const homeEmergency = threats.some(t => t.st === team.mothership && t.need > fleetPower * .5);
+  if (plan.phase === 'attack' && objective?.alive) reportAttackProgress(w, objective, members, plan);
+  if (plan.phase !== 'idle' && (!objective?.alive || homeEmergency || wavePower < plan.initialPower * .38)) {
+    cancelWave(w, team, plan);
+  } else if (plan.phase !== 'idle' && w.time >= team.pushUntil) {
+    // Arrival estimates are not a retreat order while the wave is finally making contact.
+    // Extension requires recent observed action and always respects the frozen hard limit.
+    if (plan.phase === 'attack' && productiveAttack(w, members, plan)) {
+      team.pushUntil = Math.min(plan.attack!.hardDeadline, w.time + 30);
+      team.nextPush = Math.max(team.nextPush, team.pushUntil + 55);
+    } else cancelWave(w, team, plan);
+  }
+  if (plan.phase === 'gather') {
+    const stage = stagingPoint(w, team.id)!;
+    // Large hull formations deliberately occupy several rows. Test each pilot's assigned
+    // station rather than squeezing the entire fleet into one fixed-radius circle.
+    const mustered = members.filter(s => distance(s.x, s.y, s.bot!.destX, s.bot!.destY) < 650 &&
+      distance(s.bot!.destX, s.bot!.destY, stage.x, stage.y) < 8000);
+    const localPower = mustered.reduce((v, s) => v + power(s), 0);
+    const need = assaultNeed(w, team.id, objective!);
+    const deadline = w.time >= team.pushGatherUntil;
+    if (mustered.length >= 4 && localPower >= need && (mustered.length >= members.length * .7 || deadline)) {
+      if (deadline && mustered.length < members.length * .7) {
+        // Release stragglers rather than repeatedly cancelling a viable assembled force or
+        // ordering isolated late arrivals to feed into an attack they never joined.
+        const present = new Set(mustered.map(s => s.slot));
+        for (const s of own) if (s.bot!.job === Job.Assault && !present.has(s.slot)) setJob(w, s, Job.Skirmish);
+        plan.initialPower = localPower;
+      }
+      plan.phase = 'attack'; team.pushGatherUntil = w.time;
+      team.pushUntil = w.time + attackDuration(w, objective!, mustered);
+      plan.attack = { started: w.time, hardDeadline: team.pushUntil + 120, lastVolley: -Infinity, approach: new Map() };
+      reportAttackProgress(w, objective!, members, plan);
+      team.nextPush = Math.max(team.nextPush, team.pushUntil + 55);
+    } else if (deadline) {
+      // A failed gathering is not permission to feed ships into the enemy one by one.
+      cancelWave(w, team, plan);
     }
-    if (b.job === Job.Farm || (b.job === Job.Rally && w.time >= team.rallyUntil)) setSkirmish(w, s, -1);
-    // The push timer only governs recruiting: crossing the map takes longer than 30 s, so
-    // assaulters stay committed until they die or retreat (see respawnShip / think).
-    if (b.job === Job.Defend) defenders++;
-    if (b.job === Job.Assault) assaulters++;
+  } else if (plan.phase === 'attack' && objective) {
+    const pressure = enemyPower(w, team.id, objective.x, objective.y, 2600);
+    if (wavePower < pressure * .8 && wavePower < plan.initialPower * .7) cancelWave(w, team, plan);
+  }
+  if (plan.phase !== 'idle') {
+    for (const s of members) if (s.bot!.job === Job.Assault) assigned.add(s.slot);
+  } else {
+    for (const s of own) if (s.bot!.job === Job.Assault) setJob(w, s, Job.Skirmish);
+    const territory = w.points.filter(p => p.owner === team.id).length;
+    const opportunity = w.time >= 120 && territory >= Math.ceil(w.points.length * .55) && ready.length >= w.fleetSize * .65;
+    if (!homeEmergency && (attackOrder || w.time >= team.nextPush || opportunity && w.time >= team.pushUntil + 50)) {
+      const target = choosePushTarget(w, team.id);
+      if (target) {
+        const selected: Ship[] = [], scratch = new Set(assigned);
+        const cap = Math.max(4, Math.floor(ready.length * (target === w.enemyOf(team.id).mothership ? .6 : .48)));
+        while (selected.length < cap) {
+          const s = bestAvailable(ready, scratch, s => {
+            const eta = distance(s.x, s.y, target.x, target.y) / Math.max(100, s.cls.speed);
+            // Prefer healthy anti-armor hulls but keep the wave geographically coherent.
+            const siege = .65 + Math.min(1.1, (s.cls.gun.ap ?? 90) / 100);
+            return power(s) * siege / (30 + eta);
+          });
+          if (!s) break;
+          scratch.add(s.slot); selected.push(s);
+        }
+        const strength = selected.reduce((v, s) => v + power(s), 0);
+        if (selected.length >= 4 && strength >= assaultNeed(w, team.id, target) * 1.15) {
+          plan.target = target.index; plan.phase = 'gather'; plan.initialPower = strength;
+          plan.stage = chooseStagingPoint(w, team.id, target, selected);
+          team.pushGatherUntil = w.time + gatherDuration(w, plan.stage, selected);
+          team.pushUntil = team.pushGatherUntil + 150;
+          team.nextPush = team.pushUntil + 55;
+          for (const s of selected) { assigned.add(s.slot); setJob(w, s, Job.Assault); }
+          w.emit(EventType.PushStart, team.id, 0);
+        } else team.nextPush = w.time + 20;
+      }
+    }
   }
 
-  // Too many defenders: release the ones farthest from home.
-  while (defenders > defendWant) {
-    const s = pickBot(w, team, (b) => b.job === Job.Defend, (s) => dist2(s.x, s.y, home.x, home.y));
-    if (!s) break;
-    setSkirmish(w, s, -1);
-    defenders--;
-  }
-  // Too few: recruit the closest non-farmers.
-  while (defenders < defendWant) {
-    const s = pickBot(w, team, (b) => b.job === Job.Skirmish, (s) => -dist2(s.x, s.y, home.x, home.y));
-    if (!s) break;
-    s.bot!.job = Job.Defend;
-    defenders++;
-  }
-  // Push: the most forward skirmishers go for the enemy mothership, higher levels first.
-  const sign = w.teamSign(team.id);
-  while (assaulters < assaultWant) {
-    const s = pickBot(
-      w,
-      team,
-      (b) => b.job === Job.Skirmish && !b.retreating,
-      (s) => (s.alive ? sign * (s.x - home.x) + s.rank * 300 : -Infinity),
-    );
-    if (s && !s.alive) break;
-    if (!s) break;
-    s.bot!.job = Job.Assault;
-    assaulters++;
-  }
-
-  // Rally Order: the skirmishers closest to the rally point drop what they're doing and go.
+  // A live human rally takes precedence over routine capture/economy work, not emergency defense.
   if (w.time < team.rallyUntil) {
-    let rallying = 0;
-    for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) if (w.ships[slot].bot?.job === Job.Rally) rallying++;
-    const want = Math.ceil(DIRECTOR.rallyFrac * n);
-    while (rallying < want) {
-      const s = pickBot(w, team, (b) => b.job === Job.Skirmish, (s) => -dist2(s.x, s.y, team.rallyX, team.rallyY));
+    const want = Math.ceil(ready.length * DIRECTOR.rallyFrac);
+    for (let i = 0; i < want; i++) {
+      const s = bestAvailable(ready, assigned, s => (s.bot!.job === Job.Rally ? 1.25 : 1) /
+        (500 + distance(s.x, s.y, team.rallyX, team.rallyY)));
       if (!s) break;
-      s.bot!.job = Job.Rally;
-      rallying++;
+      assigned.add(s.slot); setJob(w, s, Job.Rally);
     }
   }
 
-  // Node pings: the skirmishers nearest the pinged node head there.
-  if (pinged && team.pingPoint >= 0) {
-    const p = w.points[team.pingPoint];
-    const want = Math.ceil(COMMAND_RULES.pingBotFrac * n);
-    for (let k = 0; k < want; k++) {
-      const s = pickBot(w, team, (b) => b.job === Job.Skirmish && b.jobPoint !== p.index, (s) => -dist2(s.x, s.y, p.x, p.y));
-      if (!s) break;
-      setSkirmish(w, s, p.index);
-    }
+  // A few lightly armed, under-upgraded ships collect nearby safe salvage. Do not reserve a
+  // quarter of the fleet indefinitely or send farmers through a visible enemy group.
+  const farmCap = Math.floor(own.length * .1);
+  let farmers = 0;
+  for (const s of ready) {
+    if (farmers >= farmCap || assigned.has(s.slot) || !s.bot!.farmer || s.rank >= DIRECTOR.farmBelowRank || s.radius > 70) continue;
+    if (enemyPower(w, team.id, s.x, s.y, 1700) > .1 || !hasLocalSalvage(w, s)) continue;
+    assigned.add(s.slot); setJob(w, s, Job.Farm); farmers++;
   }
+
+  assignNodes(w, team, ready.filter(s => !assigned.has(s.slot)));
   team.pingHandled = true;
-
-  // Skirmishers: keep their point until their job timer runs out or the point is over cap.
-  pointCount.fill(0);
-  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
-    const b = w.ships[slot].bot;
-    if (b && b.job === Job.Skirmish) pointCount[b.jobPoint]++;
-  }
-  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
-    const s = w.ships[slot];
-    const b = s.bot;
-    if (!b || b.job !== Job.Skirmish) continue;
-    if (w.time < b.jobUntil && pointCount[b.jobPoint] <= cap) continue;
-    pointCount[b.jobPoint]--;
-    const p = choosePoint(w, team, s, cap);
-    setSkirmish(w, s, p);
-    pointCount[p]++;
-  }
 }
 
-function setSkirmish(w: World, s: Ship, point: number): void {
+function setJob(w: World, s: Ship, job: Job, point = s.bot!.jobPoint): void {
   const b = s.bot!;
-  b.job = Job.Skirmish;
-  if (point >= 0) b.jobPoint = point;
-  else b.jobUntil = 0; // reassign at the next pass
-  if (point >= 0) b.jobUntil = w.time + s.rng.range(DIRECTOR.jobMinTime, DIRECTOR.jobMaxTime);
-}
-
-function choosePoint(w: World, team: TeamState, s: Ship, cap: number): number {
-  const points = w.map.points;
-  const home = team.mothership;
-  const enemy = w.enemyOf(team.id).mothership;
-  // Walk points in team-relative order (k), so both teams make mirrored choices from equal draws.
-  let total = 0;
-  for (let k = 0; k < points.length; k++) {
-    const i = w.teamPoint(team.id, k);
-    const p = points[i].pos;
-    const dOwn = Math.sqrt(dist2(p.x, p.y, home.x, home.y));
-    const dEnemy = Math.sqrt(dist2(p.x, p.y, enemy.x, enemy.y));
-    const side = Math.abs(dOwn - dEnemy) < 1500 ? DIRECTOR.sideWeight.middle : dOwn < dEnemy ? DIRECTOR.sideWeight.own : DIRECTOR.sideWeight.enemy;
-    const pinged = i === team.pingPoint && w.time - team.pingAt < COMMAND_RULES.pingBotTime ? DIRECTOR.pingWeight : 1;
-    const wgt = pointCount[i] >= cap ? 0 : points[i].botValue * side * ownerWeight(w, team, i) * pinged;
-    pointWeight[k] = wgt;
-    total += wgt;
+  if (b.job !== job || b.jobPoint !== point || b.jobUntil <= w.time) {
+    b.job = job; b.jobPoint = point; b.jobUntil = w.time + 12;
+    // Let a new strategic order reach the pilot on its normal bounded decision schedule.
   }
-  if (total <= 0) return w.teamPoint(team.id, s.rng.int(points.length));
-  let r = s.rng.next() * total;
-  for (let k = 0; k < points.length; k++) {
-    r -= pointWeight[k];
-    if (r < 0) return w.teamPoint(team.id, k);
-  }
-  return w.teamPoint(team.id, points.length - 1);
 }
 
-/** Where a push gathers: short of the push target, on our side of it. */
-export function stagingPoint(w: World, team: TeamId): { x: number; y: number } | null {
-  const target = pushTarget(w, team);
-  if (!target) return null;
-  return { x: target.x - w.teamSign(team) * DIRECTOR.pushStageDistance, y: target.y };
+function cancelWave(w: World, team: TeamState, plan: TeamPlan): void {
+  plan.phase = 'idle'; plan.target = -1; plan.initialPower = 0; plan.stage = null; plan.attack = null;
+  team.pushGatherUntil = team.pushUntil = w.time;
+  team.nextPush = Math.max(team.nextPush, w.time + 45);
+  for (const s of w.ships) if (s.team === team.id && s.bot?.job === Job.Assault) setJob(w, s, Job.Skirmish);
 }
 
-/** Enough of the wave has reached the staging point to go in together. */
-function waveReady(w: World, team: TeamState): boolean {
-  const stage = stagingPoint(w, team.id);
-  if (!stage) return false;
-  let alive = 0;
-  let there = 0;
-  const r2 = DIRECTOR.stageArriveRadius ** 2;
-  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
-    const s = w.ships[slot];
-    if (!s.alive || s.bot?.job !== Job.Assault) continue;
-    alive++;
-    if ((s.x - stage.x) ** 2 + (s.y - stage.y) ** 2 <= r2) there++;
-  }
-  return alive >= 4 && there >= DIRECTOR.stageReadyFrac * alive;
-}
-
-/**
- * The enemy structure a push goes for: the weaker standing enemy FOB (ties to the first in
- * team-relative order), then the mothership once both FOBs are down.
+/** Own pilots report actual shots and new ground gained, never an opponent's hidden state.
+ * Remember a distance low-water mark so orbiting or retracing the same stretch cannot keep
+ * renewing a wave. A single detached scout cannot count as progress by the main body.
  */
-export function pushTarget(w: World, team: TeamId): Structure | null {
-  const enemy = w.enemyOf(team);
-  let best: Structure | null = null;
-  for (const f of enemy.fobs) if (f.alive && (!best || f.hull / f.maxHull < best.hull / best.maxHull)) best = f;
-  if (best) return best;
-  return enemy.mothership.alive ? enemy.mothership : null;
-}
-
-function ownerWeight(w: World, team: TeamState, i: number): number {
-  const p = w.points[i];
-  const o = DIRECTOR.ownerWeight;
-  if (p.owner === team.id) return p.contested ? o.contestedOurs : o.ours;
-  return p.owner < 0 ? o.neutral : o.theirs;
-}
-
-/** The bot on `team` matching `filter` with the highest `score` (lowest team slot on ties). */
-function pickBot(
-  w: World,
-  team: TeamState,
-  filter: (b: NonNullable<Ship['bot']>) => boolean,
-  score: (s: Ship) => number,
-): Ship | null {
-  let best: Ship | null = null;
-  let bestScore = -Infinity;
-  for (let slot = team.firstSlot; slot <= team.lastSlot; slot++) {
-    const s = w.ships[slot];
-    if (!s.bot || !filter(s.bot)) continue;
-    const sc = score(s);
-    if (sc > bestScore) {
-      bestScore = sc;
-      best = s;
+function reportAttackProgress(w: World, target: Structure, members: Ship[], plan: TeamPlan): void {
+  const report = plan.attack;
+  if (!report) return;
+  for (const s of members) {
+    const reach = distance(s.x, s.y, target.x, target.y);
+    let progress = report.approach.get(s.slot);
+    if (!progress) {
+      progress = { bestDistance: reach, progressAt: -Infinity };
+      report.approach.set(s.slot, progress);
+    } else if (reach < progress.bestDistance - 250) {
+      progress.bestDistance = reach; progress.progressAt = w.time;
     }
+    // lastFireTime is written only after real projectiles spawn. input.fire alone can
+    // remain true behind a blocker or during cooldown and is not productive contact.
+    if (s.bot!.targetStructure === target.index && s.lastFireTime >= report.started &&
+      s.lastFireTime <= w.time && reach <= target.radius + gunRange(s, w) + 100) {
+      report.lastVolley = Math.max(report.lastVolley, s.lastFireTime);
+    }
+  }
+}
+function productiveAttack(w: World, members: Ship[], plan: TeamPlan): boolean {
+  const report = plan.attack;
+  if (!report || w.time >= report.hardDeadline) return false;
+  if (w.time - report.lastVolley <= 12) return true;
+  const advancing = members.filter(s => w.time - (report.approach.get(s.slot)?.progressAt ?? -Infinity) <= 20).length;
+  return advancing >= Math.max(2, Math.ceil(members.length * .2));
+}
+
+/** Match the pilot's compact grid, including the physical hull beyond the outer station. */
+function formationExtent(w: World, selected: Ship[]): { depth: number; width: number } {
+  const widest = selected.reduce((radius, s) => Math.max(radius, geometryOf(w, s).radius), 0);
+  const columns = Math.max(1, Math.ceil(Math.sqrt(selected.length))), rows = Math.ceil(selected.length / columns);
+  const spacing = widest * 2 + 65;
+  return { depth: (rows - 1) * spacing / 2 + widest, width: (columns - 1) * spacing / 2 + widest };
+}
+
+/** Assemble behind known opposition, not a fixed distance from an enemy base that may be
+ * beyond the front. Owned territory and the healthy wave's median position establish the
+ * friendly foothold. Only contacts visible to this team constrain the enemy front.
+ */
+function chooseStagingPoint(w: World, team: TeamId, target: Structure, selected: Ship[]): { x: number; y: number } {
+  const sign = w.teamSign(team), middle = w.map.width / 2;
+  const forward = (x: number) => (x - middle) * sign;
+  const ext = formationExtent(w, selected);
+  const forwards = selected.map(s => forward(s.x)).sort((a, b) => a - b);
+  const median = forwards[Math.floor(forwards.length / 2)];
+  const meanY = selected.reduce((sum, s) => sum + s.y, 0) / selected.length;
+  const yMargin = Math.min(w.map.height / 2, ext.width + 150);
+  const y = Math.max(yMargin, Math.min(w.map.height - yMargin, meanY * .65 + target.y * .35));
+  let foothold = median;
+  for (const p of w.points) {
+    if (p.owner !== team || p.contested || Math.abs(p.y - y) > ext.width + 1800) continue;
+    // Territory gives a forward assembly opportunity, but not several kilometres ahead of
+    // the ships that must get there. The whole grid remains behind its supporting node.
+    foothold = Math.max(foothold, Math.min(median + 800, forward(p.x) - ext.depth - 450));
+  }
+  let front = Math.min(foothold, forward(target.x) - DIRECTOR.pushStageDistance);
+  for (const enemy of w.ships) {
+    if (!enemy.alive || enemy.commander || enemy.team === team || !(enemy.visibleMask & (1 << team))) continue;
+    if (Math.abs(enemy.y - y) > ext.width + 1800) continue;
+    front = Math.min(front, forward(enemy.x) - ext.depth - 1500);
+  }
+  for (const st of w.structures) {
+    if (!st.alive || st.team === team) continue;
+    const reach = turretRange(st) + st.radius + 250;
+    if (Math.abs(st.y - y) > ext.width + reach) continue;
+    front = Math.min(front, forward(st.x) - ext.depth - reach);
+  }
+  const xMargin = Math.min(w.map.width / 2, ext.depth + 150);
+  return { x: Math.max(xMargin, Math.min(w.map.width - xMargin, middle + sign * front)), y };
+}
+
+/** Budget the journey to a hull-sized formation using the live player flight speed. Contact
+ * often prevents sublight, and braking/avoidance cost time, so do not assume cruise-speed travel.
+ * A bounded deadline still cancels a stalled wave instead of keeping the fleet unavailable.
+ */
+function gatherDuration(w: World, stage: { x: number; y: number }, selected: Ship[]): number {
+  const ext = formationExtent(w, selected);
+  const formationReach = Math.hypot(ext.depth, ext.width);
+  let longestTrip = 0;
+  for (const s of selected) {
+    const distanceToStation = distance(s.x, s.y, stage.x, stage.y) + formationReach;
+    longestTrip = Math.max(longestTrip, distanceToStation / Math.max(60, baseSpeed(w, s) * .5));
+  }
+  return Math.max(DIRECTOR.pushGather, Math.min(180, longestTrip + 15));
+}
+
+/** The engagement clock starts after a realistic transit allowance. Large hulls travelling
+ * legally with convoy spacing and collision avoidance often need most of the old 150 seconds
+ * just to cross the map. Use the main body's slower quartile, not one remote straggler, and
+ * freeze a finite deadline at launch; attrition, lost objectives and home emergencies still cancel.
+ */
+function attackDuration(w: World, target: Structure, ships: Ship[]): number {
+  const travel = ships.map(s => {
+    const firingDistance = target.radius + gunRange(s, w) * .75;
+    const journey = Math.max(0, distance(s.x, s.y, target.x, target.y) - firingDistance);
+    return journey / Math.max(60, baseSpeed(w, s) * .45);
+  }).sort((a, b) => a - b);
+  const mainBodyETA = travel[Math.floor(Math.max(0, travel.length - 1) * .75)] ?? 0;
+  return Math.min(450, 150 + Math.ceil(mainBodyETA));
+}
+
+function assaultNeed(w: World, team: TeamId, target: Structure): number {
+  // Known static defense plus observed ships. Enemy hulls outside vision add no information.
+  return (target === w.enemyOf(team).mothership ? 9 : 5) + enemyPower(w, team, target.x, target.y, 2800) * 1.1;
+}
+
+function bestAvailable(ships: Ship[], assigned: Set<number>, score: (s: Ship) => number): Ship | null {
+  let best: Ship | null = null, bestScore = -Infinity;
+  for (const s of ships) {
+    if (assigned.has(s.slot)) continue;
+    const value = score(s);
+    if (value > bestScore) { best = s; bestScore = value; }
   }
   return best;
 }
 
-function countEnemiesNear(w: World, team: number, x: number, y: number, r: number): number {
-  const n = w.shipHash.query(x, y, r, w.scratch);
-  let count = 0;
+function hasLocalSalvage(w: World, s: Ship): boolean {
+  const n = w.crystalHash.query(s.x, s.y, 1200, w.scratch);
   for (let i = 0; i < n; i++) {
-    const o = w.ships[w.scratch[i]];
-    if (o.alive && o.team !== team && dist2(o.x, o.y, x, y) <= r * r) count++;
+    const c = w.crystals.items[w.scratch[i]];
+    if (c.active && distance(s.x, s.y, c.x, c.y) < 1200 && (c.x - w.map.width / 2) * w.teamSign(s.team) <= 0) return true;
   }
-  return count;
+  return false;
 }
 
-function dist2(ax: number, ay: number, bx: number, by: number): number {
-  return (ax - bx) ** 2 + (ay - by) ** 2;
+function assignNodes(w: World, team: TeamState, ships: Ship[]): void {
+  if (!w.points.length) return;
+  const assignedPower = new Float64Array(w.points.length);
+  const count = new Int32Array(w.points.length);
+  const threat = w.points.map(p => enemyPower(w, team.id, p.x, p.y, 1700));
+  const avgPower = ships.length ? ships.reduce((sum, s) => sum + power(s), 0) / ships.length : 1;
+  const cap = Math.max(2, Math.ceil(ships.length / w.points.length * 1.6));
+  const demand = w.points.map((p, i) => {
+    const baseline = p.owner === team.id ? (p.contested ? 2.5 : .35) : p.owner < 0 ? 2.2 : 3.5;
+    assignedPower[p.index] = humanPower(w, team.id, p.x, p.y, 1000);
+    return baseline * avgPower + threat[i] * 1.1;
+  });
+  // Reserve incumbents first. Small fluctuations cannot oscillate an entire column between nodes.
+  const unassigned: Ship[] = [];
+  for (const s of ships) {
+    const b = s.bot!, p = w.points[b.jobPoint];
+    if (b.job === Job.Skirmish && p && w.time < b.jobUntil && count[p.index] < cap &&
+      (p.owner !== team.id || p.contested || threat[p.index] > 0 || count[p.index] === 0)) {
+      count[p.index]++; assignedPower[p.index] += power(s);
+    } else unassigned.push(s);
+  }
+  for (const s of unassigned) {
+    let best = w.teamPoint(team.id, 0), bestScore = -Infinity;
+    for (let k = 0; k < w.points.length; k++) {
+      const i = w.teamPoint(team.id, k), p = w.points[i];
+      const dist = distance(s.x, s.y, p.x, p.y);
+      const eta = dist / Math.max(100, s.cls.speed);
+      const ownership = p.owner === team.id ? (p.contested || threat[i] > 0 ? 1.8 : .4) : p.owner < 0 ? 1.25 : 1.1;
+      const ping = team.pingPoint === i && w.time - team.pingAt < COMMAND_RULES.pingBotTime ? DIRECTOR.pingWeight : 1;
+      const continuity = s.bot!.job === Job.Skirmish && s.bot!.jobPoint === i ? 1.22 : 1;
+      const enemySide = (p.x - w.map.width / 2) * w.teamSign(team.id) > 1000;
+      const route = enemySide && w.time < 100 ? .6 : 1;
+      const saturated = count[i] >= cap ? .08 : 1;
+      const marginal = demand[i] / (avgPower * .7 + assignedPower[i]);
+      // Known pressure warrants reinforcement, but never make a whole fleet chase one hotspot.
+      const urgency = 1 + Math.min(1.2, threat[i] / Math.max(avgPower, demand[i]));
+      const suitability = p.owner >= 0 && p.owner !== team.id ? .7 + Math.min(.6, (s.cls.gun.ap ?? 90) / 150) : 1;
+      const score = w.map.points[i].botValue * ownership * ping * continuity * route * saturated *
+        marginal * urgency * suitability / (12 + eta);
+      if (score > bestScore) { bestScore = score; best = i; }
+    }
+    setJob(w, s, Job.Skirmish, best);
+    assignedPower[best] += power(s); count[best]++;
+  }
+}
+
+/** A wave keeps its chosen target; it cannot zig-zag between FOBs on tiny health changes. */
+export function pushTarget(w: World, team: TeamId): Structure | null {
+  const plan = planFor(w, team);
+  const current = w.structures[plan.target];
+  if (current?.alive) return current;
+  if (plan.phase !== 'idle') return null;
+  // Pilot calls this every tick: cache target selection until the next strategic report.
+  const candidate = choosePushTarget(w, team);
+  plan.target = candidate?.index ?? -1;
+  return candidate;
+}
+
+function choosePushTarget(w: World, team: TeamId): Structure | null {
+  const enemy = w.enemyOf(team);
+  let best: Structure | null = null, bestScore = Infinity;
+  for (const f of enemy.fobs) {
+    if (!f.alive) continue;
+    const score = f.hull / f.maxHull + enemyPower(w, team, f.x, f.y, 2600) * .08;
+    if (score < bestScore) { best = f; bestScore = score; }
+  }
+  return best ?? (enemy.mothership.alive && !enemy.mothership.shielded ? enemy.mothership : null);
+}
+
+/** Every member sees the same stable friendly-side assembly anchor for the entire wave. */
+export function stagingPoint(w: World, team: TeamId): { x: number; y: number } | null {
+  const plan = planFor(w, team);
+  if (plan.stage) return plan.stage;
+  const target = pushTarget(w, team);
+  return target ? { x: target.x - w.teamSign(team) * DIRECTOR.pushStageDistance, y: target.y } : null;
 }

@@ -1,4 +1,17 @@
+import { ImpactSparkFlock } from './impactSparkFlock';
+import { FX_SURFACE } from './abilityFxBatch';
+import { abilityHullPose, abilityCameraPulse } from './abilityHullMotion';
+import { AbilityFx } from './abilityFx';
+import { SublightFxState } from './sublightFxState';
+import { SublightScreen } from './sublightScreen';
+import { ShieldRefraction } from './shieldRefraction';
+import { sublightShake } from './sublightCamera';
+import { EmissiveBloom } from './emissiveBloom';
 import { nodeRotation, nodeTurretRadius } from '@void-front/shared';
+import { cameraBlend, PilotCameraOffset } from './pilotCamera';
+import { clampPilotZoom, PILOT_ZOOM, shipFramingZoom, SUBLIGHT_VIEW_RATIO } from './pilotFraming';
+import { exhaustPosition, plumeDimensions, ThrusterPlumes } from './thrusterPlumes';
+import { observeCanvasSize } from './canvasSize';
 import { clientToWorld, worldToClient, type Viewport } from './viewport';
 import { Application, Container, Graphics, Mesh, Sprite, Text, TilingSprite, type MeshGeometry, type Shader, type Texture } from 'pixi.js';
 import {
@@ -9,6 +22,7 @@ import {
   DEPLOYABLES,
   BASE_UPGRADES,
   DRONE_BEHAVIORS,
+  DRONES,
   EventType,
   FOB,
   H,
@@ -41,13 +55,13 @@ import { makeTextures, type LitArt, type Textures } from './textures';
 import { ShipFx } from './shipFx';
 
 export const TEAM_COLORS = [0x4aa8ff, 0xff7a3d] as const;
-/** Pilot camera: at least this much of the world across, more for long-range hulls (see viewWidthFor). */
+/** Legacy range framing retained for the commander map and docked view. */
 const VIEW_W = 1650;
 const VIEW_ASPECT = 937.5 / 1650;
 /** Long guns need to see their targets: frame ~1.9× the gun's reach plus margin, up to this. */
 const VIEW_W_MAX = 3400;
 
-/** World units the pilot camera shows across for a hull class (index into CLASS_ORDER). */
+/** World units used for commander/docked framing (index into CLASS_ORDER). */
 export function viewWidthFor(classIndex: number): number {
   const cls = CLASSES[CLASS_ORDER[classIndex]];
   if (!cls) return VIEW_W;
@@ -62,11 +76,13 @@ const TICK_MS = 1000 / 30;
 /** Lazily grown sprite pool for one layer. Unused sprites are hidden, never destroyed. */
 class SpritePool {
   private readonly sprites: Sprite[] = [];
+  private readonly bloomSprites: Sprite[] = [];
   used = 0;
   constructor(
     private readonly layer: Container,
     private readonly texture: Texture | ArtTexture,
     private readonly blend: 'normal' | 'add' = 'normal',
+    private readonly bloomLayer?: Container,
   ) {}
 
   begin(): void {
@@ -98,6 +114,21 @@ class SpritePool {
 
   end(): void {
     for (let i = this.used; i < this.sprites.length; i++) this.sprites[i].visible = false;
+    if (this.bloomLayer) {
+      for (let i=0;i<this.used;i++) {
+        const source=this.sprites[i];
+        let glow=this.bloomSprites[i];
+        if (!glow) {
+          glow=new Sprite(); glow.blendMode='add';
+          this.bloomSprites[i]=glow; this.bloomLayer.addChild(glow);
+        }
+        glow.texture=source.texture; glow.anchor.copyFrom(source.anchor);
+        glow.position.copyFrom(source.position); glow.scale.copyFrom(source.scale);
+        glow.rotation=source.rotation; glow.tint=source.tint; glow.alpha=source.alpha;
+        glow.visible=source.visible;
+      }
+      for(let i=this.used;i<this.bloomSprites.length;i++) this.bloomSprites[i].visible=false;
+    }
   }
 }
 
@@ -194,6 +225,7 @@ interface Particle {
   color: number;
   size: number;
   castLight?: boolean;
+  fragment?: boolean;
 }
 
 export interface Camera {
@@ -237,6 +269,7 @@ export class Renderer {
   private readonly smokeLayer = new Container();
   private readonly shieldLayer = new Container();
   private shipFx!: ShipFx;
+  private abilityFx!: AbilityFx;
   private readonly fxLayer = new Container();
   private readonly barLayer = new Graphics();
   private readonly labelLayer = new Container();
@@ -256,18 +289,40 @@ export class Renderer {
   private readonly labels: (Text | undefined)[] = [];
   private readonly labelText: string[] = [];
   private readonly particles: Particle[] = [];
+  private readonly impactSparkFlock = new ImpactSparkFlock();
   private readonly rings: Ring[] = [];
   private readonly beams: BeamFx[] = [];
   readonly camera: Camera = { x: 1500, y: 5500, zoom: 1 };
   private info: MatchInfo | null = null;
   private seenTick = -1;
   private lastFrame = 0;
-  private readonly exhaustGimbals: number[] = [];
-  /** Pilot's mouse-wheel zoom on top of the class framing (>1 = closer). */
-  pilotZoom = 1;
+  private readonly exhaustDrive: number[] = [];
+  private readonly exhaustSpeed: number[] = [];
+  private plumes!: ThrusterPlumes;
+  private bloom!: EmissiveBloom;
+  private plumeBloom!: ThrusterPlumes['mesh'];
+  private sublightVibration = 0;
+  private readonly sublightStates: SublightFxState[] = [];
+  private readonly impactLights: {x:number;y:number;radius:number;color:number;life:number;max:number}[] = [];
+  private readonly sublightMotes = new Graphics();
+  private sublightScreen!: SublightScreen;
+  private readonly shieldRefraction=new ShieldRefraction();
+  // Filters capture children, not the renderer clear colour. Keep the backdrop inside
+  // the capture so additive lighting cannot change background brightness on activation.
+  private readonly sceneBackdrop = new Graphics().rect(0,0,1,1).fill(0x04060c);
+  private readonly reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  private pilotZoomFactor: number = PILOT_ZOOM.default;
+  /** Pilot's mouse-wheel zoom on top of the visible hull framing (>1 = closer). */
+  pilotZoom: number = PILOT_ZOOM.default;
   /** Commander mode: free war-map camera instead of following a ship. */
   commander = false;
+  /** Explicit inspection-page framing; zero preserves all gameplay camera limits. */
+  inspectionZoom = 0;
   private cmdZoom = 0;
+  private readonly abilityHullPose={alpha:1,x:1,y:1};
+  private readonly pilotOffset = new PilotCameraOffset();
+  cameraFocus: { x: number; y: number } | null = null;
+  readonly pilotPosition = { x: 0, y: 0 };
   /** Order waiting for a click (draws its footprint at the cursor). */
   pendingOrder: CommandId | null = null;
   private readonly cursor = { x: 0, y: 0 };
@@ -279,19 +334,33 @@ export class Renderer {
 
   async init(parent: HTMLElement): Promise<void> {
     // Supersample shader detail as well as alpha edges; MSAA alone cannot filter either.
-    await this.app.init({ resizeTo: parent, background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
+    await this.app.init({ background: 0x04060c, antialias: true, autoDensity: true, resolution: Math.min(2, Math.max(LIGHT_QUALITY.minResolution, window.devicePixelRatio || 1)) });
     parent.appendChild(this.app.canvas);
+    observeCanvasSize(parent,(width,height) => {
+      this.app.renderer.resize(width,height);
+      // Cover fractional CSS bounds exactly; the backing buffer follows above.
+      this.app.canvas.style.width = '100%';
+      this.app.canvas.style.height = '100%';
+    });
     const reference = await loadReferenceShips(this.shipArt, this.derivedNormals);
     // The HUD (picker, tier pop-up, ship screen) shows the same team-painted sprites.
     setHullThumbArt(reference);
     this.tex = makeTextures(this.app.renderer, reference);
     this.stars = new TilingSprite({ texture: this.tex.stars, width: this.app.screen.width, height: this.app.screen.height });
     this.lighting = new Lighting(this.app.renderer, this.lightingOn);
+    this.plumes = new ThrusterPlumes();
+    this.glowLayer.addChild(this.plumes.mesh, this.sublightMotes);
+    this.sublightMotes.blendMode='add';
+    this.bloom=new EmissiveBloom();this.bloom.source.addChild(this.lighting.bloomScene);
+    this.abilityFx=new AbilityFx({light:(x,y,r,color,intensity)=>this.light(x,y,r,color,intensity)},this.bloom.source);
+    this.plumeBloom=new Mesh({geometry:this.plumes.mesh.geometry,shader:this.plumes.mesh.shader});
+    this.plumeBloom.blendMode='add';this.bloom.source.addChild(this.plumeBloom);
     // Faint light spill on space itself; ships get their lighting from the lit shader instead.
     this.lightOverlay = new Sprite();
     this.lightOverlay.blendMode = 'add';
     this.lightOverlay.alpha = 0.32;
-    this.app.stage.addChild(this.stars, this.lightOverlay, this.world);
+    this.sublightScreen=new SublightScreen(this.app.stage);
+    this.app.stage.addChild(this.sceneBackdrop, this.stars, this.lightOverlay, this.world, this.bloom.sprite);
     this.lighting.occluders.addChild(this.occluderLayer);
     const shipyard = new Container();
     const msArt = this.tex.mothership;
@@ -350,11 +419,16 @@ export class Renderer {
       this.glowLayer,
       this.shotLayer,
       this.wreckLayer,
+      this.abilityFx.ghosts,
       this.shipLayer,
+      this.abilityFx.hullEmission,
       this.smokeLayer,
+      this.abilityFx.impacts.smoke.mesh,
       this.shieldLayer,
       this.fxLayer,
       this.fxGraphics,
+      this.abilityFx.occlusion,
+      this.abilityFx.batch.mesh,
       this.barLayer,
       this.labelLayer,
       this.warLayer,
@@ -366,29 +440,41 @@ export class Renderer {
     this.drones = new SpritePool(this.shipLayer, this.tex.drone);
     this.crystals = new SpritePool(this.crystalLayer, this.tex.crystal);
     this.crystalsBig = new SpritePool(this.crystalLayer, this.tex.crystalBig);
-    this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add');
-    this.boltGlows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
+    this.shots = new SpritePool(this.shotLayer, this.tex.bolt[0], 'add', this.bloom.source);
+    this.boltGlows = new SpritePool(this.glowLayer, this.tex.glow, 'add', this.bloom.source);
     this.glows = new SpritePool(this.glowLayer, this.tex.glow, 'add');
-    this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add');
-    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add');
-    this.shipFx = new ShipFx(this.app.renderer, this.wreckLayer, this.shieldLayer, this.smokeLayer, this.tex.glow, this.tex.particle, {
+    this.flares = new SpritePool(this.glowLayer, this.tex.glow, 'add', this.bloom.source);
+    this.sparks = new SpritePool(this.fxLayer, this.tex.particle, 'add', this.bloom.source);
+    this.shipFx = new ShipFx(this.app.renderer, this.wreckLayer, this.shieldLayer, this.smokeLayer, this.tex.glow, this.tex.fragments, {
       spark: (x, y, vx, vy, life, color, size) => {
-        if (this.particles.length < PARTICLE_CAP) this.particles.push({ x, y, vx, vy, life, max: life, color, size });
+        if (this.particles.length < PARTICLE_CAP) this.particles.push({ x, y, vx, vy, life, max: life, color, size, fragment:true });
       },
-      burst: (x, y, color, count, speed) => this.burst(x, y, color, count, speed),
+      burst: (x, y, color, count, speed) => this.burst(x, y, color, count, speed, true),
+      smoke: (x,y,size,alpha,age,seed,angle) => this.abilityFx.impacts.smokePuff(x,y,size,alpha,age,seed,angle),
+      faultArc: (x,y,ex,ey,width,color,alpha,seed) => this.abilityFx.shieldLightning.arc(x,y,ex,ey,width,color,alpha,seed),
+      fieldFragment:(x,y,size,rotation,color,alpha,age,seed)=>{
+        if(this.abilityFx.batch.remaining>1024)this.abilityFx.batch.patch({x,y,width:size,height:size,angle:rotation,surface:FX_SURFACE.shieldFragment,color,alpha,phase:age,seed});
+      },
       light: (x, y, r, color, alpha) => this.light(x, y, r, color, alpha),
-    });
+    }, this.bloom.source, this.shieldRefraction.source);
     this.drawStatic();
   }
 
   setMatch(info: MatchInfo): void {
     this.info = info;
     this.particles.length = 0;
+    this.impactLights.length = 0;
     this.rings.length = 0;
     this.beams.length = 0;
     this.shipFx?.reset();
+    this.abilityFx?.reset();
     this.seenTick = -1;
-    this.exhaustGimbals.length = 0;
+    this.exhaustDrive.length = 0;
+    this.exhaustSpeed.length = 0;
+    this.plumes?.reset();
+    this.sublightStates.length=0;this.sublightVibration=0;
+    this.sublightMotes.clear();
+    this.sublightScreen?.reset();
     this.cmdZoom = 0;
     const home = KESSLER_REACH.motherships[0];
     this.camera.x = home.x;
@@ -533,7 +619,13 @@ export class Renderer {
 
     const dt = this.lastFrame ? Math.min(0.1, (now - this.lastFrame) / 1000) : 1 / 60;
     this.lastFrame = now;
-    const exhaustBlend = 1 - Math.exp(-dt / 0.1);
+    const exhaustBlend = 1 - Math.exp(-dt / 0.12);
+    for(let slot=0;slot<b[H.shipCount];slot++){
+      const k=curr.ship(slot),flags=b[k+SHIP.flags];
+      const fx=this.sublightStates[slot] ??= new SublightFxState();
+      fx.update(b[k+SHIP.cruiseSpool],!!(flags&SHIP_FLAG.cruising),!!(flags&SHIP_FLAG.alive) && !(flags&SHIP_FLAG.docked),dt);
+    }
+    this.sublightMotes.clear();
 
     // Pilots: the camera follows our ship and pulls back while cruising. Docked: it looks at our
     // mothership. Commander: a free war-map camera (pan / zoom from Game).
@@ -543,37 +635,72 @@ export class Renderer {
     const meAlive = (meFlags & SHIP_FLAG.alive) !== 0;
     const sw = this.app.screen.width;
     const sh = this.app.screen.height;
+    this.sceneBackdrop.scale.set(sw,sh);
     const viewW = viewWidthFor(b[me + SHIP.classIndex]);
-    const baseZoom = Math.min(sw / viewW, sh / (viewW * VIEW_ASPECT)) * this.pilotZoom;
+    const legacyFraming = Math.min(sw / viewW, sh / (viewW * VIEW_ASPECT));
+    const hullArt = this.hullFor(curr, info.selfSlot);
+    const hull = this.tex.hulls[hullArt.id];
+    const framingZoom = shipFramingZoom(sw, sh, hullArt.classId, hull, this.tex.hulls.destroyer);
+    const legacyBaseZoom = legacyFraming * clampPilotZoom(this.pilotZoom) / 1.10;
     const map = KESSLER_REACH;
     if (this.commander) {
+      this.pilotOffset.reset();
       const fit = Math.min(sw / map.width, sh / map.height) * 0.95;
       if (this.cmdZoom === 0) {
         this.cmdZoom = fit;
         this.camera.x = map.width / 2;
         this.camera.y = map.height / 2;
       }
-      this.cmdZoom = Math.min(baseZoom * 1.2, Math.max(fit * 0.9, this.cmdZoom));
-      this.camera.zoom += (this.cmdZoom - this.camera.zoom) * 0.25;
+      this.cmdZoom = this.inspectionZoom>0 ? this.inspectionZoom : Math.min(legacyBaseZoom * 1.2, Math.max(fit * 0.9, this.cmdZoom));
+      this.camera.zoom += (this.cmdZoom - this.camera.zoom) * cameraBlend(.06,dt);
       this.camera.x = Math.min(map.width, Math.max(0, this.camera.x));
       this.camera.y = Math.min(map.height, Math.max(0, this.camera.y));
     } else {
-      if (meAlive) {
-        this.camera.x = lerp(pb[pme + SHIP.x], b[me + SHIP.x], alpha);
-        this.camera.y = lerp(pb[pme + SHIP.y], b[me + SHIP.y], alpha);
-      } else if (meFlags & SHIP_FLAG.docked) {
-        const home = map.motherships[b[me + SHIP.team]];
-        this.camera.x += (home.x - this.camera.x) * 0.1;
-        this.camera.y += (home.y - this.camera.y) * 0.1;
+      const factor = clampPilotZoom(this.pilotZoom) / ((meFlags & SHIP_FLAG.cruising) ? SUBLIGHT_VIEW_RATIO : 1);
+      // Ease normalized screen occupancy, not absolute world zoom. A hull swap must not
+      // inherit the previous ship's world scale, even at the minimum/maximum zoom stops.
+      this.pilotZoomFactor += (factor - this.pilotZoomFactor) * cameraBlend(.12, dt);
+      if (meFlags & SHIP_FLAG.docked) {
+        this.camera.zoom += (legacyBaseZoom - this.camera.zoom) * cameraBlend(.12, dt);
+      } else {
+        this.camera.zoom = framingZoom * this.pilotZoomFactor;
       }
-      const cruising = (meFlags & SHIP_FLAG.cruising) !== 0;
-      const targetZoom = cruising ? baseZoom / 1.4 : baseZoom;
-      this.camera.zoom += (targetZoom - this.camera.zoom) * 0.08;
+      if (meAlive) {
+        const continuous = !!(pb[pme + SHIP.flags] & SHIP_FLAG.alive);
+        if (!continuous) this.pilotOffset.reset();
+        this.pilotPosition.x = lerp(pb[pme + SHIP.x], b[me + SHIP.x], continuous ? alpha : 1);
+        this.pilotPosition.y = lerp(pb[pme + SHIP.y], b[me + SHIP.y], continuous ? alpha : 1);
+        const heading = lerpAngle(pb[pme+SHIP.angle], b[me+SHIP.angle], continuous ? alpha : 1);
+        const viewport=this.viewport;
+        // Use the ship's displayed offset, excluding world translation/interpolation.
+        const offsetScale=this.camera.zoom/Math.max(.001,framingZoom);
+        const shipScreen={
+          x:viewport.left+viewport.width/2-this.pilotOffset.value.x*offsetScale,
+          y:viewport.top+viewport.height/2-this.pilotOffset.value.y*offsetScale,
+        };
+        const look = this.pilotOffset.update(this.cameraFocus, viewport, heading, dt, shipScreen);
+        this.camera.x = this.pilotPosition.x + look.x / Math.max(.001, framingZoom);
+        this.camera.y = this.pilotPosition.y + look.y / Math.max(.001, framingZoom);
+      } else if (meFlags & SHIP_FLAG.docked) {
+        this.pilotOffset.reset();
+        const home = map.motherships[b[me + SHIP.team]];
+        this.camera.x += (home.x - this.camera.x) * cameraBlend(.14,dt);
+        this.camera.y += (home.y - this.camera.y) * cameraBlend(.14,dt);
+      }
     }
+    if(meAlive && !this.commander && !this.reduceMotion.matches) this.camera.zoom*=1+abilityCameraPulse(b[me+SHIP.abilityVisual],b[H.time]-back-b[me+SHIP.visualStartedAt]);
     const cruising = (meFlags & SHIP_FLAG.cruising) !== 0;
     const z = this.camera.zoom;
+    const vibrating=cruising && meAlive && !this.commander && !this.reduceMotion.matches;
+    this.sublightVibration+=((vibrating ? 1 : 0)-this.sublightVibration)*cameraBlend(.45,dt);
+    if (meAlive && !this.commander && !this.reduceMotion.matches) {
+      const shake=sublightShake(now/1000,this.sublightVibration);
+      // Convert pixels to world units so vibration stays subtle at every hull/zoom.
+      this.camera.x+=shake.x/Math.max(.001,z);
+      this.camera.y+=shake.y/Math.max(.001,z);
+    }
     // Commander zoomed out: draw units as markers so the war map stays readable.
-    const war = this.commander && z < baseZoom * 0.6;
+    const war = this.commander && z < legacyBaseZoom * 0.6;
     this.world.scale.set(z);
     this.world.position.set(sw / 2 - this.camera.x * z, sh / 2 - this.camera.y * z);
     this.stars.width = sw;
@@ -590,6 +717,7 @@ export class Renderer {
     this.lighting.beginFrame();
     this.lights.begin();
     this.idleDrift(now);
+    this.abilityFx.begin(b[H.time]-back,z,{x:cx,y:cy,halfW,halfH});
     this.drawStructures(curr, now);
 
     // Crystals
@@ -627,6 +755,7 @@ export class Renderer {
       const y = b[k + 1] - b[k + 3] * back;
       if (!inView(x, y)) continue;
       const team = b[k + 4];
+      if (b[k+11] && this.abilityFx.projectile(b[k+12],b[k+11],x,y,Math.atan2(b[k+3],b[k+2]),b[k+5],b[k+7]+back,team,b[k+2],b[k+3])) continue;
       const f = b[k + 6];
       const heavy = (f & (PROJ_FLAG.structure | PROJ_FLAG.missile)) !== 0;
       const id = heavy ? 'shell' : 'bolt';
@@ -652,33 +781,38 @@ export class Renderer {
         // Missiles, torpedoes and structure shells keep their warhead sprite, sized by radius.
         const size = Math.max(0.8, radius / 5) * boost;
         s.scale.set(size * (0.55 + 0.45 * fade), size * (0.3 + 0.7 * fade));
+        if(f & PROJ_FLAG.missile) {
+          // The warhead stays metallic, but its motor must glow independently of hull lighting.
+          const rear=asset ? asset.widthWorld*asset.anchorX*s.scale.x : radius*2;
+          const motor=this.boltGlows.next();
+          motor.position.set(x-Math.cos(angle)*rear,y-Math.sin(angle)*rear);
+          motor.rotation=angle; motor.tint=color; motor.alpha=.7*fade;
+          motor.scale.set(radius*5/GLOW_PX,radius*2.5/GLOW_PX);
+          this.abilityFx.trails.jet(`primary:${b[k+12]}`,motor.x,motor.y,angle,radius*8,radius*2.5,{color,alpha:fade*.65,seed:b[k+12]},b[k+2],b[k+3],true);
+        }
       } else {
         // v2.1 laser bolts: length and thickness follow the caliber (AP, which grows with WEAPONS
         // power and calibration) and the gun's bore, from 20 AP needles to 135 AP capital lances.
         const baseL = asset ? asset.widthWorld : BOLT_TEX.length;
         const baseW = asset ? asset.heightWorld : BOLT_TEX.width;
         s.scale.set(((length * boost) / baseL) * (0.55 + 0.45 * fade), ((width * boost) / baseW) * (0.3 + 0.7 * fade));
-        if (caliber > 0.3) {
+        { // Every energy bolt gets an additive sheath, including small calibers.
           // Heavy line and capital calibers: a team-colored plasma sheath, a white-hot core and a wake.
           const sheath = this.boltGlows.next();
           sheath.position.set(x, y);
           sheath.rotation = angle;
           sheath.tint = color;
-          sheath.alpha = Math.min(0.55, caliber * 0.42) * fade;
+          sheath.alpha = Math.min(0.55, .2 + caliber * 0.35) * fade;
           sheath.scale.set((length * boost * 1.7) / GLOW_PX, (width * boost * 3.2) / GLOW_PX);
           const core = this.boltGlows.next();
           core.position.set(x, y);
           core.rotation = angle;
           core.tint = 0xffffff;
-          core.alpha = Math.min(0.8, caliber * 0.55) * fade;
+          core.alpha = Math.min(0.8, .35 + caliber * 0.45) * fade;
           core.scale.set((length * boost * 0.9) / GLOW_PX, (width * boost * 0.7) / GLOW_PX);
           if (caliber > 0.55) {
-            const wake = this.boltGlows.next();
-            wake.position.set(x - Math.cos(angle) * length * 0.85, y - Math.sin(angle) * length * 0.85);
-            wake.rotation = angle;
-            wake.tint = color;
-            wake.alpha = 0.3 * fade;
-            wake.scale.set((length * boost * 1.6) / GLOW_PX, (width * boost * 1.1) / GLOW_PX);
+            const rear=length*.35,speed=Math.hypot(b[k+2],b[k+3]);
+            this.abilityFx.trails.wake('primary:'+b[k+12],x-Math.cos(angle)*rear,y-Math.sin(angle)*rear,width*boost*1.1,Math.min(.18,length*boost*1.6/Math.max(1,speed)),color,.3*fade,b[k+12],true);
           }
         }
       }
@@ -705,7 +839,8 @@ export class Renderer {
     for (const pool of this.hullPools.values()) pool.begin();
     this.glows.begin();
     this.flares.begin();
-    this.shipFx.begin(dt);
+    this.plumes.begin(now/1000,z);
+    this.shipFx.begin(dt,z,this.reduceMotion.matches);
     const bars = this.barLayer;
     bars.clear();
     const warG = this.warLayer;
@@ -750,6 +885,7 @@ export class Renderer {
       glow.position.set(x, y);
       const dashing = (flags & SHIP_FLAG.dashing) !== 0;
       const cruisingShip = (flags & SHIP_FLAG.cruising) !== 0;
+      const sublight=this.sublightStates[slot];
       glow.tint = dashing ? 0xffffff : color;
       glow.alpha = dashing ? 0.8 : isMe ? 0.45 : 0.3;
       glow.scale.set(cruisingShip ? 1.3 : dashing ? 1.1 : 0.7, dashing || cruisingShip ? 0.55 : 0.7);
@@ -758,7 +894,9 @@ export class Renderer {
       const art = this.hullFor(curr, slot);
       const s = this.hullPool(art.id, team).next();
       // Hits nudge the hull a few units (cosmetic).
-      const [jx, jy] = this.shipFx.jolt(slot, b[k + SHIP.hull] / Math.max(1, b[k + SHIP.maxHull]));
+      let [jx, jy] = this.shipFx.jolt(slot, b[k + SHIP.hull] / Math.max(1, b[k + SHIP.maxHull]));
+      const launchKick=this.reduceMotion.matches ? 0 : sublight.ignition*(CLASSES[CLASS_ORDER[b[k+SHIP.classIndex]]]?.radius ?? 20)*.045;
+      jx-=Math.cos(rot)*launchKick;jy-=Math.sin(rot)*launchKick;
       s.position.set(x + jx, y + jy);
       s.rotation = rot;
       const radius = CLASSES[CLASS_ORDER[b[k + SHIP.classIndex]]]?.radius ?? 20;
@@ -777,34 +915,58 @@ export class Renderer {
         bars.stroke({ width: 2, color: 0x8cf4ff, alpha: 0.55 });
       }
 
-      // Engine flares at the hull's exhaust points, stretched by speed.
-      const speed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
-      const thrust = Math.max(b[k + SHIP.enginePower], Math.min(1, speed / 320) * 0.25) * (cruisingShip ? 1.8 : 1) * (dashing ? 1.6 : 1);
-      const cos = Math.cos(rot);
-      const sin = Math.sin(rot);
-      const forceAngle = lerpAngle(pb[pk + SHIP.thrustAngle], b[k + SHIP.thrustAngle], a);
-      const gimbal = b[k + SHIP.enginePower] > 0.01 ? Math.atan2(Math.sin(forceAngle - rot), Math.cos(forceAngle - rot)) : 0;
-      // Smooth the plume relative to the hull so gyro corrections don't wag the entire trail.
-      const exhaustGimbal = (this.exhaustGimbals[slot] ?? gimbal) + (gimbal - (this.exhaustGimbals[slot] ?? gimbal)) * exhaustBlend;
-      this.exhaustGimbals[slot] = exhaustGimbal;
+      abilityHullPose(b[k+SHIP.abilityVisual],b[H.time]-back-b[k+SHIP.visualStartedAt],this.abilityHullPose);
+      const materialize=this.abilityHullPose.alpha;
+      const cloakPose=b[k+SHIP.abilityVisual]>=4&&b[k+SHIP.abilityVisual]<=6?this.abilityFx.concealment.sample(slot,b[k+SHIP.visualStartedAt],cloaked,b[H.time]-back,b[k+SHIP.abilityVisual]):null;
+      const cloakDrive=cloakPose ? .3+.7*Math.max(0,(cloakPose.alpha-.26)/.74) : cloaked?.3:1;
+      // Socket and hull use the exact same origin, scale and cosmetic jolt.
+      const targetSpeed = Math.hypot(b[k + SHIP.vx], b[k + SHIP.vy]);
+      const speed=(this.exhaustSpeed[slot] ?? targetSpeed)+(targetSpeed-(this.exhaustSpeed[slot] ?? targetSpeed))*exhaustBlend;
+      this.exhaustSpeed[slot]=speed;
+      const targetDrive = b[k+SHIP.enginePower];
+      const drive = (this.exhaustDrive[slot] ?? targetDrive)+(targetDrive-(this.exhaustDrive[slot] ?? targetDrive))*exhaustBlend;
+      this.exhaustDrive[slot]=drive;
+      const engineColor = isMe && this.cosmetics.engine >= 0 ? this.cosmetics.engine : team === 0 ? 0x7df9ff : 0xffc061;
+      let nozzleIndex=0;
       for (const e of this.tex.hulls[art.id].engines ?? art.engines) {
-        const f = this.flares.next();
-        const hullScale = isMe ? 1.15 : 1;
-        f.position.set(x + (e.x * cos - e.y * sin) * hullScale, y + (e.x * sin + e.y * cos) * hullScale);
-        f.rotation = rot + exhaustGimbal;
-        f.tint = isMe && this.cosmetics.engine >= 0 ? this.cosmetics.engine : team === 0 ? 0x7df9ff : 0xffc061;
-        f.alpha = 0.55 + 0.35 * thrust;
-        f.scale.set((e.r / 14) * (1 + thrust * 1.6), (e.r / 18) * (0.9 + 0.2 * Math.sin(now * 0.04 + slot)));
-        this.light(f.position.x, f.position.y, e.r * (0.9 + thrust * 0.7), LIGHT.engine[team]);
+        const p=exhaustPosition(x+jx,y+jy,rot,e);
+        const plume=plumeDimensions(e.r,speed,drive,CLASSES[CLASS_ORDER[b[k+SHIP.classIndex]]].speed,dashing?1.15:1+sublight.travel*.15+sublight.ignition*.25);
+        const index=nozzleIndex++;
+        const phase=slot*.731+index*2.17;
+        const intensity=Math.min(1.4,plume.intensity+sublight.charge*.25+sublight.ignition*.45)*cloakDrive*materialize;
+        plume.length*=1-sublight.charge*.12;
+        plume.width*=1+sublight.charge*.18+sublight.ignition*.16;
+        this.plumes.trail(slot*8+index,p.x,p.y,rot,plume.length,plume.width*(1+.06*Math.sin(now*.009+phase)),engineColor,intensity,phase,b[k+SHIP.vx],b[k+SHIP.vy]);
+        // A compact throat glow; the one-sided shader carries the long exhaust aft.
+        const f=this.flares.next();f.position.set(p.x,p.y);f.tint=engineColor;
+        f.alpha=intensity*.8;
+        const core=1+sublight.charge*.7+sublight.ignition*1.3+sublight.travel*.18;
+        f.scale.set(e.r*core/22,e.r*core/22);
+        this.light(p.x,p.y,e.r*(.9+drive*.7+sublight.charge*.45+sublight.ignition*.85),LIGHT.engine[team],materialize*cloakDrive);
+        if(sublight.charge>.03 && !cloaked && !war && e.r*z>.6 && !this.reduceMotion.matches){
+          // Sparse energy motes converge on the actual nozzle, then vanish at ignition.
+          const c=Math.cos(rot),si=Math.sin(rot);
+          for(let n=0;n<4;n++){
+            const t=(now*.001*2.2+n*.25+phase)%1;
+            const back=e.r*(1.5+(1-t)*7),side=Math.sin(n*2.4+phase)*e.r*(1-t)*2.2;
+            const mx=p.x-c*back-si*side,my=p.y-si*back+c*side;
+            this.sublightMotes.circle(mx,my,Math.max(.55/z,e.r*.12))
+              .fill({color:engineColor,alpha:sublight.charge*Math.sin(t*Math.PI)*.55});
+          }
+        }
       }
-      s.alpha = flags & SHIP_FLAG.invulnerable ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
+      s.alpha = flags & SHIP_FLAG.invulnerable && b[k+SHIP.abilityVisual]!==3 ? 0.55 + 0.45 * Math.sin(now * 0.05) : cloaked ? 0.32 : 1;
       // Keep the rendered player hull at its collision scale; brackets identify the pilot.
-      s.scale.set(1);
+      s.scale.set(this.abilityHullPose.x,this.abilityHullPose.y);
+      if(cloakPose)s.alpha=cloakPose.alpha;
+      s.alpha*=materialize;glow.alpha*=materialize;
       if (cloaked) glow.alpha *= 0.3;
       // The hull-shaped energy shield: lit after hits while it holds, flaring where shots land.
       const shieldMax = b[k + SHIP.maxShield];
-      this.shipFx.shield(slot, art.id, this.tex.hulls[art.id], team, x + jx, y + jy, rot, isMe ? 1.15 : 1, shieldMax > 0 ? Math.max(0, b[k + SHIP.shield]) / shieldMax : 0, cloaked);
+      this.shipFx.shield(slot, art.id, this.tex.hulls[art.id], team, x + jx, y + jy, rot, 1, shieldMax > 0 ? Math.max(0, b[k + SHIP.shield]) / shieldMax : 0, cloaked || materialize<.75);
       this.statusFx(bars, x, y, status, now);
+      const abilityArt=this.tex.hulls[art.id];
+      this.abilityFx.ship(slot,{x:x+jx,y:y+jy,angle:rot,vx:b[k+SHIP.vx],vy:b[k+SHIP.vy],width:abilityArt.widthWorld,height:abilityArt.heightWorld,team,hullId:art.id,radius,texture:abilityArt.albedo[team],anchorX:abilityArt.anchorX,anchorY:abilityArt.anchorY,engines:abilityArt.engines??art.engines,speedRatio:targetSpeed/CLASSES[CLASS_ORDER[b[k+SHIP.classIndex]]].speed},b[k+SHIP.abilityVisual],b[k+SHIP.visualStartedAt],status,flags,team===selfTeam);
 
       // Segmented industrial hull bar (and the energy shield above it) for anyone damaged, plus us always.
       const hull = b[k + SHIP.hull] / b[k + SHIP.maxHull];
@@ -853,45 +1015,51 @@ export class Renderer {
     for (const pool of this.assetPools.values()) pool.end();
     this.glows.end();
     this.flares.end();
+    this.plumes.end();
 
     // New events this tick → particles
     if (b[H.tick] !== this.seenTick) {
       this.seenTick = b[H.tick];
       for (let i = 0, k = curr.o.events; i < b[H.eventCount]; i++, k += SNAP.event) {
         const type = b[k];
+        const abilityOwner=type===EventType.Explosion?b[k+6]:b[k+2];
+        if (b[k+7] && this.abilityFx.event(type,b[k+7],b[k+1],abilityOwner,b[k+3],b[k+4],b[k+5],b[k+6],b[k+8])) continue;
         if (type === EventType.Kill) {
           const victim = b[k + 2];
           const team = b[curr.ship(victim) + SHIP.team];
-          this.burst(b[k + 3], b[k + 4], TEAM_COLORS[team], 22, 260);
+          this.burst(b[k + 3], b[k + 4], TEAM_COLORS[team], 22, 260, true);
           // The hull doesn't just vanish: it burns out, then breaks apart.
           const vk = curr.ship(victim);
           const hull = this.hullFor(curr, victim);
           const lit = this.tex.hulls[hull.id];
           if (lit) this.shipFx.kill(lit, team, b[k + 3], b[k + 4], b[vk + SHIP.vx], b[vk + SHIP.vy], b[vk + SHIP.angle], CLASSES[CLASS_ORDER[b[vk + SHIP.classIndex]]]?.radius ?? 20);
+        } else if (type === EventType.CombatHit && b[k+6]>0) {
+          // Positive damage is a hull hit; shield hits already have their own contact flash.
+          this.burst(b[k+3],b[k+4],0xffd49a,4,110,true,Math.abs(b[k+5])<=Math.PI?b[k+5]:undefined);
         } else if (type === EventType.ShieldHit) {
-          this.shipFx.shieldHit(b[k + 1], b[k + 5], b[k + 6]);
+          this.shipFx.shieldHit(b[k + 1], b[k + 5], b[k + 6],b[k+3],b[k+4]);
         } else if (type === EventType.ShieldBreak) {
           this.shipFx.shieldBreak(b[k + 1]);
         } else if (type === EventType.StructureDestroyed) {
-          this.burst(b[k + 3], b[k + 4], 0xffffff, 300, 900);
+          this.burst(b[k + 3], b[k + 4], 0xffffff, 300, 900, true);
         } else if (type === EventType.Explosion) {
           const color = b[k + 2] === 2 ? (b[k + 1] === selfTeam ? 0x9fffd0 : 0xffd166) : 0xffa040;
-          this.ring(b[k + 3], b[k + 4], b[k + 5], color, 0.45);
-          if (b[k + 2] !== 2) this.burst(b[k + 3], b[k + 4], 0xffa040, 18, 220);
+          if(b[k+2]===2)this.ring(b[k + 3], b[k + 4], b[k + 5], color, 0.45);
+          if (b[k + 2] !== 2) this.burst(b[k + 3], b[k + 4], 0xffa040, 18, 220, true);
         } else if (type === EventType.StrikeLanded) {
-          this.ring(b[k + 3], b[k + 4], b[k + 5], 0xffffff, 0.8);
-          this.burst(b[k + 3], b[k + 4], 0xffe0a0, 120, 700);
+          // Strike damage is shown by the blast, not a flat expanding circle.
+          this.burst(b[k + 3], b[k + 4], 0xffe0a0, 120, 700, true);
         } else if (type === EventType.Ricochet) {
           // A glancing hit: sparks skip off the armor where the shot struck.
-          this.burst(b[k + 3], b[k + 4], 0xffe6a0, 5, 240);
+          this.burst(b[k + 3], b[k + 4], 0xffe6a0, 5, 240, true, b[k+5]+Math.PI*.65);
         } else if (type === EventType.Beam) {
           this.beams.push({ x: b[k + 3], y: b[k + 4], angle: b[k + 5], length: b[k + 6], life: 0.3, color: TEAM_COLORS[b[k + 1]] });
         } else if (type === EventType.PointFlip) {
           this.ring(b[k + 3], b[k + 4], POINTS.radius, TEAM_COLORS[b[k + 2]], 0.9);
           this.burst(b[k + 3], b[k + 4], TEAM_COLORS[b[k + 2]], 60, 420);
         } else if (type === EventType.NodeDestroyed) {
-          this.ring(b[k + 3], b[k + 4], POINTS.radius, 0xff5c6c, 0.9);
-          this.burst(b[k + 3], b[k + 4], 0xffa040, 120, 600);
+          // The destroyed node sheds blast volumes and fragments.
+          this.burst(b[k + 3], b[k + 4], 0xffa040, 120, 600, true);
         } else if (type === EventType.Ping && b[k + 1] === selfTeam) {
           this.ring(b[k + 3], b[k + 4], 500, PING_COLORS[b[k + 2]] ?? PING_COLORS[0], 0.8);
         } else if (type === EventType.TierBought) {
@@ -902,12 +1070,30 @@ export class Renderer {
         }
       }
     }
+    for(let i=this.impactLights.length-1;i>=0;i--) {
+      const flash=this.impactLights[i];
+      flash.life-=dt;
+      if(flash.life<=0) { this.impactLights.splice(i,1); continue; }
+      const t=flash.life/flash.max;
+      this.light(flash.x,flash.y,flash.radius,flash.color,t*t*(3-2*t));
+    }
     this.drawParticles(dt, inView);
     this.drawRings(dt);
+    this.abilityFx.end();
     if (this.commander && this.pendingOrder) this.drawOrderPreview(z);
     this.lights.end();
 
     this.lighting.update(this.camera.x, this.camera.y, z, sw, sh);
+    this.bloom.sprite.visible=this.lighting.enabled;
+    this.plumeBloom.visible=this.plumes.mesh.visible;
+    if(this.lighting.enabled)this.bloom.update(this.app.renderer,this.camera.x,this.camera.y,z,sw,sh);
+    this.sublightScreen.setShieldRefraction(this.shieldRefraction.update(this.app.renderer,this.camera.x,this.camera.y,z,sw,sh));
+    const pilotFx=this.sublightStates[info.selfSlot];
+    if(pilotFx){
+      const focusX=this.commander ? sw/2 : sw/2+(this.pilotPosition.x-this.camera.x)*z;
+      const focusY=this.commander ? sh/2 : sh/2+(this.pilotPosition.y-this.camera.y)*z;
+      this.sublightScreen.update(sw,sh,now/1000,focusX,focusY,pilotFx,meAlive && !this.commander && !(meFlags&SHIP_FLAG.docked),this.reduceMotion.matches);
+    }
     this.lightOverlay.visible = this.lighting.enabled;
     if (this.lighting.enabled) {
       this.lightOverlay.texture = this.lighting.irradiance;
@@ -1035,6 +1221,7 @@ export class Renderer {
       const y = b[k + 1];
       const r = b[k + 2];
       if (!near(x, y, r)) continue;
+      if (this.abilityFx.zone(b[k+6],x,y,r,b[k+5],b[k+7])) continue;
       const f = b[k + 4];
       const color =
         f & ZONE_FLAG.blocks ? TEAM_COLORS[b[k + 3]] : f & ZONE_FLAG.reveal ? 0xb48cff : f & ZONE_FLAG.heal ? 0x5cff9d : f & ZONE_FLAG.pull ? 0x9a7bff : f & ZONE_FLAG.damage ? 0xff5c6c : 0xffd166;
@@ -1081,6 +1268,10 @@ export class Renderer {
         mesh.position.set(x, y);
         mesh.scale.set((r * 2) / Math.max(detailed.widthWorld, detailed.heightWorld));
         mesh.rotation = team === 0 ? 0 : Math.PI;
+        if(b[k+6]===8){
+          const age=Math.max(0,b[H.time]-(1-alpha)/30-b[k+7]),u=Math.min(1,age/.18),settle=u*u*(3-2*u);
+          mesh.alpha=settle;mesh.scale.set((r*2)/Math.max(detailed.widthWorld,detailed.heightWorld)*(.68+.32*settle));
+        }else mesh.alpha=1;
       }
       if (kind === KIND.mine) {
         if (detailed) {
@@ -1099,7 +1290,8 @@ export class Renderer {
       }
       if (kind === KIND.emitter) {
         const er = def.emitter!.radius;
-        g.circle(x, y, er).fill({ color, alpha: 0.045 }).stroke({ width: 2.5, color, alpha: 0.35 });
+        if(b[k+6]===8)this.abilityFx.fortressEmitter(x,y,er,b[k+7],b[k+8]+(1-alpha)/30,b[k+5]);
+        else g.circle(x, y, er).fill({ color, alpha: 0.045 }).stroke({ width: 2.5, color, alpha: 0.35 });
       }
       if (kind === KIND.beacon) {
         const pulse = 58 + 14 * Math.sin(now * 0.005);
@@ -1140,10 +1332,11 @@ export class Renderer {
       // Negative targets are friendly nodes (Warden tether on an asteroid).
       const node = b[k + 1] < 0 ? KESSLER_REACH.points[-1 - b[k + 1]]?.pos : null;
       const t = node ? -1 : curr.ship(b[k + 1]);
-      if (o === t) continue;
-      g.moveTo(b[o + SHIP.x], b[o + SHIP.y])
-        .lineTo(node ? node.x : b[t + SHIP.x], node ? node.y : b[t + SHIP.y])
-        .stroke({ width: 6, color: 0x5cff9d, alpha: 0.45 + 0.2 * Math.sin(now * 0.02) });
+      if(o<0||(!node&&t<0))continue;
+      if(!node){const targetFlags=b[t+SHIP.flags];if(!(targetFlags&SHIP_FLAG.alive)||(b[t+SHIP.team]!==selfTeam&&!(targetFlags&(selfTeam===0?SHIP_FLAG.visible0:SHIP_FLAG.visible1))))continue;}
+      const ownerFlags=b[o+SHIP.flags],ownerTeam=b[o+SHIP.team];
+      if (!(ownerFlags&SHIP_FLAG.alive) || (ownerTeam!==selfTeam && !(ownerFlags&(selfTeam===0?SHIP_FLAG.visible0:SHIP_FLAG.visible1)))) continue;
+      this.abilityFx.tether(b[o+SHIP.x],b[o+SHIP.y],node?node.x:b[t+SHIP.x],node?node.y:b[t+SHIP.y],b[k],b[k+1],b[k+2],b[k+3]+(1-alpha)/30);
     }
 
     // The commander's rally point
@@ -1164,12 +1357,19 @@ export class Renderer {
       if (!inView(x, y)) continue;
       const team = b[k + 4];
       const rot = Math.atan2(b[k + 3], b[k + 2]);
+      const decoyHull=b[k+7]===6?'specter':'corvette';
+      const decoyArt=this.tex.hulls[decoyHull];
       if (b[k + 5] === DECOY) {
-        const m = this.hullPool('corvette', team).next();
+        this.abilityFx.drone(b[k+7],x,y,rot,b[k+8],decoyArt.widthWorld,decoyArt.heightWorld,undefined,1,b[k+9]);
+        const m = this.hullPool(decoyHull, team).next();
         m.position.set(x, y);
         m.rotation = rot;
-        m.alpha = 0.9;
-        m.scale.set(1);
+        const age=Math.max(0,b[H.time]-back-b[k+8]);
+        const entering=(age-.11)/.18,leaving=(4.5-age)/.20;
+        const smooth=(x:number)=>{const t=Math.max(0,Math.min(1,x));return t*t*(3-2*t);};
+        m.alpha=b[k+7]===6?.9*smooth(entering)*smooth(leaving):.9;
+        m.scale.set(b[k+7]===6?.96+.04*smooth(entering):1);
+        if(b[k+7]===6)this.abilityFx.decoyEntrance({x,y,angle:rot,width:decoyArt.widthWorld,height:decoyArt.heightWorld,team,texture:decoyArt.albedo[team],anchorX:decoyArt.anchorX,anchorY:decoyArt.anchorY},age);
         continue;
       }
       // v2.1: fighters, interceptors, bombers, recon and defenders each have their own lit hull
@@ -1186,14 +1386,12 @@ export class Renderer {
         const sin = Math.sin(rot);
         const engine = team === 0 ? 0x7df9ff : 0xffc061;
         craft.engines!.forEach((e, n) => {
-          const f = this.flares.next();
-          f.position.set(x + e.x * cos - e.y * sin, y + e.x * sin + e.y * cos);
-          f.rotation = rot;
-          f.tint = engine;
-          f.alpha = 0.85;
-          f.scale.set((e.r / 14) * 2.4, (e.r / 18) * (1 + 0.25 * Math.sin(now * 0.05 + i + n)));
-          // Light from the nozzles (behind the hull), not the hull's center, or it washes the paint out.
-          this.light(f.position.x - cos * e.r, f.position.y - sin * e.r, e.r * 1.6, LIGHT.engine[team]);
+          const p=exhaustPosition(x,y,rot,e);
+          const plume=plumeDimensions(e.r,Math.hypot(b[k+2],b[k+3]),.75,DRONES[behavior].speed);
+          this.plumes.trail(`craft:${b[k+9]}:${n}`,p.x,p.y,rot,plume.length,plume.width,engine,plume.intensity,1000+b[k+9]*.731+n*2.17,b[k+2],b[k+3]);
+          const f=this.flares.next();f.position.set(p.x,p.y);f.tint=engine;
+          f.alpha=.65;f.scale.set(e.r/22,e.r/22);
+          this.light(p.x-cos*e.r,p.y-sin*e.r,e.r*1.6,LIGHT.engine[team]);
         });
         const dome = CRAFT[behavior].dome;
         if (dome) {
@@ -1216,6 +1414,15 @@ export class Renderer {
       s.rotation = rot;
       s.tint = this.tex.assets.drone ? 0xffffff : TEAM_COLORS[team];
       s.scale.set(this.tex.assets.drone ? ESCORT_SIZE / Math.max(this.tex.assets.drone.widthWorld, this.tex.assets.drone.heightWorld) : 1);
+      const droneArt=this.tex.assets.drone,droneScale=droneArt?ESCORT_SIZE/Math.max(droneArt.widthWorld,droneArt.heightWorld):1;
+      const launchAge=Math.max(0,b[H.time]-back-b[k+8]),launchProgress=Math.min(1,launchAge/.12);
+      s.alpha=(b[k+7]===25||b[k+7]===26)?.5+.5*launchProgress*launchProgress*(3-2*launchProgress):1;
+      this.abilityFx.drone(b[k+7],x,y,rot,b[k+8],droneArt?droneArt.widthWorld*droneScale:22,droneArt?droneArt.heightWorld*droneScale:16,droneArt?{x,y,angle:rot,vx:b[k+2],vy:b[k+3],width:droneArt.widthWorld*droneScale,height:droneArt.heightWorld*droneScale,team,texture:droneArt.albedo[team],anchorX:droneArt.anchorX,anchorY:droneArt.anchorY,engines:droneArt.engines}:undefined,droneScale,b[k+9]);
+      if(droneArt?.engines)for(let n=0;n<droneArt.engines.length;n++){
+        const e=droneArt.engines[n],r=e.r*droneScale,p=exhaustPosition(x,y,rot,{x:e.x*droneScale,y:e.y*droneScale});
+        const plume=plumeDimensions(r,Math.hypot(b[k+2],b[k+3]),.75,DRONES[DRONE_BEHAVIORS[b[k+5]]].speed);
+        this.plumes.trail(`escort:${b[k+9]}:${n}`,p.x,p.y,rot,plume.length,plume.width,LIGHT.engine[team],plume.intensity,b[k+9]+n,b[k+2],b[k+3]);
+      }
       this.light(x, y, 5, LIGHT.engine[team]);
       if (this.commander && z < 0.2) this.warLayer.circle(x, y, 3 / z).fill({ color: TEAM_COLORS[team], alpha: 0.8 });
     }
@@ -1268,7 +1475,12 @@ export class Renderer {
       const ey = bm.y + Math.sin(bm.angle) * bm.length;
       g.moveTo(bm.x, bm.y).lineTo(ex, ey).stroke({ width: 22 * t, color: bm.color, alpha: 0.35 * t });
       g.moveTo(bm.x, bm.y).lineTo(ex, ey).stroke({ width: 6 * t, color: 0xffffff, alpha: 0.9 * t });
-      this.light((bm.x + ex) / 2, (bm.y + ey) / 2, 30 * t, bm.color);
+      // Sample along the beam rather than lighting only its midpoint.
+      const count=Math.max(1,Math.min(12,Math.ceil(bm.length/120)));
+      for(let j=0;j<count;j++) {
+        const along=(j+.5)/count;
+        this.light(bm.x+(ex-bm.x)*along,bm.y+(ey-bm.y)*along,18,bm.color,t*.7);
+      }
     }
   }
 
@@ -1407,7 +1619,8 @@ export class Renderer {
       const art = this.tex.assets[id];
       const geometry = litGeometry(art.widthWorld, art.heightWorld, art.anchorX, art.anchorY);
       pool = new MeshPool(layer, () => {
-        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source) });
+        const mesh = new Mesh({ geometry, shader: this.lighting.litShader(art.albedo[team].source, art.normal.source, art.relief?.source, art.reliefRange, art.material?.source, id === 'bolt') });
+        if (id === 'bolt') mesh.blendMode = 'add';
         this.lighting.trackReceiver(mesh);
         return mesh;
       });
@@ -1436,18 +1649,30 @@ export class Renderer {
     this.lighting.setEnabled(on);
   }
 
-  private burst(x: number, y: number, color: number, count: number, speed: number): void {
+  private burst(x: number, y: number, color: number, count: number, speed: number, combat=false, direction?:number): void {
+    const reach=600;
+    if(Math.abs(x-this.camera.x)>this.app.screen.width/this.camera.zoom/2+reach ||
+       Math.abs(y-this.camera.y)>this.app.screen.height/this.camera.zoom/2+reach) return;
+    if(combat)this.abilityFx.impacts.emit(x,y,count,speed,color,direction);
+    const radius=Math.min(60,12+Math.sqrt(count)*2.5);
+    const existing=this.impactLights.find(f=>f.color===color && (f.x-x)**2+(f.y-y)**2<24**2);
+    if(existing) { existing.life=existing.max; existing.radius=Math.max(existing.radius,radius); }
+    else {
+      if(this.impactLights.length>=128) this.impactLights.shift();
+      this.impactLights.push({x,y,radius,color,life:.32,max:.32});
+    }
     for (let i = 0; i < count && this.particles.length < PARTICLE_CAP; i++) {
-      const a = Math.random() * Math.PI * 2;
+      const a = direction===undefined?Math.random()*Math.PI*2:direction+(Math.random()-.5)*2.0;
       const v = speed * (0.3 + Math.random() * 0.7);
       const life = 0.4 + Math.random() * 0.5;
-      this.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, color, size: 0.8 + Math.random() * 1.6 });
+      this.particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life, max: life, color, size: 0.8 + Math.random() * 1.6, fragment:combat });
     }
   }
 
   private drawParticles(dt: number, inView: (x: number, y: number) => boolean): void {
     this.sparks.begin();
-    const ps = this.particles;
+    const ps = this.particles;let fragmentQuads=0;
+    this.impactSparkFlock.step(ps,dt);
     for (let i = ps.length - 1; i >= 0; i--) {
       const p = ps[i];
       p.life -= dt;
@@ -1456,17 +1681,28 @@ export class Renderer {
         ps.pop();
         continue;
       }
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vx *= 0.96;
-      p.vy *= 0.96;
+      const dragRate=-Math.log(.96)*60,drag=Math.exp(-dragRate*dt),travel=(1-drag)/dragRate;
+      p.x += p.vx * travel;
+      p.y += p.vy * travel;
+      p.vx *= drag;
+      p.vy *= drag;
       if (!inView(p.x, p.y)) continue;
       if (p.castLight !== false && p.life / p.max > 0.4) this.light(p.x, p.y, 7 * p.size * (p.life / p.max), p.color);
-      const s = this.sparks.next();
+      const remaining=p.life/p.max,fade=remaining*remaining*(3-2*remaining);
+      if(p.fragment&&fragmentQuads<768&&this.abilityFx.batch.remaining>1024){
+        const speed=Math.hypot(p.vx,p.vy),length=p.size*(3+Math.min(14,speed*.035)),width=p.size*(1.0+remaining*.7);
+        this.abilityFx.batch.patch({x:p.x,y:p.y,width:length,height:width,angle:Math.atan2(p.vy,p.vx),surface:FX_SURFACE.shard,color:p.color,hot:0xffe9bf,alpha:fade,phase:1-remaining,seed:p.max*73});fragmentQuads++;continue;
+      }
+      const s = this.sparks.next(p.fragment?this.tex.fragments[Math.floor(p.max*73)%this.tex.fragments.length]:this.tex.particle);
       s.position.set(p.x, p.y);
       s.tint = p.color;
-      s.alpha = p.life / p.max;
-      s.scale.set(p.size);
+      s.alpha = fade;
+      s.rotation=p.fragment?Math.atan2(p.vy,p.vx):0;
+      if(p.fragment){
+        // Budget fallback retains angular silhouettes, velocity alignment and shared bloom.
+        s.width=p.size*(3+Math.min(14,Math.hypot(p.vx,p.vy)*.035));
+        s.height=p.size*(1.0+remaining*.7);
+      }else s.scale.set(p.size,p.size);
     }
     this.sparks.end();
   }
@@ -1497,6 +1733,7 @@ export class Renderer {
     this.camera.y += before.y - after.y;
   }
 
+  get frameVfxStats(){return {shieldPatches:this.shipFx.patchCount,blasts:this.abilityFx.impacts.count,particles:this.particles.length,emissionQuads:this.abilityFx.batch.used,smokeQuads:this.abilityFx.impacts.smoke.used};}
   get frameEmitters() { return this.lighting.frameEmitters; }
   get frameLightingEnabled(): boolean { return this.lighting.enabled; }
 

@@ -1,3 +1,5 @@
+import { stepDecoyFlight } from '../decoyFlight';
+import { reportHit } from '../combatFeedback';
 import { BOT_SKILL } from '../../content/bots';
 import { POWER_INDEX } from '../../content/power';
 import { QUIRK_PARAMS } from '../../content/quirks';
@@ -32,6 +34,10 @@ export function spawnDrone(
 ): Drone | null {
   const d = w.drones.alloc();
   if (!d) return null;
+  d.visualGeneration=(d.visualGeneration+1)%128;
+  d.abilityVisual = 0;
+  d.visualStartedAt = -1;
+  d.decoyLife=0;d.decoyAge=0;
   const base = { ...DRONES[behavior], ...params };
   let hullMul = 1;
   let dmgMul = 1;
@@ -103,6 +109,7 @@ export function damageDrone(w: World, d: Drone, amount: number, attackerSlot: nu
   if (!d.active || amount <= 0) return 0;
   const dealt = Math.min(d.hull, amount);
   d.hull -= amount;
+  reportHit(w, -1, attackerSlot, d.x, d.y, dealt);
   d.lastHitBy = attackerSlot;
   const credited = creditShip(w, attackerSlot);
   if (credited && credited.team !== d.team) scoreStructureDamage(credited, dealt);
@@ -149,7 +156,8 @@ export function stepDrones(w: World): void {
       continue;
     }
     if (d.behavior === 'decoy') {
-      // Decoys fly straight on from where they appeared, drawing fire.
+      if(stepDecoyFlight(d))continue;
+      // Other callers may supply a pre-existing drift without a summon entrance.
       d.x += d.vx * DT;
       d.y += d.vy * DT;
       continue;

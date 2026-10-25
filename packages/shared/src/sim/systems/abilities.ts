@@ -1,3 +1,5 @@
+import { beginDecoyFlight } from '../decoyFlight';
+import { abilityVisualIndex } from '../../content/abilityVisuals';
 import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
 import { socketPosition } from '../../content/hullGeometry';
 import { geometryOf, hitShipSegment, hitBodySegment } from '../hullCollision';
@@ -26,6 +28,8 @@ export interface Caster {
   cursorY: number;
   /** Ship slot the caster is targeting (bots), or -1. */
   targetSlot: number;
+  /** Cosmetic only; propagated to actual effects rather than inferred by the client. */
+  abilityVisual?: number;
   /** Commander Fuel wings: the base they take off from (they then fly to the cursor). */
   launchX?: number;
   launchY?: number;
@@ -62,7 +66,9 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     s.dashDy = dy / len;
     s.dashTime = step.duration;
     s.dashMul = step.speedMul;
+    s.dashEaseTick = (step.ramDamage ?? 0) > 0 ? 0 : -1;
     s.dashRam = step.ramDamage ?? 0;
+    s.dashVisual = c.abilityVisual ?? 0;
     s.dashKnock = step.knockback ?? 0;
     s.dashRamAp = step.ramAp ?? Infinity;
     s.dashRamStatus = step.ramStatus ?? null;
@@ -102,7 +108,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
   projectiles(w, c, step) {
     const s = c.ship;
     if (!s) return;
-    firePattern(w, s, step);
+    firePattern(w, s, step, c.abilityVisual);
     // Ripple salvos: the rest of the pattern follows `repeatInterval` s apart (systems/abilities tickBurst).
     if (step.repeat && step.repeat > 1) {
       s.burstStep = step;
@@ -123,7 +129,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         socketPosition(c.ship, sockets[Math.floor(k * sockets.length / step.count)], origin);
       }
       beamHits(w, c, origin.x, origin.y, Math.cos(a), Math.sin(a), step.length, step.width / 2, step.damage * mul, hit, step.status);
-      w.emit(EventType.Beam, c.team, c.slot, origin.x, origin.y, a, step.length);
+      w.emit(EventType.Beam, c.team, c.slot, origin.x, origin.y, a, step.length, c.abilityVisual);
     }
   },
 
@@ -185,12 +191,14 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
         if (dp.team === c.team && (dp.x - cx) ** 2 + (dp.y - cy) ** 2 <= r * r) dp.hull = Math.min(dp.maxHull, dp.hull + dp.maxHull * step.heal);
       }
     }
-    w.emit(EventType.Explosion, c.team, 2, cx, cy, r);
+    w.emit(EventType.Explosion, c.team, 2, cx, cy, r, c.slot, c.abilityVisual);
   },
 
   zone(w, c, step) {
     const z = w.zones.alloc();
     if (!z) return;
+    z.abilityVisual = c.abilityVisual ?? 0;
+    z.visualStartedAt = w.time;
     z.team = c.team;
     z.owner = c.slot;
     z.x = step.at === 'cursor' ? clampX(w, c.cursorX) : c.x;
@@ -229,9 +237,10 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       if (step.unit === 'decoy') {
         const d = spawnDrone(w, c.team, c.slot, 'decoy', c.x, c.y, step.life, s);
         if (d) {
+          d.abilityVisual = c.abilityVisual ?? 0;
+          d.visualStartedAt = w.time;
           const sp = DRONES.decoy.speed;
-          d.vx = Math.cos(a) * sp;
-          d.vy = Math.sin(a) * sp;
+          beginDecoyFlight(d,c.angle,a,step.life,sp);
         }
         continue;
       }
@@ -250,6 +259,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       const x = atTarget ? c.cursorX + Math.cos(a * 3) * 80 : c.x;
       const y = atTarget ? c.cursorY + Math.sin(a * 3) * 80 : c.y;
       const d = spawnDrone(w, c.team, c.slot, step.behavior, x, y, step.life, s, step.params, c.cursorX, c.cursorY);
+      if (d) { d.abilityVisual = c.abilityVisual ?? 0; d.visualStartedAt = w.time; }
       // Ship drones (Carrier scrambles) take off down the bow runway in alternating lanes.
       if (d && s) launchFromBow(w, d, s, (k % 3) - 1);
     }
@@ -279,6 +289,8 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       d.expires = w.time + step.life;
       d.cooldown = 0;
       d.empUntil = -1;
+      d.abilityVisual = c.abilityVisual ?? 0;
+      d.visualStartedAt = d.abilityVisual ? w.time : -1;
     }
   },
 
@@ -316,6 +328,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
     t.owner = s.slot;
     t.target = target;
     t.expires = w.time + step.duration;
+    t.visualStartedAt = w.time;
     t.range = step.range;
     t.healPerSecond = step.healPerSecond;
     t.shieldPerSecond = step.shieldPerSecond ?? 0;
@@ -535,7 +548,15 @@ export function canCast(w: World, s: Ship, st: AbilityState): boolean {
 export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number): boolean {
   if (!canCast(w, s, st)) return false;
   const c = shipCaster(s, targetSlot);
+  c.abilityVisual = abilityVisualIndex(st.def.id);
+  const originX = s.x, originY = s.y;
   runSteps(w, c, st.def.steps);
+  if (c.abilityVisual) {
+    s.abilityVisual = c.abilityVisual;
+    s.visualStartedAt = w.time;
+    // Leave event capacity for combat confirmations. No RNG or mechanical state is touched.
+    if (w.eventCount < 384) w.emit(EventType.AbilityCast, s.team, s.slot, originX, originY, s.angle, 0, c.abilityVisual);
+  }
   st.charges -= castCost(w, s);
   if (st.cooldown <= 0) st.cooldown = abilityCooldown(w, s, st);
   return true;
@@ -546,7 +567,7 @@ export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): v
 }
 
 /** The `projectiles` primitive's pattern, fired once from the ship's bow. */
-function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>): void {
+function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>, abilityVisual = 0): void {
   const first = w.projectiles.count;
   const gun = mergedGun(s.cls.gun, step.gun);
   spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle);
@@ -557,6 +578,7 @@ function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'pro
   const warhead = step.missile === true || (gun.splash ?? 0) > 0;
   for (let i = first; i < w.projectiles.count; i++) {
     const p = w.projectiles.at(i);
+    p.abilityVisual = abilityVisual;
     if (step.missile) p.missile = true;
     p.ap = ap;
     if (warhead) p.noOverpen = true;

@@ -1,3 +1,4 @@
+import { reportHit } from '../combatFeedback';
 import { COMMAND_RULES } from '../../content/command';
 import { POINTS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY } from '../../content/progression';
@@ -142,6 +143,7 @@ export function damageNode(w: World, p: PointState, amount: number, team: TeamId
   amount *= armorMul(ap, nodeArmor(w, p), true);
   const dealt = Math.min(amount, p.hull);
   p.hull -= amount;
+  reportHit(w, -1, attackerSlot, p.x, p.y, dealt);
   p.lastDamageTime = w.time;
   const attacker = attackerSlot >= 0 ? w.ships[attackerSlot] : null;
   if (attacker) grantXp(w, attacker, dealt * ECONOMY.xp.damageToStructures);

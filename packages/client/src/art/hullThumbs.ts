@@ -1,3 +1,4 @@
+import { pbrPreview } from './pbrPreview';
 import type { LitArt } from '../render/textures';
 import { HULL_BY_ID } from './hulls';
 import { bounds, type Shape } from './shapes';
@@ -17,15 +18,17 @@ export function setHullThumbArt(art: Record<string, LitArt>): void {
 }
 
 /** Data URL of a hull's team-painted reference sprite, or null when only vector art exists. */
-export function hullThumbUrl(hullId: string, team: number): string | null {
+export function hullThumbUrl(hullId: string, team: number, style: 'standard'|'hangar' = 'standard'): string | null {
   const art = reference[hullId];
   if (!art) return null;
-  const key = `${hullId}:${team}`;
+  const key = `${hullId}:${team}:${style}`;
   let url = urls.get(key);
   if (!url) {
     const source = art.albedo[team === 1 ? 1 : 0].source.resource;
     if (!(source instanceof HTMLCanvasElement)) return null;
-    url = source.toDataURL('image/png');
+    const normal=art.normal.source.resource,material=art.material?.source.resource;
+    const preview=normal instanceof HTMLCanvasElement && material instanceof HTMLCanvasElement ? pbrPreview(source,normal,material,style) : source;
+    url = preview.toDataURL('image/png');
     urls.set(key, url);
   }
   return url;
@@ -38,8 +41,8 @@ export function hullThumbSize(hullId: string): [number, number] | null {
 }
 
 /** `<img>` of the reference sprite (nose +x), falling back to the vector hull as SVG. */
-export function hullThumb(hullId: string, team: number): string {
-  const url = hullThumbUrl(hullId, team);
+export function hullThumb(hullId: string, team: number, style: 'standard'|'hangar' = 'standard'): string {
+  const url = hullThumbUrl(hullId, team, style);
   if (url) return `<img class="hull-thumb" src="${url}" alt="" draggable="false" />`;
   const shapes = HULL_BY_ID[hullId]?.shapes;
   return shapes ? hullSvg(shapes) : '';

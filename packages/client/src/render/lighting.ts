@@ -1,3 +1,4 @@
+import { MATERIAL_RESPONSE } from './materialResponse';
 import {
   BufferImageSource,
   Container,
@@ -268,6 +269,7 @@ uniform float uHasRelief;
 uniform float uReliefRange;
 uniform sampler2D uMaterial;
 uniform float uHasMaterial;
+uniform float uSelfLit;
 uniform sampler2D uOcclusion;
 uniform sampler2D uShadowDist;
 uniform sampler2D uInterior;
@@ -278,6 +280,7 @@ uniform vec2 uLightViewport;
 uniform sampler2D uLightData;
 uniform sampler2D uLightTiles;
 uniform sampler2D uLightIndices;
+uniform sampler2D uLightOverflow;
 uniform vec2 uLightGridSize;
 uniform float uLightingEnabled;
 uniform vec4 uColor;
@@ -291,22 +294,7 @@ uniform float uSelfShadowStrength;
 
 // Metallic/roughness BRDF: GGX distribution, correlated Smith visibility,
 // Schlick Fresnel, Lambert diffuse. Atlas maps are linear material data.
-vec3 materialResponse(vec3 N, vec3 L, vec3 base, float roughness, float metallic) {
-  const float PI = 3.14159265;
-  vec3 V = vec3(0.0, 0.0, 1.0);
-  vec3 H = normalize(V + L);
-  float nv = max(N.z, 0.001), nl = max(dot(N, L), 0.0);
-  float nh = max(dot(N, H), 0.0), vh = max(dot(V, H), 0.0);
-  float a = roughness * roughness, a2 = a * a;
-  float denominator = nh * nh * (a2 - 1.0) + 1.0;
-  float distribution = a2 / max(PI * denominator * denominator, 0.000001);
-  float visibility = 0.5 / max(nl * sqrt(nv * nv * (1.0 - a2) + a2)
-                           + nv * sqrt(nl * nl * (1.0 - a2) + a2), 0.0001);
-  vec3 f0 = mix(vec3(0.04), base, metallic);
-  vec3 fresnel = f0 + (1.0 - f0) * pow(1.0 - vh, 5.0);
-  vec3 diffuse = (1.0 - fresnel) * (1.0 - metallic) * base / PI;
-  return (diffuse + fresnel * distribution * visibility) * nl * PI;
-}
+${MATERIAL_RESPONSE}
 // Height in source-texel units, packed linearly in RG; alpha is coverage.
 float reliefHeight(vec4 packed) {
   return dot(packed.rg / max(packed.a, 0.001), vec2(256.0, 1.0)) * (uReliefRange / 257.0);
@@ -377,6 +365,15 @@ float visibility(vec2 start, vec2 end, float radius, mat2 bufferToUv) {
   }
   return 0.0;
 }
+// Bilinear diffuse fallback keeps crowded scenes lit without unbounded BRDF/shadow loops.
+// Manual interpolation also works on devices without float-texture linear filtering.
+vec3 overflowLight(vec2 uv) {
+  vec2 grid=clamp(uv*uLightGridSize-.5,vec2(0),uLightGridSize-1.);
+  ivec2 lo=ivec2(floor(grid)),hi=min(lo+1,ivec2(uLightGridSize)-1);
+  vec2 f=fract(grid);
+  return mix(mix(texelFetch(uLightOverflow,lo,0).rgb,texelFetch(uLightOverflow,ivec2(hi.x,lo.y),0).rgb,f.x),
+    mix(texelFetch(uLightOverflow,ivec2(lo.x,hi.y),0).rgb,texelFetch(uLightOverflow,hi,0).rgb,f.x),f.y);
+}
 void main() {
   vec2 normalSize = vec2(textureSize(uNormal, 0));
   mat2 bufferBasis = mat2(dFdx(vScreen * uLightRes), dFdy(vScreen * uLightRes));
@@ -384,6 +381,8 @@ void main() {
   // Derivatives are evaluated before divergent branches and reused by every light.
   float footprint = max(length(dFdx(vUv) * normalSize), length(dFdy(vUv) * normalSize));
   vec4 albedo = texture(uAlbedo, vUv);
+  // Energy bolts must not depend on the finite surface-light budget.
+  if (uSelfLit > 0.5) { fragColor = vec4(albedo.rgb * 1.8, albedo.a) * uColor; return; }
   vec4 normalSample = texture(uNormal, vUv);
   vec3 nm = normalSample.rgb / max(normalSample.a, 0.001);
   vec2 n2 = nm.rg * 2.0 - 1.0;
@@ -410,6 +409,9 @@ void main() {
   // The existing ambient fill remains an inexpensive uniform environment approximation.
   vec3 pbr = surfaceColor * uAmbient + materialResponse(N, K, surfaceColor, roughness, metallic)
     * uKeyPower * keyVisibility * vec3(0.96, 0.98, 1.05);
+  vec3 overflow=overflowLight((vScreen*uLightRes-uBufferOffset)/uLightViewport)*uGI*uLightingEnabled*.25;
+  light+=overflow;
+  pbr+=surfaceColor*overflow*(1.-metallic*.7);
   ivec2 tile=ivec2(clamp(floor((vScreen*uLightRes-uBufferOffset)/uLightViewport*uLightGridSize),vec2(0.0),uLightGridSize-vec2(1.0)));
   vec2 list=texelFetch(uLightTiles,tile,0).rg;
   int lightCount=uLightingEnabled>0.5 ? int(list.y) : 0;
@@ -473,7 +475,8 @@ export class Lighting {
   private readonly grid = new LightGrid();
   private readonly emitters: { x: number; y: number; radius: number; color: number; intensity: number }[] = [];
   private readonly materialSources = new WeakMap<Shader, EmissiveSource>();
-  private readonly surfaceEmitters: { receiver: Mesh<MeshGeometry, Shader>; sprite: Mesh<MeshGeometry, Shader>; source: EmissiveSource }[] = [];
+  readonly bloomScene = new Container();
+  private readonly surfaceEmitters: { bloomSprite: Mesh<MeshGeometry, Shader>; receiver: Mesh<MeshGeometry, Shader>; sprite: Mesh<MeshGeometry, Shader>; source: EmissiveSource }[] = [];
   private readonly receivers: Mesh<MeshGeometry, Shader>[] = [];
   /** Wraps `scene` with the camera transform scaled down to the light-buffer resolution. */
   private readonly root = new Container();
@@ -629,7 +632,7 @@ export class Lighting {
   }
 
   /** Shader for a lit sprite (ship hull or structure). Shares the light uniforms and GI textures. */
-  litShader(albedo: TextureSource, normal: TextureSource, relief?: TextureSource, reliefRange = 128, material?: TextureSource): Shader {
+  litShader(albedo: TextureSource, normal: TextureSource, relief?: TextureSource, reliefRange = 128, material?: TextureSource, selfLit = false): Shader {
     const shader = new Shader({
       glProgram: litProgram(),
       resources: {
@@ -637,6 +640,7 @@ export class Lighting {
         uLightData:this.grid.lights.source,
         uLightTiles:this.grid.tiles.source,
         uLightIndices:this.grid.indices.source,
+        uLightOverflow:this.grid.overflow.source,
         uMaterial: material ?? this.black.source,
         uNormal: normal,
         uRelief: relief ?? this.black.source,
@@ -646,6 +650,7 @@ export class Lighting {
         surface: new UniformGroup({
           uHasRelief: { value: relief ? 1 : 0, type: 'f32' },
           uHasMaterial: { value: material ? 1 : 0, type: 'f32' },
+          uSelfLit: { value: selfLit ? 1 : 0, type: 'f32' },
           uReliefRange: { value: reliefRange, type: 'f32' },
           uLightGridSize:{value:this.grid.size,type:'vec2<f32>'},
         }),
@@ -681,26 +686,31 @@ export class Lighting {
     const source = mesh.shader ? this.materialSources.get(mesh.shader) : undefined;
     if (!source) return;
     const sprite = new Mesh({geometry:mesh.geometry,shader:new Shader({
-      glProgram:emissionProgram(),resources:{uEmission:source.texture.source},
+      glProgram:emissionProgram(),resources:{uEmission:source.texture.source,gain:new UniformGroup({uEmissionGain:{value:EMISSIVE_LIGHT_STRENGTH,type:'f32'}})},
     })}); sprite.blendMode='add';
     this.scene.addChild(sprite);
-    this.surfaceEmitters.push({receiver:mesh,sprite,source});
+    const bloomSprite=new Mesh({geometry:mesh.geometry,shader:new Shader({glProgram:emissionProgram(),resources:{uEmission:source.texture.source,gain:new UniformGroup({uEmissionGain:{value:EMISSIVE_STRENGTH,type:'f32'}})}})});
+    bloomSprite.blendMode='add';this.bloomScene.addChild(bloomSprite);
+    this.surfaceEmitters.push({receiver:mesh,sprite,bloomSprite,source});
   }
 
   /** Full emission silhouettes seed RC; matching bounded light patches drive the
    * directional BRDF and both environmental and height-map visibility tests. */
   private updateSurfaceEmitters(camX: number, camY: number, zoom: number, screenW: number, screenH: number): void {
-    for (const {receiver:mesh,sprite,source} of this.surfaceEmitters) {
+    for (const {receiver:mesh,sprite,bloomSprite,source} of this.surfaceEmitters) {
       sprite.visible = mesh.visible && mesh.renderable && mesh.alpha > 0;
+      bloomSprite.visible=sprite.visible;
       if (!sprite.visible) continue;
       const p=mesh.geometry.positions, width=p[2]-p[0], height=p[5]-p[1];
       const scaleX=width/source.width*mesh.scale.x, scaleY=height/source.height*mesh.scale.y;
       const radiusScale=Math.sqrt(Math.abs(scaleX*scaleY));
       const reach=Math.max(...source.patches.map(patch=>patch.radius))*radiusScale*EMISSIVE_LIGHT_RADIUS_SCALE*20;
       if (Math.abs(mesh.x-camX)>screenW/zoom/2+Math.abs(width*mesh.scale.x)/2+reach ||
-          Math.abs(mesh.y-camY)>screenH/zoom/2+Math.abs(height*mesh.scale.y)/2+reach) { sprite.visible=false;continue; }
+          Math.abs(mesh.y-camY)>screenH/zoom/2+Math.abs(height*mesh.scale.y)/2+reach) { sprite.visible=false;bloomSprite.visible=false;continue; }
       sprite.position.copyFrom(mesh.position);sprite.rotation=mesh.rotation;
       sprite.scale.copyFrom(mesh.scale);sprite.pivot.copyFrom(mesh.pivot);sprite.tint=mesh.tint;sprite.alpha=mesh.alpha;
+      bloomSprite.position.copyFrom(mesh.position);bloomSprite.rotation=mesh.rotation;
+      bloomSprite.scale.copyFrom(mesh.scale);bloomSprite.pivot.copyFrom(mesh.pivot);bloomSprite.tint=mesh.tint;bloomSprite.alpha=mesh.alpha;
       const cos=Math.cos(mesh.rotation),sin=Math.sin(mesh.rotation);
       for (const patch of source.patches) {
         const x=(p[0]+patch.u*width)*mesh.scale.x, y=(p[1]+patch.v*height)*mesh.scale.y;
@@ -748,6 +758,7 @@ export class Lighting {
       shader.resources.uLightData=this.grid.lights.source;
       shader.resources.uLightTiles=this.grid.tiles.source;
       shader.resources.uLightIndices=this.grid.indices.source;
+      shader.resources.uLightOverflow=this.grid.overflow.source;
     }
     const r = this.renderer;
     if (LIGHT_QUALITY.hullShadows) {
@@ -783,11 +794,12 @@ function emissionProgram(): GlProgram {
 precision highp float;
 in vec2 vUv;
 uniform sampler2D uEmission;
+uniform float uEmissionGain;
 uniform vec4 uColor;
 out vec4 fragColor;
 void main() {
   vec4 e=texture(uEmission,vUv);
-  fragColor=vec4(e.rgb * ${EMISSIVE_LIGHT_STRENGTH.toFixed(2)},e.a)*uColor;
+  fragColor=vec4(e.rgb * uEmissionGain,e.a)*uColor;
 }`,name:'material-emission'});
   return emissionProgramCache;
 }

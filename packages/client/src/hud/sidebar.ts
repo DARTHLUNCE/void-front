@@ -63,6 +63,11 @@ export function arrangePilotSidebar(root: HTMLElement): void {
   const armor = take('[data-k="armorArcs"]');
   armor.classList.add('noir-armor');
   status.append(armor);
+  const condition = node('div', 'pilot-status');
+  condition.dataset.k = 'pilotStatus';
+  condition.setAttribute('role', 'status');
+  condition.setAttribute('aria-live', 'polite');
+  status.append(condition);
 
   const combat = node('section', 'noir-combat noir-screen', 'Weapons and abilities');
   const weapons = take('.vhud-weapons-dash');
@@ -85,13 +90,19 @@ export function arrangePilotSidebar(root: HTMLElement): void {
   throttle.querySelector('label')!.textContent = 'THROTTLE';
   const cruise = take('.vhud-sublight');
   cruise.querySelector('label')!.textContent = 'SUB-LIGHT';
+  const driveState = node('span', 'flight-state');
+  driveState.dataset.k = 'flightState';
+  throttle.append(driveState);
   flight.append(throttle, brake, cruise);
 
   const upgrades = node('section', 'noir-upgrades noir-screen', 'Shard calibration upgrades');
   const bank = take('.vhud-upgrades-bank');
   const shardCounter = bank.querySelector('.vhud-shard-counter')!;
   const shards = take('[data-k="shards"]');
-  shardCounter.replaceChildren(shards, document.createTextNode(' SHARDS'));
+  const upgradePrompt = node('span', 'upgrade-prompt');
+  upgradePrompt.dataset.k = 'upgradePrompt';
+  upgradePrompt.textContent = 'SHARDS';
+  shardCounter.replaceChildren(shards, upgradePrompt);
   upgrades.append(bank);
   bank.querySelectorAll<HTMLElement>('.vhud-up-top b').forEach((label, i) => {
     const key = label.querySelector('kbd')!;
@@ -147,9 +158,9 @@ export function arrangePilotSidebar(root: HTMLElement): void {
   powerReadout.append(powerHead, powerPanel.querySelector('.led-cols')!);
   powerPanel.append(powerReadout, powerKeys);
   // Each physical key has a tiny display; retain full names on the native buttons.
-  powerKeys.children[0].textContent = 'E';
-  equalize.textContent = '=';
-  powerKeys.children[2].textContent = 'S';
+  powerKeys.children[0].textContent = '←';
+  equalize.textContent = '↓';
+  powerKeys.children[2].textContent = '→';
   power.append(powerPanel);
   hud.replaceChildren(status, combat, flight, upgrades, navigation, power);
   surface.append(hud);
