@@ -146,6 +146,8 @@ export function spawnPattern(
       p.x = x + c * socket[0] - sn * socket[1];
       p.y = y + sn * socket[0] + c * socket[1];
     }
+    p.abilityVisual = 0;
+    p.visualGeneration = (p.visualGeneration + 1) & 127;
     p.muzzleX = p.x;
     p.muzzleY = p.y;
     p.speed = gun.projectileSpeed;
@@ -405,6 +407,8 @@ function fireSecondaryShot(w: World, s: Ship, x: number, y: number, angle: numbe
   }
   p.x = x;
   p.y = y;
+  p.abilityVisual = 0;
+  p.visualGeneration = (p.visualGeneration + 1) & 127;
   p.muzzleX = x;
   p.muzzleY = y;
   p.speed = def.projectileSpeed;
@@ -443,11 +447,17 @@ export function shootDownMissile(w: World, team: TeamId, x: number, y: number, r
   for (let i = proj.count - 1; i >= 0; i--) {
     const m = proj.at(i);
     if (m.missile && m.team !== team && (m.x - x) ** 2 + (m.y - y) ** 2 <= r2) {
+      abilityContact(w, m, m.x, m.y);
       proj.release(m);
       return true;
     }
   }
   return false;
+}
+
+/** Presentation only: confirmed contact, including interception. Never an inferred hit. */
+function abilityContact(w: World, p: Projectile, x: number, y: number): void {
+  if (p.abilityVisual && w.eventCount < 384) w.emit(EventType.AbilityImpact, p.team, p.owner, x, y, p.radius, Math.atan2(p.vy, p.vx), p.abilityVisual);
 }
 
 // ─── Projectiles ────────────────────────────────────────────────────────────
@@ -475,6 +485,7 @@ export function stepProjectiles(w: World): void {
     const qr = segHalf + p.radius + MAX_SHIP_RADIUS;
 
     if (blockedByDome(w, p, mx, my)) {
+      abilityContact(w, p, mx, my);
       pool.release(p);
       continue;
     }
@@ -544,6 +555,9 @@ export function stepProjectiles(w: World): void {
       }
     }
 
+    if (kind !== NOTHING && !(kind === SHIP && hitShip && hasStatus(hitShip, 'reflect') && !p.fromDrone)) {
+      abilityContact(w, p, p.x + dx * bestT, p.y + dy * bestT);
+    }
     if (kind === SHIP && hitShip) {
       const s = hitShip;
       if (s.team === p.team) {
@@ -554,6 +568,8 @@ export function stepProjectiles(w: World): void {
         continue;
       }
       if (hasStatus(s, 'reflect') && !p.fromDrone) {
+        // Cosmetic contact only: reflection position, velocity and damage rules stay unchanged.
+        if(s.abilityVisual===20 && w.eventCount<384)w.emit(EventType.AbilityImpact,s.team,s.slot,p.x+dx*bestT,p.y+dy*bestT,p.radius,Math.atan2(-p.vy,-p.vx),20);
         reflect(p, s);
         continue;
       }
@@ -788,7 +804,7 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
   // collapsing. Capped so these never crowd kills and flips out of the event buffer.
   if (shieldDealt > 0 && w.eventCount < EVENT_CAPACITY * 0.4) {
     const directed = hit.dirX !== 0 || hit.dirY !== 0;
-    w.emit(EventType.ShieldHit, target.slot, attackerSlot, target.x, target.y, directed ? Math.atan2(hit.dirY, hit.dirX) : 0, directed ? shieldDealt : -shieldDealt);
+    w.emit(EventType.ShieldHit, target.slot, attackerSlot, hit.impactX ?? target.x, hit.impactY ?? target.y, directed ? Math.atan2(hit.dirY, hit.dirX) : 0, directed ? shieldDealt : -shieldDealt);
   }
   if (broke && w.eventCount < EVENT_CAPACITY - 32) w.emit(EventType.ShieldBreak, target.slot, attackerSlot, target.x, target.y);
   const dealt = shieldDealt + hullDealt;
@@ -849,6 +865,7 @@ function salvageBeacon(w: World, fob: Structure): void {
   const team = fob.team === 0 ? 1 : 0;
   d.team = team;
   d.owner = SALVAGE_OWNER;
+  d.abilityVisual = 0;d.visualStartedAt = -1;
   d.kind = 'beacon';
   d.def = DEPLOYABLES.beacon;
   d.x = fob.x - w.teamSign(team) * (fob.radius + SALVAGE.offset);

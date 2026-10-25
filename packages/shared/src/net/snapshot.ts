@@ -24,17 +24,17 @@ export const SNAP = {
   self: 64,
   /** Per order, for the viewer's seat: seconds until ready, current cost, 1 if this seat may issue it. */
   command: COMMANDS.length * 3,
-  ship: 24,
-  projectile: 11, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
+  ship: 26,
+  projectile: 13, // x, y, vx, vy, team, radius, flags, remaining lifetime, caliber (AP; 0 = area / none), muzzle x, muzzle y
   crystal: 3,
   point: 10,
   structure: 8,
-  drone: 7,
-  deployable: 6,
-  zone: 6,
+  drone: 10, // includes stable cosmetic identity for trail history
+  deployable: 9,
+  zone: 8,
   strike: 5,
-  tether: 2,
-  event: 7,
+  tether: 4,
+  event: 9,
 } as const;
 
 export const H = {
@@ -192,6 +192,9 @@ export const SHIP = {
   assists: 22,
   /** Normalized live Sub-Light charge for visible ship effects. */
   cruiseSpool: 23,
+  /** Cosmetic identity/time of the last right-click cast (for live status-bound visuals). */
+  abilityVisual: 24,
+  visualStartedAt: 25,
 } as const;
 export const SHIP_FLAG = { alive: 1, dashing: 2, cruising: 4, visible0: 8, visible1: 16, human: 32, invulnerable: 64, retreating: 128, commander: 256, docked: 512 } as const;
 
@@ -471,6 +474,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + SHIP.hullIndex] = HULL_INDEX[s.hullModel] ?? 0;
     b[k + SHIP.status] = statusBits(s);
     b[k + SHIP.quirkGauge] = quirkGauge(s);
+    b[k + SHIP.abilityVisual] = s.abilityVisual;
+    b[k + SHIP.visualStartedAt] = s.visualStartedAt;
     k += SNAP.ship;
   }
 
@@ -497,6 +502,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 8] = Number.isFinite(p.ap) ? p.ap : 0;
     b[k + 9] = p.muzzleX;
     b[k + 10] = p.muzzleY;
+    b[k + 11] = p.abilityVisual;
+    b[k + 12] = p.index * 128 + p.visualGeneration;
     k += SNAP.projectile;
   }
 
@@ -534,6 +541,9 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 4] = d.team;
     b[k + 5] = DRONE_BEHAVIORS.indexOf(d.behavior);
     b[k + 6] = d.maxHull > 0 ? d.hull / d.maxHull : 1;
+    b[k + 7] = d.abilityVisual;
+    b[k + 8] = d.visualStartedAt;
+    b[k + 9] = d.index*128+d.visualGeneration;
     k += SNAP.drone;
   }
 
@@ -546,6 +556,9 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 3] = DEPLOY_KINDS.indexOf(d.kind);
     b[k + 4] = d.maxHull > 0 ? d.hull / d.maxHull : 1;
     b[k + 5] = d.index;
+    b[k + 6] = d.abilityVisual;
+    b[k + 7] = d.visualStartedAt;
+    b[k + 8] = Number.isFinite(d.expires) ? Math.max(0,d.expires-w.time) : -1;
     k += SNAP.deployable;
   }
 
@@ -565,6 +578,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     if (z.status) f |= ZONE_FLAG.status;
     b[k + 4] = f;
     b[k + 5] = Math.max(0, z.expires - w.time);
+    b[k + 6] = z.abilityVisual;
+    b[k + 7] = z.visualStartedAt;
     k += SNAP.zone;
   }
 
@@ -584,6 +599,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     const t = w.tethers.at(i);
     b[k] = t.owner;
     b[k + 1] = t.target;
+    b[k + 2] = t.visualStartedAt;
+    b[k + 3] = Math.max(0,t.expires-w.time);
     k += SNAP.tether;
   }
 
@@ -597,6 +614,8 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     b[k + 4] = e.y;
     b[k + 5] = e.c;
     b[k + 6] = e.d;
+    b[k + 7] = e.abilityVisual ?? 0;
+    b[k + 8] = e.visualStartedAt ?? w.time;
     k += SNAP.event;
   }
   return b;

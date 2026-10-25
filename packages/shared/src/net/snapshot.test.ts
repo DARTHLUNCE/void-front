@@ -1,3 +1,4 @@
+import {spawnDrone} from '../sim/systems/drones';
 import { MATCH } from '../content/match';
 import { spoolCut } from '../sim/systems/power';
 import { describe, expect, it } from 'vitest';
@@ -90,4 +91,19 @@ it('includes charge progress for other ships without disturbing snapshot section
   data=encodeSnapshot(w,a.slot);
   expect(data[readOffsets(data).ships+b.slot*SNAP.ship+SHIP.cruiseSpool]).toBe(1);
   expect(snapshotMatchesSchema(data)).toBe(true);
+});
+
+it('keeps drone trail identity through dense compaction, and changes it on slot reuse',()=>{
+  const {w,a}=duelWorld();w.drones.clear();
+  const first=spawnDrone(w,a.team,a.slot,'swarm',100,100,10,a)!;
+  const second=spawnDrone(w,a.team,a.slot,'swarm',200,200,10,a)!;
+  const original=encodeSnapshot(w,a.slot),o=readOffsets(original);
+  const firstId=original[o.drones+9],secondId=original[o.drones+SNAP.drone+9];
+  w.drones.release(first);
+  const compact=encodeSnapshot(w,a.slot);expect(compact[readOffsets(compact).drones+9]).toBe(secondId);
+  const replacement=spawnDrone(w,a.team,a.slot,'swarm',300,300,10,a)!;
+  expect(replacement.index).toBe(first.index);expect(second.active).toBe(true);
+  const reused=encodeSnapshot(w,a.slot),r=readOffsets(reused);
+  expect(reused[r.drones+9]).toBe(secondId);expect(reused[r.drones+SNAP.drone+9]).not.toBe(firstId);
+  expect(snapshotMatchesSchema(reused)).toBe(true);expect(reused.length).toBe(r.length);
 });

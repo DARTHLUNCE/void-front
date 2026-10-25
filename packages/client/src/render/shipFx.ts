@@ -1,12 +1,14 @@
 import { Container, Rectangle, Sprite, Texture, type Renderer as PixiRenderer } from 'pixi.js';
 import { bakeShieldShell, SHIELD_TINT, SHIELD_TINT_HEX, type ShieldShell } from '../art/shieldShell';
 import type { LitArt } from './textures';
+import { SHIELD_FAILURE_LIFE, shieldFailure } from './shieldFailure';
+import { ShieldSurface } from './shieldSurface';
+import { fxRandom,smooth } from './abilityFxCatalog';
 
 /**
  * Cosmetic ship effects layered over the sim (nothing here changes gameplay):
- * - Hull-shaped energy shields: only the struck side lights up, a soft patch of the rim and hex
- *   lattice where each shot lands, brighter while the shield is strong; when it collapses that side
- *   flashes once and sheds a few sparks.
+ * - Hull-shaped shields: localized rim/hex impacts; whole-shell electrical failure on break.
+ *   Formation, interference and dissolution evolve in the shared shield material.
  * - Hit jolts: shots nudge the hull sprite a few units.
  * - Wrecks: a destroyed ship burns out (dark, drifting, turning, blasts walking the hull), then
  *   breaks in two; the halves drift apart smouldering and fade.
@@ -16,6 +18,9 @@ export interface ShipFxHooks {
   /** The renderer's spark particles and point lights. */
   spark(x: number, y: number, vx: number, vy: number, life: number, color: number, size: number): void;
   burst(x: number, y: number, color: number, count: number, speed: number): void;
+  smoke?(x:number,y:number,size:number,alpha:number,age:number,seed:number,angle:number):void;
+  faultArc?(x:number,y:number,ex:number,ey:number,width:number,color:number,alpha:number,seed:number):void;
+  fieldFragment?(x:number,y:number,size:number,rotation:number,color:number,alpha:number,age:number,seed:number):void;
   light(x: number, y: number, r: number, color: number, alpha?: number): void;
 }
 
@@ -23,29 +28,33 @@ interface Shell {
   /** Rim and lattice at a modest resolution, kept to bake the lit patches from. */
   rim: HTMLCanvasElement;
   hex: HTMLCanvasElement;
-  /** One texture per side (DIRS around the hull), baked the first time that side is hit. */
-  dirs: (Texture | undefined)[];
+  /** Shared GPU surface for continuously positioned impacts and full-shell failure. */
+  surface: ShieldSurface;
   /** World size of the shell. */
   w: number;
   h: number;
   pts: [number, number][];
+  failureRim: [number,number][];
 }
 
-/** Sides a shield can light up on; hits snap to the nearest. */
-const DIRS = 24;
 /** Shell textures are kept at most this many px across (they are soft glows). */
 const SHELL_PX = 320;
 
 interface SlotFx {
   /** Collapse flash: remaining time and the side it went down on (world angle). */
   collapse: number;
+  /** Latches one failure episode until the shield has meaningfully recovered. */
+  shieldBroken: boolean;
   collapseA: number;
+  collapseContact?: {x:number;y:number};
+  collapseLocal?: number;
+  collapseOrigin?: {x:number;y:number;rotation:number;scale:number};
   sparkPending: boolean;
   lastHull: number;
   jx: number;
   jy: number;
   /** Impacts: the side struck (world angle, toward the shooter) and remaining life. */
-  impacts: { a: number; life: number }[];
+  impacts: {a:number;life:number;power:number;pending:boolean;localA?:number;contact?:{x:number;y:number}}[];
 }
 
 
@@ -77,6 +86,7 @@ interface Puff {
   life: number;
   max: number;
   size: number;
+  seed:number;
   /** 1 smoke, 2 debris. */
   kind: 1 | 2;
   rot: number;
@@ -84,21 +94,30 @@ interface Puff {
 }
 
 const BLAST = 0xffa040;
-const IMPACT_LIFE = 0.45;
+const IMPACT_LIFE = 0.55;
 /** At most this many lit patches per ship; hits on the same side refresh one patch. */
 const MAX_IMPACTS = 3;
 const MERGE_ARC = 0.6;
 const COLLAPSE_SPARKS = 8;
+// Presentation hysteresis only: combat trickle/glance restores must not resurrect a
+// failed shell every shot. Damage absorption and regeneration remain entirely in the sim.
+const SHIELD_VISUAL_REARM = 0.05;
 
 export class ShipFx {
   private readonly shells = new Map<string, Shell | null>();
   private readonly slots: SlotFx[] = [];
   private readonly wrecks: Wreck[] = [];
   private readonly puffs: Puff[] = [];
-  private readonly patches: Sprite[] = [];
+
   private readonly puffPool: Sprite[] = [];
-  private patchUsed = 0;
+
   private time = 0;
+  private zoom=1;
+  private reducedMotion=false;
+  private fieldFragments = 0;
+  private shieldPatches=0;
+  /** Bounded submission count for the existing VFX inspection page. */
+  get patchCount():number{return this.shieldPatches;}
 
   constructor(
     private readonly gpu: PixiRenderer,
@@ -107,8 +126,10 @@ export class ShipFx {
     private readonly shieldLayer: Container,
     private readonly smokeLayer: Container,
     private readonly glow: Texture,
-    private readonly particle: Texture,
+    private readonly fragments: readonly Texture[],
     private readonly hooks: ShipFxHooks,
+    private readonly bloomLayer?:Container,
+    private readonly refractionLayer?:Container,
   ) {}
 
   reset(): void {
@@ -116,11 +137,12 @@ export class ShipFx {
     for (const w of this.wrecks) this.dropWreck(w);
     this.wrecks.length = 0;
     this.puffs.length = 0;
+    for(const shell of this.shells.values()){shell?.surface.begin(0);shell?.surface.end();}
   }
 
   private slot(i: number): SlotFx {
     let s = this.slots[i];
-    if (!s) s = this.slots[i] = { collapse: 0, collapseA: 0, sparkPending: false, lastHull: 1, jx: 0, jy: 0, impacts: [] };
+    if (!s) s = this.slots[i] = { collapse: 0, shieldBroken: false, collapseA: 0, sparkPending: false, lastHull: 1, jx: 0, jy: 0, impacts: [] };
     return s;
   }
 
@@ -137,7 +159,7 @@ export class ShipFx {
       const ih = (image as HTMLCanvasElement).height;
       const baked: ShieldShell = bakeShieldShell(image, iw, ih, SHIELD_TINT[team]);
       const unit = art.widthWorld / iw;
-      // Keep a smaller copy to bake the directional patches from.
+      // Cache bounded rim/lattice masks; directional selection happens in the shader.
       const k = Math.min(1, SHELL_PX / Math.max(baked.rim.width, baked.rim.height));
       const shrink = (src: HTMLCanvasElement) => {
         const c = document.createElement('canvas');
@@ -146,13 +168,27 @@ export class ShipFx {
         c.getContext('2d')!.drawImage(src, 0, 0, c.width, c.height);
         return c;
       };
-      shell = {
-        rim: shrink(baked.rim),
-        hex: shrink(baked.hex),
-        dirs: new Array(DIRS),
+      const pts:[number,number][]=baked.pts.map(([x,y])=>[x*unit,y*unit]);
+      const failureRim=Array.from({length:16},(_,i):[number,number]=>{
+        const angle=i*Math.PI/8,dx=Math.cos(angle),dy=Math.sin(angle);
+        let best:[number,number]=[dx*baked.rim.width*unit*.42,dy*baked.rim.height*unit*.42],score=-2;
+        for(const p of pts){const value=(p[0]*dx+p[1]*dy)/Math.max(.001,Math.hypot(...p));if(value>score){score=value;best=p;}}
+        return best;
+      });
+      const rim=shrink(baked.rim),hex=shrink(baked.hex),field=shrink(baked.field);
+      // One packed mask texture: rim / lattice / enclosed field. Opaque alpha avoids
+      // premultiplication changing the independent masks during upload or filtering.
+      const packed=document.createElement('canvas');packed.width=rim.width;packed.height=rim.height;
+      const pg=packed.getContext('2d')!,data=pg.createImageData(rim.width,rim.height);
+      const channels=[rim,hex,field].map(c=>c.getContext('2d')!.getImageData(0,0,c.width,c.height).data);
+      for(let i=0;i<data.data.length;i+=4){for(let j=0;j<3;j++)data.data[i+j]=channels[j][i+3];data.data[i+3]=255;}
+      pg.putImageData(data,0,0);
+      const surface=new ShieldSurface(Texture.from(packed),SHIELD_TINT_HEX[team],baked.rim.width/baked.rim.height,baked.hexRadius/baked.rim.height);
+      surface.begin(this.time,this.zoom,this.reducedMotion);this.shieldLayer.addChild(surface.mesh);this.bloomLayer?.addChild(surface.bloom);this.refractionLayer?.addChild(surface.refraction);
+      shell = {rim,hex,surface,
         w: baked.rim.width * unit,
         h: baked.rim.height * unit,
-        pts: baked.pts.map(([x, y]) => [x * unit, y * unit]),
+        pts, failureRim,
       };
     } catch {
       shell = null;
@@ -163,18 +199,20 @@ export class ShipFx {
 
   // Events from the sim ---------------------------------------------------------------------
 
-  shieldHit(slot: number, dir: number, amount: number): void {
+  shieldHit(slot: number, dir: number, amount: number, hitX?:number, hitY?:number): void {
     // Area damage (blasts, fields, bleeds) has no side to light.
     if (amount < 0) return;
     const s = this.slot(slot);
+    if (s.shieldBroken) return;
     // dir is the shot's travel; it struck the side facing back along it.
     const a = dir + Math.PI;
+    const power=Math.min(1,.4+Math.sqrt(amount)/16),contact=hitX!==undefined&&hitY!==undefined?{x:hitX,y:hitY}:undefined;
     const same = s.impacts.find((imp) => Math.abs(Math.atan2(Math.sin(imp.a - a), Math.cos(imp.a - a))) < MERGE_ARC);
     if (same) {
       same.a = a;
-      same.life = IMPACT_LIFE;
+      same.life = IMPACT_LIFE;same.power=Math.max(same.power,power);same.pending=true;same.localA=undefined;same.contact=contact;
     } else {
-      s.impacts.push({ a, life: IMPACT_LIFE });
+      s.impacts.push({a,life:IMPACT_LIFE,power,pending:true,contact});
       if (s.impacts.length > MAX_IMPACTS) s.impacts.shift();
     }
     const push = Math.min(4, amount * 0.06);
@@ -184,9 +222,15 @@ export class ShipFx {
 
   shieldBreak(slot: number): void {
     const s = this.slot(slot);
-    s.collapse = 0.4;
+    // Full SHIELDS power can emit another break on every hit of its regenerated sliver.
+    // Keep the original deadline, including after it expires, until recovery rearms it.
+    if (s.shieldBroken) return;
+    s.shieldBroken = true;
+    s.collapse = SHIELD_FAILURE_LIFE;
+    s.collapseOrigin=undefined;
     // It goes down on the side that took the last hit.
     s.collapseA = s.impacts.length ? s.impacts[s.impacts.length - 1].a : 0;
+    const last=s.impacts[s.impacts.length-1];s.collapseContact=last?.contact;s.collapseLocal=last?.localA;
     s.impacts.length = 0;
     // Sparks are spawned on the next draw, where the hull's position and shell are known.
     s.sparkPending = true;
@@ -207,12 +251,13 @@ export class ShipFx {
 
   // Per frame -------------------------------------------------------------------------------
 
-  begin(dt: number): void {
-    this.time += dt;
-    this.patchUsed = 0;
+  begin(dt: number,zoom=1,reducedMotion=false): void {
+    this.time += dt;this.fieldFragments=0;this.shieldPatches=0;this.zoom=zoom;this.reducedMotion=reducedMotion;
+    for(const shell of this.shells.values())shell?.surface.begin(this.time,zoom,reducedMotion);
     for (const s of this.slots) {
       if (!s) continue;
       s.collapse = Math.max(0, s.collapse - dt);
+      if (s.collapse <= 0) { s.sparkPending = false; s.collapseOrigin = undefined; }
       for (let i = s.impacts.length - 1; i >= 0; i--) if ((s.impacts[i].life -= dt) <= 0) s.impacts.splice(i, 1);
       const decay = Math.exp(-12 * dt);
       s.jx *= decay;
@@ -236,6 +281,9 @@ export class ShipFx {
   /** Draw the lit parts of a ship's shield: only the sides struck in the last moment. */
   shield(slot: number, id: string, art: LitArt, team: number, x: number, y: number, rot: number, scale: number, frac: number, hidden: boolean): void {
     const s = this.slot(slot);
+    if (s.shieldBroken && s.collapse <= 0 && frac >= SHIELD_VISUAL_REARM) s.shieldBroken = false;
+    // Clear old contact patches while down; a fractional regen tick must not revive them.
+    if (frac <= 0 || s.shieldBroken) s.impacts.length = 0;
     if (hidden || (!s.impacts.length && s.collapse <= 0 && !s.sparkPending)) return;
     const sh = this.shell(id, art, team);
     if (!sh) return;
@@ -249,11 +297,17 @@ export class ShipFx {
     /** World point on the shell on the side facing world angle `a`. */
     const side = (a: number): [number, number] => {
       const la = a - rot;
-      const lx = Math.cos(la) * sh.w * 0.42;
-      const ly = Math.sin(la) * sh.h * 0.42;
+      const u=((la/(Math.PI*2)*16)%16+16)%16,index=Math.floor(u),f=u-index;
+      const p=sh.failureRim[index],q=sh.failureRim[(index+1)%16];
+      const lx=p[0]+(q[0]-p[0])*f,ly=p[1]+(q[1]-p[1])*f;
       return [cx + (lx * cos - ly * sin) * scale, cy + (lx * sin + ly * cos) * scale];
     };
-    const radius = Math.max(24, Math.min(sh.w, sh.h * 1.6) * 0.38) * scale;
+    const radius = Math.max(.5, Math.min(sh.w, sh.h * 1.6) * 0.38) * scale;
+    if(s.collapse>0){
+      if(s.collapseLocal===undefined){const hit=s.collapseContact;s.collapseLocal=(hit&&Math.hypot(hit.x-cx,hit.y-cy)>1?Math.atan2(hit.y-cy,hit.x-cx):s.collapseA)-rot;}
+      s.collapseA=rot+s.collapseLocal;
+      s.collapseOrigin??={x:cx,y:cy,rotation:rot,scale};
+    }
     if (s.sparkPending) {
       // A few sparks shed from the side that gave way, nothing around the rest of the hull.
       s.sparkPending = false;
@@ -269,61 +323,67 @@ export class ShipFx {
         if (++n >= COLLAPSE_SPARKS) break;
       }
     }
-    if (s.collapse > 0) this.patch(sh, cx, cy, rot, scale, s.collapseA, Math.min(1, s.collapse * 2.5));
+    if(s.collapse>0){
+      const age=SHIELD_FAILURE_LIFE-s.collapse;
+      for(let j=0;j<8;j++){
+        const local=j*Math.PI/4,world=local+rot,state=shieldFailure(age,world,s.collapseA);
+        if(state.alpha>.001)this.patch(sh,cx,cy,rot,scale,world,state.alpha,state.reveal,state.erode,.75,age/SHIELD_FAILURE_LIFE,slot);
+        if(j%2===0&&state.arc>.02){
+          const p=sh.failureRim[j*2],q=sh.failureRim[(j*2+3)%16];
+          const ax=cx+(p[0]*cos-p[1]*sin)*scale,ay=cy+(p[0]*sin+p[1]*cos)*scale;
+          const bx=cx+(q[0]*cos-q[1]*sin)*scale,by=cy+(q[0]*sin+q[1]*cos)*scale;
+          this.hooks.faultArc?.(ax,ay,bx,by,radius*.15,SHIELD_TINT_HEX[team],state.arc*1.15,slot*13+j);
+          this.hooks.light(ax,ay,radius*.22,SHIELD_TINT_HEX[team],state.arc*.55);
+        }
+      }
+      // Detached field cells peel from the failure location; they do not follow a moving hull.
+      const origin=s.collapseOrigin!,oc=Math.cos(origin.rotation),os=Math.sin(origin.rotation);
+      for(let j=0;j<8&&this.fieldFragments<64;j++){
+        const seed=slot*47+j*19;if(fxRandom(seed+11)<.20)continue;
+        const speed=SHIELD_FAILURE_LIFE/.86;
+        const delay=(.065+.12*fxRandom(seed))*speed,life=(.34+.20*fxRandom(seed+4))*speed;
+        const elapsed=age-delay;if(elapsed<=0||elapsed>=life)continue;
+        const progress=elapsed/life,p=sh.failureRim[j*2];
+        const direction=Math.atan2(p[1],p[0])+origin.rotation;
+        const travel=radius*(.20+.35*fxRandom(seed+9))*(1-Math.exp(-4.5*progress));
+        const curl=(fxRandom(seed+6)-.5)*.8*smooth(progress);
+        const px=origin.x+(p[0]*oc-p[1]*os)*origin.scale+Math.cos(direction+curl)*travel;
+        const py=origin.y+(p[0]*os+p[1]*oc)*origin.scale+Math.sin(direction+curl)*travel;
+        const alpha=smooth(elapsed/.025)*Math.exp(-2.2*progress)*(1-smooth((progress-.60)/.40));
+        this.hooks.fieldFragment?.(px,py,radius*(.13+.08*fxRandom(seed+3)),direction+curl+fxRandom(seed+7)*Math.PI*2,SHIELD_TINT_HEX[team],alpha*.8,progress,seed);
+        this.fieldFragments++;
+      }
+    }
     if (frac <= 0) return;
+    const ease=(v:number)=>{const t=Math.max(0,Math.min(1,v));return t*t*(3-2*t);};
     for (const imp of s.impacts) {
-      const t = imp.life / IMPACT_LIFE;
-      this.patch(sh, cx, cy, rot, scale, imp.a, t * (0.45 + 0.55 * frac));
-      const [hx,hy]=side(imp.a);
-      this.hooks.light(hx,hy,Math.max(9,radius*.22),SHIELD_TINT_HEX[team],t*t*.8);
+      if(imp.localA===undefined){const hit=imp.contact;imp.localA=(hit&&Math.hypot(hit.x-cx,hit.y-cy)>1?Math.atan2(hit.y-cy,hit.x-cx):imp.a)-rot;}
+      imp.a=rot+imp.localA;
+      const age=IMPACT_LIFE-imp.life;
+      const release=Math.exp(-3.6*age/IMPACT_LIFE)*(1-ease((age-.36)/.19)),ignite=ease(age/.016);
+      // Short localized contact must remain legible against lit hull plating. The material
+      // applies rim coverage and angular falloff again; their product used to bury small hits.
+      const alpha=ignite*release*imp.power*(.95+.40*Math.exp(-Math.pow((age-.04)/.025,2)));
+      const radiance=alpha*3.6;
+      this.patch(sh,cx,cy,rot,scale,imp.a,radiance,ease(age/.065),ease((age-.26)/.29),.21,-1,slot);
+      const [hx,hy]=side(imp.a),spread=.03+.24*(1-Math.pow(1-Math.min(1,age/.32),3));
+      for(const sign of [-1,1]){
+        const angle=imp.a+sign*spread;
+        this.patch(sh,cx,cy,rot,scale,angle,radiance*.22*ease(age/.055),ease(age/.08),ease((age-.26)/.29),.14,-1,slot);
+        if(age<.32){const [ex,ey]=side(angle);this.hooks.faultArc?.(hx,hy,ex,ey,radius*.07,SHIELD_TINT_HEX[team],alpha*.70,slot*17+sign);}
+      }
+      if(imp.pending){
+        imp.pending=false;
+        for(let j=0;j<3;j++){const a=imp.a+(j-1)*.4,v=55+j*22;this.hooks.spark(hx,hy,Math.cos(a)*v,Math.sin(a)*v,.18+j*.035,SHIELD_TINT_HEX[team],.65);}
+      }
+      this.hooks.light(hx,hy,radius*.30,SHIELD_TINT_HEX[team],alpha);
     }
   }
 
-  /**
-   * The shell lit on one side only: rim and lattice faded by a soft disc centred where the shell
-   * faces local angle `i` / DIRS of a turn. Baked on first use (no masks at draw time).
-   */
-  private dirTexture(sh: Shell, i: number): Texture {
-    let tex = sh.dirs[i];
-    if (tex) return tex;
-    const w = sh.rim.width;
-    const h = sh.rim.height;
-    const c = document.createElement('canvas');
-    c.width = w;
-    c.height = h;
-    const g = c.getContext('2d')!;
-    g.globalAlpha = 0.75;
-    g.drawImage(sh.hex, 0, 0);
-    g.globalAlpha = 1;
-    g.drawImage(sh.rim, 0, 0);
-    g.globalCompositeOperation = 'destination-in';
-    const a = (i / DIRS) * Math.PI * 2;
-    const px = w / 2 + Math.cos(a) * w * 0.42;
-    const py = h / 2 + Math.sin(a) * h * 0.42;
-    const r = Math.max(10, Math.min(w, h * 1.6) * 0.3);
-    const grad = g.createRadialGradient(px, py, 0, px, py, r);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-    grad.addColorStop(0.45, 'rgba(255, 255, 255, 0.55)');
-    grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    g.fillStyle = grad;
-    g.fillRect(0, 0, w, h);
-    tex = Texture.from(c);
-    sh.dirs[i] = tex;
-    return tex;
-  }
-
-  /** Draw the shell lit on the side facing world angle `a` (ship at rot), at `alpha`. */
-  private patch(sh: Shell, cx: number, cy: number, rot: number, scale: number, a: number, alpha: number): void {
-    const la = a - rot;
-    const i = ((Math.round((la / (Math.PI * 2)) * DIRS) % DIRS) + DIRS) % DIRS;
-    const p = this.sprite(this.patches, this.patchUsed++, this.shieldLayer, 'add');
-    p.texture = this.dirTexture(sh, i);
-    p.anchor.set(0.5);
-    p.position.set(cx, cy);
-    p.rotation = rot;
-    p.width = sh.w * scale;
-    p.height = sh.h * scale;
-    p.alpha = Math.min(1, alpha);
+  /** Energize the real hull contour; appearance changes in material space, never by scaling. */
+  private patch(sh:Shell,cx:number,cy:number,rot:number,scale:number,a:number,alpha:number,reveal=1,erode=0,spread=.21,fault=-1,seed=0):void{
+    if(alpha>=.001)this.shieldPatches++;
+    sh.surface.patch(cx,cy,sh.w*scale,sh.h*scale,rot,a,alpha,reveal,erode,spread,fault,seed);
   }
 
   private sprite(pool: Sprite[], i: number, layer: Container, blend: 'add' | 'normal'): Sprite {
@@ -341,7 +401,7 @@ export class ShipFx {
 
   /** After all ships: hide unused shell sprites, run the wrecks, smoke and debris. */
   end(dt: number): void {
-    for (let i = this.patchUsed; i < this.patches.length; i++) this.patches[i].visible = false;
+    for(const shell of this.shells.values())shell?.surface.end();
 
     for (let i = this.wrecks.length - 1; i >= 0; i--) {
       const w = this.wrecks[i];
@@ -373,7 +433,7 @@ export class ShipFx {
         continue;
       }
       w.life -= dt;
-      const fade = Math.min(1, w.life / 1.6);
+      const f=Math.min(1,Math.max(0,w.life/1.6)),fade=f*f*(3-2*f);
       for (const h of w.halves) {
         h.x += h.vx * dt;
         h.y += h.vy * dt;
@@ -386,7 +446,7 @@ export class ShipFx {
         const ey = h.y;
         h.edge.position.set(ex, ey);
         h.edge.rotation = h.rot;
-        h.edge.alpha = 0.55 * Math.max(0, w.life / 4) * (0.75 + Math.random() * 0.25);
+        h.edge.alpha = 0.55 * Math.max(0, w.life / 4) * (0.77 + .13*Math.sin(this.time*4+h.side)+.10*Math.sin(this.time*7.3+h.side*2));
         if (w.life > 2 && Math.random() < dt * 10) this.hooks.spark(ex, ey, (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40, 0.5, BLAST, 0.8);
       }
       if (w.life <= 0) {
@@ -409,8 +469,15 @@ export class ShipFx {
       const drag = 1 - dt * (p.kind === 1 ? 0.6 : 0.25);
       p.vx *= drag;
       p.vy *= drag;
-      p.rot += p.spin * dt;
-      if (p.kind === 1) p.size += dt * 14;
+      if(p.kind===1){
+        const spinDecay=Math.exp(-.9*dt);
+        p.rot+=p.spin*(1-spinDecay)/.9;p.spin*=spinDecay;
+      }else p.rot+=p.spin*dt;
+      if(p.kind===1&&this.hooks.smoke){
+        const u=Math.min(1,Math.max(0,1-p.life/p.max)),growth=1-(1-u)**3,remaining=1-u;
+        this.hooks.smoke(p.x,p.y,p.size+growth*p.max*14,remaining*remaining*(3-2*remaining)*.55,u*p.max,p.seed,p.rot);
+        continue;
+      }
       const s = this.sprite(this.puffPool, used++, this.smokeLayer, 'normal');
       const a = p.life / p.max;
       if (p.kind === 1) {
@@ -420,11 +487,11 @@ export class ShipFx {
         s.alpha = a * 0.55;
         s.scale.set((p.size * 2) / 128);
       } else {
-        s.texture = this.particle;
+        s.texture = this.fragments[Math.floor(p.seed)%this.fragments.length];
         s.anchor.set(0.5);
-        s.tint = 0x4a5266;
-        s.alpha = Math.min(1, a * 1.5);
-        s.scale.set(p.size / 6, p.size / 10);
+        s.tint = 0x89919d;
+        const fade=Math.min(1,a*1.5);s.alpha=fade*fade*(3-2*fade);
+        s.width=p.size*1.4;s.height=p.size*.85;
       }
       s.position.set(p.x, p.y);
       s.rotation = p.rot;
@@ -434,7 +501,8 @@ export class ShipFx {
 
   private puff(x: number, y: number, kind: 1 | 2, size: number, vx = (Math.random() - 0.5) * 20, vy = (Math.random() - 0.5) * 20): void {
     if (this.puffs.length > 600) return;
-    this.puffs.push({ x, y, vx, vy, life: kind === 1 ? 2 + Math.random() : 1.6 + Math.random(), max: kind === 1 ? 2.6 : 2.2, size, kind, rot: Math.random() * 6.28, spin: (Math.random() - 0.5) * 6 });
+    const life=kind===1?2+Math.random():1.6+Math.random();
+    this.puffs.push({x,y,vx,vy,life,max:life,size,kind,rot:Math.random()*6.28,spin:(Math.random()-.5)*(kind===1?.9:6),seed:Math.random()*10000});
   }
 
   /** The final blast: the hull splits and the halves drift apart. */

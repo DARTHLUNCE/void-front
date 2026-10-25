@@ -14,6 +14,16 @@ describe('confirmed combat events',()=>{
     w.eventCount=0;s.shield=0;damageShip(w,s,10,0);
     const hull=w.events.slice(0,w.eventCount).find(e=>e.type===EventType.CombatHit)!;expect(hull.d).toBeGreaterThan(0);expect(hull.c).toBe(10);
   });
+  it('preserves the real contact for directional shield VFX, with a center fallback',()=>{
+    for(const contact of [{impactX:123,impactY:456},{}]){
+      const w=setup(),s=w.ships[2];s.shield=100;
+      damageShip(w,s,10,0,{...HIT_AREA,dirX:1,dirY:0,...contact});
+      const event=w.events.slice(0,w.eventCount).find(e=>e.type===EventType.ShieldHit)!;
+      expect(event.x).toBe(contact.impactX??s.x);
+      expect(event.y).toBe(contact.impactY??s.y);
+      expect(event.c).toBe(0);expect(event.d).toBeGreaterThan(0);
+    }
+  });
   it('does not confirm immune targets or shielded structures',()=>{
     const w=setup(),s=w.ships[2];applyStatus(w,s,{status:'invulnerable',duration:5});
     expect(damageShip(w,s,10,0)).toBe(0);expect(w.eventCount).toBe(0);

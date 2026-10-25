@@ -1,3 +1,4 @@
+import { stepDecoyFlight } from '../decoyFlight';
 import { reportHit } from '../combatFeedback';
 import { BOT_SKILL } from '../../content/bots';
 import { POWER_INDEX } from '../../content/power';
@@ -33,6 +34,10 @@ export function spawnDrone(
 ): Drone | null {
   const d = w.drones.alloc();
   if (!d) return null;
+  d.visualGeneration=(d.visualGeneration+1)%128;
+  d.abilityVisual = 0;
+  d.visualStartedAt = -1;
+  d.decoyLife=0;d.decoyAge=0;
   const base = { ...DRONES[behavior], ...params };
   let hullMul = 1;
   let dmgMul = 1;
@@ -151,7 +156,8 @@ export function stepDrones(w: World): void {
       continue;
     }
     if (d.behavior === 'decoy') {
-      // Decoys fly straight on from where they appeared, drawing fire.
+      if(stepDecoyFlight(d))continue;
+      // Other callers may supply a pre-existing drift without a summon entrance.
       d.x += d.vx * DT;
       d.y += d.vy * DT;
       continue;

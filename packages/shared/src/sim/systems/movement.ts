@@ -6,7 +6,8 @@ import { turnToward } from '../angles';
 import { hullInertia, requestedAngularAcceleration } from '../handling';
 import { MATCH } from '../../content/match';
 import { conditionsHold, HIT_NONE, hasFlag, liveStat, statValue } from '../stats';
-import { DT, type Ship, type World } from '../world';
+import { DT, EventType, type Ship, type World } from '../world';
+import { ramSpeedMultiplier } from '../dashMotion';
 import { apHit, damageShip, MAX_SHIP_RADIUS, turnRateOf } from './combat';
 import { accelPowerMul, speedPowerMul, spoolCut } from './power';
 import { quirkOf } from './quirks';
@@ -58,8 +59,9 @@ export function moveShips(w: World): void {
       s.engineForward = s.engineLateral = 0;
       s.ax = s.ay = 0;
       s.thrustAngle = Math.atan2(s.dashDy, s.dashDx);
-      s.vx = s.dashDx * speed * s.dashMul;
-      s.vy = s.dashDy * speed * s.dashMul;
+      const burst = ramSpeedMultiplier(s, speed);
+      s.vx = s.dashDx * speed * burst;
+      s.vy = s.dashDy * speed * burst;
       s.dashTime -= DT;
       dashContacts(w, s);
       if (s.dashTime <= 0) {
@@ -183,7 +185,17 @@ function dashContacts(w: World, s: Ship): void {
     s.dashHits[s.dashHitCount++] = o.slot;
     if (mark > 0) applyStatus(w, o, { status: 'mark', duration: 4, magnitude: mark });
     if (s.dashRam > 0) {
+      const firstEvent=w.eventCount;
       damageShip(w, o, s.dashRam, s.slot, apHit(s.dashRamAp));
+      if(s.dashVisual && w.eventCount<384){
+        for(let e=firstEvent;e<w.eventCount;e++){
+          const hit=w.events[e];
+          if(hit.type===EventType.CombatHit&&hit.a===o.slot&&hit.b===s.slot)hit.abilityVisual=s.dashVisual;
+        }
+        const dx=o.x-s.x,dy=o.y-s.y,distance=Math.max(1,Math.hypot(dx,dy));
+        const reach=Math.min(distance*.5,s.radius);
+        w.emit(EventType.AbilityImpact,s.team,s.slot,s.x+dx/distance*reach,s.y+dy/distance*reach,s.radius,Math.atan2(s.dashDy,s.dashDx),s.dashVisual);
+      }
       if (s.dashRamStatus) for (const st of s.dashRamStatus) applyStatus(w, o, st);
       if (!hasFlag(o, 'knockbackImmune')) {
         o.vx += s.dashDx * s.dashKnock;

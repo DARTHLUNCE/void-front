@@ -207,14 +207,24 @@ export class Ship {
   conditional: ModifierDef[] = [];
   fireCooldown = 0;
   lastFireTime = -99;
+  /** Last successful right-click cast, for presentation only. */
+  abilityVisual = 0;
+  visualStartedAt = -1;
   signature: AbilityState;
   ultimate: AbilityState | null = null;
   extra: AbilityState | null = null;
   dashTime = 0;
   dashMul = 1;
+  /** Ram thrust envelope; -1 keeps ordinary dash motion unchanged. */
+  dashEaseTick = -1;
+  dashEaseTicks = 0;
+  dashEaseStart = 0;
+  dashEaseGain = 0;
   dashDx = 0;
   dashDy = 0;
   dashRam = 0;
+  /** Cosmetic provenance of this active dash, cleared by every new dash. */
+  dashVisual = 0;
   dashKnock = 0;
   /** v2: caliber of the ram impact and statuses it applies (Ironclad stun). */
   dashRamAp = Infinity;
@@ -318,6 +328,9 @@ export class Structure {
 }
 
 export class Projectile implements Pooled {
+  /** Cosmetic provenance and recycled-slot generation; excluded from gameplay. */
+  abilityVisual = 0;
+  visualGeneration = 0;
   muzzleX = 0;
   muzzleY = 0;
   active = false;
@@ -374,11 +387,17 @@ export class Crystal implements Pooled {
 }
 
 export class Drone implements Pooled {
+  /** Presentation identity survives dense-pool reorder and changes when the slot is reused. */
+  visualGeneration = 0;
+  abilityVisual = 0;
+  visualStartedAt = -1;
   active = false;
   team: TeamId = 0;
   /** Ship slot that owns it, or -1 for a commander call-in. */
   owner = -1;
   behavior: DroneBehavior = 'swarm';
+  decoyOriginX=0;decoyOriginY=0;decoyHeading=0;decoyCourse=0;
+  decoyLife=0;decoyAge=0;decoySpeed=0;
   /** v2.1: flying straight down the launch runway until this time (DECK_LAUNCH). */
   launchUntil = 0;
   /** v2.1: Drone Bay escorts: this escort's evenly spaced place on its carrier's ring. */
@@ -422,6 +441,8 @@ export class Drone implements Pooled {
 }
 
 export class Deployable implements Pooled {
+  abilityVisual = 0;
+  visualStartedAt = -1;
   active = false;
   team: TeamId = 0;
   owner = -1;
@@ -439,6 +460,8 @@ export class Deployable implements Pooled {
 }
 
 export class Zone implements Pooled {
+  abilityVisual = 0;
+  visualStartedAt = -1;
   active = false;
   team: TeamId = 0;
   owner = -1;
@@ -475,6 +498,7 @@ export class Strike implements Pooled {
 }
 
 export class Tether implements Pooled {
+  visualStartedAt = -1;
   active = false;
   owner = -1;
   /** Ship slot, or −1 − point index for a friendly node (v2). */
@@ -555,10 +579,17 @@ export const EventType = {
   CombatHit: 17,
   /** Actual crystal pickup: a collector slot, b unused, c awarded shards. */
   ShardPickup: 18,
+  /** Cosmetic cast: a team, b caster, x/y departure, c heading; abilityVisual identifies it. */
+  AbilityCast: 19,
+  /** Cosmetic ordnance contact: a team, b owner, x/y contact, c radius, d travel heading. */
+  AbilityImpact: 20,
 } as const;
 export type EventType = (typeof EventType)[keyof typeof EventType];
 
 export interface SimEvent {
+  /** Cosmetic identity and simulation timestamp. Optional for old fixture/event callers. */
+  abilityVisual?: number;
+  visualStartedAt?: number;
   type: EventType;
   a: number;
   b: number;
@@ -810,10 +841,12 @@ export class World {
     return this.teams[team === 0 ? 1 : 0];
   }
 
-  emit(type: EventType, a: number, b: number, x = 0, y = 0, c = 0, d = 0): void {
+  emit(type: EventType, a: number, b: number, x = 0, y = 0, c = 0, d = 0, abilityVisual = 0): void {
     if (this.eventCount >= EVENT_CAPACITY) return;
     const e = this.events[this.eventCount++];
     e.type = type;
+    e.abilityVisual = abilityVisual;
+    e.visualStartedAt = this.time;
     e.a = a;
     e.b = b;
     e.x = x;

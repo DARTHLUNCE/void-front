@@ -82,3 +82,10 @@ describe('curved exhaust appearance',()=>{
     expect(exhaustWidth(2)).toBe(exhaustWidth(1));
   });
 });
+
+it('starts fast exhaust behind its nozzle on the very first frame',()=>{
+  for(const hz of [30,60,144]){
+    const plume=new PlumeTrail();plume.update(100,200,0,5000,1200,600,.106,1/hz);
+    for(const sample of plume.samples){expect(sample.x).toBeLessThanOrEqual(100);expect(sample.y).toBeCloseTo(200);}
+  }
+});

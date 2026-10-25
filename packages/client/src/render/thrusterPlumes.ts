@@ -33,7 +33,8 @@ float noise(vec2 p){
   vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
   return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);
 }
-float fbm(vec2 p){return .57*noise(p)+.29*noise(p*2.03+11.7)+.14*noise(p*4.11+29.3);}
+float evolve(vec2 p,float time){float n=floor(time),f=fract(time);f=f*f*f*(f*(f*6.-15.)+10.);return mix(noise(p+n*vec2(37.13,17.71)),noise(p+(n+1.)*vec2(37.13,17.71)),f);}
+float fbm(vec2 p,float time){return .57*evolve(p,time)+.29*evolve(p*2.03+11.7,time*.83+5.)+.14*noise(p*4.11+29.3+vec2(time*.19,-time*.23));}
 void main(){
   float t=vUv.x;
   // The throat is stable. Turbulence grows continuously toward the cooling tip.
@@ -43,8 +44,8 @@ void main(){
   // per-packet noise averages away and loses the recognizable flame tongues.
   // Broad, gently advected detail preserves flame texture without boiling flashes.
   vec2 flow=vec2(vFlow.x*.85-uTime*1.8,vFlow.y*1.6+vStyle.x);
-  vec2 warp=vec2(noise(flow*.55+8.3),noise(flow*.55+23.1))-.5;
-  float n=fbm(flow+warp*.25);
+  vec2 warp=vec2(evolve(flow*.55+8.3,uTime*.38),evolve(flow*.55+23.1,uTime*.44))-.5;
+  float n=fbm(flow+warp*.25,uTime*.72+vStyle.x*.13);
   // Density advects down the jet; the centerline never wiggles like cloth.
   float y=vUv.y;
   if(vStyle.z>.5){
@@ -100,7 +101,7 @@ export class ThrusterPlumes {
   private readonly flows=new Float32Array(CAPACITY*8);
   private readonly flowBuffer:Buffer;
   private flowAlong=0;private flowX=0;private flowY=0;private flowCos=1;private flowSin=0;private flowWidth=1;
-  private readonly trails=new Map<number,{trail:PlumeTrail;frame:number}>();
+  private readonly trails=new Map<number|string,{trail:PlumeTrail;frame:number}>();
   private frame=0;private dt=1/60;private lastTime=0;private zoom=1;
   private readonly uvBuffer:Buffer;
   private readonly colors=new Float32Array(CAPACITY*12);
@@ -135,8 +136,10 @@ export class ThrusterPlumes {
     this.used=0;this.frame++;this.dt=this.lastTime?Math.min(.1,Math.max(0,seconds-this.lastTime)):1/60;
     this.lastTime=seconds;this.time.uniforms.uTime=seconds;
   }
+  /** Material-only clock is also used by the frozen-geometry GPU inspection. */
+  setMaterialTime(seconds:number):void{this.time.uniforms.uTime=Number.isFinite(seconds)?seconds:0;}
   reset():void {this.trails.clear();this.lastTime=0;}
-  trail(key:number,x:number,y:number,angle:number,length:number,width:number,color:number,intensity:number,seed:number,vx=0,vy=0):void {
+  trail(key:number|string,x:number,y:number,angle:number,length:number,width:number,color:number,intensity:number,seed:number,vx=0,vy=0):void {
     let state=this.trails.get(key);
     if(!state){state={trail:new PlumeTrail(),frame:this.frame};this.trails.set(key,state);}
     if(state.frame<this.frame-1)state.trail.reset();state.frame=this.frame;

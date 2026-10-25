@@ -13,6 +13,9 @@ export class PlumeTrail {
     // Use the rendered nozzle's velocity, including its sweep around the
     // center of mass. Center velocity alone makes newly emitted gas lag sideways
     // as the rear socket rotates, producing an immediate hook at the mouth.
+    // On birth, reconstruct the previous nozzle position from its known velocity.
+    // Otherwise first-frame gas starts at the current position and can jump ahead at high speed.
+    if(!this.previous)this.previous={x:x-vx*step,y:y-vy*step,angle};
     const inheritedX=this.previous && step>1e-6?(x-this.previous.x)/step:vx;
     const inheritedY=this.previous && step>1e-6?(y-this.previous.y)/step:vy;
     const turn=this.previous?Math.atan2(Math.sin(angle-this.previous.angle),Math.cos(angle-this.previous.angle)):0;
