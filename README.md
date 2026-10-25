@@ -287,7 +287,7 @@ Every shard you spent comes back so you can rebuild for the new frame.
 
 ## The ships
 
-![All ship hulls at true relative scale](docs/art/ship-lineup.png)
+![Every base hull and Tier-3 refit, plus the Titan, in Cobalt paint at true relative scale](docs/art/ship-lineup.jpg)
 
 There are nine classes. Bigger hulls hit harder and carry more armor and turrets, but turn slowly,
 respawn slowly, and are capped per team. The caps below are for a 60-ship fleet.
@@ -679,7 +679,7 @@ Each dev page tests one visual system in isolation. Open them while `pnpm dev` r
 
 | Page | What it checks |
 |---|---|
-| `/inspect.html` | Every hull at true scale |
+| `/inspect.html` | Every hull at true scale. `?lineup=1` re-renders the ship lineup from the in-game sprites into `packages/client/.inspect/lineup.png`. |
 | `/ship-test.html` | Every sprite with its material maps |
 | `/pbr-check.html` | Material lighting response |
 | `/lighting-check.html`, `/asset-lighting-check.html`, `/camera-lighting-check.html` | Radiance cascades |
