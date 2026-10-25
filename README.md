@@ -55,7 +55,8 @@ npx --yes pnpm@9.15.0 dev
 ```
 
 Open **http://localhost:5173**. If you have pnpm (`corepack enable` sets it up), plain `pnpm install` and
-`pnpm dev` work too.
+`pnpm dev` work too. For production builds, hosting, tests, the balance harness and the art tools, see
+**[BUILD.md](BUILD.md)**.
 
 The flow is title screen → terminal → hangar → space:
 
@@ -695,6 +696,9 @@ Each dev page tests one visual system in isolation. Open them while `pnpm dev` r
 
 ## For developers
 
+**[BUILD.md](BUILD.md)** is the full build guide. It covers prerequisites, the dev server, production
+builds and hosting, tests, the balance harness, the art pipeline and the dev pages.
+
 The repo is a pnpm workspace:
 
 | Package | What's in it |
@@ -724,6 +728,7 @@ The harness scores each run against balance targets:
 
 ### Docs
 
+- [BUILD.md](BUILD.md): building, testing and hosting the game
 - [docs/SPEC.md](docs/SPEC.md): the original full design
 - [rework-concept/CLAUDE_REWORK_SPEC.md](rework-concept/CLAUDE_REWORK_SPEC.md): the v2.0 / v2.1 rework spec
 - [docs/bot-ai.md](docs/bot-ai.md): the bot tactical AI
