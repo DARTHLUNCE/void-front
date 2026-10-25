@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, statCost, tierCost } from '../content/progression';
 import { HIGH_COMMAND } from '../content/upgrades';
-import { duelWorld } from '../test-utils';
+import { duelWorld, place } from '../test-utils';
 import { createWorld, step } from './step';
 import { damageShip } from './systems/combat';
 import { CLASS_ORDER, CLASSES, teamCap } from '../content/classes/index';
@@ -56,23 +56,43 @@ describe('tiers (XP)', () => {
     expect(a.xp).toBeCloseTo(0);
   });
 
-  it('tier 3 swaps the hull and keeps every Shard Calibration level (v2: no reset)', () => {
+  it('tier 3 swaps the hull and refunds every Shard Calibration level to re-spend', () => {
     const { w, a } = duelWorld();
     grantShards(w, a, 1_000);
     buyStat(a, 0);
     buyStat(a, 0);
+    buyStat(a, 2);
     grantXp(w, a, tierCost(0) + tierCost(1) + tierCost(2));
     buyTier(w, a, 0);
     buyTier(w, a, 0);
     expect(a.statPoints[0]).toBe(2);
+    const banked = a.shards;
     const hull = a.hullModel;
     buyTier(w, a, 0);
     expect(a.hullModel).not.toBe(hull);
-    expect(Array.from(a.statPoints)).toEqual([2, 0, 0, 0]);
-    // Costs keep climbing from where you are: the next weapons level is level 3's price.
+    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
+    expect(a.shards).toBe(banked + ECONOMY.statCosts[0] + ECONOMY.statCosts[1] + ECONOMY.statCosts[0]);
+    // Costs start over: the next weapons level is level 1's price again.
     const before = a.shards;
     buyStat(a, 0);
-    expect(before - a.shards).toBe(ECONOMY.statCosts[2]);
+    expect(before - a.shards).toBe(ECONOMY.statCosts[0]);
+  });
+
+  it('changing class refunds Shard Calibration; there is no natural hull regeneration', () => {
+    const { w, a, b } = duelWorld(1, 'cruiser');
+    // Out of the other ship's auto-turret range: nothing should touch the hull here.
+    place(w, b, 2_000, 2_000, 0);
+    grantShards(w, a, 1_000);
+    buyStat(a, 1);
+    const banked = a.shards;
+    setClass(a, 'destroyer');
+    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
+    expect(a.shards).toBe(banked + ECONOMY.statCosts[0]);
+    // A damaged hull stays damaged: only shields recharge on their own.
+    a.hull = a.maxHull * 0.5;
+    a.lastDamageTime = -100;
+    for (let i = 0; i < 30 * 20; i++) step(w);
+    expect(a.hull).toBeCloseTo(a.maxHull * 0.5, 5);
   });
 
   it('the input path buys tiers and stats during a step', () => {

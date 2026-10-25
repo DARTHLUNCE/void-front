@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RESOURCE_INDEX } from '../content/match';
+import { ECONOMY } from '../content/progression';
 import { SCORE } from '../content/score';
 import { duelWorld, noShields } from '../test-utils';
 import { createWorld } from './step';
@@ -97,9 +98,12 @@ describe('score', () => {
     a.kills = 5;
     a.lastHitBy = -1;
     killShip(w, a);
+    const banked = a.shards;
     expect(redeploy(a)).toBe(true);
     expect(a.awaitingClass).toBe(true);
-    expect([a.xp, a.shards, a.statPoints[0], a.tiersOwned]).toEqual([0, 0, 0, 0]);
+    // Shard Calibration comes back to the bank to re-spend on the new hull.
+    const refund = ECONOMY.statCosts[0] + ECONOMY.statCosts[1] + ECONOMY.statCosts[2];
+    expect([a.xp, a.shards, a.statPoints[0], a.tiersOwned]).toEqual([0, banked + refund, 0, 0]);
     expect([a.score, a.kills]).toEqual([1234, 5]);
     // Picking a new hull waits out the respawn timer instead of skipping it.
     expect(pickClass(w, a, 'destroyer')).toBe(true);

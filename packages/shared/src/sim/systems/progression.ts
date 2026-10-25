@@ -51,8 +51,22 @@ export function buyStat(ship: Ship, index: number): boolean {
 }
 
 /**
- * Buy the next tier with XP, choosing option A (0) or B (1). The hull-change tier wipes stat
- * upgrades (and their climbing costs) back to zero: a new ship starts its upgrades fresh.
+ * A new hull re-specs: every shard spent on Shard Calibration goes back to the bank and the levels
+ * (and their climbing costs) reset, so the pilot re-spends them for the new hull. Returns the refund.
+ */
+export function refundCalibration(ship: Ship): number {
+  let refund = 0;
+  for (let i = 0; i < ship.statPoints.length; i++) {
+    for (let level = 0; level < ship.statPoints[i]; level++) refund += statCost(level);
+    ship.statPoints[i] = 0;
+  }
+  ship.shards += refund;
+  return refund;
+}
+
+/**
+ * Buy the next tier with XP, choosing option A (0) or B (1). A node that swaps the hull (tier 3)
+ * refunds Shard Calibration so it can be re-spent on the new hull.
  */
 export function buyTier(w: World, ship: Ship, option: number): boolean {
   if (option !== 0 && option !== 1) return false;
@@ -61,16 +75,17 @@ export function buyTier(w: World, ship: Ship, option: number): boolean {
   ship.xp -= tierCost(t);
   ship.picks[t] = option;
   ship.tiersOwned++;
-  // v2: a tier-3 hull retrofit keeps every Shard Calibration level.
-  applyLoadout(ship);
   const node = ship.cls.tiers[t].options[option];
+  if (node.hullModel) refundCalibration(ship);
+  applyLoadout(ship);
   w.stats.tierPicks[node.id] = (w.stats.tierPicks[node.id] ?? 0) + 1;
   w.emit(EventType.TierBought, ship.slot, t + 1, ship.x, ship.y, option);
   return true;
 }
 
-/** Switch class (picker or respawn screen): keeps shards, XP and Shard Calibration levels; clears tiers. */
+/** Switch class (picker or respawn screen): keeps shards and XP, refunds Shard Calibration, clears tiers. */
 export function setClass(ship: Ship, classId: ClassId): void {
+  if (classId !== ship.classId) refundCalibration(ship);
   ship.classId = classId;
   ship.cls = getClass(classId);
   ship.radius = ship.cls.radius;
@@ -97,16 +112,15 @@ export function pickClass(w: World, ship: Ship, classId: ClassId): boolean {
 }
 
 /**
- * Change hull from the respawn screen: back to the hangar to start over. Tiers, XP, shards and
- * Shard Calibration reset (a new hull is a fresh start); score, kills and deaths stay. Only while
+ * Change hull from the respawn screen: back to the hangar to start over. Tiers and XP reset, Shard
+ * Calibration is refunded to the bank for the new hull; score, kills and deaths stay. Only while
  * dead, so it can never dodge a death or skip the respawn timer.
  */
 export function redeploy(ship: Ship): boolean {
   if (ship.alive || ship.commander || ship.awaitingClass || ship.isBot) return false;
   ship.awaitingClass = true;
   ship.xp = 0;
-  ship.shards = 0;
-  ship.statPoints.fill(0);
+  refundCalibration(ship);
   ship.picks.fill(-1);
   ship.tiersOwned = 0;
   applyLoadout(ship);
@@ -378,14 +392,18 @@ function botSpawn(w: World, s: Ship): number {
   return best;
 }
 
-/** Passive hull repair after a few seconds without damage; Drone Link adds regen per active drone. */
+/**
+ * Hull repair from upgrades only: Drone Link (per active drone) and any tier node granting
+ * `hullRegen`. There is no natural hull regeneration; shields are the only thing that recharges.
+ */
 export function regenHull(w: World, s: Ship, dt: number, drones = 0): void {
   // A ship already at 0 hull dies this tick; regen must not bring it back.
   if (s.hull >= s.maxHull || s.hull <= 0) return;
   const link = drones * statValue(s, 'droneRegen', 0);
   if (link > 0) heal(s, s.maxHull * link * dt);
-  if (w.time - s.lastDamageTime < ECONOMY.regenDelay) return;
-  heal(s, s.maxHull * ECONOMY.hullRegen * statValue(s, 'hullRegen', 1) * (1 + pointBuff(w, s.team, 'hullRegen')) * dt);
+  const upgrade = statValue(s, 'hullRegen', 0);
+  if (upgrade <= 0 || w.time - s.lastDamageTime < ECONOMY.regenDelay) return;
+  heal(s, s.maxHull * upgrade * dt);
 }
 
 /** Heal a ship, returning how much hull was actually restored. */

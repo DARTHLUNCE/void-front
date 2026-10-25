@@ -2,6 +2,7 @@ import { SHIELDS } from '../../content/combat';
 import { POWER, POWER_LEVELS, POWER_LOW, POWER_MID, POWER_MODES } from '../../content/power';
 import { liveStat } from '../stats';
 import type { Ship, World } from '../world';
+import { pointBuff } from './points';
 import { applyStatus, hasStatus, removeStatus, statusMagnitude } from './status';
 
 /**
@@ -129,6 +130,7 @@ export function updateShields(w: World, s: Ship, dt: number): void {
   const quiet = w.time - s.lastDamageTime >= SHIELDS.regenDelay;
   const rate = quiet ? SHIELDS.regen : shieldTrickle(w, s) ? SHIELDS.combatTrickle : 0;
   if (rate <= 0) return;
-  const mul = liveStat(w, s, 'shieldRegen', 1) * (1 + statusMagnitude(s, 'shieldRegenUp')) * (quiet ? shieldRegenPowerMul(w, s) : 1);
+  // Refineries the team holds speed every shield's recharge (v2.1: was hull repair).
+  const mul = liveStat(w, s, 'shieldRegen', 1) * (1 + statusMagnitude(s, 'shieldRegenUp') + pointBuff(w, s.team, 'shieldRegen')) * (quiet ? shieldRegenPowerMul(w, s) : 1);
   s.shield = Math.min(s.maxShield, s.shield + s.maxShield * rate * mul * dt);
 }

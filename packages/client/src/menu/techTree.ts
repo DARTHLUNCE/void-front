@@ -75,7 +75,7 @@ export function mountTechTree(root: HTMLElement, team: Team): Screen {
       <section class="tt-main">
         <header class="tt-head" data-r="head"></header>
         <div class="tt-tiers" data-r="tiers"></div>
-        <section class="tt-cal"><h4>Shard Calibration <small>kept all match · ${STAT_POINT_MAX} levels per track</small></h4><div data-r="cal"></div></section>
+        <section class="tt-cal"><h4>Shard Calibration <small>refunded on a hull change · ${STAT_POINT_MAX} levels per track</small></h4><div data-r="cal"></div></section>
       </section>
       <aside class="tt-deck" data-r="deck"></aside>
     </div>`;

@@ -166,6 +166,9 @@ export const PING_COLORS = [0x6ff3ff, 0xff7a4d, 0x5cff9d];
 const TEAM_ACCENT = [0x5fc8ff, 0xff9a4a];
 const KIND = Object.fromEntries(DEPLOY_KINDS.map((k, i) => [k, i])) as Record<(typeof DEPLOY_KINDS)[number], number>;
 
+/** Idle drift of the big static bodies: reach in world units, sway in radians (cosmetic only). */
+const IDLE_DRIFT = { titan: 35, titanSway: 0.025, fob: 20, fobSway: 0.04, node: 18, nodeSway: 0.08 } as const;
+
 /** Fallback bolt sprite size (BOLT_ART) in world units, and the glow texture's width in pixels. */
 const BOLT_TEX = { length: 20, width: 5.2 };
 const GLOW_PX = 128;
@@ -452,7 +455,9 @@ export class Renderer {
       const color = TEAM_COLORS[team];
       const alive = hulls[team] > 0;
       this.motherships[team].tint = alive ? 0xffffff : 0x3a3a3a;
-      if (alive) this.mothershipLights(pos.x, pos.y, team, now);
+      // Lights ride the drifting hull (idleDrift), not the fixed map spot.
+      const ms = this.motherships[team];
+      if (alive) this.mothershipLights(ms.position.x, ms.position.y, ms.rotation, team, now);
       if (alive) {
         // Heal aura, widened by Shipyard upgrades.
         const heal = MOTHERSHIP.healRadius + b[snap.o.structures + team * SNAP.structure + STRUCT.shipyard] * BASE_UPGRADES.shipyard.radiusPerLevel;
@@ -498,8 +503,9 @@ export class Renderer {
       if (!alive) return;
       g.circle(f.pos.x, f.pos.y, FOB.healRadius + b[k + STRUCT.shipyard] * BASE_UPGRADES.shipyard.radiusPerLevel).fill({ color, alpha: 0.03 }).stroke({ width: 3, color, alpha: 0.16 });
       const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + i);
-      this.light(f.pos.x, f.pos.y, 22 * pulse, TEAM_ACCENT[f.team]);
-      for (const y of [-110, 110]) this.light(f.pos.x, f.pos.y + y, 7, TEAM_ACCENT[f.team]);
+      const fm = this.fobMeshes[i].position;
+      this.light(fm.x, fm.y, 22 * pulse, TEAM_ACCENT[f.team]);
+      for (const y of [-110, 110]) this.light(fm.x, fm.y + y, 7, TEAM_ACCENT[f.team]);
       const frac = b[k + STRUCT.hull] / b[k + STRUCT.maxHull];
       const w = 300;
       const top = f.pos.y - FOB.radius - 72;
@@ -583,6 +589,7 @@ export class Renderer {
     for (const pool of this.assetPools.values()) pool.begin();
     this.lighting.beginFrame();
     this.lights.begin();
+    this.idleDrift(now);
     this.drawStructures(curr, now);
 
     // Crystals
@@ -1308,20 +1315,23 @@ export class Renderer {
   }
 
   /** Reactor, hangar mouth, turret sights and engines of a mothership as light emitters. */
-  private mothershipLights(x: number, y: number, team: number, now: number): void {
-    const sign = team === 0 ? 1 : -1;
+  private mothershipLights(x: number, y: number, rotation: number, team: number, now: number): void {
+    const c = Math.cos(rotation);
+    const sn = Math.sin(rotation);
+    // A socket in the hull's own frame, placed on the (drifting, swaying) hull.
+    const at = (lx: number, ly: number, r: number, color: number) => this.light(x + c * lx - sn * ly, y + sn * lx + c * ly, r, color);
     const pulse = 0.85 + 0.15 * Math.sin(now * 0.002 + team);
     const accent = team === 0 ? 0x5fc8ff : 0xff9a4a;
     const art = this.tex.mothership;
     if (art.lights && art.engines) {
-      for (const [i, socket] of art.lights.entries()) this.light(x + sign * socket.x, y + sign * socket.y, socket.r * (i === 0 ? pulse : 1), accent);
-      for (const socket of art.engines) this.light(x + sign * socket.x, y + sign * socket.y, socket.r, LIGHT.engine[team]);
+      for (const [i, socket] of art.lights.entries()) at(socket.x, socket.y, socket.r * (i === 0 ? pulse : 1), accent);
+      for (const socket of art.engines) at(socket.x, socket.y, socket.r, LIGHT.engine[team]);
       return;
     }
-    this.light(x + sign * 60, y, 30 * pulse, accent);
-    this.light(x + sign * 250, y, 22, accent);
-    for (const ty of [-92, -46, 0, 46, 92]) this.light(x - sign * 300, y + sign * ty, 18, LIGHT.engine[team]);
-    for (const tx of [-170, 170]) for (const tyy of [-170, 170]) this.light(x + sign * (tx + 8), y + sign * tyy, 7, accent);
+    at(60, 0, 30 * pulse, accent);
+    at(250, 0, 22, accent);
+    for (const ty of [-92, -46, 0, 46, 92]) at(-300, ty, 18, LIGHT.engine[team]);
+    for (const tx of [-170, 170]) for (const tyy of [-170, 170]) at(tx + 8, tyy, 7, accent);
   }
 
   /**
@@ -1347,6 +1357,30 @@ export class Renderer {
       if (!seen) this.freshSet.add(i);
     }
     return this.freshSet;
+  }
+
+  /**
+   * Cosmetic station-keeping: Titans, FOBs and asteroid nodes drift a few units around their fixed
+   * spot and sway a fraction of a degree, so the map doesn't look frozen. Visual only: the sim's
+   * positions, hitboxes and turret sockets never move.
+   */
+  private idleDrift(now: number): void {
+    const t = now / 1000;
+    const drift = (mesh: { position: { set(x: number, y: number): void }; rotation: number }, x: number, y: number, rot: number, seed: number, reach: number, sway: number) => {
+      // Roughly 12–20 s cycles: slow enough to read as station-keeping, fast enough to notice.
+      mesh.position.set(x + Math.sin(t * 0.52 + seed) * reach, y + Math.sin(t * 0.37 + seed * 1.7) * reach * 0.8);
+      mesh.rotation = rot + Math.sin(t * 0.31 + seed * 0.6) * sway;
+    };
+    KESSLER_REACH.motherships.forEach((pos, team) => drift(this.motherships[team], pos.x, pos.y, team === 0 ? 0 : Math.PI, team * 2.1, IDLE_DRIFT.titan, IDLE_DRIFT.titanSway));
+    KESSLER_REACH.fobs.forEach((f, i) => {
+      const rot = f.team === 0 ? 0 : Math.PI;
+      drift(this.fobMeshes[i], f.pos.x, f.pos.y, rot, 5 + i * 1.3, IDLE_DRIFT.fob, IDLE_DRIFT.fobSway);
+      drift(this.fobOccluders[i], f.pos.x, f.pos.y, rot, 5 + i * 1.3, IDLE_DRIFT.fob, IDLE_DRIFT.fobSway);
+    });
+    KESSLER_REACH.points.forEach((p, i) => {
+      const rot = nodeRotation(KESSLER_REACH, p.pos.x, p.pos.y);
+      for (const m of this.nodeMeshes[i]) drift(m, p.pos.x, p.pos.y, rot, 11 + i * 0.9, IDLE_DRIFT.node, IDLE_DRIFT.nodeSway);
+    });
   }
 
   /** Lit mesh pool for one strike craft and team. */

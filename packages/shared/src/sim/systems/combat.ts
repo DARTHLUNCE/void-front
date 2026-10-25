@@ -739,16 +739,17 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
   if (rest > 0 && target.shield > 0 && !hasStatus(target, 'shieldsDown')) {
     const dr = clamp(liveStat(w, target, 'shieldDR', 0) + shieldDrPowerBonus(w, target), 0, 0.9);
     const absorb = rest * (1 - dr);
-    if (absorb <= target.shield) {
+    // Any shield left takes the whole hit: a 40 damage shot on a 20 point shield breaks it and
+    // stops there. Only shield-bypassing damage (toHull above) reaches the hull through a shield.
+    if (absorb < target.shield) {
       target.shield -= absorb;
       shieldDealt = absorb;
-      rest = 0;
     } else {
-      rest *= 1 - target.shield / absorb;
       shieldDealt = target.shield;
       target.shield = 0;
       broke = true;
     }
+    rest = 0;
   }
   toHull += rest;
 

@@ -140,7 +140,7 @@ export class Hangar {
         <aside data-h="dossier" class="hg-dossier"></aside>
       </div>
       <footer class="hg-foot">
-        <span class="hg-keep">◆ ${Math.round(ECONOMY.deathShardKeep * 100)}% shards kept on death · XP &amp; upgrades retained</span>
+        <span class="hg-keep">◆ ${Math.round(ECONOMY.deathShardKeep * 100)}% shards kept on death · a new hull refunds Shard Calibration</span>
         <span data-h="cap" class="hg-cap"></span>
         <button type="button" data-h="launch" class="hg-launch"></button>
       </footer>

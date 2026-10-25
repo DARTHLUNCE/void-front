@@ -70,7 +70,7 @@ export const MANUAL: Chapter[] = [
     id: 'armor',
     title: 'Shields, armor and caliber',
     kicker: 'Point your bow at the enemy',
-    body: `<p>Hits strike your energy shield first; it regenerates after 3.5 s without damage. Overflow hits the hull through armor. Every gun has a caliber (AP): small calibers glance off heavy armor (watch for sparks), heavy slugs overpenetrate thin scouts for 65%. Your bow carries +25% armor and your stern −25%, so point your nose at the enemy and hunt their engines. Wheel below zero to back away while keeping your bow forward.</p>
+    body: `<p>Hits strike your energy shield first; it regenerates after 3.5 s without damage, and whatever is left of it soaks the whole of the hit that breaks it. Once it is down, hits strike the hull through armor. The hull never repairs itself: only Frigate healing and upgrades restore it. Every gun has a caliber (AP): small calibers glance off heavy armor (watch for sparks), heavy slugs overpenetrate thin scouts for 65%. Your bow carries +25% armor and your stern −25%, so point your nose at the enemy and hunt their engines. Wheel below zero to back away while keeping your bow forward.</p>
       <p class="mn-see">The <a href="#" data-jump="armory">Armory</a> screen shows every gun against every hull.</p>`,
     facts: ['Shield regen after 3.5 s', 'Bow +25% armor', 'Stern −25% armor', 'Overpen = 65% damage'],
   },
@@ -92,7 +92,7 @@ export const MANUAL: Chapter[] = [
     id: 'growth',
     title: 'Growing your ship',
     kicker: 'XP tiers and Shard Calibration',
-    body: `<p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor), kept all match. Dying spills 40% of unspent shards. Want a different ship? <b>Change hull</b> on the respawn screen sends you back to the hangar, but your tiers, XP and shards start over.</p>
+    body: `<p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor); a new hull (tier 3, or a class change) refunds it to re-spend. Dying spills 40% of unspent shards. Want a different ship? <b>Change hull</b> on the respawn screen sends you back to the hangar, but your tiers and XP start over (Shard Calibration is refunded).</p>
       <p class="mn-see">Plan a build on the <a href="#" data-jump="tree">Tech Tree</a> screen.</p>`,
     facts: ['5 tiers, A or B', 'Tier 3 swaps hull', 'Tier 5 adds an ultimate', '40% shards spill on death'],
   },
@@ -131,7 +131,7 @@ export const NOTES: Release[] = [
       'Kills go to the ship that dealt the most damage; others with 10% or more get an assist for half a kill.',
       'Commanders now score: their strikes, bombs, platforms and wings earn damage, kill and assist score, and spending resources or Credits scores too.',
       'The respawn screen says who destroyed you, with what, how much of the damage they dealt, and who assisted.',
-      'Change hull from the respawn screen: back to the hangar for a new ship (or a command seat); tiers, XP and shards restart.',
+      'Change hull from the respawn screen: back to the hangar for a new ship (or a command seat); tiers and XP restart, Shard Calibration is refunded.',
     ],
   },
   {

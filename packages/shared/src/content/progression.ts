@@ -40,8 +40,11 @@ export const ECONOMY = {
   respawnBase: 5,
   respawnPerRank: 1.2,
   respawnMax: 11,
-  /** Passive repair, fraction of max hull per second, after `regenDelay` s without damage. */
-  hullRegen: 0.01,
+  /**
+   * No natural hull repair: only Frigate healing, repair statuses and tier upgrades restore hull
+   * (shields are the only natural regeneration). Upgrade regen (`hullRegen` stat, fraction of max
+   * hull per second) starts `regenDelay` s after the last hit.
+   */
   regenDelay: 4,
 } as const;
 
