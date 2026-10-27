@@ -1,0 +1,18 @@
+{
+  "source": "PaRIRset / Plaça de la palmera, Figueres / 0000_02_acusticaOutdoors_d1_orig.wav",
+  "authors": "Enric Gusó and Xavier Serra",
+  "license": "CC0-1.0",
+  "page": "https://huggingface.co/datasets/enricguso/parirset",
+  "url": "https://huggingface.co/datasets/enricguso/parirset/resolve/bb65010/train/0000_02_acusticaOutdoors_d1_orig.wav",
+  "sourceSha256": "d5afe783acd38d2517451ce80ded5f7c46de37a2eb6e2bc6a55ef0e5b6bcc172",
+  "outputSha256": "e28a646896ef3237a3353b9e282123bfcadba12db7db9e84e5063da60e503b83",
+  "seconds": 0.68,
+  "channels": 2,
+  "rate": 48000,
+  "energy": [
+    0.6400000000000001,
+    0.64
+  ],
+  "processing": "Remove direct arrival + 8ms; 160–7200Hz; mild extra decay; 6ms/90ms fades; equal-energy channel calibration.",
+  "interpretation": "Measured outdoor PA response adapted for subtle game depth; not a simulation of the live world geometry."
+}

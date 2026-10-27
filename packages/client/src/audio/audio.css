@@ -1,0 +1,16 @@
+.audio-controls{display:grid;gap:12px;color:#d8e4ea;font:13px/1.45 system-ui,sans-serif;min-width:0}
+.audio-controls label{display:grid;grid-template-columns:1fr auto;gap:4px 12px;min-width:0}
+.audio-controls input[type=range]{width:100%;margin:0;grid-column:1/-1;accent-color:#91cad5;min-height:24px}
+.audio-controls output{font-variant-numeric:tabular-nums;color:#a7c8d2}
+.audio-controls .audio-choice{grid-template-columns:1fr;gap:6px}
+.audio-controls select{min-width:0;width:100%;padding:8px;color:#d8e4ea;background:#111b22;border:1px solid #344c59;border-radius:2px;font:inherit}
+.audio-controls button,.audio-dialog button,.audio-access{background:#111b22;border:1px solid #50616a;color:#d8e4ea;padding:7px 10px;font:12px/1.3 system-ui,sans-serif;border-radius:2px;cursor:pointer}
+.audio-controls :focus-visible,.audio-dialog :focus-visible,.audio-access:focus-visible{outline:2px solid #b9f3ff;outline-offset:3px}
+.audio-note{font-size:12px;color:#a8b8c2;margin:0;overflow-wrap:anywhere}
+.audio-access{position:fixed;bottom:5px;right:7px;z-index:1000;font-size:10px;opacity:.85}
+.audio-access:hover{opacity:1}
+.audio-dialog{width:min(360px,calc(100vw - 32px));max-height:calc(100dvh - 48px);box-sizing:border-box;padding:20px;color:#d8e4ea;background:#080f16;border:1px solid #55636c;border-radius:2px;overflow:auto;z-index:1100}
+.audio-dialog::backdrop{background:#010409bb}
+.audio-dialog header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px}
+.audio-dialog h2{margin:0;font:600 20px/1.2 system-ui,sans-serif}
+.audio-dialog>.audio-note{margin-top:16px}

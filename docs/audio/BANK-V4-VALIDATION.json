@@ -1,0 +1,1763 @@
+{
+  "cues": 208,
+  "files": 957,
+  "continuousCues": 36,
+  "internalSustainRegions": 72,
+  "oneShotFiles": 885,
+  "maxTruePeak": 0.8070417205679729,
+  "maxLoopStep": 0.05230712890625,
+  "worstLoopLevelStepDb": 0.476,
+  "errors": [],
+  "loops": [
+    {
+      "id": "engine.patrol",
+      "file": "engine-patrol-1.wav",
+      "start": 1.1938333333333333,
+      "end": 7.414791666666667,
+      "jump": 0.0203857421875,
+      "normalStep": 0.048492431640625,
+      "levelStepDb": 0.096
+    },
+    {
+      "id": "engine.patrol",
+      "file": "engine-patrol-2.wav",
+      "start": 1.2844583333333333,
+      "end": 8.0194375,
+      "jump": 0.007415771484375,
+      "normalStep": 0.047454833984375,
+      "levelStepDb": 0.059
+    },
+    {
+      "id": "engine.corvette",
+      "file": "engine-corvette-1.wav",
+      "start": 1.270375,
+      "end": 7.5713333333333335,
+      "jump": 0.002105712890625,
+      "normalStep": 0.053558349609375,
+      "levelStepDb": 0.012
+    },
+    {
+      "id": "engine.corvette",
+      "file": "engine-corvette-2.wav",
+      "start": 0.856625,
+      "end": 7.9921875,
+      "jump": 3.0517578125e-05,
+      "normalStep": 0.0535888671875,
+      "levelStepDb": 0.06
+    },
+    {
+      "id": "engine.frigate",
+      "file": "engine-frigate-1.wav",
+      "start": 1.2660625,
+      "end": 7.993416666666667,
+      "jump": 0.00225830078125,
+      "normalStep": 0.011444091796875,
+      "levelStepDb": 0.248
+    },
+    {
+      "id": "engine.frigate",
+      "file": "engine-frigate-2.wav",
+      "start": 0.9691041666666667,
+      "end": 6.905854166666667,
+      "jump": 0.002105712890625,
+      "normalStep": 0.011505126953125,
+      "levelStepDb": 0.138
+    },
+    {
+      "id": "engine.destroyer",
+      "file": "engine-destroyer-1.wav",
+      "start": 1.5205416666666667,
+      "end": 7.743375,
+      "jump": 0.0029296875,
+      "normalStep": 0.017425537109375,
+      "levelStepDb": 0.037
+    },
+    {
+      "id": "engine.destroyer",
+      "file": "engine-destroyer-2.wav",
+      "start": 1.4716666666666667,
+      "end": 7.779041666666667,
+      "jump": 0.008880615234375,
+      "normalStep": 0.01702880859375,
+      "levelStepDb": 0.336
+    },
+    {
+      "id": "engine.cruiser",
+      "file": "engine-cruiser-1.wav",
+      "start": 1.1011458333333333,
+      "end": 7.082958333333333,
+      "jump": 0.000762939453125,
+      "normalStep": 0.032623291015625,
+      "levelStepDb": 0.052
+    },
+    {
+      "id": "engine.cruiser",
+      "file": "engine-cruiser-2.wav",
+      "start": 0.9184791666666666,
+      "end": 7.613125,
+      "jump": 0.00152587890625,
+      "normalStep": 0.032989501953125,
+      "levelStepDb": 0.151
+    },
+    {
+      "id": "engine.battlecruiser",
+      "file": "engine-battlecruiser-1.wav",
+      "start": 1.0425416666666667,
+      "end": 7.810854166666667,
+      "jump": 0.000885009765625,
+      "normalStep": 0.023681640625,
+      "levelStepDb": 0.173
+    },
+    {
+      "id": "engine.battlecruiser",
+      "file": "engine-battlecruiser-2.wav",
+      "start": 1.6596666666666666,
+      "end": 7.317208333333333,
+      "jump": 0.003326416015625,
+      "normalStep": 0.023590087890625,
+      "levelStepDb": 0.015
+    },
+    {
+      "id": "engine.battleship",
+      "file": "engine-battleship-1.wav",
+      "start": 1.6584583333333334,
+      "end": 7.252166666666667,
+      "jump": 0.0008544921875,
+      "normalStep": 0.00775146484375,
+      "levelStepDb": 0.268
+    },
+    {
+      "id": "engine.battleship",
+      "file": "engine-battleship-2.wav",
+      "start": 1.2045208333333333,
+      "end": 6.9095,
+      "jump": 0.002166748046875,
+      "normalStep": 0.0079345703125,
+      "levelStepDb": 0.394
+    },
+    {
+      "id": "engine.dreadnought",
+      "file": "engine-dreadnought-1.wav",
+      "start": 1.59125,
+      "end": 7.521645833333333,
+      "jump": 0.00274658203125,
+      "normalStep": 0.011505126953125,
+      "levelStepDb": 0.052
+    },
+    {
+      "id": "engine.dreadnought",
+      "file": "engine-dreadnought-2.wav",
+      "start": 1.3558333333333332,
+      "end": 7.020416666666667,
+      "jump": 0.003814697265625,
+      "normalStep": 0.011962890625,
+      "levelStepDb": 0.017
+    },
+    {
+      "id": "engine.carrier",
+      "file": "engine-carrier-1.wav",
+      "start": 1.5996666666666666,
+      "end": 7.7975,
+      "jump": 0.0003662109375,
+      "normalStep": 0.050811767578125,
+      "levelStepDb": 0.082
+    },
+    {
+      "id": "engine.carrier",
+      "file": "engine-carrier-2.wav",
+      "start": 1.1973541666666667,
+      "end": 7.567166666666667,
+      "jump": 0.009674072265625,
+      "normalStep": 0.051361083984375,
+      "levelStepDb": 0.153
+    },
+    {
+      "id": "engine.striker",
+      "file": "engine-striker-1.wav",
+      "start": 0.9646875,
+      "end": 7.170833333333333,
+      "jump": 0.0196533203125,
+      "normalStep": 0.069427490234375,
+      "levelStepDb": 0.064
+    },
+    {
+      "id": "engine.striker",
+      "file": "engine-striker-2.wav",
+      "start": 0.8002916666666666,
+      "end": 7.164166666666667,
+      "jump": 0.018890380859375,
+      "normalStep": 0.06890869140625,
+      "levelStepDb": 0.024
+    },
+    {
+      "id": "engine.comet",
+      "file": "engine-comet-1.wav",
+      "start": 1.6687291666666666,
+      "end": 7.440958333333334,
+      "jump": 0.007415771484375,
+      "normalStep": 0.07844085693359304,
+      "levelStepDb": 0.067
+    },
+    {
+      "id": "engine.comet",
+      "file": "engine-comet-2.wav",
+      "start": 1.5355208333333332,
+      "end": 7.5773125,
+      "jump": 0.017547607421875,
+      "normalStep": 0.077880859375,
+      "levelStepDb": 0.138
+    },
+    {
+      "id": "engine.wraith",
+      "file": "engine-wraith-1.wav",
+      "start": 1.138875,
+      "end": 7.772708333333333,
+      "jump": 0.008941650390625,
+      "normalStep": 0.027923583984375,
+      "levelStepDb": 0.113
+    },
+    {
+      "id": "engine.wraith",
+      "file": "engine-wraith-2.wav",
+      "start": 1.5718125,
+      "end": 7.551020833333333,
+      "jump": 0.008026123046875,
+      "normalStep": 0.02813720703125,
+      "levelStepDb": 0.03
+    },
+    {
+      "id": "engine.specter",
+      "file": "engine-specter-1.wav",
+      "start": 1.1695416666666667,
+      "end": 6.916458333333333,
+      "jump": 0.0167236328125,
+      "normalStep": 0.0581207275390625,
+      "levelStepDb": 0.341
+    },
+    {
+      "id": "engine.specter",
+      "file": "engine-specter-2.wav",
+      "start": 1.1044583333333333,
+      "end": 7.045354166666667,
+      "jump": 0.006103515625,
+      "normalStep": 0.058441162109375,
+      "levelStepDb": 0.369
+    },
+    {
+      "id": "engine.fortress",
+      "file": "engine-fortress-1.wav",
+      "start": 1.6854375,
+      "end": 7.8535625,
+      "jump": 0.002349853515625,
+      "normalStep": 0.0155029296875,
+      "levelStepDb": 0.275
+    },
+    {
+      "id": "engine.fortress",
+      "file": "engine-fortress-2.wav",
+      "start": 1.3740208333333332,
+      "end": 7.7004166666666665,
+      "jump": 0.000885009765625,
+      "normalStep": 0.015869140625,
+      "levelStepDb": 0.001
+    },
+    {
+      "id": "engine.warden",
+      "file": "engine-warden-1.wav",
+      "start": 1.2277916666666666,
+      "end": 7.335854166666667,
+      "jump": 0.016448974609375,
+      "normalStep": 0.06244354248046946,
+      "levelStepDb": 0.118
+    },
+    {
+      "id": "engine.warden",
+      "file": "engine-warden-2.wav",
+      "start": 1.5060208333333334,
+      "end": 7.674729166666666,
+      "jump": 0.0047607421875,
+      "normalStep": 0.060943603515625,
+      "levelStepDb": 0.18
+    },
+    {
+      "id": "engine.hunter",
+      "file": "engine-hunter-1.wav",
+      "start": 1.0145208333333333,
+      "end": 7.556958333333333,
+      "jump": 0.01983642578125,
+      "normalStep": 0.028228759765625,
+      "levelStepDb": 0.073
+    },
+    {
+      "id": "engine.hunter",
+      "file": "engine-hunter-2.wav",
+      "start": 1.1854791666666666,
+      "end": 7.964291666666667,
+      "jump": 0.00897216796875,
+      "normalStep": 0.028106689453125,
+      "levelStepDb": 0.085
+    },
+    {
+      "id": "engine.escort",
+      "file": "engine-escort-1.wav",
+      "start": 1.4925833333333334,
+      "end": 7.54975,
+      "jump": 0.001129150390625,
+      "normalStep": 0.042449951171875,
+      "levelStepDb": 0.001
+    },
+    {
+      "id": "engine.escort",
+      "file": "engine-escort-2.wav",
+      "start": 1.6337083333333333,
+      "end": 7.938125,
+      "jump": 0.0076904296875,
+      "normalStep": 0.0404052734375,
+      "levelStepDb": 0.125
+    },
+    {
+      "id": "engine.strikecruiser",
+      "file": "engine-strikecruiser-1.wav",
+      "start": 1.4443125,
+      "end": 7.7151875,
+      "jump": 0.01666259765625,
+      "normalStep": 0.044891357421875,
+      "levelStepDb": 0.476
+    },
+    {
+      "id": "engine.strikecruiser",
+      "file": "engine-strikecruiser-2.wav",
+      "start": 0.9989791666666666,
+      "end": 7.123458333333334,
+      "jump": 0.0009765625,
+      "normalStep": 0.04290771484375,
+      "levelStepDb": 0.247
+    },
+    {
+      "id": "engine.commandcruiser",
+      "file": "engine-commandcruiser-1.wav",
+      "start": 1.3587916666666666,
+      "end": 6.985541666666666,
+      "jump": 0.001800537109375,
+      "normalStep": 0.068267822265625,
+      "levelStepDb": 0.37
+    },
+    {
+      "id": "engine.commandcruiser",
+      "file": "engine-commandcruiser-2.wav",
+      "start": 1.1801666666666666,
+      "end": 7.263166666666667,
+      "jump": 0.000274658203125,
+      "normalStep": 0.07177734375,
+      "levelStepDb": 0.081
+    },
+    {
+      "id": "engine.raider",
+      "file": "engine-raider-1.wav",
+      "start": 1.3393541666666666,
+      "end": 8.0303125,
+      "jump": 0.017730712890625,
+      "normalStep": 0.04449462890625,
+      "levelStepDb": 0.029
+    },
+    {
+      "id": "engine.raider",
+      "file": "engine-raider-2.wav",
+      "start": 1.4901666666666666,
+      "end": 7.1625625,
+      "jump": 0.00091552734375,
+      "normalStep": 0.04364013671875,
+      "levelStepDb": 0.046
+    },
+    {
+      "id": "engine.ironclad",
+      "file": "engine-ironclad-1.wav",
+      "start": 1.3601041666666667,
+      "end": 7.905854166666667,
+      "jump": 0.00103759765625,
+      "normalStep": 0.019683837890625,
+      "levelStepDb": 0.06
+    },
+    {
+      "id": "engine.ironclad",
+      "file": "engine-ironclad-2.wav",
+      "start": 0.9170208333333333,
+      "end": 6.979729166666667,
+      "jump": 0.002410888671875,
+      "normalStep": 0.020810546874999503,
+      "levelStepDb": 0.108
+    },
+    {
+      "id": "engine.bastion",
+      "file": "engine-bastion-1.wav",
+      "start": 1.4013333333333333,
+      "end": 7.962958333333333,
+      "jump": 0.005706787109375,
+      "normalStep": 0.01348876953125,
+      "levelStepDb": 0.442
+    },
+    {
+      "id": "engine.bastion",
+      "file": "engine-bastion-2.wav",
+      "start": 1.3085208333333334,
+      "end": 6.961229166666667,
+      "jump": 0.002197265625,
+      "normalStep": 0.0118408203125,
+      "levelStepDb": 0.038
+    },
+    {
+      "id": "engine.juggernaut",
+      "file": "engine-juggernaut-1.wav",
+      "start": 1.6516666666666666,
+      "end": 7.8233125,
+      "jump": 0.015350341796875,
+      "normalStep": 0.035858154296875,
+      "levelStepDb": 0.119
+    },
+    {
+      "id": "engine.juggernaut",
+      "file": "engine-juggernaut-2.wav",
+      "start": 1.6063541666666667,
+      "end": 7.1628541666666665,
+      "jump": 0.000335693359375,
+      "normalStep": 0.03512268066406321,
+      "levelStepDb": 0.123
+    },
+    {
+      "id": "engine.railstorm",
+      "file": "engine-railstorm-1.wav",
+      "start": 1.0607291666666667,
+      "end": 7.361479166666666,
+      "jump": 0.000579833984375,
+      "normalStep": 0.03826904296875,
+      "levelStepDb": 0.173
+    },
+    {
+      "id": "engine.railstorm",
+      "file": "engine-railstorm-2.wav",
+      "start": 1.0023125,
+      "end": 7.782395833333333,
+      "jump": 0.007720947265625,
+      "normalStep": 0.038116455078125,
+      "levelStepDb": 0.206
+    },
+    {
+      "id": "engine.eclipse",
+      "file": "engine-eclipse-1.wav",
+      "start": 1.4400416666666667,
+      "end": 6.871229166666667,
+      "jump": 0.00213623046875,
+      "normalStep": 0.01556396484375,
+      "levelStepDb": 0.34
+    },
+    {
+      "id": "engine.eclipse",
+      "file": "engine-eclipse-2.wav",
+      "start": 0.9787083333333333,
+      "end": 6.861875,
+      "jump": 0.00335693359375,
+      "normalStep": 0.014892578125,
+      "levelStepDb": 0.226
+    },
+    {
+      "id": "engine.hive",
+      "file": "engine-hive-1.wav",
+      "start": 0.9736875,
+      "end": 8.0205625,
+      "jump": 0.006805419921875,
+      "normalStep": 0.23475708007812557,
+      "levelStepDb": 0.117
+    },
+    {
+      "id": "engine.hive",
+      "file": "engine-hive-2.wav",
+      "start": 1.5568541666666667,
+      "end": 7.509854166666667,
+      "jump": 0.001495361328125,
+      "normalStep": 0.241782836914064,
+      "levelStepDb": 0.111
+    },
+    {
+      "id": "engine.overlord",
+      "file": "engine-overlord-1.wav",
+      "start": 1.5384375,
+      "end": 7.7466875,
+      "jump": 0.004547119140625,
+      "normalStep": 0.02163879394531243,
+      "levelStepDb": 0.324
+    },
+    {
+      "id": "engine.overlord",
+      "file": "engine-overlord-2.wav",
+      "start": 1.5395416666666666,
+      "end": 7.550208333333333,
+      "jump": 0.003936767578125,
+      "normalStep": 0.021942138671875,
+      "levelStepDb": 0.066
+    },
+    {
+      "id": "loop.drive",
+      "file": "loop-drive-1.wav",
+      "start": 1.4004583333333334,
+      "end": 7.986541666666667,
+      "jump": 0.044647216796875,
+      "normalStep": 0.056356811523437855,
+      "levelStepDb": 0.158
+    },
+    {
+      "id": "loop.drive",
+      "file": "loop-drive-2.wav",
+      "start": 0.8540208333333333,
+      "end": 6.824125,
+      "jump": 0.000244140625,
+      "normalStep": 0.052978515625,
+      "levelStepDb": 0.23
+    },
+    {
+      "id": "loop.spool",
+      "file": "loop-spool-1.wav",
+      "start": 1.1584583333333334,
+      "end": 6.800416666666667,
+      "jump": 0.015228271484375,
+      "normalStep": 0.07635498046875,
+      "levelStepDb": 0.191
+    },
+    {
+      "id": "loop.spool",
+      "file": "loop-spool-2.wav",
+      "start": 1.6591041666666666,
+      "end": 8.020583333333333,
+      "jump": 0.012054443359375,
+      "normalStep": 0.07606536865234403,
+      "levelStepDb": 0.112
+    },
+    {
+      "id": "loop.charge",
+      "file": "loop-charge-1.wav",
+      "start": 1.6620833333333334,
+      "end": 7.471708333333333,
+      "jump": 0.00091552734375,
+      "normalStep": 0.0325927734375,
+      "levelStepDb": 0.206
+    },
+    {
+      "id": "loop.charge",
+      "file": "loop-charge-2.wav",
+      "start": 1.0981041666666667,
+      "end": 7.7037708333333335,
+      "jump": 0.01171875,
+      "normalStep": 0.03277587890625,
+      "levelStepDb": 0.176
+    },
+    {
+      "id": "loop.missile",
+      "file": "loop-missile-1.wav",
+      "start": 1.351625,
+      "end": 7.4090625,
+      "jump": 0.00189208984375,
+      "normalStep": 0.027587890625,
+      "levelStepDb": 0.051
+    },
+    {
+      "id": "loop.missile",
+      "file": "loop-missile-2.wav",
+      "start": 1.134125,
+      "end": 7.824770833333333,
+      "jump": 0.014312744140625,
+      "normalStep": 0.02783203125,
+      "levelStepDb": 0.101
+    },
+    {
+      "id": "loop.drone",
+      "file": "loop-drone-1.wav",
+      "start": 1.1470833333333332,
+      "end": 7.748104166666667,
+      "jump": 0.00946044921875,
+      "normalStep": 0.1097412109375,
+      "levelStepDb": 0.062
+    },
+    {
+      "id": "loop.drone",
+      "file": "loop-drone-2.wav",
+      "start": 0.9673125,
+      "end": 7.087354166666667,
+      "jump": 0.05230712890625,
+      "normalStep": 0.110504150390625,
+      "levelStepDb": 0.095
+    },
+    {
+      "id": "loop.field",
+      "file": "loop-field-1.wav",
+      "start": 0.9635208333333334,
+      "end": 7.609708333333334,
+      "jump": 0.005279541015625,
+      "normalStep": 0.029510498046875,
+      "levelStepDb": 0.056
+    },
+    {
+      "id": "loop.field",
+      "file": "loop-field-2.wav",
+      "start": 1.2686458333333333,
+      "end": 7.865541666666667,
+      "jump": 0.005126953125,
+      "normalStep": 0.028564453125,
+      "levelStepDb": 0.374
+    },
+    {
+      "id": "loop.tether",
+      "file": "loop-tether-1.wav",
+      "start": 1.6471666666666667,
+      "end": 7.956958333333334,
+      "jump": 0.013916015625,
+      "normalStep": 0.078277587890625,
+      "levelStepDb": 0.245
+    },
+    {
+      "id": "loop.tether",
+      "file": "loop-tether-2.wav",
+      "start": 1.1724791666666667,
+      "end": 7.05425,
+      "jump": 0.002166748046875,
+      "normalStep": 0.080474853515625,
+      "levelStepDb": 0.42
+    },
+    {
+      "id": "loop.cloak",
+      "file": "loop-cloak-1.wav",
+      "start": 0.82025,
+      "end": 7.6560625,
+      "jump": 0.00439453125,
+      "normalStep": 0.0345458984375,
+      "levelStepDb": 0.297
+    },
+    {
+      "id": "loop.cloak",
+      "file": "loop-cloak-2.wav",
+      "start": 1.4888333333333332,
+      "end": 7.8769583333333335,
+      "jump": 0.00872802734375,
+      "normalStep": 0.03436279296875,
+      "levelStepDb": 0.094
+    },
+    {
+      "id": "loop.hangar",
+      "file": "loop-hangar-1.wav",
+      "start": 1.216875,
+      "end": 6.828020833333333,
+      "jump": 0.002105712890625,
+      "normalStep": 0.008026123046875,
+      "levelStepDb": 0.227
+    },
+    {
+      "id": "loop.hangar",
+      "file": "loop-hangar-2.wav",
+      "start": 1.2264375,
+      "end": 7.21375,
+      "jump": 0.003204345703125,
+      "normalStep": 0.00823974609375,
+      "levelStepDb": 0.008
+    }
+  ],
+  "shots": [
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.patrol",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.corvette",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.frigate",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.destroyer",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.cruiser",
+      "seconds": 0.21,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battlecruiser",
+      "seconds": 0.252,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.battleship",
+      "seconds": 0.336,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.dreadnought",
+      "seconds": 0.3023958333333333,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.carrier",
+      "seconds": 0.168,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.secondary",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.secondary",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.secondary",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.secondary",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.secondary",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.turret",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.turret",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.turret",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.turret",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.turret",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.drone",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.drone",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.drone",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.drone",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.drone",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.ordnance",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.ordnance",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.ordnance",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.ordnance",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.ordnance",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "weapon.flyby",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.000265
+    },
+    {
+      "id": "weapon.flyby",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.000205
+    },
+    {
+      "id": "weapon.flyby",
+      "seconds": 0.32,
+      "lateEnergyFraction": 7.1e-05
+    },
+    {
+      "id": "weapon.flyby",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.000195
+    },
+    {
+      "id": "weapon.flyby",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.000272
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.frigate",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.destroyer",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.cruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battlecruiser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.battleship",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.dreadnought",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "secondary.carrier",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.mothership.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.standard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.rocket",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.fob.laser",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.node",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.deployable",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "turret.platform",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.orbit",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.swarm",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.guard",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.bomber",
+      "seconds": 0.32,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.interceptor",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    },
+    {
+      "id": "drone.fighter",
+      "seconds": 0.2,
+      "lateEnergyFraction": 0.0
+    }
+  ]
+}

@@ -148,7 +148,8 @@ export function terminalMarkup(saved: (key: string, fallback: string) => string)
               ])}
             </section>
           </div>
-          <p class="note">Every setting saves as soon as you change it. Audio arrives in a later phase. Lighting quality knobs for fast GPUs live in <code>LIGHT_QUALITY</code> (render/lighting.ts).</p>
+          <section class="st-card"><h4>Audio</h4><div id="audio-settings"></div></section>
+          <p class="note">Every setting saves as soon as you change it. Lighting quality knobs for fast GPUs live in <code>LIGHT_QUALITY</code> (render/lighting.ts).</p>
         </section>
         <section class="pane" data-pane="notes">
           <div class="pn">

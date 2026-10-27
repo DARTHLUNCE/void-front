@@ -137,6 +137,7 @@ export class Input {
       if (window.document.visibilityState === 'hidden') release();
     });
     this.on(window, 'keydown', (e: KeyboardEvent) => {
+      if ((e.target as Element | null)?.closest?.('#audio-dialog')) return;
       if (e.code === 'Tab') {
         e.preventDefault();
         if (!e.repeat) this.h.scoreboard(true);

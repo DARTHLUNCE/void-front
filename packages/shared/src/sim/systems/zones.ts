@@ -1,3 +1,4 @@
+import { weaponSoundIndex } from '../../content/sounds';
 import { hasFlag } from '../stats';
 import { DT, EventType, type World } from '../world';
 import { apHit, damageDeployable, damageShip, damageStructure, leadAngle, MAX_SHIP_RADIUS, spawnPattern } from './combat';
@@ -145,7 +146,7 @@ export function stepDeployables(w: World): void {
       }
       const s = w.ships[best];
       const a = leadAngle(d.x, d.y, s.x, s.y, s.vx, s.vy, t.projectileSpeed);
-      spawnPattern(w, d.owner, d.team, d.x, d.y, a, { damage: t.damage, fireInterval: t.interval, projectileSpeed: t.projectileSpeed, count: 1, spread: 0, size: t.size, life: (t.range / t.projectileSpeed) * 1.1, ap: t.ap }, 1, 1, def.radius);
+      spawnPattern(w, d.owner, d.team, d.x, d.y, a, { damage: t.damage, fireInterval: t.interval, projectileSpeed: t.projectileSpeed, count: 1, spread: 0, size: t.size, life: (t.range / t.projectileSpeed) * 1.1, ap: t.ap }, 1, 1, def.radius, undefined, a, weaponSoundIndex(d.kind==='platform'?'turret.platform':'turret.deployable'));
       d.cooldown += t.interval;
     } else if (def.mine) {
       const m = def.mine;

@@ -1,0 +1,1652 @@
+{
+  "classes": [
+    {
+      "id": "patrol",
+      "name": "Patrol Craft",
+      "gun": {
+        "name": "Twin 20mm Pulse Lasers",
+        "damage": 8.8,
+        "fireInterval": 0.2,
+        "projectileSpeed": 1000,
+        "count": 2,
+        "spread": 0,
+        "barrelGap": 12,
+        "size": 3.5,
+        "life": 0.72,
+        "ap": 22
+      },
+      "hulls": [
+        "patrol",
+        "striker",
+        "comet"
+      ],
+      "quirk": "momentum"
+    },
+    {
+      "id": "corvette",
+      "name": "Corvette",
+      "gun": {
+        "name": "Twin 30mm Phase Repeaters",
+        "damage": 19,
+        "fireInterval": 0.3,
+        "projectileSpeed": 1100,
+        "count": 2,
+        "spread": 0,
+        "barrelGap": 14,
+        "size": 4,
+        "life": 0.727,
+        "ap": 34
+      },
+      "hulls": [
+        "corvette",
+        "wraith",
+        "specter"
+      ],
+      "quirk": "ghostDrive"
+    },
+    {
+      "id": "frigate",
+      "name": "Frigate",
+      "gun": {
+        "name": "Axial Nanite Lance",
+        "damage": 22,
+        "fireInterval": 0.2,
+        "projectileSpeed": 1000,
+        "count": 1,
+        "spread": 0,
+        "size": 4.5,
+        "life": 0.7,
+        "ap": 32
+      },
+      "secondary": {
+        "name": "Dorsal PD / Nanite Auto-Turret",
+        "count": 1,
+        "damage": 6.6,
+        "fireInterval": 0.3,
+        "ap": 20,
+        "range": 520,
+        "jitterDeg": 18,
+        "projectileSpeed": 1200,
+        "size": 3
+      },
+      "hulls": [
+        "frigate",
+        "fortress",
+        "warden"
+      ],
+      "quirk": "fieldEngineer"
+    },
+    {
+      "id": "destroyer",
+      "name": "Destroyer",
+      "gun": {
+        "name": "Dual 50mm Heavy Autocannons",
+        "damage": 12.75,
+        "fireInterval": 0.25,
+        "projectileSpeed": 1100,
+        "count": 2,
+        "spread": 0,
+        "barrelGap": 18,
+        "size": 5.5,
+        "life": 0.709,
+        "ap": 52
+      },
+      "secondary": {
+        "name": "Twin 25mm Flak Auto-Turrets",
+        "count": 2,
+        "damage": 4.5,
+        "fireInterval": 0.25,
+        "ap": 24,
+        "range": 560,
+        "jitterDeg": 16,
+        "projectileSpeed": 1250,
+        "size": 3,
+        "ciws": true
+      },
+      "hulls": [
+        "destroyer",
+        "hunter",
+        "escort"
+      ],
+      "quirk": "pointDefense"
+    },
+    {
+      "id": "cruiser",
+      "name": "Cruiser",
+      "gun": {
+        "name": "Triple 75mm High-Caliber Lasers",
+        "damage": 9.8,
+        "fireInterval": 0.25,
+        "projectileSpeed": 1300,
+        "count": 3,
+        "spread": 0,
+        "barrelGap": 16,
+        "size": 6,
+        "life": 0.662,
+        "ap": 65
+      },
+      "secondary": {
+        "name": "Deck Pulse Auto-Turrets",
+        "count": 3,
+        "damage": 4.8,
+        "fireInterval": 0.3,
+        "ap": 32,
+        "range": 620,
+        "jitterDeg": 15,
+        "projectileSpeed": 1300,
+        "size": 3
+      },
+      "hulls": [
+        "cruiser",
+        "strikecruiser",
+        "commandcruiser"
+      ],
+      "quirk": "lockOn"
+    },
+    {
+      "id": "battlecruiser",
+      "name": "Battlecruiser",
+      "gun": {
+        "name": "Twin 105mm Siege Plasma Cannons",
+        "damage": 19.8,
+        "fireInterval": 0.3,
+        "projectileSpeed": 1150,
+        "count": 2,
+        "spread": 0,
+        "barrelGap": 24,
+        "size": 7.5,
+        "life": 0.73,
+        "ap": 88
+      },
+      "secondary": {
+        "name": "Broadside Casemate Turrets",
+        "count": 4,
+        "damage": 5.4,
+        "fireInterval": 0.3,
+        "ap": 42,
+        "range": 640,
+        "jitterDeg": 16,
+        "projectileSpeed": 1300,
+        "size": 3
+      },
+      "hulls": [
+        "battlecruiser",
+        "raider",
+        "ironclad"
+      ],
+      "quirk": "momentum"
+    },
+    {
+      "id": "battleship",
+      "name": "Battleship",
+      "gun": {
+        "name": "Twin 150mm Heavy Gauss Batteries",
+        "damage": 14,
+        "fireInterval": 0.4,
+        "projectileSpeed": 1100,
+        "count": 2,
+        "spread": 0,
+        "barrelGap": 30,
+        "size": 9,
+        "life": 0.8,
+        "heatPerShot": 7,
+        "ap": 105
+      },
+      "secondary": {
+        "name": "35mm Deck Auto-Batteries",
+        "count": 6,
+        "damage": 3.6,
+        "fireInterval": 0.3,
+        "ap": 35,
+        "range": 660,
+        "jitterDeg": 18,
+        "projectileSpeed": 1300,
+        "size": 3
+      },
+      "hulls": [
+        "battleship",
+        "bastion",
+        "juggernaut"
+      ],
+      "quirk": "heat"
+    },
+    {
+      "id": "dreadnought",
+      "name": "Dreadnought",
+      "gun": {
+        "name": "240mm Spinal Rail Cannon",
+        "damage": 44,
+        "fireInterval": 0.36,
+        "projectileSpeed": 1900,
+        "count": 1,
+        "spread": 0,
+        "size": 11,
+        "life": 0.763,
+        "chargeMax": 1.4,
+        "ap": 135
+      },
+      "secondary": {
+        "name": "25mm Point-Defense Blisters",
+        "count": 8,
+        "damage": 3.6,
+        "fireInterval": 0.3,
+        "ap": 28,
+        "range": 600,
+        "jitterDeg": 20,
+        "projectileSpeed": 1300,
+        "size": 3
+      },
+      "hulls": [
+        "dreadnought",
+        "railstorm",
+        "eclipse"
+      ],
+      "quirk": "chargeShot"
+    },
+    {
+      "id": "carrier",
+      "name": "Carrier",
+      "gun": {
+        "name": "Axial Command Designator Beam",
+        "damage": 13.6,
+        "fireInterval": 0.2,
+        "projectileSpeed": 1300,
+        "count": 1,
+        "spread": 0,
+        "size": 5,
+        "life": 0.63,
+        "ap": 48
+      },
+      "secondary": {
+        "name": "Deck CIWS Auto-Turrets",
+        "count": 6,
+        "damage": 4.2,
+        "fireInterval": 0.3,
+        "ap": 25,
+        "range": 580,
+        "jitterDeg": 17,
+        "projectileSpeed": 1350,
+        "size": 3,
+        "ciws": true
+      },
+      "hulls": [
+        "carrier",
+        "hive",
+        "overlord"
+      ],
+      "quirk": "droneBay"
+    }
+  ],
+  "abilities": [
+    {
+      "id": "patrol.phaseDash",
+      "name": "Phase Dash",
+      "steps": [
+        {
+          "kind": "dash",
+          "speedMul": 3.2,
+          "duration": 0.3,
+          "invulnerable": true
+        }
+      ]
+    },
+    {
+      "id": "patrol.blinkStrike",
+      "name": "Blink Strike",
+      "steps": [
+        {
+          "kind": "teleport",
+          "maxDistance": 420,
+          "target": "cursor"
+        },
+        {
+          "kind": "pulse",
+          "radius": 130,
+          "damage": 65,
+          "shieldDrain": 0.5,
+          "affects": [
+            "enemies",
+            "drones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "patrol.kineticRam",
+      "name": "Kinetic Ram",
+      "steps": [
+        {
+          "kind": "dash",
+          "speedMul": 3.4,
+          "duration": 0.35,
+          "invulnerable": true,
+          "ramDamage": 110,
+          "ramAp": 60,
+          "knockback": 420
+        }
+      ]
+    },
+    {
+      "id": "patrol.stormRun",
+      "name": "Vector Storm",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "stormRun",
+          "duration": 6
+        },
+        {
+          "kind": "selfStatus",
+          "status": "powerMax",
+          "duration": 6
+        }
+      ]
+    },
+    {
+      "id": "patrol.microPods",
+      "name": "Micro-Pods",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "missile": true,
+          "gun": {
+            "count": 8,
+            "spread": 1.2,
+            "damage": 30,
+            "projectileSpeed": 620,
+            "life": 2.4,
+            "homingTurn": 3.8,
+            "size": 4,
+            "barrelGap": 0,
+            "ap": 45
+          },
+          "onHit": [
+            {
+              "status": "sunder",
+              "duration": 6,
+              "magnitude": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "corvette.ambush",
+      "name": "Ambush Cloak",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "cloak",
+          "duration": 4.5
+        },
+        {
+          "kind": "selfStatus",
+          "status": "ambush",
+          "duration": 6.5,
+          "magnitude": 2
+        }
+      ]
+    },
+    {
+      "id": "corvette.ghostStep",
+      "name": "Ghost Step",
+      "steps": [
+        {
+          "kind": "teleport",
+          "maxDistance": 280,
+          "target": "cursor"
+        }
+      ]
+    },
+    {
+      "id": "corvette.wraithAmbush",
+      "name": "Wraith Ambush",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "cloak",
+          "duration": 5.5
+        },
+        {
+          "kind": "selfStatus",
+          "status": "ambush",
+          "duration": 7.5,
+          "magnitude": 2.6
+        }
+      ]
+    },
+    {
+      "id": "corvette.specterAmbush",
+      "name": "Specter Ambush",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "cloak",
+          "duration": 4.5
+        },
+        {
+          "kind": "selfStatus",
+          "status": "ambush",
+          "duration": 6.5,
+          "magnitude": 2
+        },
+        {
+          "kind": "summon",
+          "unit": "decoy",
+          "count": 3,
+          "life": 4.5,
+          "behavior": "decoy"
+        }
+      ]
+    },
+    {
+      "id": "corvette.guillotine",
+      "name": "Shadow Guillotine",
+      "steps": [
+        {
+          "kind": "teleport",
+          "maxDistance": 950,
+          "target": "behindTarget"
+        },
+        {
+          "kind": "selfStatus",
+          "status": "ambush",
+          "duration": 3,
+          "magnitude": 2.8
+        }
+      ]
+    },
+    {
+      "id": "corvette.blackout",
+      "name": "Blackout Shroud",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "self",
+          "radius": 750,
+          "duration": 7,
+          "perSecond": {
+            "status": {
+              "status": "blinded",
+              "duration": 1
+            }
+          },
+          "affects": [
+            "enemies"
+          ]
+        },
+        {
+          "kind": "zone",
+          "at": "self",
+          "radius": 750,
+          "duration": 7,
+          "perSecond": {
+            "status": {
+              "status": "turretsOff",
+              "duration": 0.5
+            }
+          },
+          "affects": [
+            "enemies"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "frigate.repairPulse",
+      "name": "Repair & Shield Pulse",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 350,
+          "heal": 0.3,
+          "selfHeal": 0.3,
+          "shieldHeal": 0.4,
+          "affects": [
+            "allies",
+            "self",
+            "structures"
+          ]
+        },
+        {
+          "kind": "fortifyNode",
+          "at": "self",
+          "radius": 350,
+          "repair": 0.08
+        }
+      ]
+    },
+    {
+      "id": "frigate.sentry",
+      "name": "Orbital Sentry",
+      "steps": [
+        {
+          "kind": "deploy",
+          "structure": "turret",
+          "count": 1,
+          "cap": 1,
+          "life": 20,
+          "hull": 450
+        }
+      ]
+    },
+    {
+      "id": "frigate.mines",
+      "name": "Anchor Mines",
+      "steps": [
+        {
+          "kind": "deploy",
+          "structure": "mine",
+          "count": 5,
+          "cap": 5,
+          "life": 45
+        }
+      ]
+    },
+    {
+      "id": "frigate.fortressPulse",
+      "name": "Fortress Pulse",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 350,
+          "heal": 0.3,
+          "selfHeal": 0.3,
+          "shieldHeal": 0.4,
+          "affects": [
+            "allies",
+            "self",
+            "structures"
+          ]
+        },
+        {
+          "kind": "fortifyNode",
+          "at": "self",
+          "radius": 350,
+          "repair": 0.08
+        },
+        {
+          "kind": "deploy",
+          "structure": "emitter",
+          "count": 1,
+          "cap": 1,
+          "life": 8
+        },
+        {
+          "kind": "fortifyNode",
+          "at": "self",
+          "radius": 350,
+          "turrets": 1,
+          "turretTime": 20
+        }
+      ]
+    },
+    {
+      "id": "frigate.wardenTether",
+      "name": "Warden Tether",
+      "steps": [
+        {
+          "kind": "tether",
+          "duration": 6,
+          "range": 650,
+          "healPerSecond": 0.14,
+          "shieldPerSecond": 0.14,
+          "status": {
+            "status": "armorUp",
+            "duration": 0.5,
+            "magnitude": 25
+          },
+          "nodes": true
+        }
+      ]
+    },
+    {
+      "id": "frigate.citadel",
+      "name": "Node Citadel",
+      "steps": [
+        {
+          "kind": "fortifyNode",
+          "at": "cursor",
+          "radius": 900,
+          "repair": 1,
+          "maxHullMul": 2,
+          "turrets": 2,
+          "turretTime": 60,
+          "respawnTime": 60
+        }
+      ]
+    },
+    {
+      "id": "frigate.sanctuary",
+      "name": "Aegis Sanctuary",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "self",
+          "radius": 550,
+          "duration": 8,
+          "perSecond": {
+            "heal": 0.1,
+            "status": {
+              "status": "armorUp",
+              "duration": 0.5,
+              "magnitude": 35
+            }
+          },
+          "affects": [
+            "allies",
+            "self"
+          ],
+          "healNodes": true
+        }
+      ]
+    },
+    {
+      "id": "destroyer.heavyTorpedo",
+      "name": "Heavy Torpedo",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "missile": true,
+          "structureMul": 1.5,
+          "gun": {
+            "count": 1,
+            "spread": 0,
+            "damage": 115,
+            "projectileSpeed": 650,
+            "life": 2.6,
+            "homingTurn": 2.2,
+            "size": 8,
+            "barrelGap": 0,
+            "ap": 105
+          }
+        }
+      ]
+    },
+    {
+      "id": "destroyer.evasiveBurn",
+      "name": "Evasive Burn",
+      "steps": [
+        {
+          "kind": "dash",
+          "speedMul": 2.4,
+          "duration": 0.35
+        }
+      ]
+    },
+    {
+      "id": "destroyer.torpedoSpread",
+      "name": "Torpedo Spread",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "missile": true,
+          "structureMul": 1.5,
+          "gun": {
+            "count": 3,
+            "spread": 0.5,
+            "damage": 85,
+            "projectileSpeed": 650,
+            "life": 2.6,
+            "homingTurn": 2.2,
+            "size": 7,
+            "barrelGap": 0,
+            "ap": 105
+          },
+          "onHit": [
+            {
+              "status": "sunder",
+              "duration": 4,
+              "magnitude": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "destroyer.flakCurtain",
+      "name": "Flak Curtain",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 450,
+          "damage": 75,
+          "shieldHeal": 0.2,
+          "clearMissiles": true,
+          "affects": [
+            "enemies",
+            "drones",
+            "allies",
+            "self"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "destroyer.tubeSalvo",
+      "name": "Tube Salvo",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "missile": true,
+          "structureMul": 1.5,
+          "repeat": 5,
+          "repeatInterval": 0.24,
+          "gun": {
+            "count": 1,
+            "spread": 0,
+            "damage": 95,
+            "projectileSpeed": 680,
+            "life": 2.6,
+            "homingTurn": 2.4,
+            "size": 7,
+            "barrelGap": 0,
+            "ap": 120
+          }
+        }
+      ]
+    },
+    {
+      "id": "destroyer.empWarhead",
+      "name": "EMP Warhead",
+      "steps": [
+        {
+          "kind": "pulse",
+          "at": "cursor",
+          "radius": 400,
+          "shieldDrain": 1,
+          "status": [
+            {
+              "status": "silence",
+              "duration": 2.5
+            },
+            {
+              "status": "powerDrain",
+              "duration": 4
+            }
+          ],
+          "affects": [
+            "enemies",
+            "drones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cruiser.shieldBattery",
+      "name": "Shield Harmonic Battery",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 1,
+          "shieldHeal": 0.45,
+          "affects": [
+            "self"
+          ]
+        },
+        {
+          "kind": "selfStatus",
+          "status": "shield",
+          "duration": 4,
+          "magnitude": 0.55
+        }
+      ]
+    },
+    {
+      "id": "cruiser.vlsPod",
+      "name": "VLS Breacher Pod",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "missile": true,
+          "gun": {
+            "count": 4,
+            "spread": 0.8,
+            "damage": 55,
+            "projectileSpeed": 640,
+            "life": 2.4,
+            "homingTurn": 3.2,
+            "size": 5,
+            "barrelGap": 0,
+            "ap": 75
+          }
+        }
+      ]
+    },
+    {
+      "id": "cruiser.aegisPulse",
+      "name": "Fleet Aegis Pulse",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 550,
+          "shieldHeal": 0.35,
+          "affects": [
+            "allies",
+            "self"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cruiser.overclock",
+      "name": "Battery Overclock",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "rapid",
+          "duration": 6.5,
+          "magnitude": 0.8
+        },
+        {
+          "kind": "selfStatus",
+          "status": "turretLock",
+          "duration": 6.5
+        }
+      ]
+    },
+    {
+      "id": "cruiser.ionLance",
+      "name": "Ion Lance",
+      "steps": [
+        {
+          "kind": "beam",
+          "length": 1450,
+          "width": 30,
+          "count": 1,
+          "spread": 0,
+          "damage": 240,
+          "ap": 110,
+          "status": [
+            {
+              "status": "shieldsDown",
+              "duration": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "battlecruiser.ramBurn",
+      "name": "Overdrive Ram Burn",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "armorUp",
+          "duration": 0.6,
+          "magnitude": 72
+        },
+        {
+          "kind": "dash",
+          "speedMul": 2.5,
+          "duration": 0.55,
+          "ramDamage": 95,
+          "ramAp": 90,
+          "knockback": 380
+        }
+      ]
+    },
+    {
+      "id": "battlecruiser.microJump",
+      "name": "Micro-Jump Strike",
+      "steps": [
+        {
+          "kind": "teleport",
+          "maxDistance": 480,
+          "target": "cursor"
+        },
+        {
+          "kind": "projectiles",
+          "gun": {
+            "count": 5,
+            "spread": 0.6,
+            "barrelGap": 0
+          }
+        },
+        {
+          "kind": "turretVolley"
+        }
+      ]
+    },
+    {
+      "id": "battlecruiser.ironcladRam",
+      "name": "Ironclad Ram",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "armorUp",
+          "duration": 0.6,
+          "magnitude": 94
+        },
+        {
+          "kind": "dash",
+          "speedMul": 2.4,
+          "duration": 0.55,
+          "ramDamage": 160,
+          "ramAp": 100,
+          "knockback": 300,
+          "ramStatus": [
+            {
+              "status": "stun",
+              "duration": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "battlecruiser.devastator",
+      "name": "Devastator Salvo",
+      "steps": [
+        {
+          "kind": "projectiles",
+          "gun": {
+            "count": 8,
+            "spread": 0.35,
+            "damage": 60,
+            "projectileSpeed": 1300,
+            "life": 0.9,
+            "size": 7,
+            "barrelGap": 0,
+            "pierce": 2,
+            "ap": 115
+          }
+        }
+      ]
+    },
+    {
+      "id": "battlecruiser.overload",
+      "name": "Reactor Overload",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "powerMax",
+          "duration": 7
+        },
+        {
+          "kind": "selfStatus",
+          "status": "haste",
+          "duration": 7,
+          "magnitude": 0.35
+        },
+        {
+          "kind": "selfStatus",
+          "status": "rapid",
+          "duration": 7,
+          "magnitude": 0.35
+        },
+        {
+          "kind": "selfStatus",
+          "status": "turretRapid",
+          "duration": 7,
+          "magnitude": 1
+        }
+      ]
+    },
+    {
+      "id": "battleship.bulwark",
+      "name": "Bulwark Plating Matrix",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "armorUp",
+          "duration": 4.5,
+          "magnitude": 60
+        },
+        {
+          "kind": "selfStatus",
+          "status": "shield",
+          "duration": 4.5,
+          "magnitude": 0.75
+        }
+      ]
+    },
+    {
+      "id": "battleship.aegisMirror",
+      "name": "Aegis Mirror",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "shield",
+          "duration": 4.5,
+          "magnitude": 0.85
+        },
+        {
+          "kind": "selfStatus",
+          "status": "reflect",
+          "duration": 4.5
+        }
+      ]
+    },
+    {
+      "id": "battleship.thermalOverdrive",
+      "name": "Thermal Overdrive",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "overdrive",
+          "duration": 5.5
+        },
+        {
+          "kind": "selfStatus",
+          "status": "rapid",
+          "duration": 5.5,
+          "magnitude": 0.75
+        },
+        {
+          "kind": "selfStatus",
+          "status": "haste",
+          "duration": 5.5,
+          "magnitude": 0.3
+        },
+        {
+          "kind": "selfStatus",
+          "status": "turretRapid",
+          "duration": 5.5,
+          "magnitude": 1
+        }
+      ]
+    },
+    {
+      "id": "battleship.siege",
+      "name": "Siege Bastion",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "rooted",
+          "duration": 8
+        },
+        {
+          "kind": "selfStatus",
+          "status": "siege",
+          "duration": 8
+        },
+        {
+          "kind": "selfStatus",
+          "status": "armorUp",
+          "duration": 8,
+          "magnitude": 50
+        }
+      ]
+    },
+    {
+      "id": "battleship.aegisDome",
+      "name": "Aegis Dome",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "self",
+          "radius": 650,
+          "duration": 6,
+          "blocksProjectiles": true,
+          "affects": [
+            "enemies"
+          ]
+        },
+        {
+          "kind": "pulse",
+          "radius": 650,
+          "shieldHeal": 0.25,
+          "affects": [
+            "allies",
+            "self"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dreadnought.railBeam",
+      "name": "Hyper-Velocity Rail Beam",
+      "steps": [
+        {
+          "kind": "beam",
+          "length": 1250,
+          "width": 18,
+          "count": 1,
+          "spread": 0,
+          "damage": 135,
+          "ap": 125
+        }
+      ]
+    },
+    {
+      "id": "dreadnought.railstorm",
+      "name": "Railstorm",
+      "steps": [
+        {
+          "kind": "beam",
+          "length": 1250,
+          "width": 18,
+          "count": 3,
+          "spread": 0.3,
+          "damage": 115,
+          "ap": 125
+        }
+      ]
+    },
+    {
+      "id": "dreadnought.eventHorizon",
+      "name": "Event Horizon",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "cursor",
+          "radius": 280,
+          "duration": 3.2,
+          "pull": 700,
+          "perSecond": {
+            "damage": 35
+          },
+          "affects": [
+            "enemies",
+            "drones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dreadnought.orbitalLance",
+      "name": "Orbital Lance",
+      "steps": [
+        {
+          "kind": "strike",
+          "delay": 2,
+          "radius": 300,
+          "damage": 450,
+          "structureDamage": 900,
+          "ap": 150
+        }
+      ]
+    },
+    {
+      "id": "dreadnought.gravityWave",
+      "name": "Graviton Wave",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 550,
+          "pullToCenter": 0.85,
+          "pullTo": "bow",
+          "status": [
+            {
+              "status": "stun",
+              "duration": 1.5
+            }
+          ],
+          "affects": [
+            "enemies"
+          ]
+        },
+        {
+          "kind": "selfStatus",
+          "status": "ambush",
+          "duration": 6,
+          "magnitude": 1.5
+        }
+      ]
+    },
+    {
+      "id": "carrier.scramble",
+      "name": "Scramble Strike Wing",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 4,
+          "life": 14,
+          "behavior": "swarm"
+        }
+      ]
+    },
+    {
+      "id": "carrier.hiveSwarm",
+      "name": "Launch Swarm",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 7,
+          "life": 12,
+          "behavior": "swarm",
+          "params": {
+            "speed": 540
+          }
+        }
+      ]
+    },
+    {
+      "id": "carrier.empPulse",
+      "name": "Fleet EMP Pulse",
+      "steps": [
+        {
+          "kind": "pulse",
+          "radius": 420,
+          "status": [
+            {
+              "status": "silence",
+              "duration": 2.5
+            }
+          ],
+          "affects": [
+            "enemies",
+            "drones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "carrier.bastionDeck",
+      "name": "Bastion Flight Deck",
+      "steps": [
+        {
+          "kind": "selfStatus",
+          "status": "rooted",
+          "duration": 10
+        },
+        {
+          "kind": "selfStatus",
+          "status": "armorUp",
+          "duration": 10,
+          "magnitude": 40
+        },
+        {
+          "kind": "selfStatus",
+          "status": "turretRapid",
+          "duration": 10,
+          "magnitude": 1
+        },
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 10,
+          "life": 10,
+          "behavior": "swarm",
+          "params": {
+            "hull": 90
+          }
+        },
+        {
+          "kind": "deploy",
+          "structure": "turret",
+          "count": 4,
+          "cap": 4,
+          "life": 10
+        }
+      ]
+    },
+    {
+      "id": "carrier.valkyrie",
+      "name": "Valkyrie Run",
+      "steps": [
+        {
+          "kind": "droneOrder",
+          "order": "volley",
+          "damage": 85,
+          "radius": 60,
+          "ap": 100
+        }
+      ]
+    }
+  ],
+  "commands": [
+    {
+      "id": "orbitalStrike",
+      "name": "Orbital Strike",
+      "description": "600 u circle; 3 s warning, then 400 damage to ships and 2,000 to structures and nodes.",
+      "resource": "munitions",
+      "cost": 90,
+      "cooldown": 90,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "strike",
+          "delay": 3,
+          "radius": 600,
+          "damage": 400,
+          "structureDamage": 2000
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "blackHoleBomb",
+      "name": "Black Hole Bomb",
+      "description": "A 500 u singularity for 6 s: drags enemy ships and starships to the center, 40 damage per second.",
+      "resource": "munitions",
+      "cost": 80,
+      "cooldown": 100,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "cursor",
+          "radius": 500,
+          "duration": 6,
+          "pull": 900,
+          "perSecond": {
+            "damage": 40
+          },
+          "affects": [
+            "enemies",
+            "drones"
+          ]
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "aBomb",
+      "name": "A-Bomb",
+      "description": "1,000 u blast; 5 s warning, then 650 damage to ships and 5,000 to structures and nodes.",
+      "resource": "munitions",
+      "cost": 200,
+      "cooldown": 300,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "strike",
+          "delay": 5,
+          "radius": 1000,
+          "damage": 650,
+          "structureDamage": 5000
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "empBomb",
+      "name": "EMP Bomb",
+      "description": "700 u pulse: enemy ships stunned 1.5 s and silenced 5 s, starships fried, turrets dark for 10 s.",
+      "resource": "munitions",
+      "cost": 70,
+      "cooldown": 90,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "pulse",
+          "at": "cursor",
+          "radius": 700,
+          "status": [
+            {
+              "status": "stun",
+              "duration": 1.5
+            },
+            {
+              "status": "silence",
+              "duration": 5
+            }
+          ],
+          "affects": [
+            "enemies"
+          ]
+        },
+        {
+          "kind": "emp",
+          "radius": 700,
+          "duration": 10
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "radarJammer",
+      "name": "Radar Jammer",
+      "description": "The enemy radar goes dark for 30 s: none of your ships show on their map.",
+      "resource": "munitions",
+      "cost": 45,
+      "cooldown": 90,
+      "target": "none",
+      "steps": [
+        {
+          "kind": "teamBuff",
+          "buff": "jam",
+          "duration": 30
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "reconSweep",
+      "name": "Recon Scan",
+      "description": "Reveal a 1,500 u radius for 15 s, cloaked ships included.",
+      "resource": "munitions",
+      "cost": 25,
+      "cooldown": 40,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "zone",
+          "at": "cursor",
+          "radius": 1500,
+          "duration": 15,
+          "reveal": true,
+          "affects": [
+            "enemies"
+          ]
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "defensePlatform",
+      "name": "Defense Platform",
+      "description": "A 2,500-hull turret platform anywhere your team can see, for 3 min.",
+      "resource": "munitions",
+      "cost": 60,
+      "cooldown": 45,
+      "target": "map",
+      "needsVision": true,
+      "steps": [
+        {
+          "kind": "deploy",
+          "structure": "platform",
+          "count": 1,
+          "cap": 3,
+          "life": 180,
+          "at": "cursor"
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "fleetOvercharge",
+      "name": "Fleet Overcharge",
+      "description": "Whole team: −20% ability cooldowns for 30 s.",
+      "resource": "munitions",
+      "cost": 70,
+      "cooldown": 120,
+      "target": "none",
+      "steps": [
+        {
+          "kind": "teamBuff",
+          "buff": "overcharge",
+          "duration": 30
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "fighterWing",
+      "name": "Fighter Wing",
+      "description": "4 fighters that dogfight enemy ships around the target for 60 s.",
+      "resource": "fuel",
+      "cost": 40,
+      "cooldown": 50,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 4,
+          "life": 60,
+          "behavior": "fighter"
+        }
+      ],
+      "role": "fob"
+    },
+    {
+      "id": "interceptorWing",
+      "name": "Interceptor Wing",
+      "description": "5 fast interceptors that hunt enemy starships and drones first, then ships, around the target for 45 s.",
+      "resource": "fuel",
+      "cost": 45,
+      "cooldown": 50,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 5,
+          "life": 45,
+          "behavior": "interceptor"
+        }
+      ],
+      "role": "fob"
+    },
+    {
+      "id": "bomberWing",
+      "name": "Bomber Wing",
+      "description": "3 slow bombers that hit nodes, FOBs and structures near the target for 60 s.",
+      "resource": "fuel",
+      "cost": 60,
+      "cooldown": 60,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 3,
+          "life": 60,
+          "behavior": "bomber"
+        }
+      ],
+      "role": "fob"
+    },
+    {
+      "id": "reconDrones",
+      "name": "Recon Wing",
+      "description": "2 spotters that hover at the target and give 1,600 u of vision for 60 s.",
+      "resource": "fuel",
+      "cost": 15,
+      "cooldown": 30,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 2,
+          "life": 60,
+          "behavior": "recon"
+        }
+      ],
+      "role": "fob"
+    },
+    {
+      "id": "defenseDrones",
+      "name": "Defender Wing",
+      "description": "4 heavy defenders fly to the spot you mark and guard it for 90 s.",
+      "resource": "fuel",
+      "cost": 35,
+      "cooldown": 45,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "summon",
+          "unit": "drone",
+          "count": 4,
+          "life": 90,
+          "behavior": "guard"
+        }
+      ],
+      "role": "fob"
+    },
+    {
+      "id": "forwardBeacon",
+      "name": "Forward Beacon",
+      "description": "Drop a 90 s spawn point anywhere your team can see, for flanks.",
+      "resource": "manpower",
+      "cost": 60,
+      "cooldown": 60,
+      "target": "map",
+      "needsVision": true,
+      "steps": [
+        {
+          "kind": "deploy",
+          "structure": "beacon",
+          "count": 1,
+          "cap": 2,
+          "life": 90,
+          "hull": 1500,
+          "at": "cursor"
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "rapidDeployment",
+      "name": "Rapid Deployment",
+      "description": "Whole team respawns 50% faster for 60 s.",
+      "resource": "manpower",
+      "cost": 50,
+      "cooldown": 120,
+      "target": "none",
+      "steps": [
+        {
+          "kind": "teamBuff",
+          "buff": "reinforce",
+          "duration": 60
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "rallyOrder",
+      "name": "Rally Order",
+      "description": "Half your bots drop what they are doing and fly to the waypoint for 60 s.",
+      "resource": "manpower",
+      "cost": 15,
+      "cooldown": 30,
+      "target": "map",
+      "steps": [
+        {
+          "kind": "rally",
+          "duration": 60
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "hullReinforcement",
+      "name": "Hull Reinforcement",
+      "description": "Repair crews restore 5% of your Titan hull.",
+      "resource": "manpower",
+      "cost": 80,
+      "cooldown": 120,
+      "target": "none",
+      "steps": [
+        {
+          "kind": "repairMothership",
+          "fraction": 0.05
+        }
+      ],
+      "role": "admiral"
+    },
+    {
+      "id": "breakthrough",
+      "name": "Breakthrough",
+      "description": "For 5 min every node your team holds pays out at double rate.",
+      "resource": "manpower",
+      "cost": 120,
+      "cooldown": 420,
+      "target": "none",
+      "steps": [
+        {
+          "kind": "teamBuff",
+          "buff": "breakthrough",
+          "duration": 300
+        }
+      ],
+      "role": "admiral"
+    }
+  ]
+}

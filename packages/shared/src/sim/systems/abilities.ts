@@ -1,3 +1,4 @@
+import { abilitySoundIndex, SOUND_KIND, WEAPON_SOUND } from '../../content/sounds';
 import { beginDecoyFlight } from '../decoyFlight';
 import { abilityVisualIndex } from '../../content/abilityVisuals';
 import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
@@ -343,7 +344,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       if (step.order === 'volley') {
         // Valkyrie Run: each starship looses a homing micro-torpedo and stays in the fight.
         const a = Math.atan2(c.cursorY - d.y, c.cursorX - d.x);
-        spawnPattern(w, c.slot, c.team, d.x, d.y, a, VOLLEY_GUN, step.damage / VOLLEY_GUN.damage, 1, d.radius);
+        spawnPattern(w, c.slot, c.team, d.x, d.y, a, VOLLEY_GUN, step.damage / VOLLEY_GUN.damage, 1, d.radius, undefined, a, WEAPON_SOUND.drone);
         const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
         if (p) {
           p.missile = true;
@@ -551,6 +552,7 @@ export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number)
   c.abilityVisual = abilityVisualIndex(st.def.id);
   const originX = s.x, originY = s.y;
   runSteps(w, c, st.def.steps);
+  w.emitSound(SOUND_KIND.ability,abilitySoundIndex(st.def.id),s.slot,originX,originY);
   if (c.abilityVisual) {
     s.abilityVisual = c.abilityVisual;
     s.visualStartedAt = w.time;
@@ -570,7 +572,7 @@ export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): v
 function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>, abilityVisual = 0): void {
   const first = w.projectiles.count;
   const gun = mergedGun(s.cls.gun, step.gun);
-  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle);
+  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle, WEAPON_SOUND.ordnance);
   const structureMul = (step.structureMul ?? 1) * liveStat(w, s, 'structureDamage', 1);
   // v2.1: ordnance takes the ship's live caliber (Weapons calibration, node +AP, WEAPONS power) like
   // its gun does, and warheads (missiles, anything with splash) never overpenetrate.

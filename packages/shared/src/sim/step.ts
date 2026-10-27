@@ -22,6 +22,7 @@ export function createWorld(opts: WorldOptions): World {
   const w = new World(opts);
   for (const s of w.ships) respawnShip(w, s);
   w.eventCount = 0;
+  w.audioEventCount = 0;
   seedCrystals(w);
   rebuildShipHash(w);
   rebuildCrystalHash(w);
@@ -35,6 +36,7 @@ export function step(w: World): void {
   w.tick++;
   w.time = w.tick * DT;
   w.eventCount = 0;
+  w.audioEventCount = 0;
 
   // 1. Inputs and decisions. Bots write the same ShipInput humans do; queued Fleet Command
   //    orders and pings run here.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cinematic Game Audio"
+  short_description: "Distinctive SFX, seamless sustains and spatial mixes"
+  default_prompt: "Use $cinematic-game-audio to design and integrate distinctive, responsive game sound."

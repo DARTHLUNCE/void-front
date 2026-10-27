@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "bankCues": 208,
+  "pilotEvents": 69,
+  "pilotAccepted": 69,
+  "playerDropped": 0,
+  "fleetFiringGroups": 441,
+  "peakVoices": 34,
+  "sampledPeak": 0.135,
+  "decodedMB": 93.0677,
+  "loadFailures": 0,
+  "browserErrors": [],
+  "activeAfterRelease": 0,
+  "limiterPeak": 0.8199999928474426,
+  "near700HeadphoneDifferenceDb": 2.4629843546032824,
+  "near700StereoDifferenceDb": 5.191578742514276,
+  "ownShotWetDb": -11.096102561336314
+}

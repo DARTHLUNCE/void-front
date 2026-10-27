@@ -1,3 +1,4 @@
+import { weaponSoundIndex } from '../../content/sounds';
 import { nodeRotation, nodeTurretRadius } from '../worldCollision';
 import type { GunDef, StructureDef } from '../../content/types';
 import { EXPOSED, NODE } from '../../content/structures';
@@ -62,7 +63,7 @@ export function fireTurrets(w: World): void {
         continue;
       }
       const a = leadAngle(tx, ty, target.x, target.y, target.vx, target.vy, gun.projectileSpeed);
-      spawnPattern(w, -1, st.team, tx, ty, a, gun, 1);
+      spawnPattern(w, -1, st.team, tx, ty, a, gun, 1, 1, 0, undefined, a, weaponSoundIndex(`turret.${st.def.id}.${st.turretType}`));
       if (missile && w.projectiles.count > 0) w.projectiles.at(w.projectiles.count - 1).missile = true;
       st.turretCooldown[k] += gun.fireInterval;
     }
@@ -102,7 +103,7 @@ export function fireNodeTurrets(w: World): void {
         p.turretCd[k] = 0;
         continue;
       }
-      spawnPattern(w, -1, team, tx, ty, leadAngle(tx, ty, target.x, target.y, target.vx, target.vy, NODE_GUN.projectileSpeed), NODE_GUN, 1, 1, 0);
+      spawnPattern(w, -1, team, tx, ty, leadAngle(tx, ty, target.x, target.y, target.vx, target.vy, NODE_GUN.projectileSpeed), NODE_GUN, 1, 1, 0, undefined, a, weaponSoundIndex('turret.node'));
       p.turretCd[k] += NODE_GUN.fireInterval;
     }
   }

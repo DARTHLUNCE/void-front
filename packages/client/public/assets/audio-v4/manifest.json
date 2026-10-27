@@ -1,0 +1,5745 @@
+{
+  "weapon.patrol": {
+    "label": "Twin 20mm Pulse Lasers",
+    "group": "Weapons",
+    "description": "Twin 20mm Pulse Lasers \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 4800,
+    "files": [
+      "weapon-patrol-1.wav",
+      "weapon-patrol-2.wav",
+      "weapon-patrol-3.wav",
+      "weapon-patrol-4.wav",
+      "weapon-patrol-5.wav",
+      "weapon-patrol-6.wav",
+      "weapon-patrol-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.168,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.corvette": {
+    "label": "Twin 30mm Phase Repeaters",
+    "group": "Weapons",
+    "description": "Twin 30mm Phase Repeaters \u2014 atonal recorded pressure crack, compact blast body and restrained film recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 4500,
+    "files": [
+      "weapon-corvette-1.wav",
+      "weapon-corvette-2.wav",
+      "weapon-corvette-3.wav",
+      "weapon-corvette-4.wav",
+      "weapon-corvette-5.wav",
+      "weapon-corvette-6.wav",
+      "weapon-corvette-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.252,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.frigate": {
+    "label": "Axial Nanite Lance",
+    "group": "Weapons",
+    "description": "Axial Nanite Lance \u2014 atonal recorded pressure crack, compact blast body and restrained weld-burst recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 4500,
+    "files": [
+      "weapon-frigate-1.wav",
+      "weapon-frigate-2.wav",
+      "weapon-frigate-3.wav",
+      "weapon-frigate-4.wav",
+      "weapon-frigate-5.wav",
+      "weapon-frigate-6.wav",
+      "weapon-frigate-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.168,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.destroyer": {
+    "label": "Dual 50mm Heavy Autocannons",
+    "group": "Weapons",
+    "description": "Dual 50mm Heavy Autocannons \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6800,
+    "files": [
+      "weapon-destroyer-1.wav",
+      "weapon-destroyer-2.wav",
+      "weapon-destroyer-3.wav",
+      "weapon-destroyer-4.wav",
+      "weapon-destroyer-5.wav",
+      "weapon-destroyer-6.wav",
+      "weapon-destroyer-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.21,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.cruiser": {
+    "label": "Triple 75mm High-Caliber Lasers",
+    "group": "Weapons",
+    "description": "Triple 75mm High-Caliber Lasers \u2014 atonal recorded pressure crack, compact blast body and restrained welding recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 7200,
+    "files": [
+      "weapon-cruiser-1.wav",
+      "weapon-cruiser-2.wav",
+      "weapon-cruiser-3.wav",
+      "weapon-cruiser-4.wav",
+      "weapon-cruiser-5.wav",
+      "weapon-cruiser-6.wav",
+      "weapon-cruiser-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.21,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "welding"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.battlecruiser": {
+    "label": "Twin 105mm Siege Plasma Cannons",
+    "group": "Weapons",
+    "description": "Twin 105mm Siege Plasma Cannons \u2014 atonal recorded pressure crack, compact blast body and restrained breaker recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 8500,
+    "files": [
+      "weapon-battlecruiser-1.wav",
+      "weapon-battlecruiser-2.wav",
+      "weapon-battlecruiser-3.wav",
+      "weapon-battlecruiser-4.wav",
+      "weapon-battlecruiser-5.wav",
+      "weapon-battlecruiser-6.wav",
+      "weapon-battlecruiser-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.252,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.battleship": {
+    "label": "Twin 150mm Heavy Gauss Batteries",
+    "group": "Weapons",
+    "description": "Twin 150mm Heavy Gauss Batteries \u2014 atonal recorded pressure crack, compact blast body and restrained tensioner recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 9500,
+    "files": [
+      "weapon-battleship-1.wav",
+      "weapon-battleship-2.wav",
+      "weapon-battleship-3.wav",
+      "weapon-battleship-4.wav",
+      "weapon-battleship-5.wav",
+      "weapon-battleship-6.wav",
+      "weapon-battleship-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.336,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-b",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.dreadnought": {
+    "label": "240mm Spinal Rail Cannon",
+    "group": "Weapons",
+    "description": "240mm Spinal Rail Cannon \u2014 atonal recorded pressure crack, compact blast body and restrained slide recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 11000,
+    "files": [
+      "weapon-dreadnought-1.wav",
+      "weapon-dreadnought-2.wav",
+      "weapon-dreadnought-3.wav",
+      "weapon-dreadnought-4.wav",
+      "weapon-dreadnought-5.wav",
+      "weapon-dreadnought-6.wav",
+      "weapon-dreadnought-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.3023958333333333,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "slide"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.carrier": {
+    "label": "Axial Command Designator Beam",
+    "group": "Weapons",
+    "description": "Axial Command Designator Beam \u2014 atonal recorded pressure crack, compact blast body and restrained autofocus recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 4800,
+    "files": [
+      "weapon-carrier-1.wav",
+      "weapon-carrier-2.wav",
+      "weapon-carrier-3.wav",
+      "weapon-carrier-4.wav",
+      "weapon-carrier-5.wav",
+      "weapon-carrier-6.wav",
+      "weapon-carrier-7.wav"
+    ],
+    "loop": false,
+    "duration": 0.168,
+    "sources": [
+      "autofocus",
+      "blast-cracker-b",
+      "blast-pop"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "ability.patrol.phaseDash": {
+    "label": "Phase Dash",
+    "group": "Ship abilities",
+    "description": "A tensile spring aperture snaps into a vacuum wake",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-patrol-phaseDash-1.wav",
+      "ability-patrol-phaseDash-2.wav",
+      "ability-patrol-phaseDash-3.wav",
+      "ability-patrol-phaseDash-4.wav",
+      "ability-patrol-phaseDash-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.85,
+    "sources": [
+      "autofocus",
+      "dryice",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.patrol.blinkStrike": {
+    "label": "Blink Strike",
+    "group": "Ship abilities",
+    "description": "Suction fracture, empty beat, displaced heavy arrival",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-patrol-blinkStrike-1.wav",
+      "ability-patrol-blinkStrike-2.wav",
+      "ability-patrol-blinkStrike-3.wav",
+      "ability-patrol-blinkStrike-4.wav",
+      "ability-patrol-blinkStrike-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.9,
+    "sources": [
+      "dryice",
+      "glass",
+      "hinge",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.patrol.kineticRam": {
+    "label": "Kinetic Ram",
+    "group": "Ship abilities",
+    "description": "Three piston restraints release into a compact mass impulse",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-patrol-kineticRam-1.wav",
+      "ability-patrol-kineticRam-2.wav",
+      "ability-patrol-kineticRam-3.wav",
+      "ability-patrol-kineticRam-4.wav",
+      "ability-patrol-kineticRam-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.88,
+    "sources": [
+      "ratchet",
+      "slam",
+      "starter",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.patrol.stormRun": {
+    "label": "Vector Storm",
+    "group": "Ship abilities",
+    "description": "Staggered current couplers accelerating into a serrated rotor",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-patrol-stormRun-1.wav",
+      "ability-patrol-stormRun-2.wav",
+      "ability-patrol-stormRun-3.wav",
+      "ability-patrol-stormRun-4.wav",
+      "ability-patrol-stormRun-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.4,
+    "sources": [
+      "drill",
+      "reel",
+      "switch",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.patrol.microPods": {
+    "label": "Micro-Pods",
+    "group": "Ship abilities",
+    "description": "Eight dry launch-cell latches with staggered miniature exhaust growls",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-patrol-microPods-1.wav",
+      "ability-patrol-microPods-2.wav",
+      "ability-patrol-microPods-3.wav",
+      "ability-patrol-microPods-4.wav",
+      "ability-patrol-microPods-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.32,
+    "sources": [
+      "ratchet-small",
+      "servo",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.ambush": {
+    "label": "Ambush Cloak",
+    "group": "Ship abilities",
+    "description": "Serrated hinge folded backwards through a swallowed servo",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-ambush-1.wav",
+      "ability-corvette-ambush-2.wav",
+      "ability-corvette-ambush-3.wav",
+      "ability-corvette-ambush-4.wav",
+      "ability-corvette-ambush-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.15,
+    "sources": [
+      "autofocus",
+      "hinge",
+      "mirror"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.ghostStep": {
+    "label": "Ghost Step",
+    "group": "Ship abilities",
+    "description": "A very short mirror fold with a dry offset ceramic lock",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-ghostStep-1.wav",
+      "ability-corvette-ghostStep-2.wav",
+      "ability-corvette-ghostStep-3.wav",
+      "ability-corvette-ghostStep-4.wav",
+      "ability-corvette-ghostStep-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.62,
+    "sources": [
+      "glass-knock",
+      "mirror",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.wraithAmbush": {
+    "label": "Wraith Ambush",
+    "group": "Ship abilities",
+    "description": "Deep frictional throat folds beneath two detached phase clicks",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-wraithAmbush-1.wav",
+      "ability-corvette-wraithAmbush-2.wav",
+      "ability-corvette-wraithAmbush-3.wav",
+      "ability-corvette-wraithAmbush-4.wav",
+      "ability-corvette-wraithAmbush-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.6,
+    "sources": [
+      "breaker",
+      "dryice",
+      "hinge"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.specterAmbush": {
+    "label": "Specter Ambush",
+    "group": "Ship abilities",
+    "description": "Three independently opening glass-metal apparition mechanisms",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-specterAmbush-1.wav",
+      "ability-corvette-specterAmbush-2.wav",
+      "ability-corvette-specterAmbush-3.wav",
+      "ability-corvette-specterAmbush-4.wav",
+      "ability-corvette-specterAmbush-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.75,
+    "sources": [
+      "dryice",
+      "glass",
+      "mirror",
+      "servo",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.guillotine": {
+    "label": "Shadow Guillotine",
+    "group": "Ship abilities",
+    "description": "Massive negative-pressure cut and jagged shear-plane recoil",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-guillotine-1.wav",
+      "ability-corvette-guillotine-2.wav",
+      "ability-corvette-guillotine-3.wav",
+      "ability-corvette-guillotine-4.wav",
+      "ability-corvette-guillotine-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.4,
+    "sources": [
+      "dryice",
+      "mirror",
+      "slam",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.corvette.blackout": {
+    "label": "Blackout Shroud",
+    "group": "Ship abilities",
+    "description": "Irregular electrical latches fail into a choking radio throat",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-corvette-blackout-1.wav",
+      "ability-corvette-blackout-2.wav",
+      "ability-corvette-blackout-3.wav",
+      "ability-corvette-blackout-4.wav",
+      "ability-corvette-blackout-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.8,
+    "sources": [
+      "breaker",
+      "neon",
+      "transformer",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.repairPulse": {
+    "label": "Repair & Shield Pulse",
+    "group": "Ship abilities",
+    "description": "Fluid microvalves bloom into a warm tensile nanite wash",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-repairPulse-1.wav",
+      "ability-frigate-repairPulse-2.wav",
+      "ability-frigate-repairPulse-3.wav",
+      "ability-frigate-repairPulse-4.wav",
+      "ability-frigate-repairPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.7,
+    "sources": [
+      "bubbles",
+      "ratchet-small",
+      "spring-handle",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.sentry": {
+    "label": "Orbital Sentry",
+    "group": "Ship abilities",
+    "description": "Tripod unfolds, servo hunts, heavy targeting latch seats",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-sentry-1.wav",
+      "ability-frigate-sentry-2.wav",
+      "ability-frigate-sentry-3.wav",
+      "ability-frigate-sentry-4.wav",
+      "ability-frigate-sentry-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.25,
+    "sources": [
+      "ratchet",
+      "servo",
+      "shutter",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.mines": {
+    "label": "Anchor Mines",
+    "group": "Ship abilities",
+    "description": "Small magnetic detents and a brief pinched induction lock",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-mines-1.wav",
+      "ability-frigate-mines-2.wav",
+      "ability-frigate-mines-3.wav",
+      "ability-frigate-mines-4.wav",
+      "ability-frigate-mines-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.88,
+    "sources": [
+      "neon",
+      "ratchet-small",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.fortressPulse": {
+    "label": "Fortress Pulse",
+    "group": "Ship abilities",
+    "description": "Industrial repair pump drives a low liquid resonance through emitter clamps",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-fortressPulse-1.wav",
+      "ability-frigate-fortressPulse-2.wav",
+      "ability-frigate-fortressPulse-3.wav",
+      "ability-frigate-fortressPulse-4.wav",
+      "ability-frigate-fortressPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.05,
+    "sources": [
+      "bubbles",
+      "compressor",
+      "spring",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.wardenTether": {
+    "label": "Warden Tether",
+    "group": "Ship abilities",
+    "description": "Cable capture clack, sliding tensile metal, surging liquid current",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-wardenTether-1.wav",
+      "ability-frigate-wardenTether-2.wav",
+      "ability-frigate-wardenTether-3.wav",
+      "ability-frigate-wardenTether-4.wav",
+      "ability-frigate-wardenTether-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.55,
+    "sources": [
+      "spring-handle",
+      "tensioner",
+      "water",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.citadel": {
+    "label": "Node Citadel",
+    "group": "Ship abilities",
+    "description": "Five staggered anchor mechanisms with a massive resonating foundation",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-citadel-1.wav",
+      "ability-frigate-citadel-2.wav",
+      "ability-frigate-citadel-3.wav",
+      "ability-frigate-citadel-4.wav",
+      "ability-frigate-citadel-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.4,
+    "sources": [
+      "chain",
+      "compressor",
+      "ratchet",
+      "slam",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.frigate.sanctuary": {
+    "label": "Aegis Sanctuary",
+    "group": "Ship abilities",
+    "description": "Wide liquid protective bloom settles into a resonating glass shelter",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-frigate-sanctuary-1.wav",
+      "ability-frigate-sanctuary-2.wav",
+      "ability-frigate-sanctuary-3.wav",
+      "ability-frigate-sanctuary-4.wav",
+      "ability-frigate-sanctuary-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.5,
+    "sources": [
+      "bubbles",
+      "compressor",
+      "dryice",
+      "glass-knock"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.heavyTorpedo": {
+    "label": "Heavy Torpedo",
+    "group": "Ship abilities",
+    "description": "Heavy tube door, hard ejector, then delayed throaty ignition",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-heavyTorpedo-1.wav",
+      "ability-destroyer-heavyTorpedo-2.wav",
+      "ability-destroyer-heavyTorpedo-3.wav",
+      "ability-destroyer-heavyTorpedo-4.wav",
+      "ability-destroyer-heavyTorpedo-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.65,
+    "sources": [
+      "drill-load",
+      "slam",
+      "slide",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.evasiveBurn": {
+    "label": "Evasive Burn",
+    "group": "Ship abilities",
+    "description": "Asymmetric retro-jets answer a hard pressure valve",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-evasiveBurn-1.wav",
+      "ability-destroyer-evasiveBurn-2.wav",
+      "ability-destroyer-evasiveBurn-3.wav",
+      "ability-destroyer-evasiveBurn-4.wav",
+      "ability-destroyer-evasiveBurn-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.0,
+    "sources": [
+      "servo",
+      "switch",
+      "water",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.torpedoSpread": {
+    "label": "Torpedo Spread",
+    "group": "Ship abilities",
+    "description": "Three clearly staggered tube releases followed by interleaved motor growls",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-torpedoSpread-1.wav",
+      "ability-destroyer-torpedoSpread-2.wav",
+      "ability-destroyer-torpedoSpread-3.wav",
+      "ability-destroyer-torpedoSpread-4.wav",
+      "ability-destroyer-torpedoSpread-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.8,
+    "sources": [
+      "drill-load",
+      "slam",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.flakCurtain": {
+    "label": "Flak Curtain",
+    "group": "Ship abilities",
+    "description": "Dry metal canisters chatter, followed by granular shrapnel punctuation",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-flakCurtain-1.wav",
+      "ability-destroyer-flakCurtain-2.wav",
+      "ability-destroyer-flakCurtain-3.wav",
+      "ability-destroyer-flakCurtain-4.wav",
+      "ability-destroyer-flakCurtain-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.4,
+    "sources": [
+      "mirror",
+      "ratchet",
+      "shutter",
+      "steel",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.tubeSalvo": {
+    "label": "Tube Salvo",
+    "group": "Ship abilities",
+    "description": "Tube bank unlocks in a descending four-step mechanical ratchet",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-tubeSalvo-1.wav",
+      "ability-destroyer-tubeSalvo-2.wav",
+      "ability-destroyer-tubeSalvo-3.wav",
+      "ability-destroyer-tubeSalvo-4.wav",
+      "ability-destroyer-tubeSalvo-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.95,
+    "sources": [
+      "breaker",
+      "servo",
+      "switch",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.destroyer.empWarhead": {
+    "label": "EMP Warhead",
+    "group": "Ship abilities",
+    "description": "Capacitor contact is punctured by a rasping electromagnetic rupture",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-destroyer-empWarhead-1.wav",
+      "ability-destroyer-empWarhead-2.wav",
+      "ability-destroyer-empWarhead-3.wav",
+      "ability-destroyer-empWarhead-4.wav",
+      "ability-destroyer-empWarhead-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.9,
+    "sources": [
+      "breaker",
+      "dryice",
+      "transformer",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.cruiser.shieldBattery": {
+    "label": "Shield Harmonic Battery",
+    "group": "Ship abilities",
+    "description": "Dense coil contactor closes into a loaded crystalline field",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-cruiser-shieldBattery-1.wav",
+      "ability-cruiser-shieldBattery-2.wav",
+      "ability-cruiser-shieldBattery-3.wav",
+      "ability-cruiser-shieldBattery-4.wav",
+      "ability-cruiser-shieldBattery-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.55,
+    "sources": [
+      "breaker",
+      "glass-knock",
+      "spring",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.cruiser.vlsPod": {
+    "label": "VLS Breacher Pod",
+    "group": "Ship abilities",
+    "description": "Four rising cell lids and hot segmented motor catches",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-cruiser-vlsPod-1.wav",
+      "ability-cruiser-vlsPod-2.wav",
+      "ability-cruiser-vlsPod-3.wav",
+      "ability-cruiser-vlsPod-4.wav",
+      "ability-cruiser-vlsPod-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.65,
+    "sources": [
+      "ratchet",
+      "servo",
+      "shutter",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.cruiser.aegisPulse": {
+    "label": "Fleet Aegis Pulse",
+    "group": "Ship abilities",
+    "description": "Distributed glass ribs unfurl around a rolling magnetic pulse",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-cruiser-aegisPulse-1.wav",
+      "ability-cruiser-aegisPulse-2.wav",
+      "ability-cruiser-aegisPulse-3.wav",
+      "ability-cruiser-aegisPulse-4.wav",
+      "ability-cruiser-aegisPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.15,
+    "sources": [
+      "glass-knock",
+      "mirror",
+      "neon",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.cruiser.overclock": {
+    "label": "Battery Overclock",
+    "group": "Ship abilities",
+    "description": "A mechanical escapement accelerates and locks into a searing coil",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-cruiser-overclock-1.wav",
+      "ability-cruiser-overclock-2.wav",
+      "ability-cruiser-overclock-3.wav",
+      "ability-cruiser-overclock-4.wav",
+      "ability-cruiser-overclock-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.8,
+    "sources": [
+      "breaker",
+      "drill",
+      "film",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.cruiser.ionLance": {
+    "label": "Ion Lance",
+    "group": "Ship abilities",
+    "description": "Wire-like ionization rip with a sharp corona tear and electric recoil",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-cruiser-ionLance-1.wav",
+      "ability-cruiser-ionLance-2.wav",
+      "ability-cruiser-ionLance-3.wav",
+      "ability-cruiser-ionLance-4.wav",
+      "ability-cruiser-ionLance-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.55,
+    "sources": [
+      "glass",
+      "ratchet",
+      "spring",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battlecruiser.ramBurn": {
+    "label": "Overdrive Ram Burn",
+    "group": "Ship abilities",
+    "description": "Heavy locking piston drives a sustained exhaust compression",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battlecruiser-ramBurn-1.wav",
+      "ability-battlecruiser-ramBurn-2.wav",
+      "ability-battlecruiser-ramBurn-3.wav",
+      "ability-battlecruiser-ramBurn-4.wav",
+      "ability-battlecruiser-ramBurn-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.5,
+    "sources": [
+      "chain",
+      "drill-load",
+      "slam",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battlecruiser.microJump": {
+    "label": "Micro-Jump Strike",
+    "group": "Ship abilities",
+    "description": "Massive aperture inhales, rips open and reseats with two iron jaws",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battlecruiser-microJump-1.wav",
+      "ability-battlecruiser-microJump-2.wav",
+      "ability-battlecruiser-microJump-3.wav",
+      "ability-battlecruiser-microJump-4.wav",
+      "ability-battlecruiser-microJump-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.7,
+    "sources": [
+      "dryice",
+      "hinge",
+      "steel",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battlecruiser.ironcladRam": {
+    "label": "Ironclad Ram",
+    "group": "Ship abilities",
+    "description": "Interlocking armor slabs step into a huge rough piston impulse",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battlecruiser-ironcladRam-1.wav",
+      "ability-battlecruiser-ironcladRam-2.wav",
+      "ability-battlecruiser-ironcladRam-3.wav",
+      "ability-battlecruiser-ironcladRam-4.wav",
+      "ability-battlecruiser-ironcladRam-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.7,
+    "sources": [
+      "ratchet",
+      "slam",
+      "starter",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battlecruiser.devastator": {
+    "label": "Devastator Salvo",
+    "group": "Ship abilities",
+    "description": "Dense segmented breeches fire under a tearing plasma throat",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battlecruiser-devastator-1.wav",
+      "ability-battlecruiser-devastator-2.wav",
+      "ability-battlecruiser-devastator-3.wav",
+      "ability-battlecruiser-devastator-4.wav",
+      "ability-battlecruiser-devastator-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.95,
+    "sources": [
+      "pan",
+      "ratchet",
+      "steel",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battlecruiser.overload": {
+    "label": "Reactor Overload",
+    "group": "Ship abilities",
+    "description": "Reactor restraints successively release as bearings climb into saturation",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battlecruiser-overload-1.wav",
+      "ability-battlecruiser-overload-2.wav",
+      "ability-battlecruiser-overload-3.wav",
+      "ability-battlecruiser-overload-4.wav",
+      "ability-battlecruiser-overload-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.35,
+    "sources": [
+      "breaker",
+      "tensioner",
+      "washer",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battleship.bulwark": {
+    "label": "Bulwark Plating Matrix",
+    "group": "Ship abilities",
+    "description": "A segmented armor wall clamps shut and pressurises",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battleship-bulwark-1.wav",
+      "ability-battleship-bulwark-2.wav",
+      "ability-battleship-bulwark-3.wav",
+      "ability-battleship-bulwark-4.wav",
+      "ability-battleship-bulwark-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "chain",
+      "compressor",
+      "slam",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battleship.aegisMirror": {
+    "label": "Aegis Mirror",
+    "group": "Ship abilities",
+    "description": "Faceted mirror segments reverse into a hard singing metallic seal",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battleship-aegisMirror-1.wav",
+      "ability-battleship-aegisMirror-2.wav",
+      "ability-battleship-aegisMirror-3.wav",
+      "ability-battleship-aegisMirror-4.wav",
+      "ability-battleship-aegisMirror-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.0,
+    "sources": [
+      "glass-knock",
+      "mirror",
+      "spring-handle",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battleship.thermalOverdrive": {
+    "label": "Thermal Overdrive",
+    "group": "Ship abilities",
+    "description": "Cooling plant violently vents and a loaded industrial rotor bites",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battleship-thermalOverdrive-1.wav",
+      "ability-battleship-thermalOverdrive-2.wav",
+      "ability-battleship-thermalOverdrive-3.wav",
+      "ability-battleship-thermalOverdrive-4.wav",
+      "ability-battleship-thermalOverdrive-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.15,
+    "sources": [
+      "compressor",
+      "drill-load",
+      "water",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battleship.siege": {
+    "label": "Siege Bastion",
+    "group": "Ship abilities",
+    "description": "Grounding anchors thump in sequence; a giant breech rotates and locks",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battleship-siege-1.wav",
+      "ability-battleship-siege-2.wav",
+      "ability-battleship-siege-3.wav",
+      "ability-battleship-siege-4.wav",
+      "ability-battleship-siege-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.6,
+    "sources": [
+      "ratchet",
+      "servo",
+      "slam",
+      "steel",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.battleship.aegisDome": {
+    "label": "Aegis Dome",
+    "group": "Ship abilities",
+    "description": "Deep distributed field ribs inflate beneath resonating crystalline skin",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-battleship-aegisDome-1.wav",
+      "ability-battleship-aegisDome-2.wav",
+      "ability-battleship-aegisDome-3.wav",
+      "ability-battleship-aegisDome-4.wav",
+      "ability-battleship-aegisDome-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.75,
+    "sources": [
+      "breaker",
+      "dryice",
+      "spring",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.dreadnought.railBeam": {
+    "label": "Hyper-Velocity Rail Beam",
+    "group": "Ship abilities",
+    "description": "Huge spinal acceleration rip and receding serrated iron resonance",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-dreadnought-railBeam-1.wav",
+      "ability-dreadnought-railBeam-2.wav",
+      "ability-dreadnought-railBeam-3.wav",
+      "ability-dreadnought-railBeam-4.wav",
+      "ability-dreadnought-railBeam-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.95,
+    "sources": [
+      "dryice",
+      "glass",
+      "steel-double",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.dreadnought.railstorm": {
+    "label": "Railstorm",
+    "group": "Ship abilities",
+    "description": "Three unmistakable asymmetric rail ruptures with interleaving recoil",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-dreadnought-railstorm-1.wav",
+      "ability-dreadnought-railstorm-2.wav",
+      "ability-dreadnought-railstorm-3.wav",
+      "ability-dreadnought-railstorm-4.wav",
+      "ability-dreadnought-railstorm-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.1,
+    "sources": [
+      "dryice",
+      "steel",
+      "steel-double",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.dreadnought.eventHorizon": {
+    "label": "Event Horizon",
+    "group": "Ship abilities",
+    "description": "A collapsing industrial throat draws metallic fragments inward",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-dreadnought-eventHorizon-1.wav",
+      "ability-dreadnought-eventHorizon-2.wav",
+      "ability-dreadnought-eventHorizon-3.wav",
+      "ability-dreadnought-eventHorizon-4.wav",
+      "ability-dreadnought-eventHorizon-5.wav"
+    ],
+    "loop": false,
+    "duration": 3.3,
+    "sources": [
+      "chain",
+      "dryice",
+      "steel-double",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.dreadnought.orbitalLance": {
+    "label": "Orbital Lance",
+    "group": "Ship abilities",
+    "description": "Targeting clamps step into a long high-tension orbital coupling",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-dreadnought-orbitalLance-1.wav",
+      "ability-dreadnought-orbitalLance-2.wav",
+      "ability-dreadnought-orbitalLance-3.wav",
+      "ability-dreadnought-orbitalLance-4.wav",
+      "ability-dreadnought-orbitalLance-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.0,
+    "sources": [
+      "breaker",
+      "neon",
+      "reel",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.dreadnought.gravityWave": {
+    "label": "Graviton Wave",
+    "group": "Ship abilities",
+    "description": "A reversed pressure front folds into a broad downward metal whip",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-dreadnought-gravityWave-1.wav",
+      "ability-dreadnought-gravityWave-2.wav",
+      "ability-dreadnought-gravityWave-3.wav",
+      "ability-dreadnought-gravityWave-4.wav",
+      "ability-dreadnought-gravityWave-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.45,
+    "sources": [
+      "dryice",
+      "spring-handle",
+      "steel",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.carrier.scramble": {
+    "label": "Scramble Strike Wing",
+    "group": "Ship abilities",
+    "description": "Four hangar latch releases and uneven turbine departures",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-carrier-scramble-1.wav",
+      "ability-carrier-scramble-2.wav",
+      "ability-carrier-scramble-3.wav",
+      "ability-carrier-scramble-4.wav",
+      "ability-carrier-scramble-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.95,
+    "sources": [
+      "film",
+      "ratchet-small",
+      "servo",
+      "shutter",
+      "slam"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.carrier.hiveSwarm": {
+    "label": "Launch Swarm",
+    "group": "Ship abilities",
+    "description": "Seven clustered induction insects emerge in a rough expanding chatter",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-carrier-hiveSwarm-1.wav",
+      "ability-carrier-hiveSwarm-2.wav",
+      "ability-carrier-hiveSwarm-3.wav",
+      "ability-carrier-hiveSwarm-4.wav",
+      "ability-carrier-hiveSwarm-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.2,
+    "sources": [
+      "autofocus",
+      "film",
+      "reel",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.carrier.empPulse": {
+    "label": "Fleet EMP Pulse",
+    "group": "Ship abilities",
+    "description": "A fleet-scale relay cascade empties into a torn magnetic front",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-carrier-empPulse-1.wav",
+      "ability-carrier-empPulse-2.wav",
+      "ability-carrier-empPulse-3.wav",
+      "ability-carrier-empPulse-4.wav",
+      "ability-carrier-empPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.4,
+    "sources": [
+      "breaker",
+      "glass",
+      "neon",
+      "transformer",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.carrier.bastionDeck": {
+    "label": "Bastion Flight Deck",
+    "group": "Ship abilities",
+    "description": "Flight deck panels unlock, defensive mounts ratchet, rotors stagger away",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-carrier-bastionDeck-1.wav",
+      "ability-carrier-bastionDeck-2.wav",
+      "ability-carrier-bastionDeck-3.wav",
+      "ability-carrier-bastionDeck-4.wav",
+      "ability-carrier-bastionDeck-5.wav"
+    ],
+    "loop": false,
+    "duration": 2.75,
+    "sources": [
+      "chain",
+      "ratchet",
+      "servo",
+      "slide",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ability.carrier.valkyrie": {
+    "label": "Valkyrie Run",
+    "group": "Ship abilities",
+    "description": "Remote volley synchronizer and a sharply staggered pair of launch swarms",
+    "bus": "world",
+    "gain": 0.7,
+    "priority": 72,
+    "range": 8000,
+    "files": [
+      "ability-carrier-valkyrie-1.wav",
+      "ability-carrier-valkyrie-2.wav",
+      "ability-carrier-valkyrie-3.wav",
+      "ability-carrier-valkyrie-4.wav",
+      "ability-carrier-valkyrie-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.8,
+    "sources": [
+      "autofocus",
+      "film",
+      "servo",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "engine.patrol": {
+    "label": "Patrol drive",
+    "group": "Continuous",
+    "description": "Tight brush motor with spring-like induction texture",
+    "bus": "engines",
+    "gain": 0.27,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-patrol-1.wav",
+      "engine-patrol-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.19383333,
+        "loopEnd": 7.41479167,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.28445833,
+        "loopEnd": 8.0194375,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.corvette": {
+    "label": "Corvette drive",
+    "group": "Continuous",
+    "description": "Stealth servo throat with low frictional phase modulation",
+    "bus": "engines",
+    "gain": 0.17,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-corvette-1.wav",
+      "engine-corvette-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "autofocus",
+      "hinge"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.270375,
+        "loopEnd": 7.57133333,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.856625,
+        "loopEnd": 7.9921875,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.frigate": {
+    "label": "Frigate drive",
+    "group": "Continuous",
+    "description": "Liquid pump circulation and fine winding bearings",
+    "bus": "engines",
+    "gain": 0.32,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-frigate-1.wav",
+      "engine-frigate-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "bubbles",
+      "compressor"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.2660625,
+        "loopEnd": 7.99341667,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.96910417,
+        "loopEnd": 6.90585417,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.destroyer": {
+    "label": "Destroyer drive",
+    "group": "Continuous",
+    "description": "Loaded combustion-like rotor and chattering mechanical bearings",
+    "bus": "engines",
+    "gain": 0.35,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-destroyer-1.wav",
+      "engine-destroyer-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill-load",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.52054167,
+        "loopEnd": 7.743375,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.47166667,
+        "loopEnd": 7.77904167,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.cruiser": {
+    "label": "Cruiser drive",
+    "group": "Continuous",
+    "description": "Coherent induction turbine with resonating tension coils",
+    "bus": "engines",
+    "gain": 0.39,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-cruiser-1.wav",
+      "engine-cruiser-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.10114583,
+        "loopEnd": 7.08295833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.91847917,
+        "loopEnd": 7.613125,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.battlecruiser": {
+    "label": "Battlecruiser drive",
+    "group": "Continuous",
+    "description": "Rough lower plasma furnace and stressed drive train",
+    "bus": "engines",
+    "gain": 0.44,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-battlecruiser-1.wav",
+      "engine-battlecruiser-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "washer",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.04254167,
+        "loopEnd": 7.81085417,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.65966667,
+        "loopEnd": 7.31720833,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.battleship": {
+    "label": "Battleship drive",
+    "group": "Continuous",
+    "description": "Heavy pulsed compressor pistons and large resonating rotor",
+    "bus": "engines",
+    "gain": 0.46,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-battleship-1.wav",
+      "engine-battleship-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "compressor",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.65845833,
+        "loopEnd": 7.25216667,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.20452083,
+        "loopEnd": 6.9095,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.dreadnought": {
+    "label": "Dreadnought drive",
+    "group": "Continuous",
+    "description": "Substantial magnetic mass, slow stator modulation and metal stress",
+    "bus": "engines",
+    "gain": 0.5,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-dreadnought-1.wav",
+      "engine-dreadnought-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "dryice",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.59125,
+        "loopEnd": 7.52164583,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.35583333,
+        "loopEnd": 7.02041667,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.carrier": {
+    "label": "Carrier drive",
+    "group": "Continuous",
+    "description": "Multiple small uneven rotors above a large deck generator",
+    "bus": "engines",
+    "gain": 0.3,
+    "priority": 24,
+    "range": 3000,
+    "files": [
+      "engine-carrier-1.wav",
+      "engine-carrier-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "film",
+      "servo"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.59966667,
+        "loopEnd": 7.7975,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.19735417,
+        "loopEnd": 7.56716667,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "weapon.secondary": {
+    "label": "Secondary battery",
+    "group": "Weapons",
+    "description": "Secondary battery \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "weapon-secondary-1.wav",
+      "weapon-secondary-2.wav",
+      "weapon-secondary-3.wav",
+      "weapon-secondary-4.wav",
+      "weapon-secondary-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.turret": {
+    "label": "Structure turret",
+    "group": "Weapons",
+    "description": "Structure turret \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet-small recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "weapon-turret-1.wav",
+      "weapon-turret-2.wav",
+      "weapon-turret-3.wav",
+      "weapon-turret-4.wav",
+      "weapon-turret-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet-small"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.drone": {
+    "label": "Drone gun",
+    "group": "Weapons",
+    "description": "Drone gun \u2014 atonal recorded pressure crack, compact blast body and restrained film recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "weapon-drone-1.wav",
+      "weapon-drone-2.wav",
+      "weapon-drone-3.wav",
+      "weapon-drone-4.wav",
+      "weapon-drone-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.ordnance": {
+    "label": "Ordnance tube",
+    "group": "Weapons",
+    "description": "Ordnance tube \u2014 atonal recorded pressure crack, compact blast body and restrained slide recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "weapon-ordnance-1.wav",
+      "weapon-ordnance-2.wav",
+      "weapon-ordnance-3.wav",
+      "weapon-ordnance-4.wav",
+      "weapon-ordnance-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "weapon.flyby": {
+    "label": "Projectile flyby",
+    "group": "Weapons",
+    "description": "Projectile flyby \u2014 spring, dryice transformed with shear>coil, vacuum",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "weapon-flyby-1.wav",
+      "weapon-flyby-2.wav",
+      "weapon-flyby-3.wav",
+      "weapon-flyby-4.wav",
+      "weapon-flyby-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.32,
+    "sources": [
+      "dryice",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.shield": {
+    "label": "Shield contact",
+    "group": "Impacts",
+    "description": "Shield contact \u2014 glass-knock, spring, neon transformed with glass, coil>magnetic, radio",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 8000,
+    "files": [
+      "impact-shield-1.wav",
+      "impact-shield-2.wav",
+      "impact-shield-3.wav",
+      "impact-shield-4.wav",
+      "impact-shield-5.wav",
+      "impact-shield-6.wav",
+      "impact-shield-7.wav",
+      "impact-shield-8.wav",
+      "impact-shield-9.wav"
+    ],
+    "loop": false,
+    "duration": 0.32,
+    "sources": [
+      "glass-knock",
+      "neon",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.armor": {
+    "label": "Armor penetration",
+    "group": "Impacts",
+    "description": "Twelve varied plate strikes: metal punch, brittle spall, short loose mechanical fragments.",
+    "bus": "world",
+    "gain": 0.6,
+    "priority": 50,
+    "range": 8000,
+    "files": [
+      "impact-armor-1.wav",
+      "impact-armor-2.wav",
+      "impact-armor-3.wav",
+      "impact-armor-4.wav",
+      "impact-armor-5.wav",
+      "impact-armor-6.wav",
+      "impact-armor-7.wav",
+      "impact-armor-8.wav",
+      "impact-armor-9.wav",
+      "impact-armor-10.wav",
+      "impact-armor-11.wav",
+      "impact-armor-12.wav"
+    ],
+    "loop": false,
+    "duration": 0.29,
+    "sources": [
+      "anvil",
+      "chain",
+      "glass-knock",
+      "mirror",
+      "pan",
+      "ratchet",
+      "slam",
+      "steel",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.ricochet": {
+    "label": "Armor glance",
+    "group": "Impacts",
+    "description": "Armor glance \u2014 anvil, spring-handle, steel transformed with ceramic, shear>glass, fracture",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 8000,
+    "files": [
+      "impact-ricochet-1.wav",
+      "impact-ricochet-2.wav",
+      "impact-ricochet-3.wav",
+      "impact-ricochet-4.wav",
+      "impact-ricochet-5.wav",
+      "impact-ricochet-6.wav",
+      "impact-ricochet-7.wav",
+      "impact-ricochet-8.wav",
+      "impact-ricochet-9.wav"
+    ],
+    "loop": false,
+    "duration": 0.25,
+    "sources": [
+      "anvil",
+      "spring-handle",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.shieldBreak": {
+    "label": "Shield collapse",
+    "group": "Impacts",
+    "description": "Shield collapse \u2014 mirror, transformer, weld-burst, breaker transformed with glass>fracture, magnetic>radio, fracture, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 8000,
+    "files": [
+      "impact-shieldBreak-1.wav",
+      "impact-shieldBreak-2.wav",
+      "impact-shieldBreak-3.wav",
+      "impact-shieldBreak-4.wav",
+      "impact-shieldBreak-5.wav",
+      "impact-shieldBreak-6.wav",
+      "impact-shieldBreak-7.wav",
+      "impact-shieldBreak-8.wav",
+      "impact-shieldBreak-9.wav"
+    ],
+    "loop": false,
+    "duration": 0.7,
+    "sources": [
+      "breaker",
+      "mirror",
+      "transformer",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.explosion": {
+    "label": "Warhead detonation",
+    "group": "Impacts",
+    "description": "Warhead detonation \u2014 slam, thunder, steel-double, mirror, pan transformed with iron, pressure, fracture>iron, grain",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 75,
+    "range": 12500,
+    "files": [
+      "impact-explosion-1.wav",
+      "impact-explosion-2.wav",
+      "impact-explosion-3.wav",
+      "impact-explosion-4.wav",
+      "impact-explosion-5.wav",
+      "impact-explosion-6.wav",
+      "impact-explosion-7.wav",
+      "impact-explosion-8.wav",
+      "impact-explosion-9.wav"
+    ],
+    "loop": false,
+    "duration": 2.15,
+    "sources": [
+      "mirror",
+      "pan",
+      "slam",
+      "steel-double",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.death": {
+    "label": "Ship breakup",
+    "group": "Impacts",
+    "description": "Ship breakup \u2014 steel-double, thunder, dryice, pan, chain transformed with iron, pressure, shear>plasma, fracture, grain",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 75,
+    "range": 12500,
+    "files": [
+      "impact-death-1.wav",
+      "impact-death-2.wav",
+      "impact-death-3.wav",
+      "impact-death-4.wav",
+      "impact-death-5.wav",
+      "impact-death-6.wav",
+      "impact-death-7.wav",
+      "impact-death-8.wav",
+      "impact-death-9.wav"
+    ],
+    "loop": false,
+    "duration": 3.0,
+    "sources": [
+      "chain",
+      "dryice",
+      "pan",
+      "steel-double",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.structure": {
+    "label": "Capital structure collapse",
+    "group": "Impacts",
+    "description": "Capital structure collapse \u2014 slam, steel-double, thunder, dryice, chain, pan transformed with iron, iron>magnetic, pressure, shear>plasma, grain>iron, fracture",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 75,
+    "range": 12500,
+    "files": [
+      "impact-structure-1.wav",
+      "impact-structure-2.wav",
+      "impact-structure-3.wav",
+      "impact-structure-4.wav",
+      "impact-structure-5.wav",
+      "impact-structure-6.wav",
+      "impact-structure-7.wav",
+      "impact-structure-8.wav",
+      "impact-structure-9.wav"
+    ],
+    "loop": false,
+    "duration": 4.3,
+    "sources": [
+      "chain",
+      "dryice",
+      "pan",
+      "slam",
+      "steel-double",
+      "thunder"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "impact.strike": {
+    "label": "Orbital impact",
+    "group": "Impacts",
+    "description": "Orbital impact \u2014 spring, steel, thunder, welding, glass transformed with shear, magnetic>iron, pressure, plasma, grain>fracture",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 75,
+    "range": 12500,
+    "files": [
+      "impact-strike-1.wav",
+      "impact-strike-2.wav",
+      "impact-strike-3.wav",
+      "impact-strike-4.wav",
+      "impact-strike-5.wav",
+      "impact-strike-6.wav",
+      "impact-strike-7.wav",
+      "impact-strike-8.wav",
+      "impact-strike-9.wav"
+    ],
+    "loop": false,
+    "duration": 3.7,
+    "sources": [
+      "glass",
+      "spring",
+      "steel",
+      "thunder",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.shieldRestored": {
+    "label": "Shield restored",
+    "group": "Pilot feedback",
+    "description": "Shield restored \u2014 spring, switch, glass-knock transformed with glass>coil, ceramic, glass",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-shieldRestored-1.wav",
+      "status-shieldRestored-2.wav",
+      "status-shieldRestored-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.5,
+    "sources": [
+      "glass-knock",
+      "spring",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.healed": {
+    "label": "Repair received",
+    "group": "Pilot feedback",
+    "description": "Repair received \u2014 bubbles, water, shutter transformed with glass>magnetic, warm, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-healed-1.wav",
+      "status-healed-2.wav",
+      "status-healed-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.5,
+    "sources": [
+      "bubbles",
+      "shutter",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.critical": {
+    "label": "Critical hull",
+    "group": "Pilot feedback",
+    "description": "Critical hull \u2014 neon, breaker transformed with radio>plasma, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-critical-1.wav",
+      "status-critical-2.wav",
+      "status-critical-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.8,
+    "sources": [
+      "breaker",
+      "neon"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.overheat": {
+    "label": "Weapon overheated",
+    "group": "Pilot feedback",
+    "description": "Weapon overheated \u2014 compressor, weld-burst, breaker transformed with plasma>pressure, fracture, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-overheat-1.wav",
+      "status-overheat-2.wav",
+      "status-overheat-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.5,
+    "sources": [
+      "breaker",
+      "compressor",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.ready": {
+    "label": "Ability ready",
+    "group": "Pilot feedback",
+    "description": "Ability ready \u2014 autofocus, shutter transformed with servo>ceramic, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-ready-1.wav",
+      "status-ready-2.wav",
+      "status-ready-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.41,
+    "sources": [
+      "autofocus",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.upgradeReady": {
+    "label": "Upgrade available",
+    "group": "Pilot feedback",
+    "description": "Upgrade available \u2014 film, switch transformed with radio, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-upgradeReady-1.wav",
+      "status-upgradeReady-2.wav",
+      "status-upgradeReady-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.5,
+    "sources": [
+      "film",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.upgrade": {
+    "label": "Upgrade installed",
+    "group": "Pilot feedback",
+    "description": "Upgrade installed \u2014 ratchet-small, servo, slam transformed with iron, coil",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-upgrade-1.wav",
+      "status-upgrade-2.wav",
+      "status-upgrade-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.5,
+    "sources": [
+      "ratchet-small",
+      "servo",
+      "slam"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.kill": {
+    "label": "Kill confirmation",
+    "group": "Pilot feedback",
+    "description": "Kill confirmation \u2014 breaker, steel transformed with iron, ceramic>radio",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-kill-1.wav",
+      "status-kill-2.wav",
+      "status-kill-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.42,
+    "sources": [
+      "breaker",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.damage": {
+    "label": "Cockpit impact",
+    "group": "Pilot feedback",
+    "description": "Cockpit impact \u2014 pan, shutter transformed with pressure, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-damage-1.wav",
+      "status-damage-2.wav",
+      "status-damage-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.44,
+    "sources": [
+      "pan",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.jam": {
+    "label": "Systems jammed",
+    "group": "Pilot feedback",
+    "description": "Systems jammed \u2014 printer, neon transformed with radio>grain, coil>radio",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-jam-1.wav",
+      "status-jam-2.wav",
+      "status-jam-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.85,
+    "sources": [
+      "neon",
+      "printer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.pickup": {
+    "label": "Shard collection",
+    "group": "Pilot feedback",
+    "description": "Shard collection \u2014 glass-knock, bubbles transformed with ceramic, glass",
+    "bus": "ui",
+    "gain": 0.13,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "status-pickup-1.wav",
+      "status-pickup-2.wav",
+      "status-pickup-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.25,
+    "sources": [
+      "bubbles",
+      "glass-knock"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.charge": {
+    "label": "Drive priming",
+    "group": "Movement",
+    "description": "Drive priming \u2014 switch, drill, starter transformed with iron, coil>plasma, pressure",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-charge-1.wav",
+      "movement-charge-2.wav",
+      "movement-charge-3.wav",
+      "movement-charge-4.wav",
+      "movement-charge-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.7,
+    "sources": [
+      "drill",
+      "starter",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.engage": {
+    "label": "Sublight ignition",
+    "group": "Movement",
+    "description": "Sublight ignition \u2014 steel, dryice, drill-load transformed with iron, vacuum>plasma, coil>pressure",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-engage-1.wav",
+      "movement-engage-2.wav",
+      "movement-engage-3.wav",
+      "movement-engage-4.wav",
+      "movement-engage-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.65,
+    "sources": [
+      "drill-load",
+      "dryice",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.disengage": {
+    "label": "Sublight bleed-off",
+    "group": "Movement",
+    "description": "Sublight bleed-off \u2014 compressor, spring, ratchet transformed with plasma>pressure, shear, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-disengage-1.wav",
+      "movement-disengage-2.wav",
+      "movement-disengage-3.wav",
+      "movement-disengage-4.wav",
+      "movement-disengage-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.65,
+    "sources": [
+      "compressor",
+      "ratchet",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.abort": {
+    "label": "Drive charge aborted",
+    "group": "Movement",
+    "description": "Drive charge aborted \u2014 drill, breaker transformed with coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-abort-1.wav",
+      "movement-abort-2.wav",
+      "movement-abort-3.wav",
+      "movement-abort-4.wav",
+      "movement-abort-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.58,
+    "sources": [
+      "breaker",
+      "drill"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.brake": {
+    "label": "Retro brake",
+    "group": "Movement",
+    "description": "Retro brake \u2014 water, servo, switch transformed with vacuum>pressure, plasma>coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-brake-1.wav",
+      "movement-brake-2.wav",
+      "movement-brake-3.wav",
+      "movement-brake-4.wav",
+      "movement-brake-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.6,
+    "sources": [
+      "servo",
+      "switch",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.reverse": {
+    "label": "Reverse gear shunt",
+    "group": "Movement",
+    "description": "Reverse gear shunt \u2014 ratchet, servo, slam transformed with iron, servo",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-reverse-1.wav",
+      "movement-reverse-2.wav",
+      "movement-reverse-3.wav",
+      "movement-reverse-4.wav",
+      "movement-reverse-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.6,
+    "sources": [
+      "ratchet",
+      "servo",
+      "slam"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.power": {
+    "label": "Reactor shunt",
+    "group": "Movement",
+    "description": "Reactor shunt \u2014 breaker, transformer transformed with iron, magnetic>coil",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-power-1.wav",
+      "movement-power-2.wav",
+      "movement-power-3.wav",
+      "movement-power-4.wav",
+      "movement-power-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.65,
+    "sources": [
+      "breaker",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "movement.launch": {
+    "label": "Hull deployment",
+    "group": "Movement",
+    "description": "Hull deployment \u2014 slide, ratchet, servo, slam transformed with iron, grain, coil>plasma",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 50,
+    "range": 6500,
+    "files": [
+      "movement-launch-1.wav",
+      "movement-launch-2.wav",
+      "movement-launch-3.wav",
+      "movement-launch-4.wav",
+      "movement-launch-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.1,
+    "sources": [
+      "ratchet",
+      "servo",
+      "slam",
+      "slide"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.capture": {
+    "label": "Node secured",
+    "group": "Objectives",
+    "description": "Node secured \u2014 ratchet-small, spring, switch transformed with ceramic, glass>coil, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-capture-1.wav",
+      "world-capture-2.wav",
+      "world-capture-3.wav"
+    ],
+    "loop": false,
+    "duration": 1.2,
+    "sources": [
+      "ratchet-small",
+      "spring",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.lost": {
+    "label": "Node lost",
+    "group": "Objectives",
+    "description": "Node lost \u2014 neon, breaker, hinge transformed with radio>magnetic, iron, shear",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-lost-1.wav",
+      "world-lost-2.wav",
+      "world-lost-3.wav"
+    ],
+    "loop": false,
+    "duration": 1.05,
+    "sources": [
+      "breaker",
+      "hinge",
+      "neon"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.contested": {
+    "label": "Node contested",
+    "group": "Objectives",
+    "description": "Node contested \u2014 printer, breaker transformed with radio, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-contested-1.wav",
+      "world-contested-2.wav",
+      "world-contested-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.85,
+    "sources": [
+      "breaker",
+      "printer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.ping": {
+    "label": "Fleet ping",
+    "group": "Objectives",
+    "description": "Fleet ping \u2014 glass-knock, spring-handle transformed with glass, coil>radio",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-ping-1.wav",
+      "world-ping-2.wav",
+      "world-ping-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.54,
+    "sources": [
+      "glass-knock",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.strikeWarning": {
+    "label": "Incoming strike",
+    "group": "Objectives",
+    "description": "Incoming strike \u2014 neon, spring transformed with radio>plasma, coil",
+    "bus": "world",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 9000,
+    "files": [
+      "world-strikeWarning-1.wav",
+      "world-strikeWarning-2.wav",
+      "world-strikeWarning-3.wav"
+    ],
+    "loop": false,
+    "duration": 1.3,
+    "sources": [
+      "neon",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.deploy": {
+    "label": "Deployment mechanism",
+    "group": "Objectives",
+    "description": "Deployment mechanism \u2014 ratchet, servo, slam transformed with iron, servo",
+    "bus": "world",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 9000,
+    "files": [
+      "world-deploy-1.wav",
+      "world-deploy-2.wav",
+      "world-deploy-3.wav"
+    ],
+    "loop": false,
+    "duration": 1.15,
+    "sources": [
+      "ratchet",
+      "servo",
+      "slam"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.victory": {
+    "label": "Victory power-down",
+    "group": "Objectives",
+    "description": "Victory power-down \u2014 film, spring-handle, compressor, switch transformed with warm, glass, pressure, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-victory-1.wav",
+      "world-victory-2.wav",
+      "world-victory-3.wav"
+    ],
+    "loop": false,
+    "duration": 2.3,
+    "sources": [
+      "compressor",
+      "film",
+      "spring-handle",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "world.defeat": {
+    "label": "Defeat systems collapse",
+    "group": "Objectives",
+    "description": "Defeat systems collapse \u2014 transformer, breaker, washer transformed with plasma>radio, iron, pressure",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 95,
+    "range": 0,
+    "files": [
+      "world-defeat-1.wav",
+      "world-defeat-2.wav",
+      "world-defeat-3.wav"
+    ],
+    "loop": false,
+    "duration": 2.4,
+    "sources": [
+      "breaker",
+      "transformer",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.hover": {
+    "label": "Console focus",
+    "group": "Interface",
+    "description": "Console focus \u2014 shutter transformed with ceramic",
+    "bus": "ui",
+    "gain": 0.09,
+    "priority": 10,
+    "range": 0,
+    "files": [
+      "ui-hover-1.wav",
+      "ui-hover-2.wav",
+      "ui-hover-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.1,
+    "sources": [
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.select": {
+    "label": "Console select",
+    "group": "Interface",
+    "description": "Console select \u2014 switch, shutter transformed with iron, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 25,
+    "range": 0,
+    "files": [
+      "ui-select-1.wav",
+      "ui-select-2.wav",
+      "ui-select-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "shutter",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.back": {
+    "label": "Console close",
+    "group": "Interface",
+    "description": "Console close \u2014 autofocus, switch transformed with servo>radio, iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 35,
+    "range": 0,
+    "files": [
+      "ui-back-1.wav",
+      "ui-back-2.wav",
+      "ui-back-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.24,
+    "sources": [
+      "autofocus",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.toggle": {
+    "label": "Switch relay",
+    "group": "Interface",
+    "description": "Switch relay \u2014 breaker, shutter transformed with iron",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 25,
+    "range": 0,
+    "files": [
+      "ui-toggle-1.wav",
+      "ui-toggle-2.wav",
+      "ui-toggle-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.22,
+    "sources": [
+      "breaker",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.deny": {
+    "label": "Command rejected",
+    "group": "Interface",
+    "description": "Command rejected \u2014 printer transformed with radio>grain",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 55,
+    "range": 0,
+    "files": [
+      "ui-deny-1.wav",
+      "ui-deny-2.wav",
+      "ui-deny-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.24,
+    "sources": [
+      "printer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "ui.open": {
+    "label": "Screen opens",
+    "group": "Interface",
+    "description": "Screen opens \u2014 autofocus, glass-knock transformed with servo>coil, ceramic",
+    "bus": "ui",
+    "gain": 0.26,
+    "priority": 35,
+    "range": 0,
+    "files": [
+      "ui-open-1.wav",
+      "ui-open-2.wav",
+      "ui-open-3.wav"
+    ],
+    "loop": false,
+    "duration": 0.24,
+    "sources": [
+      "autofocus",
+      "glass-knock"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.orbitalStrike": {
+    "label": "Orbital Strike",
+    "group": "Fleet commands",
+    "description": "Orbital Strike \u2014 spring, steel transformed with coil>shear, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-orbitalStrike-1.wav",
+      "command-orbitalStrike-2.wav",
+      "command-orbitalStrike-3.wav",
+      "command-orbitalStrike-4.wav",
+      "command-orbitalStrike-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "spring",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.blackHoleBomb": {
+    "label": "Black Hole Bomb",
+    "group": "Fleet commands",
+    "description": "Black Hole Bomb \u2014 dryice, washer transformed with shear>plasma, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-blackHoleBomb-1.wav",
+      "command-blackHoleBomb-2.wav",
+      "command-blackHoleBomb-3.wav",
+      "command-blackHoleBomb-4.wav",
+      "command-blackHoleBomb-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "dryice",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.aBomb": {
+    "label": "A-Bomb",
+    "group": "Fleet commands",
+    "description": "A-Bomb \u2014 thunder, transformer transformed with pressure>magnetic, magnetic",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-aBomb-1.wav",
+      "command-aBomb-2.wav",
+      "command-aBomb-3.wav",
+      "command-aBomb-4.wav",
+      "command-aBomb-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "thunder",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.empBomb": {
+    "label": "EMP Bomb",
+    "group": "Fleet commands",
+    "description": "EMP Bomb \u2014 welding, breaker transformed with coil>radio, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-empBomb-1.wav",
+      "command-empBomb-2.wav",
+      "command-empBomb-3.wav",
+      "command-empBomb-4.wav",
+      "command-empBomb-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "breaker",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.radarJammer": {
+    "label": "Radar Jammer",
+    "group": "Fleet commands",
+    "description": "Radar Jammer \u2014 printer, neon transformed with radio>grain, magnetic",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-radarJammer-1.wav",
+      "command-radarJammer-2.wav",
+      "command-radarJammer-3.wav",
+      "command-radarJammer-4.wav",
+      "command-radarJammer-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "neon",
+      "printer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.reconSweep": {
+    "label": "Recon Scan",
+    "group": "Fleet commands",
+    "description": "Recon Scan \u2014 autofocus, glass-knock transformed with glass>coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-reconSweep-1.wav",
+      "command-reconSweep-2.wav",
+      "command-reconSweep-3.wav",
+      "command-reconSweep-4.wav",
+      "command-reconSweep-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "autofocus",
+      "glass-knock"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.defensePlatform": {
+    "label": "Defense Platform",
+    "group": "Fleet commands",
+    "description": "Defense Platform \u2014 ratchet, steel-double transformed with iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-defensePlatform-1.wav",
+      "command-defensePlatform-2.wav",
+      "command-defensePlatform-3.wav",
+      "command-defensePlatform-4.wav",
+      "command-defensePlatform-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "ratchet",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.fleetOvercharge": {
+    "label": "Fleet Overcharge",
+    "group": "Fleet commands",
+    "description": "Fleet Overcharge \u2014 drill, spring transformed with plasma>coil, magnetic",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-fleetOvercharge-1.wav",
+      "command-fleetOvercharge-2.wav",
+      "command-fleetOvercharge-3.wav",
+      "command-fleetOvercharge-4.wav",
+      "command-fleetOvercharge-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "drill",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.fighterWing": {
+    "label": "Fighter Wing",
+    "group": "Fleet commands",
+    "description": "Fighter Wing \u2014 servo, shutter transformed with servo>coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-fighterWing-1.wav",
+      "command-fighterWing-2.wav",
+      "command-fighterWing-3.wav",
+      "command-fighterWing-4.wav",
+      "command-fighterWing-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "servo",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.interceptorWing": {
+    "label": "Interceptor Wing",
+    "group": "Fleet commands",
+    "description": "Interceptor Wing \u2014 reel, film transformed with grain>magnetic, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-interceptorWing-1.wav",
+      "command-interceptorWing-2.wav",
+      "command-interceptorWing-3.wav",
+      "command-interceptorWing-4.wav",
+      "command-interceptorWing-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "film",
+      "reel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.bomberWing": {
+    "label": "Bomber Wing",
+    "group": "Fleet commands",
+    "description": "Bomber Wing \u2014 starter, slam transformed with plasma>pressure, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-bomberWing-1.wav",
+      "command-bomberWing-2.wav",
+      "command-bomberWing-3.wav",
+      "command-bomberWing-4.wav",
+      "command-bomberWing-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "slam",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.reconDrones": {
+    "label": "Recon Wing",
+    "group": "Fleet commands",
+    "description": "Recon Wing \u2014 autofocus, spring-handle transformed with radio>glass, magnetic",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-reconDrones-1.wav",
+      "command-reconDrones-2.wav",
+      "command-reconDrones-3.wav",
+      "command-reconDrones-4.wav",
+      "command-reconDrones-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "autofocus",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.defenseDrones": {
+    "label": "Defender Wing",
+    "group": "Fleet commands",
+    "description": "Defender Wing \u2014 compressor, chain transformed with iron>magnetic, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-defenseDrones-1.wav",
+      "command-defenseDrones-2.wav",
+      "command-defenseDrones-3.wav",
+      "command-defenseDrones-4.wav",
+      "command-defenseDrones-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "chain",
+      "compressor"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.forwardBeacon": {
+    "label": "Forward Beacon",
+    "group": "Fleet commands",
+    "description": "Forward Beacon \u2014 spring-handle, switch transformed with glass>coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-forwardBeacon-1.wav",
+      "command-forwardBeacon-2.wav",
+      "command-forwardBeacon-3.wav",
+      "command-forwardBeacon-4.wav",
+      "command-forwardBeacon-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "spring-handle",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.rapidDeployment": {
+    "label": "Rapid Deployment",
+    "group": "Fleet commands",
+    "description": "Rapid Deployment \u2014 film, ratchet-small transformed with grain>servo, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-rapidDeployment-1.wav",
+      "command-rapidDeployment-2.wav",
+      "command-rapidDeployment-3.wav",
+      "command-rapidDeployment-4.wav",
+      "command-rapidDeployment-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "film",
+      "ratchet-small"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.rallyOrder": {
+    "label": "Rally Order",
+    "group": "Fleet commands",
+    "description": "Rally Order \u2014 reel, shutter transformed with radio>coil, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-rallyOrder-1.wav",
+      "command-rallyOrder-2.wav",
+      "command-rallyOrder-3.wav",
+      "command-rallyOrder-4.wav",
+      "command-rallyOrder-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "reel",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.hullReinforcement": {
+    "label": "Hull Reinforcement",
+    "group": "Fleet commands",
+    "description": "Hull Reinforcement \u2014 bubbles, tensioner transformed with warm>magnetic, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-hullReinforcement-1.wav",
+      "command-hullReinforcement-2.wav",
+      "command-hullReinforcement-3.wav",
+      "command-hullReinforcement-4.wav",
+      "command-hullReinforcement-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "bubbles",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "command.breakthrough": {
+    "label": "Breakthrough",
+    "group": "Fleet commands",
+    "description": "Breakthrough \u2014 drill-load, steel transformed with iron>plasma, iron",
+    "bus": "world",
+    "gain": 0.62,
+    "priority": 72,
+    "range": 9500,
+    "files": [
+      "command-breakthrough-1.wav",
+      "command-breakthrough-2.wav",
+      "command-breakthrough-3.wav",
+      "command-breakthrough-4.wav",
+      "command-breakthrough-5.wav"
+    ],
+    "loop": false,
+    "duration": 1.85,
+    "sources": [
+      "drill-load",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "engine.striker": {
+    "label": "Striker drive",
+    "group": "Continuous",
+    "description": "Striker drive \u2014 drill-load, film transformed with coil>plasma, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-striker-1.wav",
+      "engine-striker-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill-load",
+      "film"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 0.9646875,
+        "loopEnd": 7.17083333,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.80029167,
+        "loopEnd": 7.16416667,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.comet": {
+    "label": "Comet drive",
+    "group": "Continuous",
+    "description": "Comet drive \u2014 servo, spring transformed with servo>magnetic, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-comet-1.wav",
+      "engine-comet-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "servo",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.66872917,
+        "loopEnd": 7.44095833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.53552083,
+        "loopEnd": 7.5773125,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.wraith": {
+    "label": "Wraith drive",
+    "group": "Continuous",
+    "description": "Wraith drive \u2014 dryice, autofocus transformed with shear>radio, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-wraith-1.wav",
+      "engine-wraith-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "autofocus",
+      "dryice"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.138875,
+        "loopEnd": 7.77270833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.5718125,
+        "loopEnd": 7.55102083,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.specter": {
+    "label": "Specter drive",
+    "group": "Continuous",
+    "description": "Specter drive \u2014 spring-handle, neon transformed with glass>coil, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-specter-1.wav",
+      "engine-specter-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "neon",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.16954167,
+        "loopEnd": 6.91645833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.10445833,
+        "loopEnd": 7.04535417,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.fortress": {
+    "label": "Fortress drive",
+    "group": "Continuous",
+    "description": "Fortress drive \u2014 compressor, ratchet transformed with iron>pressure, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-fortress-1.wav",
+      "engine-fortress-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "compressor",
+      "ratchet"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.6854375,
+        "loopEnd": 7.8535625,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.37402083,
+        "loopEnd": 7.70041667,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.warden": {
+    "label": "Warden drive",
+    "group": "Continuous",
+    "description": "Warden drive \u2014 water, spring transformed with glass>magnetic, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-warden-1.wav",
+      "engine-warden-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "spring",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.22779167,
+        "loopEnd": 7.33585417,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.50602083,
+        "loopEnd": 7.67472917,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.hunter": {
+    "label": "Hunter drive",
+    "group": "Continuous",
+    "description": "Hunter drive \u2014 starter, servo transformed with plasma>coil, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-hunter-1.wav",
+      "engine-hunter-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "servo",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.01452083,
+        "loopEnd": 7.55695833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.18547917,
+        "loopEnd": 7.96429167,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.escort": {
+    "label": "Escort drive",
+    "group": "Continuous",
+    "description": "Escort drive \u2014 film, drill transformed with grain>iron, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-escort-1.wav",
+      "engine-escort-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill",
+      "film"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.49258333,
+        "loopEnd": 7.54975,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.63370833,
+        "loopEnd": 7.938125,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.strikecruiser": {
+    "label": "Strikecruiser drive",
+    "group": "Continuous",
+    "description": "Strikecruiser drive \u2014 drill-load, welding transformed with plasma>magnetic, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-strikecruiser-1.wav",
+      "engine-strikecruiser-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill-load",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.4443125,
+        "loopEnd": 7.7151875,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.99897917,
+        "loopEnd": 7.12345833,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.commandcruiser": {
+    "label": "Commandcruiser drive",
+    "group": "Continuous",
+    "description": "Commandcruiser drive \u2014 neon, reel transformed with radio>coil, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-commandcruiser-1.wav",
+      "engine-commandcruiser-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "neon",
+      "reel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.35879167,
+        "loopEnd": 6.98554167,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.18016667,
+        "loopEnd": 7.26316667,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.raider": {
+    "label": "Raider drive",
+    "group": "Continuous",
+    "description": "Raider drive \u2014 servo, dryice transformed with shear>plasma, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-raider-1.wav",
+      "engine-raider-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "dryice",
+      "servo"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.33935417,
+        "loopEnd": 8.0303125,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.49016667,
+        "loopEnd": 7.1625625,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.ironclad": {
+    "label": "Ironclad drive",
+    "group": "Continuous",
+    "description": "Ironclad drive \u2014 starter, chain transformed with iron>pressure, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-ironclad-1.wav",
+      "engine-ironclad-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "chain",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.36010417,
+        "loopEnd": 7.90585417,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.91702083,
+        "loopEnd": 6.97972917,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.bastion": {
+    "label": "Bastion drive",
+    "group": "Continuous",
+    "description": "Bastion drive \u2014 compressor, spring-handle transformed with magnetic>pressure, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-bastion-1.wav",
+      "engine-bastion-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "compressor",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.40133333,
+        "loopEnd": 7.96295833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.30852083,
+        "loopEnd": 6.96122917,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.juggernaut": {
+    "label": "Juggernaut drive",
+    "group": "Continuous",
+    "description": "Juggernaut drive \u2014 drill-load, steel transformed with iron>plasma, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-juggernaut-1.wav",
+      "engine-juggernaut-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill-load",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.65166667,
+        "loopEnd": 7.8233125,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.60635417,
+        "loopEnd": 7.16285417,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.railstorm": {
+    "label": "Railstorm drive",
+    "group": "Continuous",
+    "description": "Railstorm drive \u2014 transformer, film transformed with coil>grain, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-railstorm-1.wav",
+      "engine-railstorm-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "film",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.06072917,
+        "loopEnd": 7.36147917,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.0023125,
+        "loopEnd": 7.78239583,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.eclipse": {
+    "label": "Eclipse drive",
+    "group": "Continuous",
+    "description": "Eclipse drive \u2014 dryice, washer transformed with shear>pressure, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-eclipse-1.wav",
+      "engine-eclipse-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "dryice",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.44004167,
+        "loopEnd": 6.87122917,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.97870833,
+        "loopEnd": 6.861875,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.hive": {
+    "label": "Hive drive",
+    "group": "Continuous",
+    "description": "Hive drive \u2014 reel, autofocus transformed with grain>coil, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-hive-1.wav",
+      "engine-hive-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "autofocus",
+      "reel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 0.9736875,
+        "loopEnd": 8.0205625,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.55685417,
+        "loopEnd": 7.50985417,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "engine.overlord": {
+    "label": "Overlord drive",
+    "group": "Continuous",
+    "description": "Overlord drive \u2014 washer, neon transformed with magnetic>plasma, warm>coil",
+    "bus": "engines",
+    "gain": 0.33,
+    "priority": 24,
+    "range": 3200,
+    "files": [
+      "engine-overlord-1.wav",
+      "engine-overlord-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "neon",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.11,
+    "release": 0.18,
+    "sustain": [
+      {
+        "loopStart": 1.5384375,
+        "loopEnd": 7.7466875,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.53954167,
+        "loopEnd": 7.55020833,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "secondary.frigate": {
+    "label": "Dorsal PD / Nanite Auto-Turret",
+    "group": "Secondary weapons",
+    "description": "Dorsal PD / Nanite Auto-Turret \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-frigate-1.wav",
+      "secondary-frigate-2.wav",
+      "secondary-frigate-3.wav",
+      "secondary-frigate-4.wav",
+      "secondary-frigate-5.wav",
+      "secondary-frigate-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.destroyer": {
+    "label": "Twin 25mm Flak Auto-Turrets",
+    "group": "Secondary weapons",
+    "description": "Twin 25mm Flak Auto-Turrets \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-destroyer-1.wav",
+      "secondary-destroyer-2.wav",
+      "secondary-destroyer-3.wav",
+      "secondary-destroyer-4.wav",
+      "secondary-destroyer-5.wav",
+      "secondary-destroyer-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.cruiser": {
+    "label": "Deck Pulse Auto-Turrets",
+    "group": "Secondary weapons",
+    "description": "Deck Pulse Auto-Turrets \u2014 atonal recorded pressure crack, compact blast body and restrained weld-burst recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-cruiser-1.wav",
+      "secondary-cruiser-2.wav",
+      "secondary-cruiser-3.wav",
+      "secondary-cruiser-4.wav",
+      "secondary-cruiser-5.wav",
+      "secondary-cruiser-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.battlecruiser": {
+    "label": "Broadside Casemate Turrets",
+    "group": "Secondary weapons",
+    "description": "Broadside Casemate Turrets \u2014 atonal recorded pressure crack, compact blast body and restrained breaker recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-battlecruiser-1.wav",
+      "secondary-battlecruiser-2.wav",
+      "secondary-battlecruiser-3.wav",
+      "secondary-battlecruiser-4.wav",
+      "secondary-battlecruiser-5.wav",
+      "secondary-battlecruiser-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.battleship": {
+    "label": "35mm Deck Auto-Batteries",
+    "group": "Secondary weapons",
+    "description": "35mm Deck Auto-Batteries \u2014 atonal recorded pressure crack, compact blast body and restrained tensioner recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-battleship-1.wav",
+      "secondary-battleship-2.wav",
+      "secondary-battleship-3.wav",
+      "secondary-battleship-4.wav",
+      "secondary-battleship-5.wav",
+      "secondary-battleship-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.dreadnought": {
+    "label": "25mm Point-Defense Blisters",
+    "group": "Secondary weapons",
+    "description": "25mm Point-Defense Blisters \u2014 atonal recorded pressure crack, compact blast body and restrained film recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-dreadnought-1.wav",
+      "secondary-dreadnought-2.wav",
+      "secondary-dreadnought-3.wav",
+      "secondary-dreadnought-4.wav",
+      "secondary-dreadnought-5.wav",
+      "secondary-dreadnought-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "secondary.carrier": {
+    "label": "Deck CIWS Auto-Turrets",
+    "group": "Secondary weapons",
+    "description": "Deck CIWS Auto-Turrets \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.38,
+    "priority": 42,
+    "range": 4400,
+    "files": [
+      "secondary-carrier-1.wav",
+      "secondary-carrier-2.wav",
+      "secondary-carrier-3.wav",
+      "secondary-carrier-4.wav",
+      "secondary-carrier-5.wav",
+      "secondary-carrier-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "loop.drive": {
+    "label": "Drive sustain",
+    "group": "Continuous",
+    "description": "Drive sustain \u2014 drill-load, dryice transformed with plasma>coil, warm",
+    "bus": "engines",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-drive-1.wav",
+      "loop-drive-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill-load",
+      "dryice"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.40045833,
+        "loopEnd": 7.98654167,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.85402083,
+        "loopEnd": 6.824125,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.spool": {
+    "label": "Spool sustain",
+    "group": "Continuous",
+    "description": "Spool sustain \u2014 drill, reel transformed with servo>coil, warm",
+    "bus": "engines",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-spool-1.wav",
+      "loop-spool-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "drill",
+      "reel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.15845833,
+        "loopEnd": 6.80041667,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.65910417,
+        "loopEnd": 8.02058333,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.charge": {
+    "label": "Charge sustain",
+    "group": "Continuous",
+    "description": "Charge sustain \u2014 transformer, spring transformed with magnetic>coil, warm",
+    "bus": "ambience",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-charge-1.wav",
+      "loop-charge-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "spring",
+      "transformer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.66208333,
+        "loopEnd": 7.47170833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.09810417,
+        "loopEnd": 7.70377083,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.missile": {
+    "label": "Missile sustain",
+    "group": "Continuous",
+    "description": "Missile sustain \u2014 starter, welding transformed with plasma, warm",
+    "bus": "engines",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-missile-1.wav",
+      "loop-missile-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "starter",
+      "welding"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.351625,
+        "loopEnd": 7.4090625,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.134125,
+        "loopEnd": 7.82477083,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.drone": {
+    "label": "Drone sustain",
+    "group": "Continuous",
+    "description": "Drone sustain \u2014 film, autofocus transformed with servo>grain, warm",
+    "bus": "engines",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-drone-1.wav",
+      "loop-drone-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "autofocus",
+      "film"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.14708333,
+        "loopEnd": 7.74810417,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 0.9673125,
+        "loopEnd": 7.08735417,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.field": {
+    "label": "Field sustain",
+    "group": "Continuous",
+    "description": "Field sustain \u2014 dryice, bubbles transformed with glass>magnetic, warm",
+    "bus": "ambience",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-field-1.wav",
+      "loop-field-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "bubbles",
+      "dryice"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 0.96352083,
+        "loopEnd": 7.60970833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.26864583,
+        "loopEnd": 7.86554167,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.tether": {
+    "label": "Tether sustain",
+    "group": "Continuous",
+    "description": "Tether sustain \u2014 spring-handle, water transformed with coil>glass, warm",
+    "bus": "ambience",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-tether-1.wav",
+      "loop-tether-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "spring-handle",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.64716667,
+        "loopEnd": 7.95695833,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.17247917,
+        "loopEnd": 7.05425,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.cloak": {
+    "label": "Cloak sustain",
+    "group": "Continuous",
+    "description": "Cloak sustain \u2014 hinge, neon transformed with shear>radio, warm",
+    "bus": "ambience",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-cloak-1.wav",
+      "loop-cloak-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "hinge",
+      "neon"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 0.82025,
+        "loopEnd": 7.6560625,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.48883333,
+        "loopEnd": 7.87695833,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "loop.hangar": {
+    "label": "Hangar sustain",
+    "group": "Continuous",
+    "description": "Hangar sustain \u2014 compressor, washer transformed with pressure>iron, warm",
+    "bus": "ambience",
+    "gain": 0.25,
+    "priority": 30,
+    "range": 2800,
+    "files": [
+      "loop-hangar-1.wav",
+      "loop-hangar-2.wav"
+    ],
+    "loop": true,
+    "duration": 8.4,
+    "sources": [
+      "compressor",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.075,
+    "release": 0.14,
+    "sustain": [
+      {
+        "loopStart": 1.216875,
+        "loopEnd": 6.82802083,
+        "crossfade": 0.6
+      },
+      {
+        "loopStart": 1.2264375,
+        "loopEnd": 7.21375,
+        "crossfade": 0.6
+      }
+    ]
+  },
+  "turret.mothership.standard": {
+    "label": "Titan twin battery",
+    "group": "World weapons",
+    "description": "Titan twin battery \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 7000,
+    "files": [
+      "turret-mothership-standard-1.wav",
+      "turret-mothership-standard-2.wav",
+      "turret-mothership-standard-3.wav",
+      "turret-mothership-standard-4.wav",
+      "turret-mothership-standard-5.wav",
+      "turret-mothership-standard-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.mothership.rocket": {
+    "label": "Titan rocket rack",
+    "group": "World weapons",
+    "description": "Titan rocket rack \u2014 atonal recorded pressure crack, compact blast body and restrained slide recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 7000,
+    "files": [
+      "turret-mothership-rocket-1.wav",
+      "turret-mothership-rocket-2.wav",
+      "turret-mothership-rocket-3.wav",
+      "turret-mothership-rocket-4.wav",
+      "turret-mothership-rocket-5.wav",
+      "turret-mothership-rocket-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.32,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.mothership.laser": {
+    "label": "Titan charged lance",
+    "group": "World weapons",
+    "description": "Titan charged lance \u2014 atonal recorded pressure crack, compact blast body and restrained weld-burst recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 7000,
+    "files": [
+      "turret-mothership-laser-1.wav",
+      "turret-mothership-laser-2.wav",
+      "turret-mothership-laser-3.wav",
+      "turret-mothership-laser-4.wav",
+      "turret-mothership-laser-5.wav",
+      "turret-mothership-laser-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.fob.standard": {
+    "label": "Station defence gun",
+    "group": "World weapons",
+    "description": "Station defence gun \u2014 atonal recorded pressure crack, compact blast body and restrained breaker recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-fob-standard-1.wav",
+      "turret-fob-standard-2.wav",
+      "turret-fob-standard-3.wav",
+      "turret-fob-standard-4.wav",
+      "turret-fob-standard-5.wav",
+      "turret-fob-standard-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.fob.rocket": {
+    "label": "Station rocket tube",
+    "group": "World weapons",
+    "description": "Station rocket tube \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-fob-rocket-1.wav",
+      "turret-fob-rocket-2.wav",
+      "turret-fob-rocket-3.wav",
+      "turret-fob-rocket-4.wav",
+      "turret-fob-rocket-5.wav",
+      "turret-fob-rocket-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.32,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.fob.laser": {
+    "label": "Station rapid laser",
+    "group": "World weapons",
+    "description": "Station rapid laser \u2014 atonal recorded pressure crack, compact blast body and restrained welding recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-fob-laser-1.wav",
+      "turret-fob-laser-2.wav",
+      "turret-fob-laser-3.wav",
+      "turret-fob-laser-4.wav",
+      "turret-fob-laser-5.wav",
+      "turret-fob-laser-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-a",
+      "blast-pop",
+      "welding"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.node": {
+    "label": "Node perimeter bolt",
+    "group": "World weapons",
+    "description": "Node perimeter bolt \u2014 atonal recorded pressure crack, compact blast body and restrained switch recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-node-1.wav",
+      "turret-node-2.wav",
+      "turret-node-3.wav",
+      "turret-node-4.wav",
+      "turret-node-5.wav",
+      "turret-node-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.deployable": {
+    "label": "Deployable sentry",
+    "group": "World weapons",
+    "description": "Deployable sentry \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-deployable-1.wav",
+      "turret-deployable-2.wav",
+      "turret-deployable-3.wav",
+      "turret-deployable-4.wav",
+      "turret-deployable-5.wav",
+      "turret-deployable-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "turret.platform": {
+    "label": "Defence platform cannon",
+    "group": "World weapons",
+    "description": "Defence platform cannon \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet-small recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "turret-platform-1.wav",
+      "turret-platform-2.wav",
+      "turret-platform-3.wav",
+      "turret-platform-4.wav",
+      "turret-platform-5.wav",
+      "turret-platform-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet-small"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.orbit": {
+    "label": "Escort drone emitter",
+    "group": "World weapons",
+    "description": "Escort drone emitter \u2014 atonal recorded pressure crack, compact blast body and restrained autofocus recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-orbit-1.wav",
+      "drone-orbit-2.wav",
+      "drone-orbit-3.wav",
+      "drone-orbit-4.wav",
+      "drone-orbit-5.wav",
+      "drone-orbit-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "autofocus",
+      "blast-auto",
+      "blast-pop"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.swarm": {
+    "label": "Swarm induction bite",
+    "group": "World weapons",
+    "description": "Swarm induction bite \u2014 atonal recorded pressure crack, compact blast body and restrained film recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-swarm-1.wav",
+      "drone-swarm-2.wav",
+      "drone-swarm-3.wav",
+      "drone-swarm-4.wav",
+      "drone-swarm-5.wav",
+      "drone-swarm-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "film"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.guard": {
+    "label": "Defender coil shot",
+    "group": "World weapons",
+    "description": "Defender coil shot \u2014 atonal recorded pressure crack, compact blast body and restrained breaker recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-guard-1.wav",
+      "drone-guard-2.wav",
+      "drone-guard-3.wav",
+      "drone-guard-4.wav",
+      "drone-guard-5.wav",
+      "drone-guard-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "breaker"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.bomber": {
+    "label": "Bomber torpedo ejection",
+    "group": "World weapons",
+    "description": "Bomber torpedo ejection \u2014 atonal recorded pressure crack, compact blast body and restrained slide recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-bomber-1.wav",
+      "drone-bomber-2.wav",
+      "drone-bomber-3.wav",
+      "drone-bomber-4.wav",
+      "drone-bomber-5.wav",
+      "drone-bomber-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.32,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "slide"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.interceptor": {
+    "label": "Interceptor microflak",
+    "group": "World weapons",
+    "description": "Interceptor microflak \u2014 atonal recorded pressure crack, compact blast body and restrained shutter recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-interceptor-1.wav",
+      "drone-interceptor-2.wav",
+      "drone-interceptor-3.wav",
+      "drone-interceptor-4.wav",
+      "drone-interceptor-5.wav",
+      "drone-interceptor-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "drone.fighter": {
+    "label": "Fighter rapid pulse",
+    "group": "World weapons",
+    "description": "Fighter rapid pulse \u2014 atonal recorded pressure crack, compact blast body and restrained ratchet-small recoil; stable pitch across firing variations.",
+    "bus": "world",
+    "gain": 0.42,
+    "priority": 43,
+    "range": 5000,
+    "files": [
+      "drone-fighter-1.wav",
+      "drone-fighter-2.wav",
+      "drone-fighter-3.wav",
+      "drone-fighter-4.wav",
+      "drone-fighter-5.wav",
+      "drone-fighter-6.wav"
+    ],
+    "loop": false,
+    "duration": 0.2,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "ratchet-small"
+    ],
+    "designVersion": "recorded-v5-atonal-shot",
+    "attack": 0.0003,
+    "release": 0.012
+  },
+  "contact.patrol.phaseDash": {
+    "label": "Phase Dash contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of A tensile spring aperture snaps into a vacuum wake",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-patrol-phaseDash-1.wav",
+      "contact-patrol-phaseDash-2.wav",
+      "contact-patrol-phaseDash-3.wav",
+      "contact-patrol-phaseDash-4.wav",
+      "contact-patrol-phaseDash-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "autofocus",
+      "dryice",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.patrol.blinkStrike": {
+    "label": "Blink Strike contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Suction fracture, empty beat, displaced heavy arrival",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-patrol-blinkStrike-1.wav",
+      "contact-patrol-blinkStrike-2.wav",
+      "contact-patrol-blinkStrike-3.wav",
+      "contact-patrol-blinkStrike-4.wav",
+      "contact-patrol-blinkStrike-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "glass",
+      "hinge",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.patrol.kineticRam": {
+    "label": "Kinetic Ram contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Three piston restraints release into a compact mass impulse",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-patrol-kineticRam-1.wav",
+      "contact-patrol-kineticRam-2.wav",
+      "contact-patrol-kineticRam-3.wav",
+      "contact-patrol-kineticRam-4.wav",
+      "contact-patrol-kineticRam-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "ratchet",
+      "slam",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.corvette.ambush": {
+    "label": "Ambush Cloak contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Serrated hinge folded backwards through a swallowed servo",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-corvette-ambush-1.wav",
+      "contact-corvette-ambush-2.wav",
+      "contact-corvette-ambush-3.wav",
+      "contact-corvette-ambush-4.wav",
+      "contact-corvette-ambush-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "autofocus",
+      "hinge",
+      "mirror"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.corvette.wraithAmbush": {
+    "label": "Wraith Ambush contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Deep frictional throat folds beneath two detached phase clicks",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-corvette-wraithAmbush-1.wav",
+      "contact-corvette-wraithAmbush-2.wav",
+      "contact-corvette-wraithAmbush-3.wav",
+      "contact-corvette-wraithAmbush-4.wav",
+      "contact-corvette-wraithAmbush-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "breaker",
+      "dryice"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.corvette.specterAmbush": {
+    "label": "Specter Ambush contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Three independently opening glass-metal apparition mechanisms",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-corvette-specterAmbush-1.wav",
+      "contact-corvette-specterAmbush-2.wav",
+      "contact-corvette-specterAmbush-3.wav",
+      "contact-corvette-specterAmbush-4.wav",
+      "contact-corvette-specterAmbush-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "dryice",
+      "mirror",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.frigate.repairPulse": {
+    "label": "Repair & Shield Pulse contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Fluid microvalves bloom into a warm tensile nanite wash",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-frigate-repairPulse-1.wav",
+      "contact-frigate-repairPulse-2.wav",
+      "contact-frigate-repairPulse-3.wav",
+      "contact-frigate-repairPulse-4.wav",
+      "contact-frigate-repairPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "bubbles",
+      "spring-handle",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.frigate.fortressPulse": {
+    "label": "Fortress Pulse contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Industrial repair pump drives a low liquid resonance through emitter clamps",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-frigate-fortressPulse-1.wav",
+      "contact-frigate-fortressPulse-2.wav",
+      "contact-frigate-fortressPulse-3.wav",
+      "contact-frigate-fortressPulse-4.wav",
+      "contact-frigate-fortressPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "bubbles",
+      "compressor",
+      "tensioner"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.frigate.wardenTether": {
+    "label": "Warden Tether contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Cable capture clack, sliding tensile metal, surging liquid current",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-frigate-wardenTether-1.wav",
+      "contact-frigate-wardenTether-2.wav",
+      "contact-frigate-wardenTether-3.wav",
+      "contact-frigate-wardenTether-4.wav",
+      "contact-frigate-wardenTether-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "spring-handle",
+      "tensioner",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.destroyer.heavyTorpedo": {
+    "label": "Heavy Torpedo contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Heavy tube door, hard ejector, then delayed throaty ignition",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-destroyer-heavyTorpedo-1.wav",
+      "contact-destroyer-heavyTorpedo-2.wav",
+      "contact-destroyer-heavyTorpedo-3.wav",
+      "contact-destroyer-heavyTorpedo-4.wav",
+      "contact-destroyer-heavyTorpedo-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "slam",
+      "slide",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.destroyer.torpedoSpread": {
+    "label": "Torpedo Spread contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Three clearly staggered tube releases followed by interleaved motor growls",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-destroyer-torpedoSpread-1.wav",
+      "contact-destroyer-torpedoSpread-2.wav",
+      "contact-destroyer-torpedoSpread-3.wav",
+      "contact-destroyer-torpedoSpread-4.wav",
+      "contact-destroyer-torpedoSpread-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "slam"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.destroyer.flakCurtain": {
+    "label": "Flak Curtain contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Dry metal canisters chatter, followed by granular shrapnel punctuation",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-destroyer-flakCurtain-1.wav",
+      "contact-destroyer-flakCurtain-2.wav",
+      "contact-destroyer-flakCurtain-3.wav",
+      "contact-destroyer-flakCurtain-4.wav",
+      "contact-destroyer-flakCurtain-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "ratchet",
+      "shutter",
+      "steel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.cruiser.shieldBattery": {
+    "label": "Shield Harmonic Battery contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Dense coil contactor closes into a loaded crystalline field",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-cruiser-shieldBattery-1.wav",
+      "contact-cruiser-shieldBattery-2.wav",
+      "contact-cruiser-shieldBattery-3.wav",
+      "contact-cruiser-shieldBattery-4.wav",
+      "contact-cruiser-shieldBattery-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "breaker",
+      "glass-knock",
+      "spring"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.cruiser.vlsPod": {
+    "label": "VLS Breacher Pod contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Four rising cell lids and hot segmented motor catches",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-cruiser-vlsPod-1.wav",
+      "contact-cruiser-vlsPod-2.wav",
+      "contact-cruiser-vlsPod-3.wav",
+      "contact-cruiser-vlsPod-4.wav",
+      "contact-cruiser-vlsPod-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "ratchet",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.cruiser.aegisPulse": {
+    "label": "Fleet Aegis Pulse contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Distributed glass ribs unfurl around a rolling magnetic pulse",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-cruiser-aegisPulse-1.wav",
+      "contact-cruiser-aegisPulse-2.wav",
+      "contact-cruiser-aegisPulse-3.wav",
+      "contact-cruiser-aegisPulse-4.wav",
+      "contact-cruiser-aegisPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "glass-knock",
+      "mirror",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battlecruiser.ramBurn": {
+    "label": "Overdrive Ram Burn contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Heavy locking piston drives a sustained exhaust compression",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battlecruiser-ramBurn-1.wav",
+      "contact-battlecruiser-ramBurn-2.wav",
+      "contact-battlecruiser-ramBurn-3.wav",
+      "contact-battlecruiser-ramBurn-4.wav",
+      "contact-battlecruiser-ramBurn-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "chain",
+      "slam",
+      "starter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battlecruiser.microJump": {
+    "label": "Micro-Jump Strike contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Massive aperture inhales, rips open and reseats with two iron jaws",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battlecruiser-microJump-1.wav",
+      "contact-battlecruiser-microJump-2.wav",
+      "contact-battlecruiser-microJump-3.wav",
+      "contact-battlecruiser-microJump-4.wav",
+      "contact-battlecruiser-microJump-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "dryice",
+      "steel",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battlecruiser.ironcladRam": {
+    "label": "Ironclad Ram contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Interlocking armor slabs step into a huge rough piston impulse",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battlecruiser-ironcladRam-1.wav",
+      "contact-battlecruiser-ironcladRam-2.wav",
+      "contact-battlecruiser-ironcladRam-3.wav",
+      "contact-battlecruiser-ironcladRam-4.wav",
+      "contact-battlecruiser-ironcladRam-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "ratchet",
+      "slam",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battleship.bulwark": {
+    "label": "Bulwark Plating Matrix contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of A segmented armor wall clamps shut and pressurises",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battleship-bulwark-1.wav",
+      "contact-battleship-bulwark-2.wav",
+      "contact-battleship-bulwark-3.wav",
+      "contact-battleship-bulwark-4.wav",
+      "contact-battleship-bulwark-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "chain",
+      "slam",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battleship.aegisMirror": {
+    "label": "Aegis Mirror contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Faceted mirror segments reverse into a hard singing metallic seal",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battleship-aegisMirror-1.wav",
+      "contact-battleship-aegisMirror-2.wav",
+      "contact-battleship-aegisMirror-3.wav",
+      "contact-battleship-aegisMirror-4.wav",
+      "contact-battleship-aegisMirror-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "glass-knock",
+      "mirror",
+      "spring-handle"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.battleship.thermalOverdrive": {
+    "label": "Thermal Overdrive contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Cooling plant violently vents and a loaded industrial rotor bites",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-battleship-thermalOverdrive-1.wav",
+      "contact-battleship-thermalOverdrive-2.wav",
+      "contact-battleship-thermalOverdrive-3.wav",
+      "contact-battleship-thermalOverdrive-4.wav",
+      "contact-battleship-thermalOverdrive-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "compressor",
+      "drill-load",
+      "water"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.dreadnought.railBeam": {
+    "label": "Hyper-Velocity Rail Beam contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Huge spinal acceleration rip and receding serrated iron resonance",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-dreadnought-railBeam-1.wav",
+      "contact-dreadnought-railBeam-2.wav",
+      "contact-dreadnought-railBeam-3.wav",
+      "contact-dreadnought-railBeam-4.wav",
+      "contact-dreadnought-railBeam-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "dryice",
+      "glass",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.dreadnought.railstorm": {
+    "label": "Railstorm contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Three unmistakable asymmetric rail ruptures with interleaving recoil",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-dreadnought-railstorm-1.wav",
+      "contact-dreadnought-railstorm-2.wav",
+      "contact-dreadnought-railstorm-3.wav",
+      "contact-dreadnought-railstorm-4.wav",
+      "contact-dreadnought-railstorm-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "steel",
+      "steel-double"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.dreadnought.eventHorizon": {
+    "label": "Event Horizon contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of A collapsing industrial throat draws metallic fragments inward",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-dreadnought-eventHorizon-1.wav",
+      "contact-dreadnought-eventHorizon-2.wav",
+      "contact-dreadnought-eventHorizon-3.wav",
+      "contact-dreadnought-eventHorizon-4.wav",
+      "contact-dreadnought-eventHorizon-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "chain",
+      "dryice",
+      "washer"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.carrier.scramble": {
+    "label": "Scramble Strike Wing contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Four hangar latch releases and uneven turbine departures",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-carrier-scramble-1.wav",
+      "contact-carrier-scramble-2.wav",
+      "contact-carrier-scramble-3.wav",
+      "contact-carrier-scramble-4.wav",
+      "contact-carrier-scramble-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "ratchet-small",
+      "servo",
+      "shutter"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.carrier.hiveSwarm": {
+    "label": "Launch Swarm contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of Seven clustered induction insects emerge in a rough expanding chatter",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-carrier-hiveSwarm-1.wav",
+      "contact-carrier-hiveSwarm-2.wav",
+      "contact-carrier-hiveSwarm-3.wav",
+      "contact-carrier-hiveSwarm-4.wav",
+      "contact-carrier-hiveSwarm-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "autofocus",
+      "film",
+      "reel"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "contact.carrier.empPulse": {
+    "label": "Fleet EMP Pulse contact",
+    "group": "Ability contacts",
+    "description": "Contact fragments of A fleet-scale relay cascade empties into a torn magnetic front",
+    "bus": "world",
+    "gain": 0.48,
+    "priority": 58,
+    "range": 7500,
+    "files": [
+      "contact-carrier-empPulse-1.wav",
+      "contact-carrier-empPulse-2.wav",
+      "contact-carrier-empPulse-3.wav",
+      "contact-carrier-empPulse-4.wav",
+      "contact-carrier-empPulse-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.45,
+    "sources": [
+      "breaker",
+      "transformer",
+      "weld-burst"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.0015,
+    "release": 0.018
+  },
+  "status.hitmarker": {
+    "label": "Hit confirmed",
+    "group": "Pilot feedback",
+    "description": "Tiny dry detent click; confirms your hit without duplicating the world impact.",
+    "bus": "ui",
+    "gain": 0.22,
+    "priority": 68,
+    "range": 0,
+    "files": [
+      "status-hitmarker-1.wav",
+      "status-hitmarker-2.wav",
+      "status-hitmarker-3.wav",
+      "status-hitmarker-4.wav",
+      "status-hitmarker-5.wav"
+    ],
+    "loop": false,
+    "duration": 0.055,
+    "sources": [
+      "shutter",
+      "switch"
+    ],
+    "designVersion": "recorded-v4",
+    "attack": 0.001,
+    "release": 0.012
+  }
+}

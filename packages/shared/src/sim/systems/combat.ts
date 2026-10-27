@@ -1,3 +1,5 @@
+import { CLASS_ORDER } from '../../content/classes';
+import { SOUND_KIND, WEAPON_SOUND } from '../../content/sounds';
 import { reportHit } from '../combatFeedback';
 import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
 import { MAX_HULL_RADIUS, socketPosition, type HullPoint } from '../../content/hullGeometry';
@@ -125,6 +127,7 @@ export function spawnPattern(
   muzzle = 0,
   sockets?: readonly HullPoint[],
   bodyAngle = angle,
+  sound = WEAPON_SOUND.turret as number,
 ): void {
   const count = gun.count;
   const cos = Math.cos(angle);
@@ -150,6 +153,7 @@ export function spawnPattern(
     p.visualGeneration = (p.visualGeneration + 1) & 127;
     p.muzzleX = p.x;
     p.muzzleY = p.y;
+    if(k===0)w.emitSound(SOUND_KIND.weapon,sound,owner,p.x,p.y,1,1);
     p.speed = gun.projectileSpeed;
     p.vx = Math.cos(a) * gun.projectileSpeed;
     p.vy = Math.sin(a) * gun.projectileSpeed;
@@ -252,7 +256,7 @@ function fireVolley(w: World, s: Ship, charge: number): void {
   const first = w.projectiles.count;
   const gunAngle = s.angle + clamp(angleDelta(s.angle, s.input.aim), -PRIMARY_AIM_HALF_ARC, PRIMARY_AIM_HALF_ARC);
   // Authored barrel tips rotate with the hull; only shot direction swivels toward aim.
-  spawnPattern(w, s.slot, s.team, s.x, s.y, gunAngle, gun, mul, liveStat(w, s, 'range', 1), 0, geometryOf(w, s).primary, s.angle);
+  spawnPattern(w, s.slot, s.team, s.x, s.y, gunAngle, gun, mul, liveStat(w, s, 'range', 1), 0, geometryOf(w, s).primary, s.angle, CLASS_ORDER.indexOf(s.cls.id));
   const healPower = liveStat(w, s, 'healPower', 0);
   const pierceBonus = statValue(s, 'pierceBonus', 0);
   const bypass = Math.min(1, liveStat(w, s, 'shieldBypass', 0));
@@ -411,6 +415,7 @@ function fireSecondaryShot(w: World, s: Ship, x: number, y: number, angle: numbe
   p.visualGeneration = (p.visualGeneration + 1) & 127;
   p.muzzleX = x;
   p.muzzleY = y;
+  w.emitSound(SOUND_KIND.weapon,WEAPON_SOUND.secondary,s.slot,x,y);
   p.speed = def.projectileSpeed;
   p.vx = Math.cos(angle) * def.projectileSpeed;
   p.vy = Math.sin(angle) * def.projectileSpeed;

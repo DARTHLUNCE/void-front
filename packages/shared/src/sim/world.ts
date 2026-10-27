@@ -1,3 +1,4 @@
+import { AUDIO_EVENT_CAPACITY, AUDIO_EVENT_STRIDE } from '../content/sounds';
 import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
 import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
 import type { CommandId, SeatId } from '../content/command';
@@ -743,6 +744,9 @@ export class World {
   readonly pushY: Float64Array;
   readonly events: SimEvent[];
   eventCount = 0;
+  /** Independent cosmetic queue: audio cannot displace combat events. */
+  readonly audioEvents = new Float32Array(AUDIO_EVENT_CAPACITY * AUDIO_EVENT_STRIDE);
+  audioEventCount = 0;
   /**
    * Fleet Command orders and pings from hosts, carried out in step 1 of the next tick (so their
    * events land in that tick's snapshot). See systems/command.ts.
@@ -839,6 +843,12 @@ export class World {
 
   enemyOf(team: TeamId): TeamState {
     return this.teams[team === 0 ? 1 : 0];
+  }
+
+  emitSound(kind:number, identity:number, owner:number, x:number, y:number, strength=1, rate=1):void {
+    if (identity < 0 || this.audioEventCount >= AUDIO_EVENT_CAPACITY) return;
+    const k=this.audioEventCount++ * AUDIO_EVENT_STRIDE, b=this.audioEvents;
+    b[k]=kind;b[k+1]=identity;b[k+2]=owner;b[k+3]=x;b[k+4]=y;b[k+5]=strength;b[k+6]=rate;
   }
 
   emit(type: EventType, a: number, b: number, x = 0, y = 0, c = 0, d = 0, abilityVisual = 0): void {
