@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, statCost, tierCost } from '../content/progression';
 import { HIGH_COMMAND } from '../content/upgrades';
-import { duelWorld } from '../test-utils';
+import { duelWorld, place } from '../test-utils';
 import { createWorld, step } from './step';
 import { damageShip } from './systems/combat';
 import { CLASS_ORDER, CLASSES, teamCap } from '../content/classes/index';
@@ -93,6 +93,23 @@ describe('tiers (XP)', () => {
     expect(Array.from(a.statPoints)).toEqual([1, 1, 0, 0]);
     killShip(w, a);
     expect(Array.from(a.statPoints)).toEqual([1, 1, 0, 0]);
+  });
+
+  it('changing class refunds Shard Calibration; there is no natural hull regeneration', () => {
+    const { w, a, b } = duelWorld(1, 'cruiser');
+    // Out of the other ship's auto-turret range: nothing should touch the hull here.
+    place(w, b, 2_000, 2_000, 0);
+    grantShards(w, a, 1_000);
+    buyStat(a, 1);
+    const banked = a.shards;
+    setClass(a, 'destroyer');
+    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
+    expect(a.shards).toBe(banked + ECONOMY.statCosts[0]);
+    // A damaged hull stays damaged: only shields recharge on their own.
+    a.hull = a.maxHull * 0.5;
+    a.lastDamageTime = -100;
+    for (let i = 0; i < 30 * 20; i++) step(w);
+    expect(a.hull).toBeCloseTo(a.maxHull * 0.5, 5);
   });
 
   it('the input path buys tiers and stats during a step', () => {

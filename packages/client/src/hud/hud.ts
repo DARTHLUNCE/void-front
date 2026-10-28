@@ -262,7 +262,7 @@ export class Hud {
         <h2>Destroyed</h2><p data-k="killer" class="killer"></p><p data-k="respawn"></p><p data-k="lost" class="lost"></p>
         <p class="hint">XP and everything you bought are kept. Only unspent shards spill.</p>
         <div data-k="spawns" class="spawns"></div>
-        <div class="redeploy"><button data-k="redeploy">Change hull</button><small data-k="redeployNote">Pick a new ship in the hangar. Tiers, XP and shards restart; your score stays.</small></div>
+        <div class="redeploy"><button data-k="redeploy">Change hull</button><small data-k="redeployNote">Pick a new ship in the hangar. Tiers and XP restart, Shard Calibration is refunded to re-spend; your score stays.</small></div>
       </div></div>
       <div data-k="picker" class="overlay picker hidden"></div>
       <div data-k="over" class="overlay over hidden"><div><h1 data-k="winner"></h1><p data-k="reason"></p><div class="over-actions"><button data-k="again" class="primary">Play again</button><button data-k="toTitle" class="ghost">Title screen</button></div></div></div>

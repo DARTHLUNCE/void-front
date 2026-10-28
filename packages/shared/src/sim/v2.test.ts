@@ -73,8 +73,12 @@ describe('v2 energy shields', () => {
     damageShip(w, b, 50, a.slot);
     expect(b.hull).toBe(hull);
     expect(b.shield).toBeCloseTo(b.maxShield - 50);
-    damageShip(w, b, 100, a.slot);
+    // The last of the shield soaks the whole hit, however big: it breaks, the hull is untouched.
+    damageShip(w, b, b.shield + 200, a.slot);
     expect(b.shield).toBe(0);
+    expect(b.hull).toBe(hull);
+    // With the shield down, the next hit reaches the hull.
+    damageShip(w, b, 40, a.slot);
     expect(b.hull).toBeLessThan(hull);
     const broke = b.shield;
     for (let i = 0; i < 30 * 3; i++) updateShields(w, b, DT);

@@ -8,9 +8,10 @@
  */
 import { HULLS } from './art/hulls';
 import { MOTHERSHIP_ART } from './art/props';
-import { bounds } from './art/shapes';
 import { bakeArtCanvas, shadeCanvas, type BakedArt } from './art/raster';
-import { PALETTES, type Palette } from './art/shapes';
+import { PALETTES } from './art/shapes';
+import { loadReferenceShips } from './art/referenceShips';
+import { pbrPreview } from './art/pbrPreview';
 
 const q = new URLSearchParams(location.search);
 const only = q.get('class');
@@ -52,67 +53,58 @@ for (const h of hulls) {
 // ?save=1 writes full-resolution review sheets to packages/client/.inspect via the dev server.
 if (q.get('save')) void saveSheets();
 
-/** Neutral palette so value structure, not team color, carries the read. */
-const GREY: Palette = { hull: 0x8c9099, dark: 0x3c4048, accent: 0xd4d8e0, trim: 0xb6bac2, metal: 0x63676f, cockpit: 0xc0c4cc, engine: 0xeeeeee, void: 0x08090b };
-
-/** Lit with the key light only, then collapsed to luminance. */
-function greyLit(art: BakedArt): HTMLCanvasElement {
-  const c = shadeCanvas(art);
-  const ctx = c.getContext('2d')!;
-  const img = ctx.getImageData(0, 0, c.width, c.height);
-  const d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const y = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2];
-    d[i] = d[i + 1] = d[i + 2] = y;
-  }
-  ctx.putImageData(img, 0, 0);
-  return c;
-}
-
-// ?lineup=1 writes lineup.png: every hull at one true scale, greyscale, on black.
+// ?lineup=1 writes lineup.png: every in-game reference sprite (Cobalt paint, lit) at one true scale.
 if (q.get('lineup')) void saveLineup();
 
 async function saveLineup(): Promise<void> {
-  const S = 2.5; // pixels per world unit, for every hull and the Titan alike
+  const S = 1.6; // pixels per world unit, for every hull and the Titan alike
+  const ships = await loadReferenceShips('reference');
+  const size = (id: string) => ({ w: ships[id].widthWorld * S, h: ships[id].heightWorld * S });
   const classes = [...new Set(HULLS.map((h) => h.classId))];
-  // Each column is as wide as its class's widest hull; rows share the tallest hull's height.
-  const colW = classes.map((cls) => Math.max(...HULLS.filter((h) => h.classId === cls).map((h) => bounds(h.shapes).x1 - bounds(h.shapes).x0)) * S + 40);
-  const cellH = Math.max(...HULLS.map((h) => bounds(h.shapes).y1 - bounds(h.shapes).y0)) * S + 30;
-  const labelH = 26;
-  const ms = bakeArtCanvas(MOTHERSHIP_ART, GREY, S, 3, 5);
+  // Each column is as wide as its class's widest hull; each row is as tall as its tallest hull.
+  const colW = classes.map((cls) => Math.max(...HULLS.filter((h) => h.classId === cls).map((h) => size(h.id).w)) + 60);
+  const tiers = [0, 1, 2].map((row) => classes.map((cls) => HULLS.filter((h) => h.classId === cls)[row]));
+  const rowH = tiers.map((set) => Math.max(...set.map((h) => size(h.id).h)) + 30);
+  const labelH = 80;
+  const rowTop = rowH.map((_, i) => 30 + rowH.slice(0, i).reduce((a, b) => a + b + labelH, 0));
+  const titan = size('mothership');
   const rowsW = colW.reduce((a, b) => a + b, 0);
-  const width = Math.max(rowsW, ms.width + 80);
-  const msTop = 3 * (cellH + labelH) + 60;
+  const width = Math.max(rowsW, titan.w + 80);
+  const msTop = rowTop[2] + rowH[2] + labelH + 40;
   const sheet = document.createElement('canvas');
   sheet.width = width;
-  sheet.height = msTop + ms.height + labelH + 40;
+  sheet.height = msTop + titan.h + labelH + 30;
   const ctx = sheet.getContext('2d')!;
-  ctx.fillStyle = '#000';
+  ctx.fillStyle = '#05070d';
   ctx.fillRect(0, 0, sheet.width, sheet.height);
-  ctx.font = '20px system-ui, sans-serif';
+  ctx.imageSmoothingQuality = 'high';
   ctx.textAlign = 'center';
-  const label = (text: string, x: number, y: number) => {
-    ctx.fillStyle = '#6b6f78';
+  const label = (text: string, sub: string, x: number, y: number) => {
+    ctx.font = '600 34px system-ui, sans-serif';
+    ctx.fillStyle = '#c9d3ee';
     ctx.fillText(text, x, y);
+    ctx.font = '24px system-ui, sans-serif';
+    ctx.fillStyle = '#6b7590';
+    ctx.fillText(sub, x, y + 30);
+  };
+  // The lit preview the Drydock and ship-test show: team paint through the material and normal maps.
+  const draw = (id: string, cx: number, cy: number) => {
+    const art = ships[id];
+    const lit = pbrPreview(art.albedo[0].source.resource as HTMLCanvasElement, art.normal.source.resource as HTMLCanvasElement, art.material!.source.resource as HTMLCanvasElement);
+    const { w, h } = size(id);
+    ctx.drawImage(lit, cx - w / 2, cy - h / 2, w, h);
   };
   let x0 = (width - rowsW) / 2;
   classes.forEach((cls, col) => {
     HULLS.filter((h) => h.classId === cls).forEach((h, row) => {
-      const art = bakeArtCanvas(h.shapes, GREY, S);
-      const img = greyLit(art);
-      // Center each hull's outline in its column; every hull shares one scale, so sizes compare honestly.
-      const hb = bounds(h.shapes);
-      const cx = x0 + colW[col] / 2 - ((hb.x0 + hb.x1) / 2) * S;
-      const cy = row * (cellH + labelH) + cellH / 2 + 20;
-      ctx.drawImage(img, cx - art.anchorX * art.width, cy - art.anchorY * art.height);
-      label(h.name, cx, row * (cellH + labelH) + cellH + labelH + 4);
+      const cx = x0 + colW[col] / 2;
+      draw(h.id, cx, rowTop[row] + rowH[row] / 2);
+      label(h.name, h.tier ? 'Tier 3' : 'Base hull', cx, rowTop[row] + rowH[row] + 36);
     });
     x0 += colW[col];
   });
-  const msImg = greyLit(ms);
-  const mcx = width / 2;
-  ctx.drawImage(msImg, mcx - ms.anchorX * ms.width, msTop);
-  label('Titan', mcx, msTop + ms.height + labelH + 6);
+  draw('mothership', width / 2, msTop + titan.h / 2);
+  label('Titan', 'Mothership', width / 2, msTop + titan.h + 40);
   await post('lineup', sheet);
   document.title = 'lineup saved';
 }

@@ -50,3 +50,21 @@ The pre-upstream-integration simulation bundle SHA256 is `247355bf0443bfe7bc2b2e
 Light-bot progression is uneven: Normal Patrol evolution reached 8/16 and 5/24 pilots, and neither light class reached T5. None of the 400 final pilots maxed all 28 calibration levels. These observations support substantial investment; they do not establish enjoyable human progression or post-evolution rebuilding.
 
 Human role feel, exploration and long-match enjoyment still need playtesting. Large-scale live multiplayer is not validated; the server room/join path remains a stub.
+
+
+## Upstream integration for the PR
+
+The publication branch integrates upstream `61f8e01`. It preserves shield remnants absorbing a full
+non-bypassing hit, the removal of natural hull regeneration, refinery shield-recharge bonuses,
+cosmetic base drift, the expanded README/ship lineup and BUILD.md.
+
+One intentional progression difference: **tier-3 evolution resets calibration without a refund**,
+matching this pass's requested rebuilding phase. Explicit class changes/redeploys retain upstream's
+refund behavior. Tests cover both paths. Frozen campaign results above predate this integration.
+
+The integrated branch passed **1,543 tests in 96 files**, all four package typechecks, whitespace
+checks and a production client build. An isolated Chrome game/worker run rechecked prices, the
+45-minute clock, evolution reset with bank preservation, firing slowdown/recovery and price layout
+at 1440/1100 widths with no page errors. The shield-drain assist fixture now explicitly uses a shield
+breaking hit followed by a hull hit, matching upstream's absorption rule. No full campaign rerun
+was performed after integration; the recorded endgame and progression results remain historical.

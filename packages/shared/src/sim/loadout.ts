@@ -134,7 +134,7 @@ export function loadoutDeck(classId: ClassId, picks: ArrayLike<number>, statLeve
     { id: 'armor', group: 'Hull', label: 'Armor (flank)', value: v('armor', cls.armor), neutral: -1, unit: '', better: 'higher' },
     { id: 'bow', group: 'Hull', label: 'Armor (bow)', value: v('armor', cls.armor) * (1 + v('bowArmor', ARMOR.bowBonus)), neutral: -1, unit: '', better: 'higher' },
     { id: 'taken', group: 'Hull', label: 'Damage taken', value: v('damageTaken', 1), neutral: 1, unit: '×', better: 'lower' },
-    { id: 'regen', group: 'Hull', label: 'Hull regen', value: v('hullRegen', 1), neutral: 1, unit: '×', better: 'higher' },
+    { id: 'regen', group: 'Hull', label: 'Hull regen (upgrades)', value: v('hullRegen', 0) * 100, neutral: 0, unit: '%', better: 'higher' },
     { id: 'speed', group: 'Hull', label: 'Top speed', value: v('speed', cls.speed), neutral: -1, unit: 'u/s', better: 'higher' },
     { id: 'dps', group: 'Guns', label: cls.quirk === 'chargeShot' ? 'DPS (full charge)' : 'Gun DPS', value: (damage * barrels * charge) / (interval + (cls.quirk === 'chargeShot' ? (g.chargeMax ?? 0) * v('chargeTime', 1) : 0)), neutral: -1, unit: '', better: 'higher' },
     { id: 'shot', group: 'Guns', label: 'Damage per shot', value: damage * charge, neutral: -1, unit: '', better: 'higher' },

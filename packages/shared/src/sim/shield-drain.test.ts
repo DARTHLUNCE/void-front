@@ -38,6 +38,11 @@ describe('percentage shield-drain contribution', () => {
     expect(a.score).toBeCloseTo(200 * SCORE.shipDamage);
     expect([...b.hitDmg].reduce((sum, value) => sum + value, 0)).toBe(200);
     const remaining = b.shield + b.hull;
+    const hullBefore = b.hull;
+    // Upstream shields absorb the entire breaking hit; a later hit reaches the hull.
+    damageShip(w, b, 100000, ally.slot);
+    expect(b.shield).toBe(0);
+    expect(b.hull).toBe(hullBefore);
     damageShip(w, b, 100000, ally.slot);
     const before = a.xp;
     resolveDeaths(w);
