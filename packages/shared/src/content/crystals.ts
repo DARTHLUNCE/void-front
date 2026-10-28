@@ -17,6 +17,10 @@ export const CRYSTALS = {
   pairsPerSecond: 6,
   /** No spawns this close to a mothership. */
   clearRadius: 1_400,
+  /** Broad seeded density variation, with a floor so every legal region can replenish. */
+  density: { scale: 3_600, floor: 0.35, contrast: 0.65 },
+  /** Keep pickups outside solid node silhouettes with room to approach. */
+  nodeClearance: 90,
   pickupPadding: 24,
   /** Loot spilled by a destroyed ship (kind index 2 is reserved for loot). */
   lootRadius: 12,

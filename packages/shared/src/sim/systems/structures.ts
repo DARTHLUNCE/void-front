@@ -63,8 +63,10 @@ export function fireTurrets(w: World): void {
         continue;
       }
       const a = leadAngle(tx, ty, target.x, target.y, target.vx, target.vy, gun.projectileSpeed);
+      const firstProjectile = w.projectiles.count;
       spawnPattern(w, -1, st.team, tx, ty, a, gun, 1, 1, 0, undefined, a, weaponSoundIndex(`turret.${st.def.id}.${st.turretType}`));
-      if (missile && w.projectiles.count > 0) w.projectiles.at(w.projectiles.count - 1).missile = true;
+      // Every barrel launches an interceptable rocket, including a partially allocated volley.
+      if (missile) for (let i = firstProjectile; i < w.projectiles.count; i++) w.projectiles.at(i).missile = true;
       st.turretCooldown[k] += gun.fireInterval;
     }
   }

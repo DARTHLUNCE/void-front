@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CLASS_ORDER } from '../content/classes/index';
-import { STAT_POINT_MAX, statCost } from '../content/progression';
+import { ECONOMY, STAT_POINT_MAX, statCost } from '../content/progression';
 import type { ClassId } from '../content/types';
 import { chooseBotStat, chooseBotTier } from './botEquipment';
 import { createWorld } from './step';
@@ -91,7 +91,7 @@ describe('bot equipment decisions', () => {
       ship.xp = 10_000;
       for (let i = 0; i < 5; i++) expect(buyTier(w, ship, chooseBotTier(w, ship))).toBe(true);
       expect(buyTier(w, ship, chooseBotTier(w, ship))).toBe(false);
-      ship.shards = 2_000;
+      ship.shards = 4 * ECONOMY.statCosts.reduce((sum, cost) => sum + cost, 0) + 800;
       for (let i = 0; i < 28; i++) expect(buyStat(ship, chooseBotStat(w, ship))).toBe(true);
       expect(chooseBotStat(w, ship)).toBe(-1);
       expect([...ship.statPoints]).toEqual([7, 7, 7, 7]);

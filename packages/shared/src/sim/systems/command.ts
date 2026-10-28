@@ -79,18 +79,50 @@ export function teamSees(w: World, team: TeamId, x: number, y: number): boolean 
   return false;
 }
 
-/** Why an order can't go through right now, or null if it can. */
+/** Why a human order cannot go through right now, or null if it can. */
 export function commandBlocker(w: World, order: CommandOrder): string | null {
+  return orderBlocker(w, order, false);
+}
+
+/** A human Admiral covers vacant FOB seats, so their shared Fuel is never spent behind their back. */
+export function automaticSeatAvailable(team: TeamState, seat: SeatId): boolean {
+  return team.seats[seat] < 0 && team.seats[SEAT_ADMIRAL] < 0 && seat <= team.fobs.length;
+}
+
+/** Automatic support uses the same economy and cooldowns, and only targets currently visible ground. */
+export function automaticCommandBlocker(w: World, order: CommandOrder): string | null {
+  return orderBlocker(w, order, true);
+}
+
+function orderBlocker(w: World, order: CommandOrder, automatic: boolean): string | null {
   const team = w.teams[order.team];
   const seat = order.seat ?? SEAT_ADMIRAL;
-  if (team.seats[seat] < 0) return 'No commander';
   const def = COMMAND_BY_ID[order.id];
   if (!def) return 'Unknown order';
-  if (!seatCanIssue(team, seat, order.id)) return def.role === 'fob' ? 'FOB Commanders run Fuel wings' : 'Admiral only';
+  if (automatic) {
+    if (!automaticSeatAvailable(team, seat)) return 'Human command has control';
+    if (def.role === 'fob' ? seat === SEAT_ADMIRAL : seat !== SEAT_ADMIRAL) return 'Wrong command seat';
+  } else {
+    if (team.seats[seat] < 0) return 'No commander';
+    if (!seatCanIssue(team, seat, order.id)) return def.role === 'fob' ? 'FOB Commanders run Fuel wings' : 'Admiral only';
+  }
   if (w.time < team.commandReadyAt(order.id, seat)) return 'Cooling down';
   if (team.resources[RESOURCE_INDEX[def.resource]] < commandCost(w, order.team, order.id)) return `Not enough ${def.resource}`;
   if (def.target === 'point' && (order.point < 0 || order.point >= w.points.length)) return 'Pick a node';
-  if (def.needsVision && !teamSees(w, order.team, order.x, order.y)) return 'Your team cannot see there';
+  const target = def.target === 'point' ? w.points[order.point] : order;
+  if ((def.needsVision || (automatic && def.target !== 'none')) && !teamSees(w, order.team, target.x, target.y)) return 'Your team cannot see there';
+  // Check the entire order before running any primitive: a half-created wing must never charge
+  // the full price, nor may a failed allocation consume a human or staff cooldown. Deployables
+  // retain their existing replacement-cap behavior and are intentionally not counted here.
+  let drones = 0, strikes = 0, zones = 0;
+  for (const step of def.steps) {
+    if (step.kind === 'summon') drones += step.count;
+    else if (step.kind === 'strike') strikes++;
+    else if (step.kind === 'zone') zones++;
+  }
+  if (drones > w.drones.capacity - w.drones.count) return 'Strike craft limit reached';
+  if (strikes > w.strikes.capacity - w.strikes.count) return 'Orbital strike limit reached';
+  if (zones > w.zones.capacity - w.zones.count) return 'Area effect limit reached';
   return null;
 }
 
@@ -116,9 +148,21 @@ export function launchBase(w: World, team: TeamId, seat: SeatId, x: number, y: n
   return best;
 }
 
-/** Step 1: carry out a Fleet Command order. Returns false if it was refused. */
+/** Step 1: carry out a human Fleet Command order. Returns false if it was refused. */
 export function issueCommand(w: World, order: CommandOrder): boolean {
   if (commandBlocker(w, order)) return false;
+  executeOrder(w, order);
+  return true;
+}
+
+/** Vacant-seat support never commandeers a pilot or receives a separate resource/cooldown ledger. */
+export function issueAutomaticCommand(w: World, order: CommandOrder): boolean {
+  if (automaticCommandBlocker(w, order)) return false;
+  executeOrder(w, order);
+  return true;
+}
+
+function executeOrder(w: World, order: CommandOrder): void {
   const team = w.teams[order.team];
   const seat = order.seat ?? SEAT_ADMIRAL;
   const def = COMMAND_BY_ID[order.id];
@@ -128,9 +172,9 @@ export function issueCommand(w: World, order: CommandOrder): boolean {
     x = w.points[order.point].x;
     y = w.points[order.point].y;
   }
-  // The order carries its commander as owner so its damage, healing and kills score for them.
-  const commander = w.ships[team.seats[seat]];
-  const caster: Caster = { team: order.team, slot: commandOwner(commander.slot), ship: null, x, y, angle: order.team === 0 ? 0 : Math.PI, cursorX: x, cursorY: y, targetSlot: -1 };
+  const commanderSlot = team.seats[seat];
+  const commander = commanderSlot >= 0 ? w.ships[commanderSlot] : null;
+  const caster: Caster = { team: order.team, slot: commander ? commandOwner(commander.slot) : -1, ship: null, x, y, angle: order.team === 0 ? 0 : Math.PI, cursorX: x, cursorY: y, targetSlot: -1 };
   if (def.role === 'fob') {
     const base = launchBase(w, order.team, seat, x, y);
     caster.launchX = base.x;
@@ -140,10 +184,9 @@ export function issueCommand(w: World, order: CommandOrder): boolean {
   runSteps(w, caster, def.steps);
   const cost = commandCost(w, order.team, order.id);
   team.resources[RESOURCE_INDEX[def.resource]] -= cost;
-  commander.score += cost * SCORE.commandSpend;
+  if (commander) commander.score += cost * SCORE.commandSpend;
   team.commandReady[`${seat}:${order.id}`] = w.time + def.cooldown;
   w.emit(EventType.Command, order.team, COMMANDS.findIndex((c) => c.id === order.id), x, y, seat);
-  return true;
 }
 
 /** Credits for the next step of a track on a base, or -1 if there is none (maxed, or that refit is already fitted). */

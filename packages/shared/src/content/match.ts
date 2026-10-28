@@ -1,5 +1,5 @@
 export const MATCH = {
-  timeLimit: 35 * 60,
+  timeLimit: 45 * 60,
   /** Kills snapshot for the harness comeback metric. */
   comebackCheckAt: 10 * 60,
   vpPerMothershipPercent: 1,
@@ -42,7 +42,7 @@ export const MATCH = {
     brakeResponse: 4,
     stopSpeed: 0.5,
     /** Main weapons divert drive power: gradual slowdown while firing/charging. */
-    firingSpeedMul: 0.30,
+    firingSpeedMul: 0.10,
     firingHold: 0.24,
     firingDrag: 5,
     firingDeceleration: 2.2,
@@ -64,7 +64,9 @@ export const POINTS = {
   /** Each resource a team banks at the start, so the commander has an opening move. */
   startingBank: 40,
   bankCap: 500,
-  hotZoneAt: [8 * 60, 16 * 60, 24 * 60] as readonly number[],
+  /** Resource hot zones keep rotating through the late game. */
+  hotZoneStart: 8 * 60,
+  hotZoneInterval: 6 * 60,
   hotZoneDuration: 180,
   hotZoneIncomeMul: 2,
 } as const;

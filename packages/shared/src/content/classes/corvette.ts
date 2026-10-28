@@ -1,4 +1,5 @@
 import type { AbilityDef, ShipClass } from '../types';
+import { POWER_LOW, POWER_MID } from '../power';
 
 const DEG = Math.PI / 180;
 
@@ -84,7 +85,7 @@ export const CORVETTE: ShipClass = {
           name: 'Phase Slip Thrusters',
           tag: 'POWER',
           description: 'Gain Ghost Step (G): a 280 u blink while cloaked. Power on WEAPONS (↑) while cloaked no longer costs you speed.',
-          modifiers: [{ stat: 'speed', op: 'mul', value: 0.22, when: ['cloaked', 'powerWeapons'] }],
+          modifiers: [{ stat: 'powerSpeedFloor', op: 'add', value: POWER_MID - POWER_LOW, when: ['cloaked', 'powerWeapons'] }],
           extraAbility: {
             id: 'corvette.ghostStep',
             name: 'Ghost Step',
@@ -141,7 +142,7 @@ export const CORVETTE: ShipClass = {
           id: 'corvette.t4.saboteurCharges',
           name: 'Demolition Saboteur',
           tag: 'NODE',
-          description: '×2.2 damage to held nodes, structures and deployables for 4 s after leaving cloak.',
+          description: '×2.2 damage to held nodes, structures and deployables for 3 s after leaving cloak.',
           modifiers: [{ stat: 'structureDamage', op: 'mul', value: 1.2, when: 'afterCloak' }],
           botTags: ['structure'],
         },

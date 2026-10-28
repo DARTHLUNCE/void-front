@@ -9,7 +9,7 @@ import { DEPLOYABLES, DRONES, NODE, WING_LAUNCH } from '../../content/structures
 import type { GunDef, PrimitiveDef, PrimitiveKind, StatusApply, TeamId } from '../../content/types';
 import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
-import { apHit, damageDeployable, damageShip, damageStructure, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
+import { apHit, damageDeployable, damageShip, damageStructure, drainShipShield, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
 import { damageDrone, launchFromBow, spawnDrone } from './drones';
 import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
@@ -155,7 +155,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       if (o === c.ship || !o.alive || (o.x - cx) ** 2 + (o.y - cy) ** 2 > (r + o.radius) ** 2) continue;
       const friendly = o.team === c.team;
       if (friendly ? !allies : !enemies) continue;
-      if (!friendly && step.shieldDrain) o.shield *= 1 - step.shieldDrain;
+      if (!friendly && step.shieldDrain) drainShipShield(w, o, step.shieldDrain, c.slot);
       if (!friendly && step.damage) damageShip(w, o, step.damage * mul, c.slot, hit);
       if (friendly && step.heal) creditHealing(w, c.ship, o, heal(o, o.maxHull * step.heal));
       if (friendly && step.shieldHeal) o.shield = Math.min(o.maxShield, o.shield + o.maxShield * step.shieldHeal);
@@ -535,19 +535,21 @@ export function abilityCooldown(w: World, s: Ship, st: AbilityState): number {
 }
 
 /** Charges a cast spends (Storm Run makes dashes free). */
-export function castCost(w: World, s: Ship): number {
-  return liveStat(w, s, 'castCost', 1);
+export function castCost(w: World, s: Ship, st: AbilityState = s.signature): number {
+  return st === s.signature ? liveStat(w, s, 'castCost', 1) : 1;
 }
 
 export function canCast(w: World, s: Ship, st: AbilityState): boolean {
-  if (!canAct(s) || s.cruising) return false;
+  if (!canAct(s) || s.cruising || w.time < st.nextCastAt) return false;
   if (st.def.requires && !hasStatus(s, st.def.requires)) return false;
-  return st.charges >= Math.min(1, castCost(w, s));
+  return st.charges >= Math.min(1, castCost(w, s, st));
 }
 
 /** Run an ability's steps in order. Returns false if it couldn't be cast. */
 export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number): boolean {
   if (!canCast(w, s, st)) return false;
+  // Snapshot before effects: an ability cannot grant itself a free activation.
+  const cost = castCost(w, s, st);
   const c = shipCaster(s, targetSlot);
   c.abilityVisual = abilityVisualIndex(st.def.id);
   const originX = s.x, originY = s.y;
@@ -559,7 +561,8 @@ export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number)
     // Leave event capacity for combat confirmations. No RNG or mechanical state is touched.
     if (w.eventCount < 384) w.emit(EventType.AbilityCast, s.team, s.slot, originX, originY, s.angle, 0, c.abilityVisual);
   }
-  st.charges -= castCost(w, s);
+  st.charges -= cost;
+  st.nextCastAt = w.time + (st.def.recastInterval ?? 0);
   if (st.cooldown <= 0) st.cooldown = abilityCooldown(w, s, st);
   return true;
 }

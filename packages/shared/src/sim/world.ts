@@ -1,5 +1,5 @@
 import { AUDIO_EVENT_CAPACITY, AUDIO_EVENT_STRIDE } from '../content/sounds';
-import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
+import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
 import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
 import type { CommandId, SeatId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
@@ -125,6 +125,7 @@ export interface BotBrain {
 
 export class AbilityState {
   cooldown = 0;
+  nextCastAt = 0;
   charges: number;
   maxCharges: number;
 
@@ -137,6 +138,7 @@ export class AbilityState {
 
   reset(): void {
     this.cooldown = 0;
+    this.nextCastAt = 0;
     this.charges = this.maxCharges;
   }
 }
@@ -178,6 +180,8 @@ export class Ship {
   /** v2: Reactor Power mode (POWER_INDEX) and when it last changed. */
   powerMode = 0;
   powerSwitchAt = -99;
+  /** ext: last passive power-switch proc; changing power itself is always immediate. */
+  powerSwitchProcAt = -Infinity;
   /** v2: secondary turret cooldowns, one per mount. */
   readonly secondaryCd = new Float64Array(16);
   /** v2: a rippling projectile salvo still to fire (Sequential Tube Salvo). */
@@ -606,10 +610,9 @@ export interface SimEvent {
 export class TeamState {
   kills = 0;
   nextDirector = 0;
-  /** A push gathers at a staging point until this time, then attacks until pushUntil. */
+  /** Finite assembly and attack leases for an assault chosen from current conditions. */
   pushGatherUntil = -1;
   pushUntil = -1;
-  nextPush: number;
   readonly firstSlot: number;
   readonly lastSlot: number;
   /** Banked munitions, fuel, manpower. */
@@ -653,7 +656,6 @@ export class TeamState {
     this.resources.fill(POINTS.startingBank);
     this.firstSlot = id * fleetSize;
     this.lastSlot = this.firstSlot + fleetSize - 1;
-    this.nextPush = rng.range(DIRECTOR.firstPushMin, DIRECTOR.firstPushMax);
     this.defendTarget = mothership.index;
   }
 

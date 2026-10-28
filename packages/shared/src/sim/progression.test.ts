@@ -56,23 +56,43 @@ describe('tiers (XP)', () => {
     expect(a.xp).toBeCloseTo(0);
   });
 
-  it('tier 3 swaps the hull and keeps every Shard Calibration level (v2: no reset)', () => {
+  it('a new hull resets all calibration tracks, retaining banked shards, XP and tier picks', () => {
     const { w, a } = duelWorld();
     grantShards(w, a, 1_000);
-    buyStat(a, 0);
-    buyStat(a, 0);
-    grantXp(w, a, tierCost(0) + tierCost(1) + tierCost(2));
+    for (let stat = 0; stat < 4; stat++) { buyStat(a, stat); buyStat(a, stat); }
+    grantXp(w, a, tierCost(0) + tierCost(1) + tierCost(2) + 75);
     buyTier(w, a, 0);
     buyTier(w, a, 0);
-    expect(a.statPoints[0]).toBe(2);
-    const hull = a.hullModel;
+    expect(Array.from(a.statPoints)).toEqual([2, 2, 2, 2]);
+    a.hull = a.maxHull * 0.45;
+    a.shield = a.maxShield * 0.3;
+    const oldHull = a.hullModel;
+    const bank = a.shards;
     buyTier(w, a, 0);
-    expect(a.hullModel).not.toBe(hull);
-    expect(Array.from(a.statPoints)).toEqual([2, 0, 0, 0]);
-    // Costs keep climbing from where you are: the next weapons level is level 3's price.
-    const before = a.shards;
+    expect(a.hullModel).not.toBe(oldHull);
+    expect(Array.from(a.statPoints)).toEqual([0, 0, 0, 0]);
+    expect(a.shards).toBe(bank);
+    expect(a.xp).toBeCloseTo(75);
+    expect(Array.from(a.picks).slice(0, 3)).toEqual([0, 0, 0]);
+    expect(a.hull / a.maxHull).toBeCloseTo(0.45);
+    expect(a.shield / a.maxShield).toBeCloseTo(0.3);
     buyStat(a, 0);
-    expect(before - a.shards).toBe(ECONOMY.statCosts[2]);
+    expect(a.shards).toBe(bank - statCost(0));
+    expect(a.statPoints[0]).toBe(1);
+  });
+
+  it('ordinary tiers and death keep calibration after a hull evolution', () => {
+    const { w, a } = duelWorld();
+    grantXp(w, a, 10_000);
+    for (let i = 0; i < 3; i++) buyTier(w, a, 0);
+    grantShards(w, a, 100);
+    buyStat(a, 0);
+    buyStat(a, 1);
+    buyTier(w, a, 1);
+    buyTier(w, a, 1);
+    expect(Array.from(a.statPoints)).toEqual([1, 1, 0, 0]);
+    killShip(w, a);
+    expect(Array.from(a.statPoints)).toEqual([1, 1, 0, 0]);
   });
 
   it('the input path buys tiers and stats during a step', () => {
@@ -89,10 +109,10 @@ describe('tiers (XP)', () => {
 });
 
 describe('death', () => {
-  it('keeps 60% of unspent shards, spills the rest as loot less the 10% kill tax, keeps spent upgrades and all XP', () => {
+  it('keeps 60% below the loss cap, spills the rest less the 10% kill tax, and keeps upgrades and XP', () => {
     const { w, a, b } = duelWorld();
     grantShards(w, a, 200);
-    buyStat(a, 0); // 12 spent
+    buyStat(a, 0); // First calibration purchase is already protected from death.
     grantXp(w, a, 300);
     const xp = a.xp;
     const unspent = a.shards;
@@ -106,7 +126,7 @@ describe('death', () => {
     let loot = 0;
     for (let i = 0; i < w.crystals.count; i++) if (w.crystals.at(i).kind === 2) loot += w.crystals.at(i).shards;
     const lost = unspent * (1 - ECONOMY.deathShardKeep);
-    expect(loot).toBe(Math.floor(lost * (1 - HIGH_COMMAND.killTax)));
+    expect(loot).toBeCloseTo(lost * (1 - HIGH_COMMAND.killTax));
     // The killers' High Command banks the tax as Credits.
     expect(w.teams[b.team].credits).toBeCloseTo(lost * HIGH_COMMAND.killTax);
     expect(w.teams[a.team].credits).toBe(0);

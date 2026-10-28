@@ -1,14 +1,23 @@
 import { performance } from 'node:perf_hooks';
 import { createWorld, step, type ClassId, type World } from '@void-front/shared';
 
-export interface MatchResult {
+export interface MatchMilestones {
+  /** First observed loss anywhere in the match; null means no FOB fell. */
+  firstFobLossSec: number | null;
+  /** First originally shielded Titan to become vulnerable; null means neither was exposed. */
+  firstTitanExposureSec: number | null;
+  /** First actual damage to either Titan, even if later repaired; null means neither was hit. */
+  firstTitanDamageSec: number | null;
+}
+
+export interface MatchResult extends MatchMilestones {
   index: number;
   seed: number;
   fleet: number;
   winner: 0 | 1 | -1;
   endReason: 'destroyed' | 'timeLimit';
-  /** 'siege' | 'territory' from Phase 1; Phase 0 motherships are never shielded. */
-  route: 'unshielded' | 'siege' | 'territory' | 'none';
+  /** Destroyed initially shielded Titans use the siege route; timeouts never receive a win route. */
+  route: 'unshielded' | 'siege' | 'none';
   durationSec: number;
   kills: [number, number];
   killsAtCheck: [number, number] | null;
@@ -31,6 +40,34 @@ export interface MatchResult {
   tickMsMax: number;
   projectilePeak: number;
   projectileOverflow: number;
+}
+
+/** Read-only milestone collection; observation runs outside the measured simulation tick. */
+export class MatchProgress implements MatchMilestones {
+  firstFobLossSec: number | null = null;
+  firstTitanExposureSec: number | null = null;
+  firstTitanDamageSec: number | null = null;
+  private readonly initiallyShielded: readonly [boolean, boolean];
+
+  constructor(w: World) {
+    this.initiallyShielded = [w.teams[0].mothership.shielded, w.teams[1].mothership.shielded];
+    this.observe(w);
+  }
+
+  observe(w: World): void {
+    if (this.firstFobLossSec === null && w.stats.fobsDestroyed > 0) this.firstFobLossSec = w.time;
+    for (const team of w.teams) {
+      const titan = team.mothership;
+      if (this.firstTitanExposureSec === null && this.initiallyShielded[team.id] && !titan.shielded) this.firstTitanExposureSec = w.time;
+      if (this.firstTitanDamageSec === null && titan.lastDamageTime >= 0) this.firstTitanDamageSec = w.time;
+    }
+  }
+
+  route(w: World): MatchResult['route'] {
+    if (w.match.endReason !== 'destroyed') return 'none';
+    for (const team of w.teams) if (!team.mothership.alive && this.initiallyShielded[team.id]) return 'siege';
+    return 'unshielded';
+  }
 }
 
 /** Tick-time histogram with 0.01 ms buckets up to 100 ms. */
@@ -65,11 +102,13 @@ export class TickTimer {
 /** Bots roll their classes unless `classId` forces one. */
 export function runMatch(index: number, seed: number, fleet: number, classId?: ClassId): MatchResult {
   const w = createWorld({ seed, fleetSize: fleet, classId });
+  const progress = new MatchProgress(w);
   const timer = new TickTimer();
   while (!w.match.over) {
     const t0 = performance.now();
     step(w);
     timer.add(performance.now() - t0);
+    progress.observe(w);
   }
   const m = w.match;
   const winner = m.winner;
@@ -81,8 +120,11 @@ export function runMatch(index: number, seed: number, fleet: number, classId?: C
     fleet,
     winner,
     endReason: m.endReason === 'destroyed' ? 'destroyed' : 'timeLimit',
-    route: m.endReason === 'destroyed' ? 'unshielded' : 'none',
+    route: progress.route(w),
     durationSec: m.endTime,
+    firstFobLossSec: progress.firstFobLossSec,
+    firstTitanExposureSec: progress.firstTitanExposureSec,
+    firstTitanDamageSec: progress.firstTitanDamageSec,
     kills: [w.teams[0].kills, w.teams[1].kills],
     killsAtCheck: check,
     comeback,

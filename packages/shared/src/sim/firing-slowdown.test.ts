@@ -98,6 +98,37 @@ it('applies the same firing limit to allied and enemy bots', () => {
   for (let i=0; i<90; i++) { moveShips(w); w.time += DT; }
   for (const s of bots) {
     expect(firingSpeedMultiplier(w, s)).toBe(MATCH.movement.firingSpeedMul);
-    expect(Math.hypot(s.vx,s.vy)).toBeLessThan(baseSpeed(w, s) * .31);
+    expect(Math.hypot(s.vx,s.vy)).toBeLessThan(baseSpeed(w, s) * MATCH.movement.firingSpeedMul * 1.04);
   }
 });
+
+
+it('uses the requested ten-percent firing limit for the shared player and bot drive', () => {
+  expect(MATCH.movement.firingSpeedMul).toBe(.10);
+});
+
+for (const cls of ['patrol', 'frigate', 'battleship'] as const) for (const keys of [false, true]) {
+  it(`${cls}: releasing ${keys ? 'keyboard' : 'mouse'} fire eases out of the ten-percent limit`, () => {
+    const { w, ship, tick } = pilot(cls);
+    ship.input.fire = true;
+    ship.input.steerWithAim = !keys;
+    for (let i = 0; i < 180; i++) tick();
+    const loadedSpeed = Math.hypot(ship.vx, ship.vy);
+    expect(loadedSpeed / baseSpeed(w, ship)).toBeCloseTo(.10, 3);
+    ship.fireCooldown = DT;
+    aimAndFire(w, ship);
+    expect(ship.lastFireTime).toBe(w.time);
+    ship.input.fire = false;
+    tick();
+    expect(firingSpeedMultiplier(w, ship)).toBe(.10);
+    expect(Math.hypot(ship.vx, ship.vy)).toBeLessThan(loadedSpeed * 1.05);
+    for (let i = 0; i < Math.ceil(MATCH.movement.firingHold / DT); i++) tick();
+    const beforeRelease = Math.hypot(ship.vx, ship.vy);
+    tick();
+    expect(firingSpeedMultiplier(w, ship)).toBe(1);
+    expect(Math.hypot(ship.vx, ship.vy)).toBeGreaterThan(beforeRelease);
+    expect(Math.hypot(ship.vx, ship.vy)).toBeLessThan(baseSpeed(w, ship) * .5);
+    for (let i = 0; i < 150; i++) tick();
+    expect(Math.hypot(ship.vx, ship.vy)).toBeGreaterThan(baseSpeed(w, ship) * .95);
+  });
+}

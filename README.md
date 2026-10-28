@@ -58,7 +58,7 @@ them on a fast GPU for sharper light and shadows, or turn lighting off with L.
 | Signature ability | Right click | Right click |
 | Ultimate (tier 5) | T | T |
 | Extra ability (some tier nodes) | G | G |
-| Sub-Light drive (charges 1.5 s, then 2.5× speed; not in reverse) | Hold Shift | Hold Shift |
+| Sub-Light drive (charges 0.7 s, then 2.5× speed; not in reverse) | Hold Shift | Hold Shift |
 | Throttle, −40% … +100% in 10% steps (below zero backs up, nose on the aim) | Mouse wheel | Mouse wheel |
 | Reactor Power: speed / weapons / shields / equalize | ← / ↑ / → / ↓ | ← / ↑ / → / ↓ |
 | Shard Calibration (Weapons, Hull & Plating, Engines, Reactor) | Q W E R | Z X C V |
@@ -72,7 +72,7 @@ them on a fast GPU for sharper light and shadows, or turn lighting off with L.
 without damage. Overflow strikes the hull through its Armor Rating: the bow arc carries +25% armor, the
 stern −25%. Every gun has a caliber (AP): small calibers glance off heavy armor (you'll see sparks), heavy
 slugs overpenetrate thin scouts for 65% damage. Frigates and bigger ships carry loose auto-aim secondary
-turrets that fire on their own. Asteroid nodes are solid rock that blocks every shot.
+turrets that fire on their own. Firing or charging the primary gun gradually limits flight to 10% of available normal speed; releasing it restores acceleration. This rule is identical for players and bots; defensive turrets do not impose it. Asteroid nodes are solid rock that blocks every shot.
 
 You fly for Cobalt (blue) by default, or Ember from the Launch Dock. Win by destroying the enemy Titan
 (mothership).
@@ -80,12 +80,12 @@ It is shielded until both of Ember's FOBs (the space stations in front of it) ar
 asteroid nodes in the middle for resources (the Research Lab in the center gives +25% XP instead): a
 node someone holds has to be shot down, then sits locked for 20 s before it can be captured again.
 Destroying an enemy FOB leaves you a salvage beacon to respawn at. FOBs and Titans heal friendly ships
-nearby. Only command seats (from the Titan and FOBs) and Carriers launch starships. Bot matches run about 15–25 minutes.
+nearby. Only command seats (from the Titan and FOBs) and Carriers launch starships. The round limit is 45 minutes, leaving room for later progression within the intended 30–45 minute match window. Match pacing is being evaluated locally; time-limit results are not counted as successful Titan sieges.
 
 **Economy.** Shards (crystals and wreck loot) buy Shard Calibration levels; each level costs more, and
-they are kept all match (v2: no reset when tier 3 swaps your hull). XP from kills, damage, healing and
-capturing or defending points buys tiers.
-Dying drops 40% of your unspent shards as loot; XP and anything you bought are kept.
+they reset when you evolve into a new hull. Unspent shards, XP and tier choices carry over; dying does not reset calibration. XP from kills, damage, healing and
+capturing or actively defending points buys tiers. Damaging hostile combat craft and contributing a qualifying kill assist also earn XP. Shards use three-layer seeded density noise to form loose natural pockets without fixed farming markers. Starting positions, values and types are exactly point-mirrored for both teams; replenishment keeps the same pairing and total budget.
+Calibration costs 32 / 64 / 140 / 320 / 700 / 1,300 / 2,000 shards per level: 4,556 to max one track, 18,224 for all four. Tier purchases cost 150 / 350 / 1,700 / 2,000 / 2,800 XP (7,000 total), preserving early build choices while moving hull evolution and ultimate progression later. Early levels remain accessible while late specialization requires saving. Dying loses 40% of unspent shards, capped at 160; 90% of that loss drops as loot and 10% funds enemy High Command. XP and purchased upgrades are kept.
 
 **Command seats.** Up to three humans per team can command instead of flying: pan the war map (WASD,
 arrows, screen edge, wheel to zoom), right-click to ping targets for free, and spend what your nodes and
@@ -99,7 +99,7 @@ FOBs pay each minute on orders (hotkeys 1–9, 0, -, =, then Z X C V B N, in pan
   Defender wings from their FOB (from the Titan once it falls); they fly out to the spot you click. Buys
   that FOB's upgrades.
 
-The Admiral covers any FOB seat nobody has taken. **High Command** takes 10% of the loot from every kill
+The Admiral covers any FOB seat nobody has taken. Without a human Admiral, vacant-seat fleet staff can buy limited support using the same bank, visibility and cooldown rules; a human taking a seat stops staff orders there. Base upgrades remain a human decision. **High Command** takes 10% of the loot from every kill
 as Credits, spent on base upgrades: rocket or laser turrets, Shipyard (stronger, wider heal aura) and
 Armor Plating (more hull).
 
@@ -127,3 +127,13 @@ http://localhost:5173/ship-test.html while `pnpm dev` is running. How the sprite
 maps are built (and the Python tools that rebuild them) is in
 [docs/reference-sprite-test.md](docs/reference-sprite-test.md).
 Project conventions are in [docs/CLAUDE.md](docs/CLAUDE.md).
+
+### Local gameplay refinement diagnostics
+
+`/gameplay-lab.html` compares sampled match timelines, base progress and each class's contribution.
+The bundled local audit reports distinguish time-limit decisions from destroyed Titans. The viewer
+also imports JSON produced by the match-audit runner; sampled positions are not a live replay.
+
+Reactor Power emphasis is an optional situational tradeoff. Equalized retains normal performance
+without mode cycling. Movement, earned progression and siege behavior are evaluated together;
+headless results do not replace human playtesting or prove future multiplayer balance.

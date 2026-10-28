@@ -36,9 +36,11 @@ export function applyStatus(w: World, ship: Ship, apply: StatusApply): boolean {
       }
       break;
     case 'stack': {
-      const stacks = active ? Math.min(ship.statusStacks[i] + 1, def.maxStacks ?? 99) : 1;
+      const previous = active ? ship.statusStacks[i] : 0;
+      const stacks = Math.min(previous + 1, def.maxStacks ?? 99);
       ship.statusStacks[i] = stacks;
-      ship.statusMag[i] = active ? ship.statusMag[i] + mag : mag;
+      // At the cap, another hit refreshes duration without adding unrepresented damage.
+      ship.statusMag[i] = active ? ship.statusMag[i] + (stacks > previous ? mag : 0) : mag;
       ship.statusTime[i] = Math.max(ship.statusTime[i], duration);
       break;
     }

@@ -266,3 +266,17 @@ export const COMMAND_RULES = {
   /** Share of skirmishers sent to a pinged node. */
   pingBotFrac: 0.2,
 } as const;
+
+/** Vacant command seats provide visible, budgeted support; humans take over immediately. */
+export const AUTOMATIC_COMMAND = {
+  interval: 6,
+  /** Pressure requirements scale with the fleet; two ships can matter in a small match. */
+  minPressure: 2,
+  pressureFleetFraction: 0.035,
+  clusterRadius: 550,
+  supportRadius: 1500,
+  /** Emergency repair crews only work during an active Titan defense. */
+  repairBelow: 0.65,
+  repairDamageWindow: 15,
+  deadFleetFraction: 0.2,
+} as const;

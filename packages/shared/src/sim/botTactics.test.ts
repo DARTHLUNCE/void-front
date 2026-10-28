@@ -3,7 +3,8 @@ import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import type { ClassId } from '../content/types';
 import { geometryOf } from './hullCollision';
 import { createWorld } from './step';
-import { aimAndFire, gunRange } from './systems/combat';
+import { aimAndFire, damageShip, gunRange } from './systems/combat';
+import { getSiegeDestination } from './botSiege';
 import { rebuildDroneHash } from './systems/drones';
 import { moveShips, rebuildShipHash } from './systems/movement';
 import { botAim, steer, think } from './systems/pilot';
@@ -232,4 +233,60 @@ describe('bot tactical fairness and intent', () => {
     expect(Math.cos(a.s.input.aim)).toBeLessThan(-.5);
   });
 
+});
+
+describe('siege defender interruption provenance', () => {
+  function battery() {
+    const a = arena();
+    const target = a.w.teams[a.enemy.team].fobs[0];
+    target.alive = true; target.shielded = false;
+    target.x = a.s.x + gunRange(a.s, a.w) * .8; target.y = a.s.y;
+    a.s.bot!.job = Job.Assault; a.w.teams[a.s.team].pushGatherUntil = 0;
+    const station = getSiegeDestination(a.w, a.s, target);
+    expect(station.admitted).toBe(true);
+    a.s.x = station.x; a.s.y = station.y;
+    a.s.angle = a.s.thrustAngle = Math.atan2(target.y - a.s.y, target.x - a.s.x);
+    a.s.hull = a.s.maxHull * .55; a.s.shield = 0;
+    a.enemy.alive = true; a.enemy.x = a.s.x;
+    a.enemy.y = a.s.y + geometryOf(a.w, a.s).radius + geometryOf(a.w, a.enemy).radius + 90;
+    a.enemy.angle = Math.PI / 2; // The nearby defender is facing away from the battery.
+    rebuildShipHash(a.w);
+    return { ...a, target };
+  }
+  it('does not misattribute base-turret damage to an incidental nearby defender', () => {
+    const a = battery(); damageShip(a.w, a.s, 1, -1);
+    think(a.w, a.s);
+    expect(a.s.bot!.retreating).toBe(false);
+    expect(a.s.bot!.targetStructure).toBe(a.target.index);
+    expect(a.s.bot!.targetShip).toBe(-1);
+  });
+  it('still interrupts base fire for a close visible ship that actually damaged the battery', () => {
+    const a = battery(); damageShip(a.w, a.s, 1, a.enemy.slot);
+    think(a.w, a.s);
+    expect(a.s.bot!.targetShip).toBe(a.enemy.slot);
+    expect(a.s.bot!.targetStructure).toBe(-1);
+  });
+  it('responds to the real close attacker even when another visible target has more utility', () => {
+    const a = battery(), incidental = a.w.ships[a.w.fleetSize + 1];
+    incidental.alive = true; incidental.visibleMask = 1 << a.s.team;
+    incidental.x = a.s.x + 150; incidental.y = a.s.y;
+    incidental.hull = incidental.maxHull * .1;
+    damageShip(a.w, a.s, 1, a.enemy.slot); rebuildShipHash(a.w);
+    think(a.w, a.s);
+    expect(a.s.bot!.targetShip).toBe(a.enemy.slot);
+  });
+  it('does not refresh a stale ship threat when a turret lands a new hit', () => {
+    const a = battery(); damageShip(a.w, a.s, 1, a.enemy.slot);
+    a.w.time += 4; damageShip(a.w, a.s, 1, -1);
+    think(a.w, a.s);
+    expect(a.s.bot!.targetStructure).toBe(a.target.index);
+    expect(a.s.bot!.targetShip).toBe(-1);
+  });
+  it('does not turn a damage attribution into tracking a hidden attacker', () => {
+    const a = battery(); damageShip(a.w, a.s, 1, a.enemy.slot);
+    a.enemy.visibleMask = 0;
+    think(a.w, a.s);
+    expect(a.s.bot!.targetShip).toBe(-1);
+    expect(a.s.bot!.targetStructure).toBe(a.target.index);
+  });
 });

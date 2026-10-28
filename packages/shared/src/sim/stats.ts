@@ -5,6 +5,7 @@ import { STAT_POINTS } from '../content/progression';
 import { QUIRK_PARAMS } from '../content/quirks';
 import type { ConditionId, ModifierDef, StatId } from '../content/types';
 import { STATUS_INDEX } from './systems/status';
+import { forwardFlightAtSpeed } from './flightEnvelope';
 import { AbilityState, type Ship, type World } from './world';
 
 export const STAT_IDS: readonly StatId[] = [
@@ -76,6 +77,7 @@ export const STAT_IDS: readonly StatId[] = [
   'droneAp',
   'droneRelaunch',
   'droneShieldSteal',
+  'powerSpeedFloor',
 ];
 
 export const STAT_INDEX = Object.fromEntries(STAT_IDS.map((id, i) => [id, i])) as Record<StatId, number>;
@@ -127,6 +129,7 @@ function keepCooldown(prev: AbilityState | null, def: AbilityState['def'], extra
   const next = new AbilityState(def, extraCharges);
   if (prev && prev.def === def) {
     next.cooldown = prev.cooldown;
+    next.nextCastAt = prev.nextCastAt;
     next.charges = Math.min(next.maxCharges, prev.charges);
   }
   return next;
@@ -251,7 +254,7 @@ export const CONDITIONS: Record<ConditionId, ConditionFn> = {
   fullChargeVsArmored: (_w, _s, h) => h.fullCharge && h.target !== null && h.target.cls.armor >= ARMORED_MIN,
   targetStern: (_w, _s, h) => h.stern,
   targetPainted: (_w, _s, h) => h.target !== null && has(h.target, 'painted'),
-  jinking: (_w, s) => s.vx * s.vx + s.vy * s.vy >= (JINK_SPEED * s.cls.speed) ** 2,
+  jinking: (w, s) => forwardFlightAtSpeed(w, s, JINK_SPEED),
 };
 
 /** ship.quirk slot where Ghost Drive records when cloak last ended (shared with systems/quirks.ts). */

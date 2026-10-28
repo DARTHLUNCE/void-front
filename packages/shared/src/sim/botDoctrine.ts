@@ -1,6 +1,7 @@
 import type { ClassId } from '../content/types';
 import { geometryOf } from './hullCollision';
 import { MATCH } from '../content/match';
+import { angleDelta } from './angles';
 import { baseSpeed } from './systems/movement';
 import { statValue } from './stats';
 import { pointBuff } from './systems/points';
@@ -9,6 +10,8 @@ import type { Ship, World } from './world';
 
 /** Preferences affect decisions only: no changes to hulls, weapons, abilities or aim accuracy. */
 export interface BotDoctrine {
+  /** Local combat craft may compete with distant ships; other primaries keep their ship focus. */
+  screenCraft?: boolean;
   targetLight: number;
   targetArmored: number;
   isolatedPreference: number;
@@ -18,7 +21,7 @@ export interface BotDoctrine {
   maxChaseRange: number;
 }
 const DOCTRINES: Readonly<Record<ClassId, Readonly<BotDoctrine>>> = {
-  patrol: { targetLight: 1.2, targetArmored: 1, isolatedPreference: 1.15, retreatHealth: .38, commitSeconds: 3, rangeFraction: .58, maxChaseRange: 1.35 },
+  patrol: { screenCraft: true, targetLight: 1.2, targetArmored: 1, isolatedPreference: 1.15, retreatHealth: .38, commitSeconds: 3, rangeFraction: .58, maxChaseRange: 1.35 },
   corvette: { targetLight: 1.25, targetArmored: 1.05, isolatedPreference: 1.65, retreatHealth: .42, commitSeconds: 4, rangeFraction: .64, maxChaseRange: 1.3 },
   frigate: { targetLight: 1.1, targetArmored: .8, isolatedPreference: 1, retreatHealth: .46, commitSeconds: 3, rangeFraction: .6, maxChaseRange: 1 },
   destroyer: { targetLight: .85, targetArmored: 1.3, isolatedPreference: 1.15, retreatHealth: .33, commitSeconds: 3.5, rangeFraction: .76, maxChaseRange: 1.25 },
@@ -214,7 +217,16 @@ export function planShipManeuver(w: World, s: Ship, c: ShipManeuverContext): Shi
   switch (s.classId) {
     case 'patrol': {
       const speed = Math.max(30, baseSpeed(w, s));
-      if (!m.phase) passingLeg(w, s, c, m, 'approach-pass', stand, m.side * safe * 1.15, speed);
+      if (!m.phase) {
+        // A clear opening already under the bow needs no setup turn. Use the same short
+        // firing phase, then finish the normal passing leg; weapon reaction and aim stay shared.
+        const opening = usefulStation(c, size, s.x, s.y) &&
+          Math.abs(angleDelta(s.angle, Math.atan2(c.targetY - s.y, c.targetX - s.x))) < .25;
+        if (opening) {
+          phase(w, m, 'attack-pass', 2.2); m.anchorX = s.x; m.anchorY = s.y;
+          clearAnchor(w, s, c, m, true);
+        } else passingLeg(w, s, c, m, 'approach-pass', stand, m.side * safe * 1.15, speed);
+      }
       if (m.phase === 'approach-pass' && ((elapsed > 1.2 && Math.hypot(s.x - m.anchorX, s.y - m.anchorY) < 140) || w.time >= m.until)) {
         phase(w, m, 'attack-pass', 2.2);
         m.anchorX = s.x; m.anchorY = s.y;
@@ -318,6 +330,10 @@ export function planShipManeuver(w: World, s: Ship, c: ShipManeuverContext): Shi
           // Lock this endpoint in world space. Target motion cannot drag the passing lane
           // into the hull or turn a committed pass into a perpetual chase.
           m.bearing = Math.atan2(s.y - c.targetY, s.x - c.targetX);
+          // Releasing the gun restores the full shared drive. Follow the bow's existing
+          // turn instead of accelerating across the target to the opposite passing side.
+          const turningSide = Math.sin(s.angle - m.bearing);
+          if (Math.abs(turningSide) > .2) m.side = Math.sign(turningSide);
           passingLeg(w, s, c, m, 'momentum-pass', -c.range * .65, m.side * (safe + 160), speed);
         }
       }

@@ -33,6 +33,7 @@ describe('per-hull tactical brains', () => {
   });
   it('patrol executes a committed firing pass and then repositions under full drive', () => {
     const { w, s, c } = pilot('patrol');
+    s.angle = Math.PI / 2; // This case needs a setup turn before the firing pass.
     const setup = planShipManeuver(w, s, c)!;
     expect(setup.phase).toBe('approach-pass');
     s.x = setup.x; s.y = setup.y; w.time = 1.3;
@@ -430,5 +431,32 @@ describe('per-hull tactical brains', () => {
       expect(a.phase).toBe(b.phase); expect(a.throttle).toBe(b.throttle); expect(a.aimAtTarget).toBe(b.aimAtTarget);
     }
     expect(JSON.stringify([s.cls, s.hull, s.shield, s.vx, s.vy, s.input])).toBe(capabilities);
+  });
+});
+
+describe('Patrol opening opportunity', () => {
+  it('uses an already aligned useful firing position before completing the normal pass', () => {
+    const { w, s, c } = pilot('patrol'); c.range = gunRange(s, w);
+    const opening = { ...planShipManeuver(w, s, c)! };
+    expect(opening.phase).toBe('attack-pass');
+    expect(opening.aimAtTarget).toBe(true);
+    expect(opening.x).toBe(s.x); expect(opening.y).toBe(s.y);
+    w.time = 2.1;
+    expect(planShipManeuver(w, s, c)!.phase).toBe('attack-pass');
+    w.time = 2.3;
+    const passing = planShipManeuver(w, s, c)!;
+    expect(passing.phase).toBe('pass-through');
+    expect(passing.aimAtTarget).toBe(false); expect(passing.preserveCourse).toBe(true);
+    s.x = passing.x; s.y = passing.y; w.time = 3;
+    expect(planShipManeuver(w, s, c)!.phase).toBe('reposition');
+  });
+  it.each(['misaligned', 'too far', 'too close'] as const)('still sets up a safe pass when %s', condition => {
+    const { w, s, c } = pilot('patrol'); c.range = gunRange(s, w);
+    if (condition === 'misaligned') s.angle = Math.PI / 2;
+    if (condition === 'too far') c.targetX = s.x + c.range + c.targetRadius + 200;
+    if (condition === 'too close') c.targetX = s.x + geometryOf(w, s).radius + c.targetRadius + 50;
+    const setup = planShipManeuver(w, s, c)!;
+    expect(setup.phase).toBe('approach-pass');
+    expect(setup.aimAtTarget).toBe(false);
   });
 });

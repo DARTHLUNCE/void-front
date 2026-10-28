@@ -12,7 +12,7 @@ export const QUIRK_PARAMS = {
     fireRateBonus: 0,
     /** v2: buildup speed multiplier while Reactor Power is on SPEED. */
     speedPowerBuild: 2,
-    /** Below this fraction of base speed you're not "flying", so momentum resets. */
+    /** Forward flight below this fraction of the current drive limit resets momentum. */
     minSpeedFrac: 0.35,
   },
   ghostDrive: {
@@ -45,6 +45,8 @@ export const QUIRK_PARAMS = {
     powerShields: 0.4,
     /** Drone hull and damage grow this much per tier owned. */
     perRank: 0.15,
+    /** Fleet repair stays useful without stacked strike wings out-healing focused fire. */
+    hullRegenMax: 0.06,
     /**
      * Idle escorts circle this far outside the carrier's hull edge, evenly spaced on one ring so you can
      * count them; other ship drones use four staggered lanes this far apart.

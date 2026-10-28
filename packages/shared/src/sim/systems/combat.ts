@@ -254,9 +254,22 @@ function fireVolley(w: World, s: Ship, charge: number): void {
     if (fullCharge) gun.pierce = (gun.pierce ?? 0) + p.fullChargePierce;
   }
   const first = w.projectiles.count;
-  const gunAngle = s.angle + clamp(angleDelta(s.angle, s.input.aim), -PRIMARY_AIM_HALF_ARC, PRIMARY_AIM_HALF_ARC);
+  const sockets = geometryOf(w, s).primary;
+  let aim = s.input.aim;
+  if (gun.count === 1) {
+    // A lone off-axis muzzle converges on the intended aim point. Cursor supplies distance only:
+    // the aim direction retains player stabilization and bot error. Multi-barrel spreads stay parallel.
+    const distance = Math.hypot(s.input.cursorX - s.x, s.input.cursorY - s.y);
+    if (distance > 0) {
+      const [mx, my] = sockets[0], c = Math.cos(s.angle), sn = Math.sin(s.angle);
+      const dx = Math.cos(aim) * distance - (c * mx - sn * my);
+      const dy = Math.sin(aim) * distance - (sn * mx + c * my);
+      if (dx !== 0 || dy !== 0) aim = Math.atan2(dy, dx);
+    }
+  }
+  const gunAngle = s.angle + clamp(angleDelta(s.angle, aim), -PRIMARY_AIM_HALF_ARC, PRIMARY_AIM_HALF_ARC);
   // Authored barrel tips rotate with the hull; only shot direction swivels toward aim.
-  spawnPattern(w, s.slot, s.team, s.x, s.y, gunAngle, gun, mul, liveStat(w, s, 'range', 1), 0, geometryOf(w, s).primary, s.angle, CLASS_ORDER.indexOf(s.cls.id));
+  spawnPattern(w, s.slot, s.team, s.x, s.y, gunAngle, gun, mul, liveStat(w, s, 'range', 1), 0, sockets, s.angle, CLASS_ORDER.indexOf(s.cls.id));
   const healPower = liveStat(w, s, 'healPower', 0);
   const pierceBonus = statValue(s, 'pierceBonus', 0);
   const bypass = Math.min(1, liveStat(w, s, 'shieldBypass', 0));
@@ -788,12 +801,7 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
     target.hull -= h;
   }
 
-  target.lastDamageTime = w.time;
-  if (target.input.cruise) target.cruiseNeedsRelease = true;
-  target.cruiseSpool = 0;
-  target.cruising = false;
-  quirkOf(target).onDamaged?.(w, target);
-  if (broke) for (const node of target.nodes) if (node.onShieldBreak) for (const st of node.onShieldBreak) applyStatus(w, target, st);
+  onShipDamaged(w, target, broke);
   if (glanced) {
     for (const node of target.nodes) if (node.onGlance) target.shield = Math.min(target.maxShield, target.shield + node.onGlance.shield);
     // Sparks are cosmetic and only shown where a pilot cares (their own shots, or hits on them);
@@ -806,6 +814,33 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
       w.emit(EventType.Ricochet, target.slot, attackerSlot, x, y, direction);
     }
   }
+  return recordShipDamage(w, target, shieldDealt, hullDealt, attackerSlot, hit, broke);
+}
+
+/** Remove a fraction of current enemy shield, with ordinary hit credit and response but no hull spill. */
+export function drainShipShield(w: World, target: Ship, fraction: number, attackerSlot: number): number {
+  if (!target.alive || target.shield <= 0 || fraction <= 0 || hasStatus(target, 'invulnerable')) return 0;
+  const attacker = creditShip(w, attackerSlot);
+  if (attacker?.team === target.team) return 0;
+  const dealt = target.shield * Math.min(1, fraction);
+  if (!(dealt > 0)) return 0;
+  target.shield = Math.max(0, target.shield - dealt);
+  const broke = target.shield === 0;
+  onShipDamaged(w, target, broke);
+  return recordShipDamage(w, target, dealt, 0, attackerSlot, HIT_AREA, broke);
+}
+
+function onShipDamaged(w: World, target: Ship, broke: boolean): void {
+  target.lastDamageTime = w.time;
+  if (target.input.cruise) target.cruiseNeedsRelease = true;
+  target.cruiseSpool = 0;
+  target.cruising = false;
+  quirkOf(target).onDamaged?.(w, target);
+  if (broke) for (const node of target.nodes) if (node.onShieldBreak) for (const st of node.onShieldBreak) applyStatus(w, target, st);
+}
+
+/** Shared feedback and actual-damage bookkeeping for ordinary hits and percentage shield drains. */
+function recordShipDamage(w: World, target: Ship, shieldDealt: number, hullDealt: number, attackerSlot: number, hit: Readonly<HitInfo>, broke: boolean): number {
   // Cosmetic: the renderer lights each ship's hull-shaped shield where it is struck and shows it
   // collapsing. Capped so these never crowd kills and flips out of the event buffer.
   if (shieldDealt > 0 && w.eventCount < EVENT_CAPACITY * 0.4) {

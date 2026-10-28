@@ -90,7 +90,7 @@ export function killValue(victim: Ship): number {
  * With nothing logged (a ship zeroed outside combat), the last recent hitter keeps the old rule.
  * Returns the killer, or null.
  */
-export function awardKill(w: World, victim: Ship): Ship | null {
+export function awardKill(w: World, victim: Ship, creditAssist?: (world: World, helper: Ship, target: Ship, damageShare: number) => void): Ship | null {
   const now = w.time;
   victim.killedBy = -1;
   victim.killedByShare = 0;
@@ -146,6 +146,7 @@ export function awardKill(w: World, victim: Ship): Ship | null {
     const helper = w.ships[victim.hitBy[best]];
     helper.assists++;
     helper.score += value * SCORE.assistMul;
+    creditAssist?.(w, helper, victim, recent(victim, best, now) / total);
     if (named < victim.killAssists.length) victim.killAssists[named++] = helper.slot;
     victim.hitBy[best] = -1;
     victim.hitDmg[best] = 0;

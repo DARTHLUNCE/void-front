@@ -35,24 +35,41 @@ export function missionStation(w: World, s: Ship, x: number, y: number, baseRadi
   const size = geometryOf(w, s).radius;
   const minimumRadius = Math.max(baseRadius, size + 100);
   const current = group.stations.get(s.slot);
-  // Objective clearance belongs to this hull, not the first ship that created the group.
-  // Keep safe seats through upgrades; only an unsafe footprint/inner radius needs reassignment.
-  if (current && size <= current.radius + 20 &&
-    Math.hypot(current.x - x, current.y - y) >= minimumRadius - 1e-6) return current;
-  if (current) group.stations.delete(s.slot);
+  const canCapture = minimumRadius <= POINTS.radius;
+  const currentDistance = current ? Math.hypot(current.x - x, current.y - y) : 0;
+  // Capture checks ship centers. A hull whose safe clearance lies outside the ring
+  // screens from an outer station without consuming a seat that can capture.
+  const currentValid = current && size <= current.radius + 20 && currentDistance >= minimumRadius - 1e-6 &&
+    (!capture || current.index >= POINTS.maxShips || canCapture && currentDistance <= POINTS.radius);
+  // Keep settled inner seats stable. Eligible outer occupants may fill a vacancy after
+  // a death or hull evolution, but never displace another valid capture occupant.
+  const promote = currentValid && capture && canCapture && current.index >= POINTS.maxShips;
+  if (currentValid && !promote) return current;
+  if (current && !currentValid) group.stations.delete(s.slot);
   const used = new Set([...group.stations.values()].map(p => p.index));
   const sign = w.teamSign(s.team);
-  for (let index = 0; index < w.fleetSize * 4 + 20; index++) {
+  const first = capture && !canCapture ? POINTS.maxShips : 0;
+  const end = promote ? POINTS.maxShips : w.fleetSize * 4 + 20;
+  for (let index = first; index < end; index++) {
     if (used.has(index)) continue;
     let rank = index, radius = minimumRadius;
     let slots = capture ? POINTS.maxShips : Math.max(4, Math.floor(Math.PI * radius / group.spacing));
-    while (rank >= slots) { rank -= slots; radius += group.spacing; slots = Math.max(4, Math.floor((capture ? Math.PI * 2 : Math.PI) * radius / group.spacing)); }
+    let innerRing = capture;
+    while (rank >= slots) {
+      rank -= slots;
+      // Clear the capture ring with this hull, then use fleet spacing for later rings.
+      // A full fleet-width stride here can strand short-range screens beyond the objective.
+      radius = innerRing ? Math.max(minimumRadius, POINTS.radius + size + 65) : radius + group.spacing;
+      innerRing = false;
+      slots = Math.max(4, Math.floor((capture ? Math.PI * 2 : Math.PI) * radius / group.spacing));
+    }
     const a = capture ? rank / slots * Math.PI * 2 + Math.PI / 4 : Math.PI + (rank - (slots - 1) / 2) * group.spacing / Math.max(1, radius);
     const candidate: Station = { x: x + sign * Math.cos(a) * radius, y: y + sign * Math.sin(a) * radius, radius: size, index };
     if (candidate.x < size + 50 || candidate.y < size + 50 || candidate.x > w.map.width - size - 50 || candidate.y > w.map.height - size - 50) continue;
-    if ([...group.stations.values()].some(o => Math.hypot(candidate.x - o.x, candidate.y - o.y) < size + o.radius + 65)) continue;
+    if ([...group.stations.values()].some(o => o !== current && Math.hypot(candidate.x - o.x, candidate.y - o.y) < size + o.radius + 65)) continue;
     group.stations.set(s.slot, candidate); return candidate;
   }
+  if (promote) return current;
   // No legal free station on a cramped custom map: keep local avoidance instead of stacking at a clamped corner.
   return { x: s.x, y: s.y, radius: size, index: -1 };
 }
