@@ -306,6 +306,7 @@ export function respawnShip(w: World, s: Ship): void {
   s.dashTime = 0;
   s.cruiseSpool = 0;
   s.cruising = false;
+  s.cruiseNeedsRelease = false;
   s.lastDamageTime = -99;
   s.lastHitBy = -1;
   clearHits(s);

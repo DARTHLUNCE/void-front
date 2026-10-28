@@ -1,0 +1,44 @@
+{
+  "source": "PaRIRset / Plaça de la palmera, Figueres / 0000_02_acusticaOutdoors_d1_orig.wav",
+  "authors": "Enric Gusó and Xavier Serra",
+  "license": "CC0-1.0",
+  "page": "https://huggingface.co/datasets/enricguso/parirset",
+  "url": "https://huggingface.co/datasets/enricguso/parirset/resolve/bb65010/train/0000_02_acusticaOutdoors_d1_orig.wav",
+  "sourceSha256": "d5afe783acd38d2517451ce80ded5f7c46de37a2eb6e2bc6a55ef0e5b6bcc172",
+  "outputSha256": "28842548a03c045908d29a4e3badc189d0228051fea0057d21dd855c2465dc41",
+  "seconds": 2.1,
+  "channels": 2,
+  "rate": 48000,
+  "energy": [
+    0.639999999999994,
+    0.6400000000000212
+  ],
+  "processing": "Measured early reflections + five-stage allpass diffusion per channel; 230–4600Hz damped late field; 2.1s total; constant energy; 220ms exit.",
+  "interpretation": "Designed sci-fi reverberation derived from a measured outdoor response, not live geometry acoustics.",
+  "tailEnergyAfter800ms": [
+    0.02837127951197809,
+    0.02928270444897361
+  ],
+  "diffusion": {
+    "delaysSamples": [
+      [
+        1777,
+        2539,
+        3407,
+        4273,
+        5419
+      ],
+      [
+        1783,
+        2551,
+        3413,
+        4283,
+        5431
+      ]
+    ],
+    "gain": 0.72
+  },
+  "references": [
+    "https://www.dsprelated.com/freebooks/pasp/Schroeder_Allpass_Sections.html"
+  ]
+}

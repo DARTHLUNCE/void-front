@@ -17,3 +17,5 @@ export * from './power';
 export * from './score';
 
 export { hullGeometry } from './hullGeometry';
+
+export * from './sounds';
