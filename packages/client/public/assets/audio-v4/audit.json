@@ -3826,157 +3826,157 @@
     "id": "impact.armor",
     "variant": 0,
     "seconds": 0.29,
-    "peakDb": -2.47,
-    "rmsDb": -18.36,
+    "peakDb": -2.49,
+    "rmsDb": -19.97,
     "sources": [
       "anvil",
       "ratchet",
       "steel"
     ],
-    "sha256": "579bfd430f2d379d22e13677b5cf77683edd33d7f02a7e33cf970038085aa3c9"
+    "sha256": "582519ce304f027532af560ed8e734890b017c006de59f9695f90656b68853b9"
   },
   {
     "id": "impact.armor",
     "variant": 1,
     "seconds": 0.29,
-    "peakDb": -2.49,
-    "rmsDb": -18.53,
+    "peakDb": -2.47,
+    "rmsDb": -19.81,
     "sources": [
       "chain",
       "glass-knock",
       "steel-double"
     ],
-    "sha256": "8da22248ad955829032b101c3614e1b3ecd8a9454ee74800826367fe3b2bc827"
+    "sha256": "1ffb1001472bbafc4c23953d5e2cce8a6ebd46b72af7f529fc0b9c4ae597b99b"
   },
   {
     "id": "impact.armor",
     "variant": 2,
     "seconds": 0.29,
     "peakDb": -2.49,
-    "rmsDb": -20.97,
+    "rmsDb": -23.4,
     "sources": [
       "mirror",
       "pan",
       "slam"
     ],
-    "sha256": "14249b8862907c9957e36ce194a96142cb84265a74918f45922759099a19dc12"
+    "sha256": "d76c32d08a89c647dac76dedf216f7c69357ada1a4a138625b99ad240db4d9c3"
   },
   {
     "id": "impact.armor",
     "variant": 3,
     "seconds": 0.29,
     "peakDb": -2.49,
-    "rmsDb": -18.06,
+    "rmsDb": -23.06,
     "sources": [
       "anvil",
       "ratchet",
       "steel"
     ],
-    "sha256": "2519e8c74e3cd670c43c0852f5a9424023f151efbad8d4d3a38a042c1246dc08"
+    "sha256": "7bd06aba1071e2c8c4387cc4abc8e4c71fa1dc4ff61f2add521b49e55e962f4d"
   },
   {
     "id": "impact.armor",
     "variant": 4,
     "seconds": 0.29,
-    "peakDb": -2.48,
-    "rmsDb": -19.21,
+    "peakDb": -2.44,
+    "rmsDb": -20.37,
     "sources": [
       "chain",
       "glass-knock",
       "steel-double"
     ],
-    "sha256": "b85f567e45ade7c71bf504ca0c0ba339cc0a57b44e8893a509f627fe5e346cac"
+    "sha256": "490e45227ac49b78c11ed7c36a5a6d994b691c69b67ecb4040f648c03ab04039"
   },
   {
     "id": "impact.armor",
     "variant": 5,
     "seconds": 0.29,
-    "peakDb": -2.37,
-    "rmsDb": -19.44,
+    "peakDb": -2.49,
+    "rmsDb": -22.45,
     "sources": [
       "mirror",
       "pan",
       "slam"
     ],
-    "sha256": "37e796c57209597627d4ff99bdf3e4274ff2fb5b8fc9789ebf6431e84719e830"
+    "sha256": "6524c24d7a339960d3198eab9248d00563f3680f2f58236a5431858d2c5ca59b"
   },
   {
     "id": "impact.armor",
     "variant": 6,
     "seconds": 0.29,
-    "peakDb": -2.48,
-    "rmsDb": -17.8,
+    "peakDb": -2.49,
+    "rmsDb": -21.62,
     "sources": [
       "anvil",
       "ratchet",
       "steel"
     ],
-    "sha256": "1716b38f2174c7185fd1e930ade84e4e237a2548533843cb111ad71425a91e4a"
+    "sha256": "97c63a3df7b634c597421aab16abf8156dd51cdaaa3017b73b01af4e26cf0acc"
   },
   {
     "id": "impact.armor",
     "variant": 7,
     "seconds": 0.29,
     "peakDb": -2.49,
-    "rmsDb": -16.51,
+    "rmsDb": -21.19,
     "sources": [
       "chain",
       "glass-knock",
       "steel-double"
     ],
-    "sha256": "8ae07f99c08a4abe02f7c3b0b35221924fc06e721b96076265ba224411f2fa63"
+    "sha256": "b207ccc4df032c345227128d7b2b39b602509317e833380db44ed66f0ede935f"
   },
   {
     "id": "impact.armor",
     "variant": 8,
     "seconds": 0.29,
-    "peakDb": -2.49,
-    "rmsDb": -18.12,
+    "peakDb": -2.47,
+    "rmsDb": -19.43,
     "sources": [
       "mirror",
       "pan",
       "slam"
     ],
-    "sha256": "dd00fd12e52f3bf78eac917da3142bfd6319e18a34045ee9962354fe12d7312d"
+    "sha256": "5999874dc32b547118da20623154f0bee6e0baf88c186a3752eb8101e0e1d070"
   },
   {
     "id": "impact.armor",
     "variant": 9,
     "seconds": 0.29,
-    "peakDb": -2.55,
-    "rmsDb": -16.48,
+    "peakDb": -2.49,
+    "rmsDb": -20.98,
     "sources": [
       "anvil",
       "ratchet",
       "steel"
     ],
-    "sha256": "991d365603d8161b6b03edfc3cbc6c06e8602d53e943b05faca32d6c6cd19ad1"
+    "sha256": "7169ede6acb029aade9bdece5afed51d72e1900ab1b37525ad5c5b8d12d000ad"
   },
   {
     "id": "impact.armor",
     "variant": 10,
     "seconds": 0.29,
-    "peakDb": -2.41,
-    "rmsDb": -17.42,
+    "peakDb": -2.43,
+    "rmsDb": -17.51,
     "sources": [
       "chain",
       "glass-knock",
       "steel-double"
     ],
-    "sha256": "defabe73cba2cfa7d2a74280ed2eacf9341cd443bf9f32c1a88d877fb2afe67f"
+    "sha256": "aa1f0d8eaa9d0fb58e44d3c1845d564e23da3e839ddb2870d0f2b75b51742771"
   },
   {
     "id": "impact.armor",
     "variant": 11,
     "seconds": 0.29,
     "peakDb": -2.46,
-    "rmsDb": -17.5,
+    "rmsDb": -19.6,
     "sources": [
       "mirror",
       "pan",
       "slam"
     ],
-    "sha256": "492289e8bbed7e5ffeba2d9580a78bdf1f612385e875ed23d96768c32d6e2f75"
+    "sha256": "4976797c737ce0c031503739566b90af27f08f3b45e89d9af82c204aba99112b"
   },
   {
     "id": "impact.ricochet",
@@ -9726,538 +9726,525 @@
     "id": "weapon.patrol",
     "variant": 0,
     "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -21.93,
+    "peakDb": -2.41,
+    "rmsDb": -24.47,
     "sources": [
       "blast-auto",
       "blast-rifle-b",
       "shutter"
     ],
-    "sha256": "52a2fe4a77e1c6b8c99ac7e71a470dbb98a4f8cadede71b9bfddc0f32f850c9e"
+    "sha256": "f9df967d8cd6fc23d052243bcd84617f6e7b650bf19f6a197028ad284dd1db8d"
   },
   {
     "id": "weapon.patrol",
     "variant": 1,
     "seconds": 0.168,
-    "peakDb": -2.48,
-    "rmsDb": -20.05,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "722cf31f1bfc5e6f262d067f95f8416bf68e7856065322039310cc7296f49235"
-  },
-  {
-    "id": "weapon.patrol",
-    "variant": 2,
-    "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -22.18,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "08fec42dfefa4ba7219783831d1bcfc68be3e45c58cac06011ad92c92203a1fc"
-  },
-  {
-    "id": "weapon.patrol",
-    "variant": 3,
-    "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -20.19,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "fdd666052eabe06a742af72f0e88adb1cd53277ec0628805a75cb0616b741faa"
-  },
-  {
-    "id": "weapon.patrol",
-    "variant": 4,
-    "seconds": 0.168,
-    "peakDb": -2.46,
-    "rmsDb": -22.36,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "8d6cd489970f3182d5fdd4342c254d0cdc6f43251f1369757fcbf853fdd16c70"
-  },
-  {
-    "id": "weapon.patrol",
-    "variant": 5,
-    "seconds": 0.168,
-    "peakDb": -2.48,
-    "rmsDb": -20.27,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "16d9faa7a27eafbfcd846c9eda5249bc02bbf88d1ff17599499585462b075598"
-  },
-  {
-    "id": "weapon.patrol",
-    "variant": 6,
-    "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -21.39,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "502273c27a479e19e8946cd7914bdab951f89bc13421ed963330d0b69e8f1e5d"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 0,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -24.41,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "7546abff00ec4ccac97c1375938ae12955f7063ef77fbb9a46572a80ea04868d"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 1,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -25.09,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "af98f8d259c536bd8fe56fe92fbd0bd19f0fc524bea8282ef63b2acbdec3b355"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 2,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -24.27,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "9c28c1afdeb2389cccaf7d41555fb19f592342c42dfa06a18558fcffc6345dbe"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 3,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -25.21,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "8ad78c20b592c3e7a1a13181f7ec299d67062ef03f85c33edf517783d103c2b8"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 4,
-    "seconds": 0.252,
-    "peakDb": -2.48,
-    "rmsDb": -23.57,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "b8a335b1b5b5c88a62af435445d7b52ca056481a7a837d26c6bf63deeb0f2bfa"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 5,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -24.71,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "c6017db99c82549d03290a6257b2cec8e3fedb6b6a93261d602f048145c527b5"
-  },
-  {
-    "id": "weapon.corvette",
-    "variant": 6,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -25.28,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "film"
-    ],
-    "sha256": "9cfdf39de1794eb7465a738d1e29afa331dfafdcb7baa050c093973c0c9d6bf6"
-  },
-  {
-    "id": "weapon.frigate",
-    "variant": 0,
-    "seconds": 0.168,
-    "peakDb": -2.49,
+    "peakDb": -2.41,
     "rmsDb": -22.85,
     "sources": [
       "blast-auto",
-      "blast-pop",
-      "weld-burst"
+      "blast-rifle-b",
+      "shutter"
     ],
-    "sha256": "14a9d91eff91a3990c025301f403eb88510aa1d6d9bea79864a356c6e76079e9"
+    "sha256": "8b2feea6ffd662134054c0d8b10c748a0215ebb3537a3808ec471e243f2b56ca"
   },
   {
-    "id": "weapon.frigate",
-    "variant": 1,
-    "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -23.53,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "weld-burst"
-    ],
-    "sha256": "05a0a1307957036f187117fb9188db2239ce6aa124d221cf267d47740a8a092f"
-  },
-  {
-    "id": "weapon.frigate",
+    "id": "weapon.patrol",
     "variant": 2,
     "seconds": 0.168,
-    "peakDb": -2.43,
-    "rmsDb": -23.38,
+    "peakDb": -2.4,
+    "rmsDb": -24.31,
     "sources": [
       "blast-auto",
-      "blast-pop",
-      "weld-burst"
+      "blast-rifle-b",
+      "shutter"
     ],
-    "sha256": "535b591d66cfea0408afb45b882e5649eb07bbd1a707e3d34d617f6781e500f4"
+    "sha256": "a63f5c8f37a7fa0e67a2fb096c9e1e5db2189683d1ec09e6d1624d7887b2a2b6"
   },
   {
-    "id": "weapon.frigate",
+    "id": "weapon.patrol",
     "variant": 3,
     "seconds": 0.168,
-    "peakDb": -2.46,
-    "rmsDb": -23.15,
+    "peakDb": -2.49,
+    "rmsDb": -23.91,
     "sources": [
       "blast-auto",
-      "blast-pop",
-      "weld-burst"
+      "blast-rifle-b",
+      "shutter"
     ],
-    "sha256": "886aab30313dfab3f0da66cf80337e15c17e51df027fe42b445b68f4410f9112"
+    "sha256": "ec0d8e1ef5b8e8b2ecd883d9ae3387a6d32152ede9ff8b9474a591d61781f3d2"
   },
   {
-    "id": "weapon.frigate",
+    "id": "weapon.patrol",
     "variant": 4,
     "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -22.7,
+    "peakDb": -2.43,
+    "rmsDb": -23.65,
     "sources": [
       "blast-auto",
-      "blast-pop",
-      "weld-burst"
+      "blast-rifle-b",
+      "shutter"
     ],
-    "sha256": "2b4a9f3654de797ec158be4211419e897c191fcbba5c5adcfaae167997220afa"
+    "sha256": "2e08ea648613779d8b324d3e9f2403e309c9458b8f1718024493d4cb0182009b"
   },
   {
-    "id": "weapon.frigate",
+    "id": "weapon.patrol",
     "variant": 5,
     "seconds": 0.168,
-    "peakDb": -2.44,
-    "rmsDb": -23.95,
+    "peakDb": -2.49,
+    "rmsDb": -24.1,
     "sources": [
       "blast-auto",
-      "blast-pop",
-      "weld-burst"
+      "blast-rifle-b",
+      "shutter"
     ],
-    "sha256": "f712aa1eabcb5015c8df122673c749dd86c9cda1f7e6d07c0a820e7e51e63138"
+    "sha256": "cd6e78ac05258d22415c508a12f5f7700c1c90d581739b911226677ef639be4e"
   },
   {
-    "id": "weapon.frigate",
+    "id": "weapon.patrol",
     "variant": 6,
     "seconds": 0.168,
     "peakDb": -2.47,
-    "rmsDb": -22.39,
+    "rmsDb": -24.25,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "7278423dd0a34d4a390b8d4dad93a5b32ea24cacd77c9946b297bc055110cc5b"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 0,
+    "seconds": 0.252,
+    "peakDb": -2.46,
+    "rmsDb": -23.89,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "c1500f9890b15eac8e56e8d187d371ba250c2a873dd09052ddb1db06c7b97dad"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 1,
+    "seconds": 0.252,
+    "peakDb": -2.47,
+    "rmsDb": -22.77,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "cd56f5c70f9556803503e3120723bdf6e5ad936b8d10ed4d85473b1a3c89d6a6"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 2,
+    "seconds": 0.252,
+    "peakDb": -2.47,
+    "rmsDb": -24.21,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "19ceb0408e30d81d03fb56d219fd93f0488cd68b7f781153875004ff4cc79a7d"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 3,
+    "seconds": 0.252,
+    "peakDb": -2.49,
+    "rmsDb": -22.6,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "a5c5f016345dc0fdc9475d9a75de7f3220eb22eefad2ff5b83059a77aa527300"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 4,
+    "seconds": 0.252,
+    "peakDb": -2.49,
+    "rmsDb": -24.53,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "0d14f0d0cb679cef67f7badc4e33ccfdb94a0d722e472e63276c875c40fdc7c6"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 5,
+    "seconds": 0.252,
+    "peakDb": -2.45,
+    "rmsDb": -23.49,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "b3c38c7887383de1c8b0fb816f6e65c27b775e9926b21a6814d42b5d1a516c04"
+  },
+  {
+    "id": "weapon.corvette",
+    "variant": 6,
+    "seconds": 0.252,
+    "peakDb": -2.49,
+    "rmsDb": -22.74,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "film"
+    ],
+    "sha256": "f3fe2b4dc7343786c6ddeab41f2af9c6fab7aebcf094a0efde061ada73dcad1d"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 0,
+    "seconds": 0.168,
+    "peakDb": -2.49,
+    "rmsDb": -22.89,
     "sources": [
       "blast-auto",
       "blast-pop",
       "weld-burst"
     ],
-    "sha256": "63e057fc731d4b51005f9f3ca5c26e05298884fc07ee835339f794251f89b3dc"
+    "sha256": "6f3591ac1db13c40683f040677aa0dd61fd6d3134ce98cf4d2741e07a2535261"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 1,
+    "seconds": 0.168,
+    "peakDb": -2.47,
+    "rmsDb": -23.22,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "158ba0e1ddd98c4df608d62d5b47d7fdb0e743247241684bb530f5dd280fdc5d"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 2,
+    "seconds": 0.168,
+    "peakDb": -2.48,
+    "rmsDb": -23.94,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "d9d19ae293a652fa1a5204580a4a55acd764bfbbfeeded154a2f954ecdba2c07"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 3,
+    "seconds": 0.168,
+    "peakDb": -2.49,
+    "rmsDb": -22.99,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "f3a19b78d65f297da918edf18fbe0dab088ad86b540803d84b18389b34c071e2"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 4,
+    "seconds": 0.168,
+    "peakDb": -2.47,
+    "rmsDb": -23.22,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "b495db014d7f65046def6260dc6583346f996625557b98958517cba5b18cd21f"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 5,
+    "seconds": 0.168,
+    "peakDb": -2.48,
+    "rmsDb": -23.71,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "2274aabc997b5b40b5b5ba2bf0c09f4e4e5940104ccec32a752de08e8c99a2de"
+  },
+  {
+    "id": "weapon.frigate",
+    "variant": 6,
+    "seconds": 0.168,
+    "peakDb": -2.49,
+    "rmsDb": -23.17,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "weld-burst"
+    ],
+    "sha256": "1290407938d02a552ca009ee4b54d2445edefcce3da113ce4345094e18bd1530"
   },
   {
     "id": "weapon.destroyer",
     "variant": 0,
     "seconds": 0.21,
     "peakDb": -2.49,
-    "rmsDb": -19.29,
+    "rmsDb": -17.89,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "4e1e1bdd9d4379e95482bb0b7bfc61808eda221de6919965c1e001bfe64dbc9a"
+    "sha256": "0d91e06c474fc8fb7e9529627701cde96fbf4ad8ce6f59a2db7fce19cd5709a2"
   },
   {
     "id": "weapon.destroyer",
     "variant": 1,
     "seconds": 0.21,
-    "peakDb": -2.49,
-    "rmsDb": -19.33,
+    "peakDb": -2.46,
+    "rmsDb": -17.87,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "b65314d54442f802f227a3c1373b3de733523ca2aeb1873bc247d30b09ff1cf4"
+    "sha256": "ac9013bc3d991f66ff68576ea1498aa27a240c37186e34028ba44ca74481b359"
   },
   {
     "id": "weapon.destroyer",
     "variant": 2,
     "seconds": 0.21,
-    "peakDb": -2.49,
-    "rmsDb": -19.44,
+    "peakDb": -2.46,
+    "rmsDb": -18.01,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "8bed84c189757137b0a49580c316e00d9cbf2124726cba7b56e74818db05aa94"
+    "sha256": "b799014f28132ce09a6120a9f5a5763532ad163aee9f343118ffce060ee0f726"
   },
   {
     "id": "weapon.destroyer",
     "variant": 3,
     "seconds": 0.21,
-    "peakDb": -2.49,
-    "rmsDb": -19.5,
+    "peakDb": -2.47,
+    "rmsDb": -18.07,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "7c66171be96f0e94b63ccbda29753714faaac0dc2e8378d8165b073bfedfc74c"
+    "sha256": "25e7e2b3cb05609d3626583754109ef3a0081d38518a6d4198c3fa5b177580a7"
   },
   {
     "id": "weapon.destroyer",
     "variant": 4,
     "seconds": 0.21,
     "peakDb": -2.49,
-    "rmsDb": -19.21,
+    "rmsDb": -18.18,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "204857dd950f8a65ae63a42ff51ab6b93d11db94566b02874fcaaa1eddcae3d0"
+    "sha256": "9de26c3ab559f84b6aeb2468aa57dab3388db6b7e3703b57f67deac58c8523d3"
   },
   {
     "id": "weapon.destroyer",
     "variant": 5,
     "seconds": 0.21,
     "peakDb": -2.49,
-    "rmsDb": -19.25,
+    "rmsDb": -18.03,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "a26e5e74070287f5effa3f6f5757da5ef1b4d6644e9cce8e4b52883d03480f50"
+    "sha256": "3cf61bbbb9f3fad6cb004aca2819c9fa7a4a7ea0e0825905709f491830df614b"
   },
   {
     "id": "weapon.destroyer",
     "variant": 6,
     "seconds": 0.21,
-    "peakDb": -2.49,
-    "rmsDb": -19.35,
+    "peakDb": -2.48,
+    "rmsDb": -18.21,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet"
     ],
-    "sha256": "cc743ca075fa746c203df968648236bdcf0940f4dbad53cd2429571d1de3e730"
+    "sha256": "d284dbddc741180999b605ffc34d9c82e0007715ead9e955fff4d5b2fd108f44"
   },
   {
     "id": "weapon.cruiser",
     "variant": 0,
     "seconds": 0.21,
-    "peakDb": -2.42,
-    "rmsDb": -21.35,
+    "peakDb": -2.43,
+    "rmsDb": -22.52,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "54e542061f052287c5c34055279b874992aa6e7f6febe61664455a4fccb6b11e"
+    "sha256": "e6855c7a1542043a0b84378cc569247935eda682a150c57f4103e3c121336b58"
   },
   {
     "id": "weapon.cruiser",
     "variant": 1,
     "seconds": 0.21,
-    "peakDb": -2.44,
-    "rmsDb": -22.11,
+    "peakDb": -2.43,
+    "rmsDb": -21.08,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "d7a5b5c3af6a6bc39738eaa364fda50cdeb79081f11bc8a3ef19273feff716b2"
+    "sha256": "aff56cc1ebdfeae04144caf8585c8963f8fb044242272eee8c00aeccbe0eb931"
   },
   {
     "id": "weapon.cruiser",
     "variant": 2,
     "seconds": 0.21,
-    "peakDb": -2.4,
-    "rmsDb": -21.46,
+    "peakDb": -2.46,
+    "rmsDb": -22.7,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "d066848973081720243d0b7c5a6d2610de3872326c03c7d0f290b8587fee2707"
+    "sha256": "48c5e51b5eeaabf95c78f53323319a85556f8d1475ad8ca1f4846de39dd65f5e"
   },
   {
     "id": "weapon.cruiser",
     "variant": 3,
     "seconds": 0.21,
     "peakDb": -2.43,
-    "rmsDb": -22.03,
+    "rmsDb": -21.14,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "5669656432f262585e40b805a49658064e349e56060a41b4b46942b31ffa686b"
+    "sha256": "cf1519efa7b96f0990924d601fe16791309c1940ba1972e5c20b41ca4076d617"
   },
   {
     "id": "weapon.cruiser",
     "variant": 4,
     "seconds": 0.21,
-    "peakDb": -2.41,
-    "rmsDb": -21.94,
+    "peakDb": -2.44,
+    "rmsDb": -21.42,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "0d41296654c2c38cf7fc6e3d2d8c2bf447e34e48dee2d875e90c67539a7d2950"
+    "sha256": "127f83836964d408f1ea10fea394b3ad69d9f0bca4b3379aadee22d43e198428"
   },
   {
     "id": "weapon.cruiser",
     "variant": 5,
     "seconds": 0.21,
-    "peakDb": -2.4,
-    "rmsDb": -21.7,
+    "peakDb": -2.45,
+    "rmsDb": -21.79,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "9b025534114105c842853f8a18e9d5c12fa0bd31b9c0dc56608bbdaa7f58cfae"
+    "sha256": "ef1f9123e2e5d142d3cf358a8aca9af7e3acecc48c567cd26beb46284e58db06"
   },
   {
     "id": "weapon.cruiser",
     "variant": 6,
     "seconds": 0.21,
-    "peakDb": -2.44,
-    "rmsDb": -22.13,
+    "peakDb": -2.43,
+    "rmsDb": -21.12,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "welding"
     ],
-    "sha256": "320ad6df367d74d743e0b6b51dd3132e4335ada80d7d91a0e362545bf97906a6"
+    "sha256": "3e42cd6fa7bd8ba9249c700b830e7b0648aa0fcb3a28cf2ac2a5f3eebf1c70e6"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 0,
     "seconds": 0.252,
     "peakDb": -2.49,
-    "rmsDb": -18.53,
+    "rmsDb": -18.77,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "f2f9ed6c86fc3606676127bf980c183f5f8e666e813c2ac5307db6ff5867b696"
+    "sha256": "e18cf74a99e2266f6e42391d7b5d30f110288f221afa4073ef94ec7f242e9f00"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 1,
     "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -18.66,
+    "peakDb": -2.48,
+    "rmsDb": -19.0,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "70eb8b9b23f1c93cc5f9ea0adaa174b184215ff2370e6a25e5edfa55fe2ab9b1"
+    "sha256": "3cc5e21a47a71cdd72dbbe245c89422d2e7784d041024b5ce43ade5b5e6b3380"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 2,
     "seconds": 0.252,
     "peakDb": -2.49,
-    "rmsDb": -18.54,
+    "rmsDb": -18.82,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "bce121ccbe4b41134cf1c650298f175df674d639887a07abcc5aceedededf179"
+    "sha256": "61501f4b5a7bb5e1f0a68e08950c55b8658fadbbed84cc5d36ddf859f45f7c68"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 3,
     "seconds": 0.252,
     "peakDb": -2.49,
-    "rmsDb": -18.58,
+    "rmsDb": -18.68,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "8207cb6abb3a0ccea9cca12b5fbb3e742e9b489ed5773d203064bd254ac4dd13"
+    "sha256": "a2072bba129d846e79125b4fb77be713a54c83b81c6de1ab7c2c1a401bd38349"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 4,
     "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -18.6,
+    "peakDb": -2.48,
+    "rmsDb": -19.08,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "1447e4e5a3e18f7894da615414e08b5cfbee69acc9ced88ea979ba81fadd55cf"
+    "sha256": "5b43641a8ffcb66fa55c52db06ea498ae1868e6d767eae4cd98ce127d8292ce2"
   },
   {
     "id": "weapon.battlecruiser",
     "variant": 5,
-    "seconds": 0.252,
-    "peakDb": -2.49,
-    "rmsDb": -18.75,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "breaker"
-    ],
-    "sha256": "79335ccc785482f008d34ca705e729ad0bcdf81fdfbea4c716e9752466416b4f"
-  },
-  {
-    "id": "weapon.battlecruiser",
-    "variant": 6,
     "seconds": 0.252,
     "peakDb": -2.49,
     "rmsDb": -18.76,
@@ -10266,2255 +10253,2268 @@
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "0f551afde467e8de025fcb63035267f5191087413a2e3314c8405809c73d4d56"
+    "sha256": "f9ab85e2ecd49a17051516d687e9b6dfa7911237a8bc6797cc09b697d7a6a8b1"
+  },
+  {
+    "id": "weapon.battlecruiser",
+    "variant": 6,
+    "seconds": 0.252,
+    "peakDb": -2.48,
+    "rmsDb": -18.9,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "226d9641733b57b6b77f2cf1bd5b777581cf8864bc2552904c779c04e70bd05f"
   },
   {
     "id": "weapon.battleship",
     "variant": 0,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.43,
+    "peakDb": -2.41,
+    "rmsDb": -18.42,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "0a41b0feac73d2994882d8dcdb17ba054ef853be02fbdb0afe8d7b70cfa0a159"
+    "sha256": "59f21bbd152d1da446f7d5e2fe800c5557681909757a2f48fcbc562e2a08ced8"
   },
   {
     "id": "weapon.battleship",
     "variant": 1,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.43,
+    "peakDb": -2.4,
+    "rmsDb": -19.06,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "e4818a121da900f0d3972c786a28fa8c6a0bd615879b0aa44a932c7d9065373d"
+    "sha256": "f81a39504c2c04b4a66c8bb0f22a3f7f625121c58a60d78fef69911b96852074"
   },
   {
     "id": "weapon.battleship",
     "variant": 2,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.45,
+    "peakDb": -2.41,
+    "rmsDb": -19.16,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "20e060d69937442aa31d6d1331963a0b5a29a3ebf250576fdfc618c285f5b363"
+    "sha256": "6807bfbd61f43958ebd27a08a5c5311954a1d763bc68939690a3c2179e6a1463"
   },
   {
     "id": "weapon.battleship",
     "variant": 3,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.65,
+    "peakDb": -2.43,
+    "rmsDb": -19.33,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "92272b23a6a9ba4b381cca42448072e09f85f850f6264d6272be84d4739cf8c6"
+    "sha256": "badf7951b23ed004964839f69d4ff392f0dd1c2a0c6eacf52e61b5aad969beff"
   },
   {
     "id": "weapon.battleship",
     "variant": 4,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.7,
+    "peakDb": -2.46,
+    "rmsDb": -19.61,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "a25aa85037a922862f8f6d5b5b981555499f97035944b7e45e079f966fbb7809"
+    "sha256": "ff8040cf3886b98065086327a9e6facb07621827529ea60cb0407582e17e7b24"
   },
   {
     "id": "weapon.battleship",
     "variant": 5,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.58,
+    "peakDb": -2.42,
+    "rmsDb": -19.21,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "743f0bf71522ba4cdfbd17e962f92271d3e8bf004e4205400d4a5d6b8ca695fb"
+    "sha256": "8c4b53f8f6e04acee74fcd5db8a0e72f5e24db63f7a2824cad00efd21d4d865a"
   },
   {
     "id": "weapon.battleship",
     "variant": 6,
     "seconds": 0.336,
-    "peakDb": -2.49,
-    "rmsDb": -18.29,
+    "peakDb": -2.4,
+    "rmsDb": -18.78,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "c527e4a586733c7cff088fff53e837f539c6d00e6cf08212b9aafe67238f1656"
+    "sha256": "247f288371e6a03d4aafa3e86b84e6266877633487e2d8c441e8531ecac4fec4"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 0,
     "seconds": 0.3023958333333333,
     "peakDb": -2.49,
-    "rmsDb": -20.63,
+    "rmsDb": -20.92,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "bc75fb84a5eef7eb6c1ea680a9d730b09d13840cd1832da62533438f4f085f55"
+    "sha256": "7c615eab5a2ad3cbeb1600c4613334c5e006a738c78b2ed6eba61937e7f6d391"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 1,
     "seconds": 0.3023958333333333,
     "peakDb": -2.49,
-    "rmsDb": -21.17,
+    "rmsDb": -20.55,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "09944e2a3ec84e627a1e72611a823608929571090f80035ccd6ae6114bd7e40c"
+    "sha256": "d3d863c188bf5d5d08ef908114118456a78a946f649165d2a5d9bcb0e6e2c879"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 2,
     "seconds": 0.3023958333333333,
     "peakDb": -2.49,
-    "rmsDb": -21.05,
+    "rmsDb": -20.95,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "57b5b1cc138e2840253d59db01d2ee3a7508fb9594bf2b78de9025cc8ee8afd9"
+    "sha256": "3398e5976f5574313fbda651ee94898d5119ff8c9f1626e3eb1400773090cd12"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 3,
     "seconds": 0.3023958333333333,
-    "peakDb": -2.49,
-    "rmsDb": -20.97,
+    "peakDb": -2.47,
+    "rmsDb": -20.54,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "68c5c5dba164036cbfdbad73e3883bc6239f6ef2f64421a2007c8e33f5493a09"
+    "sha256": "7ac29c308f5d74125f01656a20e827372b18910d0b6ea0f11b6a574a40aac2e8"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 4,
     "seconds": 0.3023958333333333,
-    "peakDb": -2.49,
-    "rmsDb": -21.04,
+    "peakDb": -2.48,
+    "rmsDb": -20.55,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "d9bdb82957f172cb0c416bcc1094a8e69e9727d801ada0555206efc44a3d851f"
+    "sha256": "a74e8f0a33073591ee79aee7b76204086d55a579ca94fba8fa56538eec7619d4"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 5,
     "seconds": 0.3023958333333333,
-    "peakDb": -2.48,
-    "rmsDb": -20.91,
+    "peakDb": -2.49,
+    "rmsDb": -20.65,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "544adce22951d5d965f530e97d73bfe0fd7961e45df790e93520f18558f3c40e"
+    "sha256": "b18969fe832b947567d7104050e17653a2e41127067587e0b1ffb39a74ba4479"
   },
   {
     "id": "weapon.dreadnought",
     "variant": 6,
     "seconds": 0.3023958333333333,
-    "peakDb": -2.48,
-    "rmsDb": -20.9,
+    "peakDb": -2.49,
+    "rmsDb": -20.5,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "c4457432765848608da14cab0c543cdba9cac2d9e7117592b3368bbc609243d2"
+    "sha256": "2a05725496f58c19f6ba846d5e03141fef07b85390ca436a69ca6e40cfe95054"
   },
   {
     "id": "weapon.carrier",
     "variant": 0,
     "seconds": 0.168,
-    "peakDb": -2.44,
-    "rmsDb": -24.61,
+    "peakDb": -2.46,
+    "rmsDb": -24.76,
     "sources": [
       "autofocus",
       "blast-cracker-b",
       "blast-pop"
     ],
-    "sha256": "991cfe749596bb2a373bb11b57a234ca7dfd3dc4b459b2922515875792bb55fb"
+    "sha256": "2013ed1ff4bfa69fdbc638904c5acd0297746d7ffd23591220f341b8e608064d"
   },
   {
     "id": "weapon.carrier",
     "variant": 1,
     "seconds": 0.168,
-    "peakDb": -2.49,
+    "peakDb": -2.45,
+    "rmsDb": -24.12,
+    "sources": [
+      "autofocus",
+      "blast-cracker-b",
+      "blast-pop"
+    ],
+    "sha256": "8d8d14fee8f3d9be6fc5bac0ec9737ac03867b6ba71efc121795d6fa18a85492"
+  },
+  {
+    "id": "weapon.carrier",
+    "variant": 2,
+    "seconds": 0.168,
+    "peakDb": -2.4,
+    "rmsDb": -24.7,
+    "sources": [
+      "autofocus",
+      "blast-cracker-b",
+      "blast-pop"
+    ],
+    "sha256": "92a7ffa8767ae47ee89c39bc9b4082ce24e9116a16956f2bfeccc386900247ed"
+  },
+  {
+    "id": "weapon.carrier",
+    "variant": 3,
+    "seconds": 0.168,
+    "peakDb": -2.46,
     "rmsDb": -24.72,
     "sources": [
       "autofocus",
       "blast-cracker-b",
       "blast-pop"
     ],
-    "sha256": "81371f933b2f3e2654ba378312cdaa6b8ff39d30aac892237991bf1b41e6e7b7"
-  },
-  {
-    "id": "weapon.carrier",
-    "variant": 2,
-    "seconds": 0.168,
-    "peakDb": -2.46,
-    "rmsDb": -24.75,
-    "sources": [
-      "autofocus",
-      "blast-cracker-b",
-      "blast-pop"
-    ],
-    "sha256": "ebe3132cedd2ce0e6c003194c67c29b7fc6a99517043e5282331a94da936edd3"
-  },
-  {
-    "id": "weapon.carrier",
-    "variant": 3,
-    "seconds": 0.168,
-    "peakDb": -2.44,
-    "rmsDb": -24.62,
-    "sources": [
-      "autofocus",
-      "blast-cracker-b",
-      "blast-pop"
-    ],
-    "sha256": "bb1a0aced39c5b14c9b8c5a1f382909a036fe7d0e7e9bee489ed889b43872872"
+    "sha256": "890697c0551451013e2d115ff0295424a3de4015800400c8439e07ec77ab14d1"
   },
   {
     "id": "weapon.carrier",
     "variant": 4,
     "seconds": 0.168,
-    "peakDb": -2.49,
-    "rmsDb": -24.82,
+    "peakDb": -2.48,
+    "rmsDb": -24.14,
     "sources": [
       "autofocus",
       "blast-cracker-b",
       "blast-pop"
     ],
-    "sha256": "3910351687516f8c0c2526369ab3394d2a1f015989330d4a82b9a7f3d707034f"
+    "sha256": "13ec282f5998cfa48eddb1a93d4f2c1aa09897518aae6beefc0fbb097479996a"
   },
   {
     "id": "weapon.carrier",
     "variant": 5,
     "seconds": 0.168,
     "peakDb": -2.49,
-    "rmsDb": -25.63,
+    "rmsDb": -24.79,
     "sources": [
       "autofocus",
       "blast-cracker-b",
       "blast-pop"
     ],
-    "sha256": "b17e6745563ae1535ddd47e1a7e89e9f6b9395668132fb5726c3baca669caa2b"
+    "sha256": "f40f9fa17c0ebfcc786676da289a2b636660833917f8e799eda9c62462aa1569"
   },
   {
     "id": "weapon.carrier",
     "variant": 6,
     "seconds": 0.168,
-    "peakDb": -2.44,
-    "rmsDb": -24.6,
+    "peakDb": -2.45,
+    "rmsDb": -24.76,
     "sources": [
       "autofocus",
       "blast-cracker-b",
       "blast-pop"
     ],
-    "sha256": "f162569d1f0fbe7858f8555039b10f20ccbae87e6a772a66a988c278c4090178"
+    "sha256": "4ac71a2ea36b74e79739bf0b18f1048c1778efcaf6abadaa9a933c73abe6fa3f"
   },
   {
     "id": "weapon.secondary",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.04,
+    "peakDb": -2.12,
+    "rmsDb": -21.62,
     "sources": [
       "blast-auto",
       "blast-rifle-a",
       "shutter"
     ],
-    "sha256": "fc9595a7b3889a7656f8f5bb3242fabf1d2e182d1643effdb87f5194f8977afa"
+    "sha256": "6abcc8a57937a7108a182ab62d03bc40af87d86f54a9e71481bf3b374aec315d"
   },
   {
     "id": "weapon.secondary",
     "variant": 1,
     "seconds": 0.2,
     "peakDb": -2.45,
-    "rmsDb": -21.12,
+    "rmsDb": -21.92,
     "sources": [
       "blast-auto",
       "blast-rifle-a",
       "shutter"
     ],
-    "sha256": "26573b17c28efbe5d819f16c2e6939418d1c3570d2383644a174c565806e412e"
+    "sha256": "b6232a0a8a65b3f97c4d36ad4331ca4f73095b533c349a917456ee768cf7c0cc"
   },
   {
     "id": "weapon.secondary",
     "variant": 2,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.15,
+    "peakDb": -2.48,
+    "rmsDb": -21.72,
     "sources": [
       "blast-auto",
       "blast-rifle-a",
       "shutter"
     ],
-    "sha256": "07a4f0908c0528cd9e31bb30de4bb4b929c7d0d00a3c53afede8d9521809c57e"
+    "sha256": "db955fba3421613cf967ea0f363982e91c53e5fc54df05f34b2a93bdbf64fe39"
   },
   {
     "id": "weapon.secondary",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -20.85,
+    "peakDb": -2.49,
+    "rmsDb": -22.55,
     "sources": [
       "blast-auto",
       "blast-rifle-a",
       "shutter"
     ],
-    "sha256": "6320e3c5a66528457f59c4c4351376565ab7ec9d16ca5ec58e8854e8784a431c"
+    "sha256": "fad76cc7875184e549659a48856707f59fbc1141b582abd5ffcc7b47fc1a2ec1"
   },
   {
     "id": "weapon.secondary",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.36,
-    "rmsDb": -22.18,
+    "peakDb": -2.49,
+    "rmsDb": -22.42,
     "sources": [
       "blast-auto",
       "blast-rifle-a",
       "shutter"
     ],
-    "sha256": "6a22b158ed423f6046bb60e0349dc6e9da9df7d4259a94a356a206de7553643f"
+    "sha256": "48fc2a148c635ce7cec2ab267468aa6479c9a9965a4b96612524286a844cf189"
   },
   {
     "id": "weapon.turret",
     "variant": 0,
     "seconds": 0.2,
     "peakDb": -2.48,
-    "rmsDb": -21.97,
+    "rmsDb": -21.64,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "4937b298c3c7328cbcec04c8c5ab24ca6c4334deaca988fe631030d2cb44ba3c"
+    "sha256": "13ae320950a79dbd4b1cbdc6dc12c97f86c05183e230306bbfc7a18c307e3dd0"
   },
   {
     "id": "weapon.turret",
     "variant": 1,
     "seconds": 0.2,
     "peakDb": -2.48,
-    "rmsDb": -22.12,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "ratchet-small"
-    ],
-    "sha256": "560a145db09f53d33285d98785299f8a8ae3abf93fc53b935238b45f5c774503"
-  },
-  {
-    "id": "weapon.turret",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -22.06,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "ratchet-small"
-    ],
-    "sha256": "a4b25d1138b86acb45f4d6def90c871aa86becfa6b87e22591d5689a61b896b6"
-  },
-  {
-    "id": "weapon.turret",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -21.95,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "ratchet-small"
-    ],
-    "sha256": "dd6ea7410386855b3b0999976553a9856f9aa1056fb4b4152fadcbb7ef7bb471"
-  },
-  {
-    "id": "weapon.turret",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -21.87,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "ratchet-small"
-    ],
-    "sha256": "08719bda0b79cc2f35e473cdd99883c341fb7337674bff7a94e651909f87eeaa"
-  },
-  {
-    "id": "weapon.drone",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -24.55,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "film"
-    ],
-    "sha256": "d5f2c07b85b40b69fdab361c6a979ff4cd0d697931d1d658c1f116663e31da8f"
-  },
-  {
-    "id": "weapon.drone",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -25.55,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "film"
-    ],
-    "sha256": "f560b69d7e4c108ab532e2c32b695bddc792790dc2eab685295d5cde0938db62"
-  },
-  {
-    "id": "weapon.drone",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -25.72,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "film"
-    ],
-    "sha256": "b9b6ade8e72d84933b11ca66442224c701af7379a56895ee33dc60ec2719882b"
-  },
-  {
-    "id": "weapon.drone",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -25.0,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "film"
-    ],
-    "sha256": "08d6eb76d5fcf15dfa0447daf441196a2ef966c55529fbebe1375ba890db75fa"
-  },
-  {
-    "id": "weapon.drone",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -24.95,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "film"
-    ],
-    "sha256": "6362184ab584fed398e82c194624f33da8fcdb7ad2e56d2ee8f940a7a56864bc"
-  },
-  {
-    "id": "weapon.ordnance",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -21.14,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "41ac7e87a524e0c2e181214f297acab474acaa8ab77696a3bea6c960082fbd6b"
-  },
-  {
-    "id": "weapon.ordnance",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -21.05,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "d5437b396687a6a2e71ab677ae421a5e2744882d9db0cdbedb3e3c33a0fe9e68"
-  },
-  {
-    "id": "weapon.ordnance",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -21.11,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "e51512a8a6fc8c9e01401bef93e46a110da13c006b10168adb73c597df4d956b"
-  },
-  {
-    "id": "weapon.ordnance",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -21.13,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "a9f7a3cdad7c87fdd319fc7f805516480c0c351f447163d0ac9b1c1e9d45eff8"
-  },
-  {
-    "id": "weapon.ordnance",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -20.88,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "489c21e65cf2f588061587352494232a26c34a3273111c96c5d11a817725e2f4"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -24.12,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "448d75e99023e63faee30c6e6ee24b75c27bb1b8c3086b39651e6bca01911c31"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -24.94,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "cdefc7ec953ba2a45b727d61e8f138b03adcfb2e30252300d0a0e0d884264fff"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.43,
-    "rmsDb": -24.88,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "ecffc68f37595b8cb6ceaaa72d969b0da2225f0822e55328094e58b508a2ba45"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -24.76,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "78559b6a978e293ca8f083fa15fb57bd8e7d80ec3f7a77de7e489a21388865a8"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -24.3,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "55e79e9009e48ec61e0290b93204347fc5ef8da8c6876416da23bf81f5d69a19"
-  },
-  {
-    "id": "secondary.frigate",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.41,
-    "rmsDb": -25.32,
-    "sources": [
-      "blast-auto",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "cbc58d98f61f0ab884ed804f1d715a28c3a9e41ed62f6f53881ab6e03fc3d45c"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.45,
-    "rmsDb": -21.57,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "ba77a8d54e4458cde10cb6ce092c5b6a58f433fd51c2f41d2bcf11ec3c53ba4e"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -20.58,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "af698c403e9430102ac4f510b5071073637247bb31586e87879f7587a45e3cb5"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.56,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "70451fbdc2fe79dc4c90f13762fc69e572f650a034b4a02025153861880bc222"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -20.51,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "819e5885a7a258522ea3a73e69318633ed4b576cd11872e6913c2562238708eb"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.33,
-    "rmsDb": -22.1,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "961018c1fcde3e91a31a2fb5846f7be10e9c10f556e7396b9e3e395d967250ff"
-  },
-  {
-    "id": "secondary.destroyer",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -20.36,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-a",
-      "ratchet"
-    ],
-    "sha256": "a66e0e2500e64cb3d8327b52a043721b011ac362776494037b44f87be86807b2"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.63,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "0e58d4ad51eea91b8c5552605a0cf7a1248cdf2319274d5107f0a5501505afb7"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.39,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "4689a2423a2dc85fb080c976f88c41de902458db7f56b4bf68bb74f0e31f80de"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.52,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "b6dceab172918d02bda9c3d93e62fd327c8eb68024a258a55e4ec6cb73f14ad3"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.53,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "2ca582dc7fadacd1b8cd99e0e0b4698fc0482f50726ff60aa0751177b1a5209c"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.48,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "5712b4c1043aa321cdf3a61b2ac0280140eaa37be598ceaaea6a2b86b5f2d5d5"
-  },
-  {
-    "id": "secondary.cruiser",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.67,
-    "sources": [
-      "blast-cracker-b",
-      "blast-magnum",
-      "weld-burst"
-    ],
-    "sha256": "a354546145dcebb1a363cda6b5b26fd112824dfa7e3dc522e454b7efb3a7c925"
-  },
-  {
-    "id": "secondary.battlecruiser",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.4,
-    "rmsDb": -21.21,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "breaker"
-    ],
-    "sha256": "fae2ab0ffca937683a3e8627d440b0d7d3ceb3af3d9ba5cbd24ff0d5d383b8fb"
-  },
-  {
-    "id": "secondary.battlecruiser",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -22.22,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "breaker"
-    ],
-    "sha256": "87ead08a5b8dc047304a963ac2eff51bb238ea4426031d7baa61f726a58268b2"
-  },
-  {
-    "id": "secondary.battlecruiser",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -21.68,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "breaker"
-    ],
-    "sha256": "f8c822e944addf60209896ea65750c89982d391b82888bd32a9a14a88979f939"
-  },
-  {
-    "id": "secondary.battlecruiser",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -20.9,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-a",
-      "breaker"
-    ],
-    "sha256": "5addb080541d6f02977fe6508c44653354b493f4c9752f0c700e0b5cb3358043"
-  },
-  {
-    "id": "secondary.battlecruiser",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.4,
     "rmsDb": -21.71,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
-      "breaker"
+      "ratchet-small"
     ],
-    "sha256": "ac670c79feade4fceebff41868efd06fb2e0562a278c45ec62421a416b83a1fa"
+    "sha256": "9f2c3a9f2b92a3e81443e8be1f9be8ee111480083016a40033828e0719cfe6ae"
+  },
+  {
+    "id": "weapon.turret",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.48,
+    "rmsDb": -21.44,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet-small"
+    ],
+    "sha256": "47781b3247fb0dc545d05ab8a1753af1143b895cdd07b48dd56613ccb358d04a"
+  },
+  {
+    "id": "weapon.turret",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -22.24,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet-small"
+    ],
+    "sha256": "d8485d0ff8323a09ce7349811fe1a48a48ac26f59e5e1c9bda1ff90902e2e4a6"
+  },
+  {
+    "id": "weapon.turret",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -22.07,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "ratchet-small"
+    ],
+    "sha256": "d1010babf73ead9c54a4299ec2339a0fa197ecb9e3389bf844b5a4c3dfccb51e"
+  },
+  {
+    "id": "weapon.drone",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.46,
+    "rmsDb": -24.67,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "sha256": "c95654b637400d5b6cf1a19bc4df93b7d630748ba455e12cd583c35e06381c98"
+  },
+  {
+    "id": "weapon.drone",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -25.14,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "sha256": "703bb4c6fbbc14ae5887b1e832db2abd97ae60881760f153f59e58583fc4fb63"
+  },
+  {
+    "id": "weapon.drone",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -25.81,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "sha256": "5a4575a35ef675e4571eec17875ae74b6958fccbd1ff3f1ad95b0688b16580fe"
+  },
+  {
+    "id": "weapon.drone",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.45,
+    "rmsDb": -24.63,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "sha256": "c4ed20664886955960789e9d0310f1283833dbf9e08f35347329f49be76016be"
+  },
+  {
+    "id": "weapon.drone",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -25.08,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "film"
+    ],
+    "sha256": "19fae14c0acf815ef0e6dc888949a3bb7b74bd792abb13a85d9b3c21b63100b9"
+  },
+  {
+    "id": "weapon.ordnance",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.02,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "bbf230cece74fca7dec6982f48e978e7b5781b6a3f2815b366424116bdc3fae5"
+  },
+  {
+    "id": "weapon.ordnance",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.57,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "1fd6e91d048254e7d4d94d9f6e4d5d800ae97fe9ffc5ac6e7617c5b2834e86d6"
+  },
+  {
+    "id": "weapon.ordnance",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "d30bf875d9e01e0670792fe8d5acd84a750922207b251dbc31459d3595695908"
+  },
+  {
+    "id": "weapon.ordnance",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.3,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "9a3773af78601d567d1b0e60a777fa866b9c05010c738baca3505f5d53686c71"
+  },
+  {
+    "id": "weapon.ordnance",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.62,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "7b4c381f0803347f0cfe9956b3b894aa749ce508ea4e45d57fe637703c2809b6"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.48,
+    "rmsDb": -24.5,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "4aca55465531d8b3be73656895d80a8521af38f1ac426397bdf3af4fda120d21"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -24.67,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "44eceb0ad48a5eded292f7c1433c3a040e791101381eb42ad15c08f710d74067"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -25.47,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "a91a90695c5fbca6c536ccd77dbef7fcc1bb1ee4a9b6e88b34b1a6bdfca7846a"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.48,
+    "rmsDb": -24.43,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "c55cf29c2948bb22d89ad13fdef726cda7bf2cc7fdaa6da2829a8722a44d3c65"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -24.77,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "9f043877828bd6861e364753a9714898e1583da166ce1fbf5205a23f28c49b7d"
+  },
+  {
+    "id": "secondary.frigate",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -25.61,
+    "sources": [
+      "blast-auto",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "8295436e27cda19d288ced37a05592a063ddf71bdd1b0694cb05fcab4a655eec"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.46,
+    "rmsDb": -21.89,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "a90d21c0f62717ccd9813f65d7d96edab32cdb7ff2d247b33ce3f959215a3b2c"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -21.43,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "f7e102f922cb21ab6be46ab1ca3aab4e4b90991364637aae1f2848913d710bf0"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -21.8,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "606aa7f18d27e4b0cbb7fafa40bf269a5d9013fac6581570c98b37af1af866f1"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.46,
+    "rmsDb": -21.82,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "fc08690040e5c79bdbed1bf06ebdb304720c809925c96e51b72b20d26b012710"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.42,
+    "rmsDb": -21.59,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "30eea20f01818d17d0af2cc61308ddfe85fc00419e85f96dda1725a74d0530b1"
+  },
+  {
+    "id": "secondary.destroyer",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -20.67,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-a",
+      "ratchet"
+    ],
+    "sha256": "26f5abba76d24d7ba8550b80d71ddfd627fa79dd9a7f4ab3d4dfb14bebe3e0be"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.34,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "c7fd18efc3390b77fb2b96d886cd1f9bf087224d72cd95f4b502c0d33fa43aaf"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.41,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "160153aef3f7ca8928faaecc70082acbd8a90ac7d2928fa9ca694879c5f5e896"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.39,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "55ad60baa4ce88565e2f890684b7c505444506aac2cec63d8b58cf48d5c354d2"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.44,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "ece5b5e44064ee4d7a1ab58027cd6648aac0572ad8842d6a4f6e9c851d8ff965"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.31,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "aebd7bd1044d1483cbfca628389768a81ac183f20f811f17ccd81ca56a96e07f"
+  },
+  {
+    "id": "secondary.cruiser",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.4,
+    "sources": [
+      "blast-cracker-b",
+      "blast-magnum",
+      "weld-burst"
+    ],
+    "sha256": "55908cd84efc16942bda1cb8ddbe5d00403c11c5322e7dda68b496d916a8b56e"
   },
   {
     "id": "secondary.battlecruiser",
-    "variant": 5,
+    "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -21.3,
+    "peakDb": -2.47,
+    "rmsDb": -22.02,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "breaker"
     ],
-    "sha256": "ba57091766446b67b3ff5bdba5216d1a1b3895c4dd8eece284e1a67b69f597b5"
+    "sha256": "5e3f9e7d8a7f1ba46b7024b78457abfa03dc70eff736c6fc072bd2a154fe916d"
+  },
+  {
+    "id": "secondary.battlecruiser",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -21.63,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "d8b9d7b80776d61b2f7009801581033f6c606ffc25be0612695f0724ac769410"
+  },
+  {
+    "id": "secondary.battlecruiser",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.44,
+    "rmsDb": -21.74,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "660acb8b34c62b0ba4a3dab5d4e14316d424185c1bf5a6292bb5f3f796912d60"
+  },
+  {
+    "id": "secondary.battlecruiser",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.42,
+    "rmsDb": -21.49,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "fdd1666c90cc803662c9036945bf8aec3fdf21d632227a9c3ade8042abfdc59e"
+  },
+  {
+    "id": "secondary.battlecruiser",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.42,
+    "rmsDb": -21.63,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "d1e7c2efb42695879b2ccd37f4d9a4c9dd945e897e93603cda143373cbc93f4c"
+  },
+  {
+    "id": "secondary.battlecruiser",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -21.6,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-a",
+      "breaker"
+    ],
+    "sha256": "fe844eee3c4f4cda11587f98febf661449d304f03d9afadd27bf1e341ada54d5"
   },
   {
     "id": "secondary.battleship",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -22.4,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "tensioner"
-    ],
-    "sha256": "144ea7fbbd8fc47300f39147a2be6a2774aabe63107ed516d3b6fc9e3fa3adde"
-  },
-  {
-    "id": "secondary.battleship",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.45,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "tensioner"
-    ],
-    "sha256": "1feb7b518d85c95845bdd8fc0fc99e2aabe453e0ee961b46f1d3f0011fa66727"
-  },
-  {
-    "id": "secondary.battleship",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -22.68,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "tensioner"
-    ],
-    "sha256": "26b698db43d3f963d5a010d76e4b62f5e469fa27d5ddef6f87c1aaea835e78cf"
-  },
-  {
-    "id": "secondary.battleship",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -23.39,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "tensioner"
-    ],
-    "sha256": "11f75764b81d422e39f0989ceae24b92dc0618ed9751ddafcc41162cb04a160b"
-  },
-  {
-    "id": "secondary.battleship",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -22.16,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "tensioner"
-    ],
-    "sha256": "ed0b14d05a935cc6eecfd421fda4a45b2a4bd719bbb1870251f687dd9a69dffe"
-  },
-  {
-    "id": "secondary.battleship",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.49,
+    "peakDb": -2.48,
     "rmsDb": -23.33,
     "sources": [
       "blast-auto",
       "blast-rifle-b",
       "tensioner"
     ],
-    "sha256": "6b3fae97feb299dcbe25d56b312aefa1e2eafc6de352bdd6d4d8a10b88442223"
+    "sha256": "dd0c1914be39153b5b9af0cc01c2c5c2a7671c2c4699cf65bb71a3b3baf6ac7d"
   },
   {
-    "id": "secondary.dreadnought",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -23.73,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-a",
-      "film"
-    ],
-    "sha256": "950e7ae74484fe038cf0281c06c9304720e151f38ebd569529a0f101eabcf590"
-  },
-  {
-    "id": "secondary.dreadnought",
+    "id": "secondary.battleship",
     "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -21.63,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-a",
-      "film"
-    ],
-    "sha256": "8c741a2361b6ac8a9012c7ca83e24a14accc0cee4ff3955bbbe407bbf9e8d2f2"
-  },
-  {
-    "id": "secondary.dreadnought",
-    "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.49,
     "rmsDb": -23.53,
     "sources": [
       "blast-auto",
-      "blast-rifle-a",
-      "film"
+      "blast-rifle-b",
+      "tensioner"
     ],
-    "sha256": "aecac025bb20ab6dab68e29e84bb49b31a9fb6c30cb6b0c8b65acca69ae06153"
+    "sha256": "581f00416b622fa5557fce538059bbc93037925cc89cbbe50b8feab3afde0fec"
   },
   {
-    "id": "secondary.dreadnought",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -21.57,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-a",
-      "film"
-    ],
-    "sha256": "09472973a0a1e19fb7220d7fa56e8c3a846a96de49673dca53b4d328934b9c4b"
-  },
-  {
-    "id": "secondary.dreadnought",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.35,
-    "rmsDb": -23.14,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-a",
-      "film"
-    ],
-    "sha256": "a08fcf9d6f4573e0cc4bbf5259e339573cc84aad4cb216075c5fb73d358b05b0"
-  },
-  {
-    "id": "secondary.dreadnought",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -20.95,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-a",
-      "film"
-    ],
-    "sha256": "a0fc5275c2153fc8bb5e388bab73f7b9d0c426e12125803a0a3d8b12c2e97617"
-  },
-  {
-    "id": "secondary.carrier",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -25.53,
-    "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "26a96ea4a265e3547081745b4e4b8248ad8c4e3751d83450b48905de11d473a1"
-  },
-  {
-    "id": "secondary.carrier",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.45,
-    "rmsDb": -26.03,
-    "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
-    ],
-    "sha256": "1abf8d027245d23647b1ecdcf77ef6a943e5ff12ae2ddb8c8d496de613c78032"
-  },
-  {
-    "id": "secondary.carrier",
+    "id": "secondary.battleship",
     "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -26.63,
+    "rmsDb": -23.55,
     "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
+      "blast-auto",
+      "blast-rifle-b",
+      "tensioner"
     ],
-    "sha256": "dfe226d914ea461913d7709df37bf4b5e7e130105f32f4d3a99105bcde8ea7c7"
+    "sha256": "596cef4e99c962c59545b2bc531e217ee591f0a3940673a30425d3309b4f7598"
   },
   {
-    "id": "secondary.carrier",
+    "id": "secondary.battleship",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -25.53,
+    "peakDb": -2.49,
+    "rmsDb": -23.35,
     "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
+      "blast-auto",
+      "blast-rifle-b",
+      "tensioner"
     ],
-    "sha256": "79db7c3e43d21e81a6ca2eb0de31167e714afc5d3a20df203b4fe39fb1fc2bff"
+    "sha256": "32290aa7e4ba24ec0975a30e0551833f5730afaff9eac749c287e616cc013f20"
   },
   {
-    "id": "secondary.carrier",
+    "id": "secondary.battleship",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.45,
-    "rmsDb": -25.46,
+    "peakDb": -2.49,
+    "rmsDb": -23.74,
     "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
+      "blast-auto",
+      "blast-rifle-b",
+      "tensioner"
     ],
-    "sha256": "4eb4b4de4adfec75eaa2e2915e69f3dcf703e36b3a7814185cebc88e23075464"
+    "sha256": "552e0e868fc2fe722eea757d9d496351ea4c4b25a24362dccc7a1379488cb8f2"
   },
   {
-    "id": "secondary.carrier",
+    "id": "secondary.battleship",
     "variant": 5,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -26.72,
+    "rmsDb": -23.67,
     "sources": [
-      "blast-cracker-b",
-      "blast-pop",
-      "shutter"
+      "blast-auto",
+      "blast-rifle-b",
+      "tensioner"
     ],
-    "sha256": "898b92066a1e7017a1b6752dbb48823466fb34f8c962daa3df5b4d2c18050af8"
+    "sha256": "9954010bfb0b4cd7184053dfef6d5759ea94769ad0a434bfb69985bec00d1c08"
   },
   {
-    "id": "turret.mothership.standard",
+    "id": "secondary.dreadnought",
     "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -17.37,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "96efe39d269644e4b156181366ea029bcb8c5099dd73aee0ca0b97c6da9202c9"
-  },
-  {
-    "id": "turret.mothership.standard",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -17.36,
-    "sources": [
-      "blast-magnum",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "3d960296a5fcf76cf1decf98d9df474857a4ca3284ce365efa46f8482f1920cb"
-  },
-  {
-    "id": "turret.mothership.standard",
-    "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.47,
-    "rmsDb": -17.32,
+    "rmsDb": -23.07,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "a295363c8ab6940ca626722c5be89990b736f44b822d6fc7df28202e455b9d28"
+  },
+  {
+    "id": "secondary.dreadnought",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.38,
+    "rmsDb": -23.34,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "bdf6dab0f76c2e0edc390ba1fb3a2752c0575462dddb64f55cece079ddd8d3ce"
+  },
+  {
+    "id": "secondary.dreadnought",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.22,
+    "rmsDb": -23.24,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "ee9a489bd7692c0f154a94530b8e38212438c4a1568ec18423687f78727daa1b"
+  },
+  {
+    "id": "secondary.dreadnought",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.43,
+    "rmsDb": -23.21,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "58a2533b3debc8c4c2791391581abaa028020d93a2e04c24fc114e50eda61bb7"
+  },
+  {
+    "id": "secondary.dreadnought",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.29,
+    "rmsDb": -23.61,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "975f0ca675cf6d342362fe0b23c69ab389fbaf5a1e156430b8d009485d4b076a"
+  },
+  {
+    "id": "secondary.dreadnought",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.32,
+    "rmsDb": -23.32,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-a",
+      "film"
+    ],
+    "sha256": "17ac5727d90ce7e2f2efae0cf3a1bdf3fc6d1fda622208401dc861a9f0488b3c"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -25.69,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "4aaef36c071b418875734e12adb6cd6a5b57920f9a0ab728301ed57534718507"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -25.91,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "483eff9df53c1b71c0e52aa9b656aaaf3ebe903a910c87d6cc8ba78558bd9bdc"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -25.99,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "5cfd834911e28d9e640c19c9e6b1bfeea07170f4856b1354a1764146c86e28d5"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.47,
+    "rmsDb": -25.71,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "3c3769ccd63d732581d58a2dad95ecdc4f633e8554e66c88e8021e0a1cc66d65"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.4,
+    "rmsDb": -25.2,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "ce40a3ed614f893184f5d4dbda70c627d6a3149467a9936f3cdb3ae61c539510"
+  },
+  {
+    "id": "secondary.carrier",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -26.14,
+    "sources": [
+      "blast-cracker-b",
+      "blast-pop",
+      "shutter"
+    ],
+    "sha256": "d377b15693f48e9c87943952c413805445cbb1b7e8e6c5a070956c492c16d5fd"
+  },
+  {
+    "id": "turret.mothership.standard",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -17.48,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "28b56dba38e1de32d89ca6a845716a416c55d539da5c7c6d5d29b99d4a130337"
+    "sha256": "1411db474ae497e17a7ac2d1f6f6882348ad347936aafde5b06390b3afe9a77a"
+  },
+  {
+    "id": "turret.mothership.standard",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.48,
+    "rmsDb": -17.62,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "1998079c45f11ccfd60406aa257d6af85cfc5d558e3d1055213253c5254ce4c8"
+  },
+  {
+    "id": "turret.mothership.standard",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -17.59,
+    "sources": [
+      "blast-magnum",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "2fdad2e2829fc80964424ef0e011de2c97aac9bc6f141e63e67c01fda4143c3e"
   },
   {
     "id": "turret.mothership.standard",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -17.11,
+    "peakDb": -2.49,
+    "rmsDb": -17.03,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "902a347198e4199799382b18c512f04735370118f5e222369ac6ef5d7c8636bf"
+    "sha256": "171ff74e1c861dfe1275b73a992abece800308c056364dc66a5be81876dc6e9a"
   },
   {
     "id": "turret.mothership.standard",
     "variant": 4,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -17.26,
+    "rmsDb": -17.19,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "849282e087ff60c2bd220cbd2cd8b3592709507ce1142bd663fcd022b7eab5a5"
+    "sha256": "1f019c7d4b2d6964c4e23aea0ba0a2b3aa84870eec5ceb8d6a6915d1aaba6626"
   },
   {
     "id": "turret.mothership.standard",
     "variant": 5,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -17.43,
+    "peakDb": -2.49,
+    "rmsDb": -17.74,
     "sources": [
       "blast-magnum",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "3fe2ab5ad49035c23d0bd56e54f2ac94f9769d4fd1cc6ac647a7cf507497fc31"
+    "sha256": "aef1c59bc3b15c1201f97c6a666d6ff17b1dadcb0780caa01e1c1206d686d809"
   },
   {
     "id": "turret.mothership.rocket",
     "variant": 0,
     "seconds": 0.32,
-    "peakDb": -2.49,
-    "rmsDb": -21.39,
+    "peakDb": -2.48,
+    "rmsDb": -20.96,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-a",
       "slide"
     ],
-    "sha256": "175750eb39448cc79caafe221aeb0be681fe28a2da428732711dd2356ee87db2"
+    "sha256": "52e701be1dc072b58f2fa595f63d8c5906f15b2e41d9a02b9bec8a57df91ef60"
   },
   {
     "id": "turret.mothership.rocket",
     "variant": 1,
     "seconds": 0.32,
-    "peakDb": -2.49,
-    "rmsDb": -21.33,
+    "peakDb": -2.48,
+    "rmsDb": -20.97,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-a",
       "slide"
     ],
-    "sha256": "db8e662852bd69ee77f81ab064514fc61ac4b11b2783aa3e0e71c5ee843b31bb"
+    "sha256": "30fd3a9c0a297c9b726871d60d28767a1885bc891b1c79ee6cdced88cf569fc9"
   },
   {
     "id": "turret.mothership.rocket",
     "variant": 2,
     "seconds": 0.32,
-    "peakDb": -2.49,
-    "rmsDb": -21.15,
+    "peakDb": -2.46,
+    "rmsDb": -20.76,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-a",
       "slide"
     ],
-    "sha256": "55695f5ec9c42eb4dbad25303f96041dacc44df556962862c81da03a700c7d14"
+    "sha256": "537b75be06f3f8aeafcb53a7363f9208f93d842d84f01f455e71039137e529b4"
   },
   {
     "id": "turret.mothership.rocket",
     "variant": 3,
     "seconds": 0.32,
     "peakDb": -2.49,
-    "rmsDb": -21.18,
+    "rmsDb": -20.85,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-a",
       "slide"
     ],
-    "sha256": "5679e54e5bfab539e9cb373af511c919609d69ab6829f3036f31ebf5dd6f4b11"
+    "sha256": "02cb4147c9d88b7d8afb26d9aa31a6a1c48dca6bf6fc683d96f713ddffccaaee"
   },
   {
     "id": "turret.mothership.rocket",
+    "variant": 4,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -20.61,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "87571b444c5a075e250a9872add9e83c8b03fe4d1ab8908e86adeddd4bfcae35"
+  },
+  {
+    "id": "turret.mothership.rocket",
+    "variant": 5,
+    "seconds": 0.32,
+    "peakDb": -2.48,
+    "rmsDb": -20.81,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-a",
+      "slide"
+    ],
+    "sha256": "d9ccf4683ed7e6530e634285f9e3973419be5e7683d817ef522da3f28af6233f"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.44,
+    "rmsDb": -18.61,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "795a2c2dda05198734278ecf681527eb4af20f5dff835451bef4f8d3295f77b9"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -19.59,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "b0b7f1b441850c7bc822059dd5642208a244f7ea1c0fc33d213ae16f88eab40b"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.44,
+    "rmsDb": -18.62,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "0c932949656ce2182a6e9aa689382959a32c553d2f7bd06afbcbd0e7c6d3f187"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -19.57,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "fd93c73f9d8230aa22fdd448f08fd72c1ba8ec86cb3499ffda64c6e62877d03c"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.44,
+    "rmsDb": -18.48,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "d368e17f6291dc5b7b0416120712cc7e7256912b2c968dfa58d376a357004667"
+  },
+  {
+    "id": "turret.mothership.laser",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.44,
+    "rmsDb": -18.61,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "weld-burst"
+    ],
+    "sha256": "5cacaed24310a6c642a2e5bab8b737ad940d105496ab43ef8498d923ef1f7904"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 0,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -18.45,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "ed5e164ab27cfd1eb21fe4d07fca9ed490ccd4932440260ac3d1065a23770b4c"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.37,
+    "rmsDb": -19.36,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "a33faa296804e89a7ad2ef3f054ddbb67ef10a012ac944a9ec6d5a9576187714"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.36,
+    "rmsDb": -19.29,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "c24a60081cfe16b26f59e6f3c813496156af41c90e812c59ad6098e55bac6137"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -18.55,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "586685b506aee3e405cab7053e4fc0807f3123a4aaef253e0683cf7d580e31ed"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.37,
+    "rmsDb": -19.37,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "2b0106a8ea0235e805ff1479eb596914fe6b6c9f27fe1483eb43fb3ce834bf1b"
+  },
+  {
+    "id": "turret.fob.standard",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -18.25,
+    "sources": [
+      "blast-auto",
+      "blast-magnum",
+      "breaker"
+    ],
+    "sha256": "02f673efa5aacea8cc66082e1c0f95705ec54b0de51cac07d051149bb124434b"
+  },
+  {
+    "id": "turret.fob.rocket",
+    "variant": 0,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -21.8,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "58ba1ba007f653b2190e195dbd3f111ac28b85517e552f0e009e2f49ebe72e4a"
+  },
+  {
+    "id": "turret.fob.rocket",
+    "variant": 1,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -21.62,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "b8927e28ea2934810117c5171fef0b0040edb8db1ca304d3e4dcd84776bfe28c"
+  },
+  {
+    "id": "turret.fob.rocket",
+    "variant": 2,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -21.54,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "a3238ec6334d3e4a81e388fd68e53a50b893b0467f085962ea455140391896b0"
+  },
+  {
+    "id": "turret.fob.rocket",
+    "variant": 3,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -21.64,
+    "sources": [
+      "blast-cracker-b",
+      "blast-rifle-b",
+      "ratchet"
+    ],
+    "sha256": "113e0482d1a1a80a0fc85f1f8f172ac8475e8a84c824a8ec12538f25045076f6"
+  },
+  {
+    "id": "turret.fob.rocket",
     "variant": 4,
     "seconds": 0.32,
     "peakDb": -2.49,
     "rmsDb": -21.42,
     "sources": [
-      "blast-cracker-a",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "5fb329c4a3bd25f2b2d9b2c556eea406b10f7728aab020999319dedf9337478a"
-  },
-  {
-    "id": "turret.mothership.rocket",
-    "variant": 5,
-    "seconds": 0.32,
-    "peakDb": -2.49,
-    "rmsDb": -21.24,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-a",
-      "slide"
-    ],
-    "sha256": "2ab6c7fad0e290ea9cc5ae41c030f5cfbfe6d4e0aea6a92587cf6cd08825fda3"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -19.81,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "10172dd9df2f01ba3a75ce02ddc8195128de424bbc0eb32d4c4970f5fecafc17"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -19.12,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "3855c2363a8f159676b6d42a2ebd9b00a041df6add158da9661d275f652229bd"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -19.48,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "b45c48bde85c3af25cd2b66d741308ccee4df6f7735e7a77544dd69f63883800"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -19.08,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "bdf3bc020455cb2e99d0fc27b5a6fa996a73671062c2d40e5a673f96261a83be"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -19.69,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "77c12379a5a962a5a1cbee8e63c57e16e751a3e3a9730bc2682f63494af4d77f"
-  },
-  {
-    "id": "turret.mothership.laser",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -19.47,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "weld-burst"
-    ],
-    "sha256": "1cc9ebafe8fcf3f0e49aefc62c2de515765de26272a709caf4f446ee22d20a90"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -20.04,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "d2965d3b128eccbdafd4a22fe5515487828333fbab35ec96ecc1057715778ef0"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -18.05,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "bb0c9a20c56eb96838137a0f6732de5418d12fc8b11b87a0ee87f3987132d678"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -19.94,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "e8dacac95a79cf578c9aec0c3ceac8b36e9a223ca7b6ee2a848b2fc56accfed5"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -17.9,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "43f944c0ca71dc9053287875ede2d09b4cb7e2421a04b47bb319f237fc1d5bf1"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -19.99,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "a9f69150bcf2f6caf4239fca70967893eb00ca7e3278703b839353564a56a7d1"
-  },
-  {
-    "id": "turret.fob.standard",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -17.84,
-    "sources": [
-      "blast-auto",
-      "blast-magnum",
-      "breaker"
-    ],
-    "sha256": "73d05b2c862769333ab8fa1c8a2b8930099c1f89e8d2499189aebeec4ed7715f"
-  },
-  {
-    "id": "turret.fob.rocket",
-    "variant": 0,
-    "seconds": 0.32,
-    "peakDb": -2.47,
-    "rmsDb": -20.98,
-    "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "ff1ed0007c2c9c0f0ca6cc99e6be12cfba7075be13e19f43bd601b1d210183d3"
-  },
-  {
-    "id": "turret.fob.rocket",
-    "variant": 1,
-    "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -20.66,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "804623b2549e603686f44f001ee095a1fd2fda1254a0fb5cb7889a83179f075d"
-  },
-  {
-    "id": "turret.fob.rocket",
-    "variant": 2,
-    "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -20.58,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "e6bbba97a2224810812557fc66539f9b7be04b7bd901aad10ac5784ef5f3a062"
-  },
-  {
-    "id": "turret.fob.rocket",
-    "variant": 3,
-    "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -20.7,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "0abb1142e6d0002efc9461f33b9cf8c30f3be28bc9b705ba0b89784f9d83102f"
-  },
-  {
-    "id": "turret.fob.rocket",
-    "variant": 4,
-    "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -20.52,
-    "sources": [
-      "blast-cracker-b",
-      "blast-rifle-b",
-      "ratchet"
-    ],
-    "sha256": "d37a613c350bcf2504d2bbd70afb2413b762870af95c3e90db8dea02e44c48a6"
+    "sha256": "ba1691c9f7a32cf6bd159c4ba425d0211e81a105ff82aae27d172e0d9fd0581b"
   },
   {
     "id": "turret.fob.rocket",
     "variant": 5,
     "seconds": 0.32,
-    "peakDb": -2.47,
-    "rmsDb": -21.01,
+    "peakDb": -2.49,
+    "rmsDb": -21.78,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-b",
       "ratchet"
     ],
-    "sha256": "d22f8ecb7452d868aa7ec0818de91a53305fc0049786594b6cbe62e7470dd330"
+    "sha256": "21f582fbe348f759b3582e433472db612e02a1520f0fb581ff3c8e3f36d50e53"
   },
   {
     "id": "turret.fob.laser",
     "variant": 0,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -24.9,
+    "rmsDb": -25.21,
     "sources": [
       "blast-cracker-a",
       "blast-pop",
       "welding"
     ],
-    "sha256": "39e967b53ac90d605af467f768c40aa0eb19d2b90805d4c2250eb21c60bbb252"
+    "sha256": "7d409b4c3529af0d7d55e99e3dc4b83dce95af7cc1e1df36aacbcccafca46eb8"
   },
   {
     "id": "turret.fob.laser",
     "variant": 1,
     "seconds": 0.2,
-    "peakDb": -2.47,
-    "rmsDb": -24.14,
+    "peakDb": -2.44,
+    "rmsDb": -24.36,
     "sources": [
       "blast-cracker-a",
       "blast-pop",
       "welding"
     ],
-    "sha256": "b2674529423b17652a9f6adb85dbf507d29a76bf9e0c78323096f844fbf666d8"
+    "sha256": "f8c6720f10862712bb8b5b02529e2012d7a585a4bf9534c603731c8fffead169"
   },
   {
     "id": "turret.fob.laser",
     "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.47,
-    "rmsDb": -25.96,
+    "rmsDb": -25.78,
     "sources": [
       "blast-cracker-a",
       "blast-pop",
       "welding"
     ],
-    "sha256": "9ec8b25f206ecfedb559327de5bc1ab98ae3c6a9c2992b1cbd510a914ff98e0c"
+    "sha256": "7268e0a665f739d253cbc8609a3c9ba9045ca7d040054c5d0ed4842024e2aae2"
   },
   {
     "id": "turret.fob.laser",
     "variant": 3,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -24.9,
+    "rmsDb": -25.2,
     "sources": [
       "blast-cracker-a",
       "blast-pop",
       "welding"
     ],
-    "sha256": "fc5cd816fd6c19cc58ffe3d0ac1c39dbfc42a728712334987124876f12329445"
+    "sha256": "e81cb1d014c9d7971a836df3e62cc0409c009cc2168f9527711a49d222394bc9"
   },
   {
     "id": "turret.fob.laser",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.43,
-    "rmsDb": -24.54,
+    "peakDb": -2.46,
+    "rmsDb": -24.93,
     "sources": [
       "blast-cracker-a",
       "blast-pop",
       "welding"
     ],
-    "sha256": "06ffb9fe01eac39ae945d7e83cf9901b51859babb60400f819f17e0e959c2558"
+    "sha256": "96d5a64cb32a25c3af48c7fca1f959e0e1fdd964e52dd388bb6c798e7b328b23"
   },
   {
     "id": "turret.fob.laser",
-    "variant": 5,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -25.84,
-    "sources": [
-      "blast-cracker-a",
-      "blast-pop",
-      "welding"
-    ],
-    "sha256": "fc334bb32beea50e6c73beec22da7e1cd40d0dd2128c545487ce15a48b405d0b"
-  },
-  {
-    "id": "turret.node",
-    "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -22.6,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
-    ],
-    "sha256": "04f574add3a13e38e15721cd0de8d2e3687766db6123d4532a5404590bb2660d"
-  },
-  {
-    "id": "turret.node",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.38,
-    "rmsDb": -22.62,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
-    ],
-    "sha256": "7b4b48c9801042541af3b182373e437cdb033a9b36a38879b317084af21d30ca"
-  },
-  {
-    "id": "turret.node",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.43,
-    "rmsDb": -22.67,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
-    ],
-    "sha256": "a3edb7cccbc2f41d6c37830959e694ecde77bb2692d64f1cdf17d608559639f2"
-  },
-  {
-    "id": "turret.node",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -23.02,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
-    ],
-    "sha256": "88d25e169d7a52384c314917c4bdd82c68edeadfbc691f351feeb1b8bba1884c"
-  },
-  {
-    "id": "turret.node",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -22.41,
-    "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
-    ],
-    "sha256": "98acce8d9e7961558996c0cc434339b499f8c42e4978f8a61f5dc135cd856338"
-  },
-  {
-    "id": "turret.node",
     "variant": 5,
     "seconds": 0.2,
     "peakDb": -2.41,
-    "rmsDb": -22.98,
+    "rmsDb": -25.9,
     "sources": [
-      "blast-auto",
-      "blast-cracker-b",
-      "switch"
+      "blast-cracker-a",
+      "blast-pop",
+      "welding"
     ],
-    "sha256": "5228f7b47c71f263986755a9ed4bd611d3e4dc7134355839257c1655754759f9"
+    "sha256": "464f2a4199e65d8028309a19c7b49a3a32054071dc9f4d92918812f15a59faeb"
   },
   {
-    "id": "turret.deployable",
+    "id": "turret.node",
     "variant": 0,
-    "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -22.33,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "c316fa467009bbccfaf82e9576a81d0c62ae21e7395b1b92bf2942cec8e01421"
-  },
-  {
-    "id": "turret.deployable",
-    "variant": 1,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.02,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "090df4ec56b3ea65badadf5cb04f94d2595fa4c5649ccce798759de25d0be76d"
-  },
-  {
-    "id": "turret.deployable",
-    "variant": 2,
-    "seconds": 0.2,
-    "peakDb": -2.4,
-    "rmsDb": -22.22,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "8c360c46a6bbdac52dacbfc40da7fb1076a26e9ec9adb8055cbb789111f6fc04"
-  },
-  {
-    "id": "turret.deployable",
-    "variant": 3,
-    "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -20.99,
-    "sources": [
-      "blast-auto",
-      "blast-rifle-b",
-      "shutter"
-    ],
-    "sha256": "279b95960aba52f11522423f894fa68551e789c7ae76a294f02c1622f9defcf0"
-  },
-  {
-    "id": "turret.deployable",
-    "variant": 4,
     "seconds": 0.2,
     "peakDb": -2.49,
     "rmsDb": -23.2,
     "sources": [
       "blast-auto",
-      "blast-rifle-b",
-      "shutter"
+      "blast-cracker-b",
+      "switch"
     ],
-    "sha256": "a2d23dc0893b474bc2af1837f790d2bee7620f2cb603f87c40115737a3439058"
+    "sha256": "21967fb3bcfc6d4b7d143734a920f9567a380a95dc6860ee617b9a68dacff68b"
+  },
+  {
+    "id": "turret.node",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.14,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "sha256": "2c8f8b1dd8594ae5c981ac16f8044c8f11f3d936bb58a34da3ffd078ef861c53"
+  },
+  {
+    "id": "turret.node",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.26,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "sha256": "ee37b912690951e5003871a387b64e2da530782cb09cff7e34fa208ffed282dc"
+  },
+  {
+    "id": "turret.node",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.22,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "sha256": "c7adde9000f940e643af249c02ee64adb4dd9c6a9009c37afb4a535ddbb63bd1"
+  },
+  {
+    "id": "turret.node",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.05,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "sha256": "cc44b2111297906a08a1366a44f375dd7e9bc3f73eb3dbb47a1d4d6210449fed"
+  },
+  {
+    "id": "turret.node",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.49,
+    "rmsDb": -23.19,
+    "sources": [
+      "blast-auto",
+      "blast-cracker-b",
+      "switch"
+    ],
+    "sha256": "c9cc00ce6c2dcf6180ac160debfd61c299d91727a92d771700eb7231f2fe426e"
   },
   {
     "id": "turret.deployable",
-    "variant": 5,
+    "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -20.81,
+    "peakDb": -2.4,
+    "rmsDb": -22.54,
     "sources": [
       "blast-auto",
       "blast-rifle-b",
       "shutter"
     ],
-    "sha256": "bab95318726a0fbfc9eb5d497ad0da77a681e072ab0e23538ecb23e9f6161d54"
+    "sha256": "d1183f5aa0e63db2cc11f557897a63d4f4ba607ed4f1083fc66a6f908118d72a"
+  },
+  {
+    "id": "turret.deployable",
+    "variant": 1,
+    "seconds": 0.2,
+    "peakDb": -2.39,
+    "rmsDb": -22.27,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "191f0f8b62b95b664e40f7f4bcfff41509c9ce91e5b2670f43ec79c6456aa57c"
+  },
+  {
+    "id": "turret.deployable",
+    "variant": 2,
+    "seconds": 0.2,
+    "peakDb": -2.36,
+    "rmsDb": -21.85,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "6739923fcfaf3326e2f118c8799a4e2b89689146c484d02224d7374403c518b8"
+  },
+  {
+    "id": "turret.deployable",
+    "variant": 3,
+    "seconds": 0.2,
+    "peakDb": -2.41,
+    "rmsDb": -22.45,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "e2660b96511b640b73dd8bcc21b2af3a20e3270aa7802cb7767f65c36560fe57"
+  },
+  {
+    "id": "turret.deployable",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.36,
+    "rmsDb": -23.37,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "f5cae4bbe2200aa3fda64fc0d28380fa7c6022eb3ee7a6367fcb53b117693002"
+  },
+  {
+    "id": "turret.deployable",
+    "variant": 5,
+    "seconds": 0.2,
+    "peakDb": -2.37,
+    "rmsDb": -23.53,
+    "sources": [
+      "blast-auto",
+      "blast-rifle-b",
+      "shutter"
+    ],
+    "sha256": "786570dcd026ade31740f9efbaf318afa335852c5ee1fef3fb4811aa80bdcae4"
   },
   {
     "id": "turret.platform",
     "variant": 0,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -19.53,
+    "rmsDb": -20.05,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "324b6aa01f8685366107f1bf39cf8a860c9cc6d595dac28b2468af893fc44b75"
+    "sha256": "7e4d5c877487422782b167c5ae41d0e328c094c836e738836cea79138fb1104f"
   },
   {
     "id": "turret.platform",
     "variant": 1,
     "seconds": 0.2,
     "peakDb": -2.48,
-    "rmsDb": -19.09,
+    "rmsDb": -19.76,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "22e50dbb3529aaea0b7555d26de402b598ff2134d84254e96d2b10b7b2151eb2"
+    "sha256": "b57e2a4d6d86022ec7865abb51531ca863f8f78f53506031e8ffa2439928a177"
   },
   {
     "id": "turret.platform",
     "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -19.63,
+    "rmsDb": -19.85,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "2e08c6828fb15151208f8bc69022d08c492ebbe0958d5b3df762ade3284f8020"
+    "sha256": "04cbc78db963833bf4bd41f8259c682e590195bdc6c0b7408a56c681f867dcb5"
   },
   {
     "id": "turret.platform",
     "variant": 3,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -19.42,
+    "rmsDb": -19.88,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "050e83a1fd61119539c117c22c70b79bb2805c8a7f21248c06e4b7eb220ce0c4"
+    "sha256": "60819e7f91c6ddb1d075f1560508c02a898a0edb823d900b5bf7f11cf34fbad7"
   },
   {
     "id": "turret.platform",
     "variant": 4,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -19.58,
+    "rmsDb": -19.88,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "174e42676ce1a9e6a037841b78d6d57451ce67f7d40fbf07fda214cc97d4edeb"
+    "sha256": "f35c80285c8c69dbdf8bc7f2d25e114093ffbb5d88be404147c2b53e36bb0c5c"
   },
   {
     "id": "turret.platform",
     "variant": 5,
     "seconds": 0.2,
     "peakDb": -2.48,
-    "rmsDb": -19.46,
+    "rmsDb": -20.06,
     "sources": [
       "blast-magnum",
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "sha256": "c36f4be59e57c28008a862b675b2ea8133f8b6f6f529045a0eb14706589d9c89"
+    "sha256": "79bce63353e4f8c447ff667b11790f96c3f8c52f879045fd3c6f52301c16d3c5"
   },
   {
     "id": "drone.orbit",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.48,
-    "rmsDb": -24.92,
+    "peakDb": -2.44,
+    "rmsDb": -24.75,
     "sources": [
       "autofocus",
       "blast-auto",
       "blast-pop"
     ],
-    "sha256": "641717732cd2acb4db761d23695970c73b62ae1242ec5dc4e46a7d2eb43167ea"
+    "sha256": "385097d78a745ee6068d9231c905d667dc1ca1dbfe864040568abb7ac204e3bb"
   },
   {
     "id": "drone.orbit",
     "variant": 1,
     "seconds": 0.2,
-    "peakDb": -2.45,
-    "rmsDb": -25.54,
+    "peakDb": -2.43,
+    "rmsDb": -25.0,
     "sources": [
       "autofocus",
       "blast-auto",
       "blast-pop"
     ],
-    "sha256": "3916d6e9f1b1a4c28fc92f59bc18c6b5cb209c2ccf45ade9934fe92e79a5639e"
+    "sha256": "0f336f7d0b73f69715d107bc8313fa983e1c2809a05da47f48224c44fd7c266f"
   },
   {
     "id": "drone.orbit",
     "variant": 2,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -25.85,
+    "rmsDb": -25.82,
     "sources": [
       "autofocus",
       "blast-auto",
       "blast-pop"
     ],
-    "sha256": "21daf55d1a6a2416deb712ea6bf422c5a9de127a27322c592365df0ffa69ea6b"
+    "sha256": "b20054ae2b3ee8cdf134df71f52baccb27161c982c9dd56da5eadb8935536ed2"
   },
   {
     "id": "drone.orbit",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.49,
+    "peakDb": -2.45,
+    "rmsDb": -24.71,
+    "sources": [
+      "autofocus",
+      "blast-auto",
+      "blast-pop"
+    ],
+    "sha256": "f177877dc94dc4d693dc6aa0d16368956e151ada0184640235f6551dd29f7688"
+  },
+  {
+    "id": "drone.orbit",
+    "variant": 4,
+    "seconds": 0.2,
+    "peakDb": -2.42,
     "rmsDb": -25.1,
     "sources": [
       "autofocus",
       "blast-auto",
       "blast-pop"
     ],
-    "sha256": "abdf60e0db6e3c055ea46a037916f80d080a04175e2ed34edd83c2123d1fb356"
-  },
-  {
-    "id": "drone.orbit",
-    "variant": 4,
-    "seconds": 0.2,
-    "peakDb": -2.43,
-    "rmsDb": -25.13,
-    "sources": [
-      "autofocus",
-      "blast-auto",
-      "blast-pop"
-    ],
-    "sha256": "6e4b14bb6c6d052c6f9785b1d34a74d534890991f5229a4f0f2fe478dbdea51d"
+    "sha256": "0a1ddeaebead41d17679f085bbf350c6c135baff2ae815acb8f876691eb3475c"
   },
   {
     "id": "drone.orbit",
     "variant": 5,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -26.02,
+    "rmsDb": -25.86,
     "sources": [
       "autofocus",
       "blast-auto",
       "blast-pop"
     ],
-    "sha256": "07569c1dd7fba41fa692ac78953e90f6c24b90ee94d278a0230ea93bd2cff866"
+    "sha256": "2fefb54be0df180372f90c34c08a3fda0cb4435861b1d00f541342685bf2ccec"
   },
   {
     "id": "drone.swarm",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -25.92,
+    "peakDb": -2.28,
+    "rmsDb": -25.77,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "5128072ddeb4512788ad37053fabae7b299c58eecfc8cdb2d40b75a2418e0697"
+    "sha256": "32606c173698ce1ca80d390a9e65981d59618c594990b70f59a76fffbe0e0bc5"
   },
   {
     "id": "drone.swarm",
     "variant": 1,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -25.99,
+    "peakDb": -2.26,
+    "rmsDb": -25.72,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "51e03ff16359b06fba9488bfb41a97728c37ef36040f9a4a904290a713debf72"
+    "sha256": "504a8b804a73f11ab6cf99fd1a8175c0fe0299b71091355166bd0ed5fab818c5"
   },
   {
     "id": "drone.swarm",
     "variant": 2,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -26.01,
+    "peakDb": -2.26,
+    "rmsDb": -25.72,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "18e7a444a62aa64d568e97bfb0bcc23167ca00b93dc3b883f2ca50a5e61a512a"
+    "sha256": "545051fa31a7e64a2f732c54ce3bb10fc86fa5364427b0995c25c560fe208921"
   },
   {
     "id": "drone.swarm",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -26.0,
+    "peakDb": -2.26,
+    "rmsDb": -25.63,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "e4e0b47eac538ed16e2a526b639f7e3408439e2ce474da8cce9bf4817751a3a5"
+    "sha256": "a9fe81ba80f0ec61ec02424533c3667f0fc889d256ba0c39e44d87737790697c"
   },
   {
     "id": "drone.swarm",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -25.83,
+    "peakDb": -2.31,
+    "rmsDb": -25.6,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "3b85b4cd98af3722e3ad4eb4637a3a870ef2820d8bb70efdcf73dfaf9a16ab92"
+    "sha256": "a436134dc47fdef1f4c43210aebcb985895d989cae24db2ec3a62f61985cd73d"
   },
   {
     "id": "drone.swarm",
     "variant": 5,
     "seconds": 0.2,
-    "peakDb": -2.46,
-    "rmsDb": -25.95,
+    "peakDb": -2.26,
+    "rmsDb": -25.73,
     "sources": [
       "blast-cracker-b",
       "blast-rifle-a",
       "film"
     ],
-    "sha256": "5517824c748a11ae70f03b893e4acf762c182ff7ae1a2e3872c147532f802c86"
+    "sha256": "0ed872b93d1e250ca39856baba46123ffac59a6cf579fc83036049c2b8e69d96"
   },
   {
     "id": "drone.guard",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.81,
+    "peakDb": -2.46,
+    "rmsDb": -22.4,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "9d0f57fdd0aadbabbfe323e597a39a0023c873c6bd41402e0c50e67cb85caf5f"
+    "sha256": "ac0f971590371d49cca148d716ebc89cb31dba325d252c51059f67fbd133fb54"
   },
   {
     "id": "drone.guard",
     "variant": 1,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -20.69,
+    "rmsDb": -21.46,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "0bfce90259be895424bb78fcfb80311ecc250482d4d2b168ba2a98c309b54536"
+    "sha256": "b8b0ade8c958712b68615dbbd520c3c1b1ca5b46c9b47bd9acd354cf7903b4eb"
   },
   {
     "id": "drone.guard",
     "variant": 2,
     "seconds": 0.2,
-    "peakDb": -2.29,
-    "rmsDb": -21.68,
+    "peakDb": -2.49,
+    "rmsDb": -22.19,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "b6236f51c7e39c0099dfb5eed8f49b47f1bf1c1c1f932f86c57ef94237be9d1c"
+    "sha256": "408f384f328d202b0e278ca44dc48978e6408faa7fb42b93560a6967fa6ac515"
   },
   {
     "id": "drone.guard",
     "variant": 3,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -20.94,
+    "rmsDb": -22.15,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "04b7792f4354e543c113347d53e83c82e7c973be52d48cb86aba37712f97f326"
+    "sha256": "4a8790ea02f4d852829e9b15afc8a717770bfbdf17395062ac66ab62451ce013"
   },
   {
     "id": "drone.guard",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.82,
+    "peakDb": -2.46,
+    "rmsDb": -22.41,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "9d3b7201cb1d0d2f82b40e483ad89405957a978d4a9f1260d1555301457896b1"
+    "sha256": "8ce04230d48f4377f2371ae09e803586f0c1b938fa585d6dc43d5e9288434f1f"
   },
   {
     "id": "drone.guard",
     "variant": 5,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -20.9,
+    "rmsDb": -22.18,
     "sources": [
       "blast-auto",
       "blast-cracker-a",
       "breaker"
     ],
-    "sha256": "75975a390f8ad24c26a59a59e7a25dcbfbb8fa62e5bf697ee6dea150b8a72d8c"
+    "sha256": "13fe8455750181be451b2e74cc4f4445834a85d4c6dac7dc719dcb3b78ce7722"
   },
   {
     "id": "drone.bomber",
     "variant": 0,
+    "seconds": 0.32,
+    "peakDb": -2.49,
+    "rmsDb": -23.8,
+    "sources": [
+      "blast-cracker-a",
+      "blast-rifle-b",
+      "slide"
+    ],
+    "sha256": "0d2899682968f3e695cab6f4ca961cd6e666ac34e94e3d32018c3d44557b58db"
+  },
+  {
+    "id": "drone.bomber",
+    "variant": 1,
     "seconds": 0.32,
     "peakDb": -2.48,
-    "rmsDb": -23.31,
+    "rmsDb": -22.94,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "475df374c82468388b76fc47526ed67ce1d6c02392552a242b95b04dcd534d51"
-  },
-  {
-    "id": "drone.bomber",
-    "variant": 1,
-    "seconds": 0.32,
-    "peakDb": -2.45,
-    "rmsDb": -23.04,
-    "sources": [
-      "blast-cracker-a",
-      "blast-rifle-b",
-      "slide"
-    ],
-    "sha256": "90ba4506072e4d7c4a9f715b5d8872f89d7cc2e802e111d5848257da29432fee"
+    "sha256": "5a28d50c597e1115e771ed3c9dd0ed00950bcac56f2131b1c47511194217fb4d"
   },
   {
     "id": "drone.bomber",
     "variant": 2,
     "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -23.18,
+    "peakDb": -2.48,
+    "rmsDb": -23.24,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "949b0cf2ef2be9b9ffe73cd11900f411b5d29b7f419de6c7dbb6dda8a7d460ec"
+    "sha256": "e043f48c7f3f900d3863e1fd7762312fa72ada057e9d1e7a54ea973fd5182014"
   },
   {
     "id": "drone.bomber",
     "variant": 3,
     "seconds": 0.32,
-    "peakDb": -2.47,
-    "rmsDb": -23.16,
+    "peakDb": -2.48,
+    "rmsDb": -23.4,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "9c17f2cb940d9ad2e7f97c91ca2c9dba93d25bee6d340e8d02e52678dbf60578"
+    "sha256": "b4269ddc263a5d2d943f7eefdf30428ab972a0385532700382316f88f87788e8"
   },
   {
     "id": "drone.bomber",
     "variant": 4,
     "seconds": 0.32,
     "peakDb": -2.49,
-    "rmsDb": -23.12,
+    "rmsDb": -23.98,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "db386d28cfcfed1707c28392aabfb75181bfa2f6d572e4da6c6e2aa38af4d917"
+    "sha256": "f3e50a3ca1e8619c193a6194cf3ffb1f9275ac044a742a67773747c98b62659e"
   },
   {
     "id": "drone.bomber",
     "variant": 5,
     "seconds": 0.32,
-    "peakDb": -2.46,
-    "rmsDb": -23.13,
+    "peakDb": -2.48,
+    "rmsDb": -23.09,
     "sources": [
       "blast-cracker-a",
       "blast-rifle-b",
       "slide"
     ],
-    "sha256": "a196dc29bea04c78de722079def669ef29468aa37d19590e4011b0a27cd294da"
+    "sha256": "8bb3b49f3e5cb76cc0598d19daefa04d7de4e1fe97d3d608550272c9c8aef118"
   },
   {
     "id": "drone.interceptor",
     "variant": 0,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -25.06,
+    "rmsDb": -25.0,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "e181fe0c9415d7df27426cd148bb625703398759d30beba8015993e106177745"
+    "sha256": "0d936b6e58d484a764d1d2df54df489bb67eb25e157fcd18dfc2313bc7c2596c"
   },
   {
     "id": "drone.interceptor",
     "variant": 1,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -25.85,
+    "peakDb": -2.43,
+    "rmsDb": -25.52,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "a9fbf69117a3e61375d28d77a6829efb6ca661e1932cb678d53fb9cf2915f98a"
+    "sha256": "319fb1509dcb3f34f08775fe9b584c1a2a9f7add6116359b9e67e1269f846a87"
   },
   {
     "id": "drone.interceptor",
     "variant": 2,
     "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -26.26,
+    "peakDb": -2.49,
+    "rmsDb": -26.17,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "fd293a64bcd9cffbaf28950d286134c0689c1091185423bedbc0e3fef00cae7d"
+    "sha256": "7c888741b09a379b4f76b1bf3dbc8be00698042ad84b4f52c94789ece30cd5bd"
   },
   {
     "id": "drone.interceptor",
     "variant": 3,
     "seconds": 0.2,
     "peakDb": -2.49,
-    "rmsDb": -25.31,
+    "rmsDb": -25.01,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "f842243d186fb4163921b7e0cae32383c05e66468db92ea6b413b8235e2e8af2"
+    "sha256": "41ba6dbf3282771864dbe13446db5956422c25b0353182f513a7a33b5581a8e0"
   },
   {
     "id": "drone.interceptor",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -25.66,
+    "peakDb": -2.42,
+    "rmsDb": -25.44,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "318a3f6fb170497d55cd1219e1e548785c6984bef7f1daca24d345afd0bd9bfb"
+    "sha256": "a83ce076bfd36e13b92646ac8bab8df7fa27373e910e4eaa8d37348df0552984"
   },
   {
     "id": "drone.interceptor",
     "variant": 5,
     "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -26.15,
+    "peakDb": -2.49,
+    "rmsDb": -26.23,
     "sources": [
       "blast-auto",
       "blast-pop",
       "shutter"
     ],
-    "sha256": "8fe4a1cea6889c365a4b352b6bbfe1f95f77b0fc58a6bbc23a168b2047a3862c"
+    "sha256": "40bff55e4c9dd708b793bdc5058827175f692dc6e96151f233989d17caf47b95"
   },
   {
     "id": "drone.fighter",
     "variant": 0,
     "seconds": 0.2,
-    "peakDb": -2.44,
-    "rmsDb": -23.08,
+    "peakDb": -2.35,
+    "rmsDb": -24.0,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "61891523e040883043d42e546905655a40610595ff11f21e68ec7f2ba3f49e2b"
+    "sha256": "1ec272f4337a5f7810c7ba30ce1e596fa6208132b59e989578866a04e64b92e9"
   },
   {
     "id": "drone.fighter",
     "variant": 1,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.44,
+    "peakDb": -2.34,
+    "rmsDb": -23.81,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "fd392fa5b2dae75440a97176df6d4e282ceb2428c0e9ba7ed5310f77bbe53d63"
+    "sha256": "769775f30b6a85779470df52361d476e2afb036446ffda1d50f218374cc902c0"
   },
   {
     "id": "drone.fighter",
     "variant": 2,
     "seconds": 0.2,
-    "peakDb": -2.42,
-    "rmsDb": -23.16,
+    "peakDb": -2.41,
+    "rmsDb": -24.19,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "c31f6c7803cc1c8acbb271fd8979c178b2b8181bb5371f60dd53984cb387fa4c"
+    "sha256": "7fbc100349d24449a17a2071d494be6bed0c6176e57e8a468ce9bd0f04f66d6e"
   },
   {
     "id": "drone.fighter",
     "variant": 3,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.43,
+    "peakDb": -2.41,
+    "rmsDb": -24.16,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "820a4f495bee59e300e183ee64535276a2e9f57a3a480cc61db442c0ddb6583f"
+    "sha256": "eebeee7a625a076936c99d972bb4a1da04dd01c8e7ddacdab90c925b99d15660"
   },
   {
     "id": "drone.fighter",
     "variant": 4,
     "seconds": 0.2,
-    "peakDb": -2.44,
-    "rmsDb": -23.06,
+    "peakDb": -2.36,
+    "rmsDb": -24.05,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "a54e9d550dbd87749cac86d9e599a12780024daea35d7ed403f59675d9931bb0"
+    "sha256": "2d72b675d73db7af17e77261c35a540ab5d7dc718ba95bbc6aa6012eff00d68f"
   },
   {
     "id": "drone.fighter",
     "variant": 5,
     "seconds": 0.2,
-    "peakDb": -2.49,
-    "rmsDb": -21.42,
+    "peakDb": -2.41,
+    "rmsDb": -24.21,
     "sources": [
       "blast-auto",
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "sha256": "4cdde1145cbe8350874e6ddea2eba6a791b239a596851c373b30876f69c0bbdc"
+    "sha256": "d7a00549c6e403168ce27424ba60632b998d4824f7818e5e2c1aaa4bd283ce2f"
   }
 ]

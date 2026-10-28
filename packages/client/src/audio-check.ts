@@ -40,19 +40,21 @@ document.getElementById('enable')!.onclick=async()=>{setStatus('Loading original
 search.oninput=populate;category.onchange=populate;
 document.getElementById('stop')!.onclick=()=>{orbit=false;fixed=false;loopId='';stressUntil=0;audioEngine.stopAll();setStatus('Stopped.');};
 document.getElementById('orbit')!.onclick=()=>{audioEngine.stopAll();orbit=true;fixed=false;loopId='engine.destroyer';start=performance.now();setStatus('Source orbits the ship. Change distance to compare near, off-screen and far battle sound.');};
-document.getElementById('battle')!.onclick=()=>{audioEngine.stopAll();orbit=false;fixed=false;loopId='';stressUntil=performance.now()+6000;nextShot=0;stressShots=0;stressPeak=0;pilotEvents=0;pilotAccepted=0;setStatus('Six-second crowded battle with simultaneous protected pilot weapons, ability, engine and warning.');};
+document.getElementById('battle')!.onclick=()=>{audioEngine.stopAll();orbit=false;fixed=false;loopId='';stressUntil=performance.now()+6000;nextShot=0;stressShots=0;stressPeak=0;pilotEvents=0;pilotAccepted=0;setStatus('Six-second moving-pilot battle with simultaneous protected weapons, ability, engine and warning.');};
 document.getElementById('verify')!.onclick=async()=>{setStatus('Rendering limiter overload and stereo placement checks…');try{const result=await audioProbe();setStatus(`Audio rendering ${result.pass?'PASS':'FAIL'}: ${JSON.stringify(result)}`);}catch(e){setStatus(`Audio rendering check failed: ${String(e)}`);}};
 document.getElementById('world-source')!.onclick=()=>{audioEngine.stopAll();orbit=false;fixed=true;loopId='loop.drive';start=performance.now();setStatus('Source fixed to screen-right. Its sound stays on the right regardless of ship orientation.');};
 const canvas=document.getElementById('scope') as HTMLCanvasElement,ctx=canvas.getContext('2d')!;
 const timer=setInterval(()=>{
-  const now=performance.now(),elapsed=(now-start)/1000;audioEngine.setListener({x:0,y:0,heading:Number(heading.value)});audioEngine.beginLoops();
+  const now=performance.now(),elapsed=(now-start)/1000;
+  const pilotX=stressUntil?Math.sin(now*.0014)*1400:0,pilotY=stressUntil?Math.cos(now*.0014)*900:0;
+  audioEngine.setListener({x:pilotX,y:pilotY,heading:Number(heading.value)});audioEngine.beginLoops();
   const radius=orbit||fixed?Number(distance.value):0,angle=orbit?elapsed*.55:0,x=Math.cos(angle)*radius,y=Math.sin(angle)*radius;
   if(loopId)audioEngine.loop('lab',loopId,{x,y,gain:1,priority:95});
   if(stressUntil){
     if(now<stressUntil){
-      for(let i=0;i<22;i++)audioEngine.loop(`stress${i}`,'engine.'+(['patrol','corvette','frigate','destroyer','cruiser','battlecruiser','battleship','dreadnought','carrier'][i%9]),{x:Math.cos(i*2.4)*i*50,y:Math.sin(i*2.4)*i*50,gain:.6,own:i===0});
+      for(let i=0;i<22;i++)audioEngine.loop(`stress${i}`,'engine.'+(['patrol','corvette','frigate','destroyer','cruiser','battlecruiser','battleship','dreadnought','carrier'][i%9]),{x:i===0?pilotX:Math.cos(i*2.4)*i*50,y:i===0?pilotY:Math.sin(i*2.4)*i*50,gain:.6,own:i===0});
       if(now>nextShot){nextShot=now+70;for(let i=0;i<7;i++){audioEngine.play('weapon.'+['patrol','destroyer','battleship','cruiser','dreadnought','corvette','battlecruiser'][i],{x:Math.sin(stressShots+i)*(i>3?3200:700),y:Math.cos(stressShots+i)*(i>3?3200:700),key:`shot${i}`,cooldown:0,gain:.5});stressShots++;}
-        pilotEvents++;pilotAccepted+=Number(audioEngine.play('weapon.patrol',{x:10,y:0,own:true,key:'pilotShot',cooldown:0}));
+        pilotEvents++;pilotAccepted+=Number(audioEngine.play('weapon.patrol',{x:pilotX+80,y:pilotY,own:true,localPan:.013,key:'pilotShot',cooldown:0}));
         if(stressShots%70===0){pilotEvents++;pilotAccepted+=Number(audioEngine.play('ability.patrol.blinkStrike',{own:true,key:'pilotAbility',cooldown:0}));}
         if(stressShots%35===0)for(let j=0;j<12;j++)audioEngine.play('movement.engage',{x:300+j*40,y:-150,key:`fleetDrive${j}`,own:false});
         if(stressShots%10===0)audioEngine.play('impact.explosion',{x:400,y:-200,gain:.5,cooldown:.07});

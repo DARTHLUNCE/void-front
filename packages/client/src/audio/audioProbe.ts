@@ -1,3 +1,4 @@
+import { pilotShotProbe } from './pilotShotProbe';
 import { headphoneProbe } from './headphoneProbe';
 import { reverbProbe } from './reverbProbe';
 import { spatial } from './audioMath';
@@ -19,6 +20,7 @@ export async function audioProbe():Promise<Record<string,unknown>> {
   const manifest=await (await fetch('/assets/audio-v4/manifest.json')).json();
   const gun=manifest['weapon.patrol'];
   const gunBuffer=await spatialCtx.decodeAudioData(await (await fetch('/assets/audio-v4/'+gun.files[0])).arrayBuffer());
+  const pilotShot=await pilotShotProbe(gunBuffer,gun);
   const headphones=await headphoneProbe(gunBuffer);
   const reverb=await reverbProbe(gunBuffer);
   const loopChecks=[];
@@ -43,5 +45,5 @@ export async function audioProbe():Promise<Record<string,unknown>> {
     hrtf.push([0,1].map(ch=>out.getChannelData(ch).reduce((s,v)=>s+v*v,0)));
   }
   const hrtfDirection=hrtf[0][0]>hrtf[0][1]&&hrtf[1][1]>hrtf[1][0];
-  return {pass:reverb.pass&&headphones.pass&&finite&&peak<=.821&&rms>0&&leftToRightDb>10&&hrtfDirection&&loopChecks.every(c=>c.heldRms>.005&&c.afterPeak===0&&c.internalLoop),headphones,reverb,limiterPeak:peak,finite,leftToRightDb,hrtfDirection,loopChecks,renderedSamples:rendered.length};
+  return {pass:pilotShot.pass&&reverb.pass&&headphones.pass&&finite&&peak<=.821&&rms>0&&leftToRightDb>10&&hrtfDirection&&loopChecks.every(c=>c.heldRms>.005&&c.afterPeak===0&&c.internalLoop),pilotShot,headphones,reverb,limiterPeak:peak,finite,leftToRightDb,hrtfDirection,loopChecks,renderedSamples:rendered.length};
 }

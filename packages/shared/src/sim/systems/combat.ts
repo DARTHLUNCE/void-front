@@ -204,7 +204,7 @@ export function aimAndFire(w: World, s: Ship): void {
 
   s.fireCooldown -= DT;
   const quirk = quirkOf(s);
-  const able = (!inp.cruise || inp.brake) && s.dashTime <= 0 && canAct(s) && (quirk.canFire?.(w, s) ?? true);
+  const able = (!inp.cruise || s.cruiseNeedsRelease || inp.brake) && s.dashTime <= 0 && canAct(s) && (quirk.canFire?.(w, s) ?? true);
   const charging = s.cls.quirk === 'chargeShot';
 
   if (charging) {
@@ -789,6 +789,7 @@ export function damageShip(w: World, target: Ship, amount: number, attackerSlot:
   }
 
   target.lastDamageTime = w.time;
+  if (target.input.cruise) target.cruiseNeedsRelease = true;
   target.cruiseSpool = 0;
   target.cruising = false;
   quirkOf(target).onDamaged?.(w, target);

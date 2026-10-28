@@ -214,6 +214,9 @@ def render(recipe,materials,seed,variant):
         out=envelope(out,recipe['envelope'])
     # Do not subtract DC after the envelope: doing that raises both silent
     # endpoints off zero and can make otherwise short, clean shots click.
+    if recipe.get('dampArmorRing'):
+        from impact_texture import damp_armor_ring
+        out=damp_armor_ring(out,48000)
     out=edge(out,.00015 if recipe.get('shotAttack') else .002,.04,rate=48000)
     out=level(out,recipe.get('rms',.14),.75)
     true_peak=np.max(np.abs(signal.resample_poly(out,4,1)))

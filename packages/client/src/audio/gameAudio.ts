@@ -15,6 +15,7 @@ export class GameAudio {
   private states=new Map<number,State>();
   private broken=new Set<number>();
   private pilot?:PilotState;
+  private feedbackEnabled=false;
   private loopsAt=-1;
   private braking=false;
   private reverse=false;
@@ -23,7 +24,11 @@ export class GameAudio {
   private strikeKeys=new Set<string>();
   private contested=new Set<number>();
   constructor(readonly audio:AudioEngine=audioEngine){}
-  reset():void {this.audio.stopAll();this.tick=-1;this.lastTime=-1;this.states.clear();this.broken.clear();this.pilot=undefined;this.projectiles.clear();this.deployables.clear();this.strikeKeys.clear();this.contested.clear();this.loopsAt=-1;this.braking=this.reverse=false;}
+  reset():void {this.audio.stopAll();this.tick=-1;this.lastTime=-1;this.states.clear();this.broken.clear();this.pilot=undefined;this.feedbackEnabled=false;this.projectiles.clear();this.deployables.clear();this.strikeKeys.clear();this.contested.clear();this.loopsAt=-1;this.braking=this.reverse=false;}
+  /** Personal readouts are dry-positioned pilot/UI feedback, never world emitters. */
+  private feedback(id:`status.${string}`,options:Pick<PlayOptions,'gain'|'rate'|'key'|'cooldown'>={}):void {
+    if(this.feedbackEnabled)this.audio.play(id,{...options,own:true,bus:'ui'});
+  }
   private audibleEngine(s:Snap,slot:number,team:number):boolean {
     if(slot<0||slot>=s.buf[H.shipCount])return true;
     const k=s.ship(slot),b=s.buf;
@@ -34,6 +39,7 @@ export class GameAudio {
     if(b[H.tick]===this.tick)return;
     if(time<this.lastTime)this.reset();
     this.tick=b[H.tick];this.lastTime=time;
+    this.feedbackEnabled=!commander&&self>=0&&self<b[H.shipCount];
     const me=s.ship(self);
     this.audio.setListener(commander?camera:{x:b[me+SHIP.x],y:b[me+SHIP.y],vx:b[me+SHIP.vx],vy:b[me+SHIP.vy],heading:-Math.PI/2});
     if(document.hidden){this.states.clear();this.pilot=undefined;return;}
@@ -49,23 +55,28 @@ export class GameAudio {
       const ability=AUDIO_ABILITIES[identity];
       const id=kind===SOUND_KIND.weapon?(identity===WEAPON_SOUND.secondary&&ownerClass?'secondary.'+ownerClass:AUDIO_WEAPONS[identity]):ability?'ability.'+ability.id:undefined;
       if(!id)continue;
-      this.audio.play(id,{x:b[k+3],y:b[k+4],gain:owner===self?1:.62,own:owner===self,
+      const own=owner===self&&!commander;
+      // Only batteries mounted on the controlled ship get an onboard report.
+      // Drones/platforms and ability contacts can be owned but far away.
+      const onboard=own&&kind===SOUND_KIND.weapon&&(identity<CLASS_ORDER.length||identity===WEAPON_SOUND.secondary);
+      this.audio.play(id,{x:b[k+3],y:b[k+4],gain:own?1:.62,own,
+        localPan:onboard?clamp((b[k+3]-b[me+SHIP.x])/500,-1,1)*.08:undefined,
         key:`${id}:${owner}:${owner<0?Math.round(b[k+3]/100):0}`,cooldown:kind===SOUND_KIND.weapon?.045:.12});
     }
     for(let i=0,k=s.o.events;i<b[H.eventCount];i++,k+=SNAP.event){
       const type=b[k],a=b[k+1],owner=b[k+2],x=b[k+3],y=b[k+4],c=b[k+5],d=b[k+6];
       if(type===EventType.CombatHit&&owner===self&&a!==self&&d!==0)
-        this.audio.play('status.hitmarker',{key:'pilot-hit-confirmed',cooldown:.055});
+        this.feedback('status.hitmarker',{key:'pilot-hit-confirmed',cooldown:.055});
       const at:PlayOptions={x,y,key:`event:${type}:${a}`,own:a===self,cooldown:.09};
       if(type===EventType.ShieldHit&&!this.broken.has(a))this.audio.play('impact.shield',{...at,gain:.45+clamp(Math.abs(d)/70)*.5});
       else if(type===EventType.ShieldBreak&&!this.broken.has(a)){
         this.broken.add(a);this.audio.play('impact.shieldBreak',{...at,priority:a===self?98:65,cooldown:.7});
       }else if(type===EventType.CombatHit&&d>0){
-        if(a===self)this.audio.play('status.damage',{gain:clamp(d/60,.25,.8),cooldown:.22});
+        if(a===self)this.feedback('status.damage',{gain:clamp(d/60,.25,.8),cooldown:.22});
       }else if(type===EventType.Ricochet)this.audio.play('impact.ricochet',{...at,gain:.6});
       else if(type===EventType.Kill){
         this.audio.play('impact.death',{x,y,own:owner===self,key:`kill:${owner}`,priority:owner===self?100:72,gain:owner===self?1:.8});
-        if(a===self)this.audio.play('status.kill',{cooldown:.12});
+        if(a===self)this.feedback('status.kill',{cooldown:.12});
       }else if(type===EventType.Explosion&&owner!==2)this.audio.play('impact.explosion',{x,y,gain:clamp(c/130,.3,1.2),key:`blast:${Math.round(x/120)}:${Math.round(y/120)}`,cooldown:.12});
       else if(type===EventType.StructureDestroyed||type===EventType.NodeDestroyed)this.audio.play('impact.structure',{x,y,priority:78,key:`structure:${a}`,cooldown:1});
       else if(type===EventType.StrikeLanded)this.audio.play('impact.strike',{x,y,priority:85,key:`strike:${Math.round(x)}`,cooldown:.2});
@@ -74,8 +85,8 @@ export class GameAudio {
         if(visual)this.audio.play('contact.'+visual,{x,y,own:owner===self,gain:.55,key:`abilityImpact:${owner}:${visual}`,cooldown:.14});
       }
       else if(type===EventType.Respawn&&a===self)this.audio.play('movement.launch',{own:true,cooldown:1});
-      else if(type===EventType.TierBought&&a===self)this.audio.play('status.upgrade',{cooldown:.3});
-      else if(type===EventType.ShardPickup&&a===self)this.audio.play('status.pickup',{cooldown:.16,rate:.94+clamp(c/25)*.15});
+      else if(type===EventType.TierBought&&a===self)this.feedback('status.upgrade',{cooldown:.3});
+      else if(type===EventType.ShardPickup&&a===self)this.feedback('status.pickup',{cooldown:.16,rate:.94+clamp(c/25)*.15});
       else if(type===EventType.PointFlip)this.audio.play(owner===team?'world.capture':'world.lost',{cooldown:.8});
       else if(type===EventType.PushStart&&a===team)this.audio.play('world.ping',{cooldown:1});
       else if(type===EventType.Ping&&a===team)this.audio.play('world.ping',{cooldown:.5});
@@ -94,10 +105,10 @@ export class GameAudio {
         if(state.spool===0&&old.spool>0&&!old.cruise&&!state.cruise)this.audio.play('movement.abort',at);
         if(own){
           if(old.power!==state.power)this.audio.play('movement.power',{own:true,cooldown:.16});
-          if(state.shield>=state.maxShield*.98&&old.shield<state.maxShield*.98&&state.maxShield===old.maxShield)this.audio.play('status.shieldRestored',{cooldown:4});
-          if(state.hull-old.hull>3)this.audio.play('status.healed',{cooldown:2});
-          if(state.hull/b[k+SHIP.maxHull]<.25&&state.hull<old.hull)this.audio.play('status.critical',{cooldown:8});
-          if(CLASSES[CLASS_ORDER[state.classIndex]]?.quirk==='heat'&&state.gauge>=1&&old.gauge<1)this.audio.play('status.overheat',{cooldown:2});
+          if(state.shield>=state.maxShield*.98&&old.shield<state.maxShield*.98&&state.maxShield===old.maxShield)this.feedback('status.shieldRestored',{cooldown:4});
+          if(state.hull-old.hull>3)this.feedback('status.healed',{cooldown:2});
+          if(state.hull/b[k+SHIP.maxHull]<.25&&state.hull<old.hull)this.feedback('status.critical',{cooldown:8});
+          if(CLASSES[CLASS_ORDER[state.classIndex]]?.quirk==='heat'&&state.gauge>=1&&old.gauge<1)this.feedback('status.overheat',{cooldown:2});
         }
       }
       this.states.set(slot,state);
@@ -114,10 +125,10 @@ export class GameAudio {
       affordable:[0,1,2,3].some(i=>b[k+SELF.statCost0+i]>0&&b[k+SELF.shards]>=b[k+SELF.statCost0+i]),jam:b[H.jammed]>0,dead:b[k+SELF.alive]!==1};
     const old=this.pilot;
     if(old&&!old.dead&&!next.dead){
-      if(next.charges.some((v,i)=>v>=1&&old.charges[i]<1))this.audio.play('status.ready',{cooldown:.3});
-      if(next.levels.some((v,i)=>v>old.levels[i]))this.audio.play('status.upgrade',{cooldown:.3});
-      if(next.tier&&!old.tier||next.affordable&&!old.affordable)this.audio.play('status.upgradeReady',{cooldown:5});
-      if(next.jam&&!old.jam)this.audio.play('status.jam',{cooldown:3});
+      if(next.charges.some((v,i)=>v>=1&&old.charges[i]<1))this.feedback('status.ready',{cooldown:.3});
+      if(next.levels.some((v,i)=>v>old.levels[i]))this.feedback('status.upgrade',{cooldown:.3});
+      if(next.tier&&!old.tier||next.affordable&&!old.affordable)this.feedback('status.upgradeReady',{cooldown:5});
+      if(next.jam&&!old.jam)this.feedback('status.jam',{cooldown:3});
     }
     this.pilot=next;
   }

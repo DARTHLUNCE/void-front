@@ -6649,7 +6649,7 @@
         }
       ]
     ],
-    "description": "Twelve varied plate strikes: metal punch, brittle spall, short loose mechanical fragments.",
+    "description": "Twelve varied plate strikes: retained impact crack and mechanical debris, with the pitched plate ringing removed.",
     "bus": "world",
     "gain": 0.6,
     "priority": 50,
@@ -6683,7 +6683,8 @@
       ]
     ],
     "attack": 0.0015,
-    "release": 0.018
+    "release": 0.018,
+    "dampArmorRing": true
   },
   "impact.ricochet": {
     "label": "Armor glance",

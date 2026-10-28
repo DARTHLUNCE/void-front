@@ -58,3 +58,23 @@ python build_space_ir.py --source impulses/acustica-outdoors.wav --out ../../pub
 ```
 
 The prepared WAV and adjacent audit JSON retain source provenance and processing details. No runtime download from the dataset is required. See `CREDITS.md` for its license. The audio bank and reflection response are separate builds.
+
+
+## Attack and onboard-level regression checks
+
+Run `python -m unittest test_weapon_attacks.py` from this directory with the renderer dependencies installed. Complete attacks need a quiet lead-in and pre-roll; a loud decay peak is not an independent shot variant. Runtime one-shots start at sample zero/full authored gain; continuous sounds still ease in.
+
+Pilot primary/secondary reports use `localPan` with `own: true` to keep their level stable as the ship moves. Do not apply this to owned remote drones, deployables or impacts. World coordinates alone make a finished muzzle report recede from the pilot during travel. Personal readout sounds use the pilot-only feedback route, separate from physical world contacts. The Audio Lab battle test now moves the listener and reports final limiter reduction in its diagnostics, so admission, spatial loss and peak safety can be distinguished.
+
+
+## Armor ringing and space-tail revision (2026-10-28)
+
+`impact_texture.py` removes dominant pitched plate modes only from `impact.armor`; the crack and recorded debris remain. Run `python -m unittest test_impact_texture.py`. Rebuild with `build_foundry.py --only impact.armor` into a separate directory, then merge only that cue's twelve files and its manifest/audit/recipe records. Do not deploy the partial manifest over the complete bank.
+
+The active global response is now `evolving-space-v2.wav`. Retain the original measured response for comparison. Rebuild the current response from the same hash-verified CC0 source:
+
+```powershell
+python build_evolving_space_ir.py --source impulses/acustica-outdoors.wav --out ../../public/assets/audio-space/evolving-space-v2.wav
+```
+
+Its 2.1-second tail uses offline allpass diffusion of measured reflections. Runtime modulation is confined to the two shared wet channels per mix domain; no modulation or extra width is added to direct gunshots. `reverbProbe.ts` checks the longer tail, finite output, stereo bearing, evolving texture and end-of-tail silence in the actual browser graph. The engine's IR loader budget must accommodate the new response; coverage includes that gate.

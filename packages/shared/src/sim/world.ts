@@ -236,6 +236,8 @@ export class Ship {
   lastDashEnd = -99;
   cruiseSpool = 0;
   cruising = false;
+  /** Damage consumes a held drive request; release it before trying again. */
+  cruiseNeedsRelease = false;
   /** Scratch state owned by the class quirk (see systems/quirks.ts). */
   readonly quirk = new Float64Array(16);
   readonly statusTime = new Float64Array(STATUS_IDS.length);

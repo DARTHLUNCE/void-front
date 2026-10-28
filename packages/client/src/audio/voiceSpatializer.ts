@@ -1,3 +1,4 @@
+import { setAudioTarget } from './audioAutomation';
 import { spatialWidth, type spatial } from './audioMath';
 
 type Position = Pick<ReturnType<typeof spatial>, 'x' | 'z' | 'pan' | 'distance'>;
@@ -33,8 +34,7 @@ export function createVoiceSpatializer(context: BaseAudioContext, headphones: bo
 
 export function setVoicePosition(voice: VoiceSpatializer, position: Position, now: number, initial = false): void {
   const set=(param:AudioParam,value:number)=>{
-    param.cancelScheduledValues(now);
-    if(initial)param.setValueAtTime(value,now);else param.setTargetAtTime(value,now,.045);
+    setAudioTarget(param,value,now,initial?0:.045);
   };
   if(voice.input instanceof StereoPannerNode)set(voice.input.pan,position.pan);
   else {

@@ -50,19 +50,38 @@ DESIGNS={
  'drone.fighter':('blast-auto','blast-cracker-b','ratchet-small',1.32,.88,2300,10800,.56,0),
 }
 
-@lru_cache(maxsize=32)
-def impulse_starts(materials,key,rate):
-    """Identify direct attacks, rejecting quiet echo peaks and ringing tails."""
-    x=materials.read(key)
+def find_impulse_starts(x, rate):
+    """Find complete attacks, not arbitrary slices before a loud body peak.
+
+    Require a quiet lead-in to distinguish independent shots from reverberant
+    peaks. A blast can build for much longer than 20 ms before its loudest point.
+    Keep a small pre-roll so the layer's anti-click fade precedes the attack.
+    """
+    if not len(x) or not np.isfinite(x).all() or np.max(np.abs(x)) < 1e-8:
+        raise ValueError('No usable impulse material')
     energy=uniform_filter1d(x*x,max(3,round(.001*rate)))
     peaks,_=signal.find_peaks(energy,height=energy.max()*.28,distance=round(.12*rate),prominence=energy.max()*.18)
     if not len(peaks):peaks=np.array([np.argmax(energy)])
     starts=[]
     for peak in peaks:
-        lo=max(0,peak-round(.02*rate))
-        onset=np.flatnonzero(energy[lo:peak+1]>energy[peak]*.055)
-        starts.append(max(0,lo+int(onset[0])-round(.0004*rate)))
+        lo=max(0,peak-round(.15*rate))
+        quiet=energy[lo:peak+1] < energy[peak]*.01
+        edges=np.diff(np.r_[False,quiet,False].astype(np.int8))
+        begins=np.flatnonzero(edges==1);ends=np.flatnonzero(edges==-1)
+        ends=ends[ends-begins>=round(.002*rate)]
+        # No quiet boundary means a body/echo peak, not a new attack. Never
+        # silently manufacture a variant by cutting into that material.
+        if not len(ends):continue
+        start=max(0,lo+int(ends[-1])-round(.0005*rate))
+        if not starts or start>starts[-1]:starts.append(start)
+    if not starts:raise ValueError('Impulse recording has no complete attack with a quiet lead-in')
     return tuple(starts)
+
+
+@lru_cache(maxsize=32)
+def impulse_starts(materials,key,rate):
+    return find_impulse_starts(materials.read(key),rate)
+
 
 def take_impulse(materials,key,length,speed,variant,rate,skip=0):
     materials.used.add(key)

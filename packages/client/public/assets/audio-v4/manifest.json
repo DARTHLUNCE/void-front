@@ -23,7 +23,7 @@
       "blast-rifle-b",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -51,7 +51,7 @@
       "blast-rifle-b",
       "film"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -79,7 +79,7 @@
       "blast-pop",
       "weld-burst"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -107,7 +107,7 @@
       "blast-rifle-a",
       "ratchet"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -135,7 +135,7 @@
       "blast-rifle-b",
       "welding"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -163,7 +163,7 @@
       "blast-rifle-a",
       "breaker"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -191,7 +191,7 @@
       "blast-rifle-b",
       "tensioner"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -219,7 +219,7 @@
       "blast-rifle-b",
       "slide"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -247,7 +247,7 @@
       "blast-cracker-b",
       "blast-pop"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -1902,7 +1902,7 @@
       "blast-rifle-a",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -1928,7 +1928,7 @@
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -1954,7 +1954,7 @@
       "blast-pop",
       "film"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -1980,7 +1980,7 @@
       "blast-rifle-a",
       "slide"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -2042,7 +2042,7 @@
   "impact.armor": {
     "label": "Armor penetration",
     "group": "Impacts",
-    "description": "Twelve varied plate strikes: metal punch, brittle spall, short loose mechanical fragments.",
+    "description": "Twelve varied plate strikes: retained impact crack and mechanical debris, with the pitched plate ringing removed.",
     "bus": "world",
     "gain": 0.6,
     "priority": 50,
@@ -2074,7 +2074,7 @@
       "steel",
       "steel-double"
     ],
-    "designVersion": "recorded-v4",
+    "designVersion": "recorded-v5-damped-armor",
     "attack": 0.0015,
     "release": 0.018
   },
@@ -4143,7 +4143,7 @@
       "blast-pop",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4170,7 +4170,7 @@
       "blast-cracker-a",
       "ratchet"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4197,7 +4197,7 @@
       "blast-magnum",
       "weld-burst"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4224,7 +4224,7 @@
       "blast-rifle-a",
       "breaker"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4251,7 +4251,7 @@
       "blast-rifle-b",
       "tensioner"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4278,7 +4278,7 @@
       "blast-rifle-a",
       "film"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4305,7 +4305,7 @@
       "blast-pop",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4638,7 +4638,7 @@
       "blast-rifle-b",
       "ratchet"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4665,7 +4665,7 @@
       "blast-rifle-a",
       "slide"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4692,7 +4692,7 @@
       "blast-rifle-b",
       "weld-burst"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4719,7 +4719,7 @@
       "blast-magnum",
       "breaker"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4746,7 +4746,7 @@
       "blast-rifle-b",
       "ratchet"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4773,7 +4773,7 @@
       "blast-pop",
       "welding"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4800,7 +4800,7 @@
       "blast-cracker-b",
       "switch"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4827,7 +4827,7 @@
       "blast-rifle-b",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4854,7 +4854,7 @@
       "blast-rifle-a",
       "ratchet-small"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4881,7 +4881,7 @@
       "blast-auto",
       "blast-pop"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4908,7 +4908,7 @@
       "blast-rifle-a",
       "film"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4935,7 +4935,7 @@
       "blast-cracker-a",
       "breaker"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4962,7 +4962,7 @@
       "blast-rifle-b",
       "slide"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -4989,7 +4989,7 @@
       "blast-pop",
       "shutter"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },
@@ -5016,7 +5016,7 @@
       "blast-cracker-b",
       "ratchet-small"
     ],
-    "designVersion": "recorded-v5-atonal-shot",
+    "designVersion": "recorded-v6-complete-attack",
     "attack": 0.0003,
     "release": 0.012
   },

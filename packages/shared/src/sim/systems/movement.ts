@@ -21,7 +21,7 @@ export function baseSpeed(w: World, s: Ship): number {
 /** Shared by simulation and HUD. Automatic defensive turrets do not load the main drive.
  * Keep a short hold after a volley so releasing between shots cannot bypass the tradeoff. */
 export function firingSpeedMultiplier(w: World, s: Ship): number {
-  if (!s.alive || s.dashTime > 0 || (s.input.cruise && !s.input.brake)) return 1;
+  if (!s.alive || s.dashTime > 0 || (s.input.cruise && !s.cruiseNeedsRelease && !s.input.brake)) return 1;
   const workingTrigger = s.input.fire && canAct(s) && (quirkOf(s).canFire?.(w, s) ?? true);
   const sinceShot = w.time - s.lastFireTime;
   return workingTrigger || (sinceShot >= 0 && sinceShot < MATCH.movement.firingHold) ? MATCH.movement.firingSpeedMul : 1;
@@ -43,8 +43,11 @@ export function moveShips(w: World): void {
     s.engineTorque = 0;
     const stuck = hasStatus(s, 'stun') || hasStatus(s, 'rooted');
 
+    // A hit interrupts this attempt, rather than restarting its charge every
+    // tick under fire. Human and bot pilots must release their drive request.
+    if (!inp.cruise) s.cruiseNeedsRelease = false;
     // Sub-Light can't spool while backing up.
-    if (inp.cruise && !inp.brake && inp.throttle >= 0 && s.dashTime <= 0 && !stuck) {
+    if (inp.cruise && !s.cruiseNeedsRelease && !inp.brake && inp.throttle >= 0 && s.dashTime <= 0 && !stuck) {
       s.cruiseSpool += DT;
       s.cruising = s.cruiseSpool >= Math.max(0.2, MATCH.cruise.spool - spoolCut(w, s));
     } else {

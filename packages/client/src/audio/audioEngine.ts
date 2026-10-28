@@ -1,5 +1,6 @@
+import { setAudioTarget } from './audioAutomation';
 import { DriveVoiceBudget, isRoutineVoice } from './voicePriority';
-import { createSpatialReverb, spatialReverbSend, SPACE_IR_URL } from './spatialReverb';
+import { createSpatialReverb, spatialReverbSend, SPACE_IR_URL, MAX_SPACE_IR_SECONDS } from './spatialReverb';
 import { createVoiceSpatializer, setVoicePosition, type VoiceSpatializer } from './voiceSpatializer';
 import { AUDIO_LIMITS, clamp, distanceMix, doppler, nextVariant, pitchVariationCents, spatial, voiceScore, type Listener, type SourcePoint } from './audioMath';
 
@@ -7,7 +8,9 @@ export type AudioBus='world'|'engines'|'ambience'|'ui';
 export interface Cue { label:string; group:string; description:string; files:string[]; loop:boolean; duration:number; bus:AudioBus; gain:number; priority:number; range:number; attack?:number; release?:number; sustain?:Array<{loopStart:number;loopEnd:number;crossfade:number}> }
 export interface AudioSettings { master:number; world:number; engines:number; ambience:number; ui:number; muted:boolean; spatial:'stereo'|'headphones'; dynamic:'full'|'night'|'warTapes' }
 export const DEFAULT_AUDIO:AudioSettings={master:.65,world:.8,engines:.5,ambience:.4,ui:.8,muted:false,spatial:'headphones',dynamic:'warTapes'};
-export interface PlayOptions extends Partial<SourcePoint> { gain?:number; rate?:number; own?:boolean; priority?:number; key?:string; cooldown?:number; bus?:AudioBus; range?:number }
+export interface PlayOptions extends Partial<SourcePoint> { gain?:number; rate?:number; own?:boolean;
+  /** Onboard report with a restrained muzzle pan; world coordinates remain diagnostic only. Requires own. */
+  localPan?:number; priority?:number; key?:string; cooldown?:number; bus?:AudioBus; range?:number }
 interface Voice { id:number; cue:string; source:AudioBufferSourceNode; gain:GainNode; filter:BiquadFilterNode; pan:VoiceSpatializer; send:GainNode; near:GainNode; far:GainNode; bus:AudioBus; category:'player'|'world'|'remote'|'loops'|'ui'; options:PlayOptions; score:number; loopKey?:string; releasing:boolean; born:number }
 interface LoopState { cue:string; options:PlayOptions; start:number; voice?:Voice; phase:number; updated:number }
 
@@ -51,6 +54,8 @@ export class AudioEngine {
   private off: Array<()=>void>=[];
   private counters={played:0,playerPlayed:0,playerDropped:0,dropped:0,grouped:0,driveSuppressed:0,stolen:0,peakVoices:0,loaded:0,failed:0};
   private limiter='pending';
+  private limiterReductionDb:number|null=null;
+  private limiterMaxReductionDb=0;
 
   constructor(private readonly persist=true) {
     if(persist)try{
@@ -75,8 +80,7 @@ export class AudioEngine {
   }
   private smooth(param:AudioParam,value:number,time=.035):void {
     if(!this.context)return;
-    param.cancelScheduledValues(this.context.currentTime);
-    param.setTargetAtTime(value,this.context.currentTime,time);
+    setAudioTarget(param,value,this.context.currentTime,time);
   }
   private applyMix():void {
     if(!this.master)return;
@@ -140,9 +144,9 @@ export class AudioEngine {
     try{
       const response=await fetch(SPACE_IR_URL);if(!response.ok)throw new Error(`HTTP ${response.status}`);
       const buffer=await this.context!.decodeAudioData(await response.arrayBuffer());
-      if(buffer.numberOfChannels!==2||buffer.duration>1)throw new Error('Invalid reflection response');
+      if(buffer.numberOfChannels!==2||buffer.duration<=0||buffer.duration>MAX_SPACE_IR_SECONDS)throw new Error('Invalid reflection response');
       if(this.context?.state==='closed')return;
-      this.reverb!.setResponse(buffer);this.playerReverb!.setResponse(buffer);this.reverbStatus='measured stereo reflections';
+      this.reverb!.setResponse(buffer);this.playerReverb!.setResponse(buffer);this.reverbStatus='2.1s evolving space reflections';
     }catch(e){this.reverbStatus=`unavailable: ${String(e)}`;}
   }
   private async installLimiter():Promise<void> {
@@ -150,6 +154,13 @@ export class AudioEngine {
     try{
       await ctx.audioWorklet.addModule('/audio-limiter.js');
       const node=new AudioWorkletNode(ctx,'fleet-limiter',{outputChannelCount:[2]});
+      // Measure the final guard separately from intentional background mixing.
+      // Low-rate metering avoids turning a reported dip into another guess.
+      node.port.onmessage=({data})=>{
+        if(!Number.isFinite(data?.minGain))return;
+        this.limiterReductionDb=-20*Math.log10(clamp(data.minGain,.0001,1));
+        this.limiterMaxReductionDb=Math.max(this.limiterMaxReductionDb,this.limiterReductionDb);
+      };
       this.master!.disconnect();this.master!.connect(node);node.connect(this.analyser!);this.limiter='lookahead';
     }catch{
       // Constrained/older webviews still get bounded output, with less transparent peak control.
@@ -224,8 +235,11 @@ export class AudioEngine {
   }
   setListener(listener:Listener):void {this.listener={...listener};}
   private state(cue:Cue,options:PlayOptions) {
-    const positional=Number.isFinite(options.x)&&Number.isFinite(options.y);
-    const s=positional?spatial(options as SourcePoint,this.listener,options.range??cue.range):{gain:1,pan:0,cutoff:18000,x:0,z:0,distance:0};
+    const onboard=options.own&&Number.isFinite(options.localPan);
+    const positional=!onboard&&Number.isFinite(options.x)&&Number.isFinite(options.y);
+    // Pilot-mounted reports do not recede from their own ship or acquire HRTF
+    // coloration as a long hull rotates. Owned remote contacts remain spatial.
+    const s=positional?spatial(options as SourcePoint,this.listener,options.range??cue.range):{gain:1,pan:onboard?clamp(options.localPan!,-.12,.12):0,cutoff:18000,x:0,z:0,distance:0};
     const gain=clamp((options.gain??1)*cue.gain,0,2)*s.gain;
     return {s,gain,score:voiceScore(options.priority??cue.priority,gain,options.own),positional};
   }
@@ -327,19 +341,20 @@ export class AudioEngine {
     const cue=this.catalog[v.cue],{s,gain,score,positional}=this.state(cue,v.options);v.score=score;
     // One-shot transients are authored in the asset. Do not soften their first
     // 25 ms with the continuous-state smoothing used for engine power changes.
-    const time=initial?(v.loopKey?(cue.attack??.08)/3:.0005):.045;
+    const time=initial?(cue.attack??.08)/3:.045;
     const distant=v.bus==='ui'||v.options.own?0:distanceMix(s.distance);
     if(initial){v.near.gain.value=1-distant;v.far.gain.value=distant*this.settings[v.bus]*(v.bus==='world'?.7:1);}
     else {this.smooth(v.near.gain,1-distant,.06);this.smooth(v.far.gain,distant*this.settings[v.bus]*(v.bus==='world'?.7:1),.06);}
     const focus=!v.options.own&&isRoutineVoice(v.cue)&&this.context!.currentTime<this.focusUntil?.62:1;
     const density=(!v.options.own&&!v.loopKey&&v.bus!=='ui'?this.crowdGain:1)*focus;
-    this.smooth(v.gain.gain,gain*density,time);
-    if(initial)v.filter.frequency.setValueAtTime(s.cutoff,this.context!.currentTime);
+    if(initial&&!v.loopKey)setAudioTarget(v.gain.gain,gain*density,this.context!.currentTime);
+    else this.smooth(v.gain.gain,gain*density,time);
+    if(initial)setAudioTarget(v.filter.frequency,s.cutoff,this.context!.currentTime);
     else this.smooth(v.filter.frequency,s.cutoff,.06);
     const reflection=spatialReverbSend(s.distance,v.bus,!!v.loopKey,!!v.options.own)*this.settings[v.bus]*(v.bus==='world'?.7:1);
     if(initial)v.send.gain.value=reflection;else this.smooth(v.send.gain,reflection,.06);
     const rate=(v.options.rate??1)*(positional&&!v.options.own?doppler(v.options as SourcePoint,this.listener):1);
-    if(initial)v.source.playbackRate.setValueAtTime(clamp(rate,.6,1.6),this.context!.currentTime);
+    if(initial)setAudioTarget(v.source.playbackRate,clamp(rate,.6,1.6),this.context!.currentTime);
     else this.smooth(v.source.playbackRate,clamp(rate,.6,1.6),.07);
     setVoicePosition(v.pan,s,this.context!.currentTime,initial);
   }
@@ -381,8 +396,9 @@ export class AudioEngine {
   diagnostics() {
     const samples=new Float32Array(512);this.analyser?.getFloatTimeDomainData(samples);
     return {...this.counters,state:this.context?.state??'locked',active:this.voices.size,loops:this.loops.size,remote:[...this.voices.values()].filter(v=>v.category==='remote'&&!v.releasing).length,limiter:this.limiter,
+      limiterReductionDb:this.limiterReductionDb,limiterMaxReductionDb:this.limiterMaxReductionDb,
       peak:Math.max(...samples.map(Math.abs)),decodedMB:this.decodedBytes/1048576,variantLoads:this.pendingVariants.size,reverb:this.reverbStatus,error:this.error};
   }
-  async dispose():Promise<void>{this.off.splice(0).forEach(f=>f());this.stopAll();await this.context?.close();this.buffers.clear();this.bufferUsage.clear();this.decodedBytes=0;}
+  async dispose():Promise<void>{this.off.splice(0).forEach(f=>f());this.stopAll();this.reverb?.dispose();this.playerReverb?.dispose();await this.context?.close();this.buffers.clear();this.bufferUsage.clear();this.decodedBytes=0;}
 }
 export const audioEngine=new AudioEngine();

@@ -42,7 +42,7 @@ def main():
             name=id.replace('.','-')+f'-{v+1}.wav';write(args.out/name,x);files.append(name)
             audit.append(dict(id=id,variant=v,seconds=len(x)/48000,peakDb=round(float(20*np.log10(max(peak,1e-9))),2),rmsDb=round(float(20*np.log10(max(1e-9,np.sqrt(np.mean(x*x))))),2),sources=sources,sha256=hashlib.sha256((args.out/name).read_bytes()).hexdigest()))
         manifest[id]={k:r[k] for k in ('label','group','description','bus','gain','priority','range')}
-        manifest[id].update(files=files,loop=r.get('loop',False),duration=len(x)/48000,sources=sorted(used),designVersion='recorded-v5-atonal-shot' if r.get('shotAttack') else 'recorded-v4')
+        manifest[id].update(files=files,loop=r.get('loop',False),duration=len(x)/48000,sources=sorted(used),designVersion='recorded-v6-complete-attack' if r.get('shotAttack') else 'recorded-v5-damped-armor' if r.get('dampArmorRing') else 'recorded-v4')
         manifest[id].update(attack=r['attack'],release=r['release'])
         if sustain:manifest[id]['sustain']=sustain
         print(id,len(files),sorted(used),flush=True)
