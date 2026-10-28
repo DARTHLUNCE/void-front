@@ -2,6 +2,7 @@ import { DIRECTOR } from '../../content/bots';
 import { getClass, teamCap } from '../../content/classes/index';
 import { COMMAND_RULES } from '../../content/command';
 import { CRYSTALS } from '../../content/crystals';
+import { QUIRK_PARAMS } from '../../content/quirks';
 import { RESOURCE_IDS, RESOURCE_INDEX } from '../../content/match';
 import { ECONOMY, respawnTime, STAT_POINT_MAX, STAT_POINTS, statCost, tierCost } from '../../content/progression';
 import { EXPOSED, FOB_SPAWN_BLOCK, NODE } from '../../content/structures';
@@ -32,9 +33,10 @@ export function grantXp(w: World, ship: Ship, amount: number): void {
   if (ship.isBot) botShop(w, ship);
 }
 
-export function grantShards(w: World, ship: Ship, amount: number): void {
+/** New income may receive catch-up; transferred wreck shards must retain their face value. */
+export function grantShards(w: World, ship: Ship, amount: number, catchUpEligible = true): void {
   if (amount <= 0) return;
-  ship.shards += amount * (1 + trailingBonus(w, w.teams[ship.team]));
+  ship.shards += amount * (1 + (catchUpEligible ? trailingBonus(w, w.teams[ship.team]) : 0));
   if (ship.isBot) botShop(w, ship);
 }
 
@@ -52,7 +54,7 @@ export function buyStat(ship: Ship, index: number): boolean {
 }
 
 /**
- * A new hull re-specs: every shard spent on Shard Calibration goes back to the bank and the levels
+ * An explicit class change re-specs: spent Shard Calibration returns to the bank and the levels
  * (and their climbing costs) reset, so the pilot re-spends them for the new hull. Returns the refund.
  */
 export function refundCalibration(ship: Ship): number {
@@ -66,8 +68,8 @@ export function refundCalibration(ship: Ship): number {
 }
 
 /**
- * Buy the next tier with XP, choosing option A (0) or B (1). A node that swaps the hull (tier 3)
- * refunds Shard Calibration so it can be re-spent on the new hull.
+ * Buy the next tier with XP, choosing option A (0) or B (1). Hull evolution resets calibration
+ * without refunding spent shards; unspent bank, remaining XP and tier choices carry over.
  */
 export function buyTier(w: World, ship: Ship, option: number): boolean {
   if (option !== 0 && option !== 1) return false;
@@ -77,7 +79,8 @@ export function buyTier(w: World, ship: Ship, option: number): boolean {
   ship.picks[t] = option;
   ship.tiersOwned++;
   const node = ship.cls.tiers[t].options[option];
-  if (node.hullModel) refundCalibration(ship);
+  if (node.hullModel && node.hullModel !== ship.hullModel) ship.statPoints.fill(0);
+  // applyLoadout preserves hull/shield percentages while removing the old calibration stats.
   applyLoadout(ship);
   w.stats.tierPicks[node.id] = (w.stats.tierPicks[node.id] ?? 0) + 1;
   w.emit(EventType.TierBought, ship.slot, t + 1, ship.x, ship.y, option);
@@ -164,7 +167,7 @@ export function killShip(w: World, victim: Ship): void {
   enemyTeam.kills++;
 
   // The kill goes to whoever dealt the most recent damage (not the last hit); helpers get assists.
-  const killer = awardKill(w, victim);
+  const killer = awardKill(w, victim, creditKillAssist);
   if (killer && killer.commander) {
     // A commander's strike or strike craft: kill and score, but no pilot XP or tier effects.
     killer.kills++;
@@ -182,15 +185,22 @@ export function killShip(w: World, victim: Ship): void {
   }
   w.emit(EventType.Kill, killer ? killer.slot : -1, victim.slot, victim.x, victim.y);
 
-  // Keep 60% of unspent shards; the rest spills as loot, less the killers' High Command tax
+  // Lose 40% of unspent shards, up to the savings cap; the loss spills less the killers' High Command tax
   // (Credits for base upgrades). Spent shards and XP are never lost.
-  const lost = victim.shards * (1 - ECONOMY.deathShardKeep);
+  const lost = Math.min(ECONOMY.deathShardLossMax, victim.shards * (1 - ECONOMY.deathShardKeep));
   victim.shards -= lost;
   victim.shardsLost = lost;
   const tax = lost * HIGH_COMMAND.killTax;
   enemyTeam.credits += tax;
   dropLoot(w, victim, lost - tax);
   victim.lastHitBy = -1;
+}
+
+/** Real recent assists share a bounded bonus; a token hit earns only its ordinary damage XP. */
+function creditKillAssist(w: World, helper: Ship, victim: Ship, damageShare: number): void {
+  const x = ECONOMY.xp;
+  const bounty = victim.rank >= helper.rank + x.bountyRankGap ? x.bountyMul : 1;
+  grantXp(w, helper, (x.kill + x.killPerRank * victim.rank) * bounty * x.assistPool * damageShare);
 }
 
 function applyKillEffects(w: World, killer: Ship): void {
@@ -207,7 +217,8 @@ function applyKillEffects(w: World, killer: Ship): void {
 }
 
 function dropLoot(w: World, victim: Ship, amount: number): void {
-  let left = Math.floor(amount);
+  // Preserve fractional shards in the final crystal so bank + loot + tax conserves the loss.
+  let left = amount;
   const sign = w.teamSign(victim.team);
   while (left > 0) {
     const c = w.crystals.alloc();
@@ -306,7 +317,9 @@ export function respawnShip(w: World, s: Ship): void {
   s.dashTime = 0;
   s.cruiseSpool = 0;
   s.cruising = false;
+  s.cruiseNeedsRelease = false;
   s.lastDamageTime = -99;
+  s.powerSwitchProcAt = -Infinity;
   s.lastHitBy = -1;
   clearHits(s);
   s.signature.reset();
@@ -388,19 +401,19 @@ function botSpawn(w: World, s: Ship): number {
 export function regenHull(w: World, s: Ship, dt: number, drones = 0): void {
   // A ship already at 0 hull dies this tick; regen must not bring it back.
   if (s.hull >= s.maxHull || s.hull <= 0) return;
-  const link = drones * statValue(s, 'droneRegen', 0);
+  const link = Math.min(QUIRK_PARAMS.droneBay.hullRegenMax, drones * statValue(s, 'droneRegen', 0));
   if (link > 0) heal(s, s.maxHull * link * dt);
   const upgrade = statValue(s, 'hullRegen', 0);
   if (upgrade <= 0 || w.time - s.lastDamageTime < ECONOMY.regenDelay) return;
   heal(s, s.maxHull * upgrade * dt);
 }
 
-/** Heal a ship, returning how much hull was actually restored. */
+/** Heal without changing same-tick rescue mechanics; credit only restored nonnegative hull. */
 export function heal(s: Ship, amount: number): number {
   if (!s.alive || amount <= 0) return 0;
   const before = s.hull;
   s.hull = Math.min(s.maxHull, s.hull + amount);
-  return s.hull - before;
+  return Math.max(0, s.hull) - Math.max(0, before);
 }
 
 /** Credit a healer: XP for hull restored on others, plus their on-heal node effects. */

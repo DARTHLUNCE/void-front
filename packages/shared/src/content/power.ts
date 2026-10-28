@@ -22,9 +22,10 @@ export const POWER_MID = 0.5;
 
 /** Multipliers at full (1.0) and low (0.33) channel level; 0.5 is always ×1. */
 export const POWER = {
-  speed: { high: 1.25, low: 0.82, accelHigh: 1.35, spoolCut: 0.3 },
-  weapons: { high: 1.25, low: 0.8, apHigh: 0.15, secondaryRofHigh: 0.15, heatCutHigh: 0.3 },
-  shields: { high: 1.4, low: 0.7, regenHigh: 2, drHigh: 0.15 },
+  // Equalized is a complete baseline. Emphasis offers a modest situational edge with two costs.
+  speed: { high: 1.12, low: 0.92, accelHigh: 1.18, spoolCut: 0.15 },
+  weapons: { high: 1.12, low: 0.9, apHigh: 0.08, secondaryRofHigh: 0.08, heatCutHigh: 0.15 },
+  shields: { high: 1.18, low: 0.88, regenHigh: 1.35, drHigh: 0.08 },
   /** Power Drain caps every channel at this level. */
   drainLevel: 0.33,
 } as const;

@@ -71,11 +71,11 @@ export function mountTechTree(root: HTMLElement, team: Team): Screen {
   let urls: Record<string, [string, string]> = {};
 
   root.innerHTML = `<div class="tt">
-      <aside class="tt-rail"><div class="hg-roster" data-r="roster"></div><a class="tt-full" href="tech-tree-v2.html" target="_blank" rel="noopener">Full schematic terminal ↗<small>Size comparison, all 27 hulls, vector schematics</small></a></aside>
+      <aside class="tt-rail"><div class="hg-roster" data-r="roster"></div><a class="tt-full" href="tech-tree-v2.html" target="_blank" rel="noopener">Hull schematic archive ↗<small>Original concepts; historical balance values</small></a></aside>
       <section class="tt-main">
         <header class="tt-head" data-r="head"></header>
         <div class="tt-tiers" data-r="tiers"></div>
-        <section class="tt-cal"><h4>Shard Calibration <small>refunded on a hull change · ${STAT_POINT_MAX} levels per track</small></h4><div data-r="cal"></div></section>
+        <section class="tt-cal"><h4>Shard Calibration <small>resets on hull evolution · ${STAT_POINT_MAX} levels per track</small></h4><div data-r="cal"></div></section>
       </section>
       <aside class="tt-deck" data-r="deck"></aside>
     </div>`;

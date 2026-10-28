@@ -458,11 +458,9 @@ export class Hud {
       this.set(`fob${team}`, pips + (shielded ? '' : '<b>!</b>'), 'html');
       this.$[`fob${team}`].title = shielded ? 'FOBs standing: Titan shielded' : 'Both FOBs down: Titan exposed';
     }
-    const ourPush = b[myTeam === 0 ? H.push0 : H.push1];
-    const theirPush = b[myTeam === 0 ? H.push1 : H.push0];
     const rally = b[H.rallyLeft];
-    this.set('banner', ourPush > 0 ? `Fleet push · ${Math.ceil(ourPush)}s` : rally > 0 ? `Rally order · ${Math.ceil(rally)}s` : theirPush > 0 ? `Enemy push incoming` : '');
-    this.$.banner.className = `banner ${ourPush > 0 || rally > 0 ? 'ours' : theirPush > 0 ? 'theirs' : ''}`;
+    this.set('banner', rally > 0 ? `Rally order · ${Math.ceil(rally)}s` : '');
+    this.$.banner.className = `banner ${rally > 0 ? 'ours' : ''}`;
 
     this.show('picker', docked && !over);
     if (docked && !over) this.hangar.update(snap, info, myTeam);
@@ -790,11 +788,11 @@ export class Hud {
       if (this.cache.get('tierPop') !== key) {
         this.cache.set('tierPop', key);
         const tier = cls.tiers[t];
-        const hullTier = t + 1 === ECONOMY.hullTier;
+        const hullTier = tier.options.some(option => option.hullModel && option.hullModel !== model);
         const kindLabel = hullTier ? 'CHASSIS RETROFIT' : t === 4 ? 'ULTIMATE SYSTEM' : t === 0 ? 'ORDNANCE MOD' : t === 1 ? 'DEFENSE / THRUST' : 'TACTICAL CORE';
         this.$.tierPop.innerHTML = `
           <div class="tier-head"><h3>TIER ${t + 1} // ${kindLabel}</h3><span class="tcode">SYS-0${t + 1}</span></div>
-          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>Hull Retrofit:</b> swaps the ship chassis; your Shard Calibration is refunded to re-spend on the new hull.' : ''}</p>
+          <p class="hint">Select module <kbd>1</kbd> or <kbd>2</kbd>.${hullTier ? ' <b>New hull: Q/W/E/R calibration resets to zero.</b> Unspent shards, XP and tier choices stay.' : ''}</p>
           ${tier.options
             .map((o, i) => {
               const code = `T${t + 1}-${i === 0 ? 'A' : 'B'}`;
@@ -821,8 +819,8 @@ export class Hud {
     this.set('respawn', `Respawning in ${b[s + SELF.respawnIn].toFixed(1)}s`);
     this.set('killer', this.killerLine(snap), 'html');
     const lost = b[s + SELF.shardsLost];
-    const keep = Math.round(this.info!.deathShardKeep * 100);
-    this.set('lost', lost > 0 ? `Lost ◆ ${Math.floor(lost)} unspent shards (kept ${keep}%) — they dropped as loot where you died.` : 'No unspent shards were lost.');
+    const lossPercent = Math.round((1 - this.info!.deathShardKeep) * 100);
+    this.set('lost', lost > 0 ? `Lost ◆ ${Math.floor(lost)} shards (${lossPercent}% of bank, max ${ECONOMY.deathShardLossMax}). Recover the dropped loot at your wreck.` : 'No unspent shards were lost.');
     const choice = b[s + SELF.spawnChoice];
     const options = [`<button data-spawn="-1" class="${choice < 0 ? 'on' : ''}">Titan</button>`];
     KESSLER_REACH.fobs.forEach((f, i) => {

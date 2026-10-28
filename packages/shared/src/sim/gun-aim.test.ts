@@ -21,9 +21,17 @@ describe.each(CLASS_ORDER)('%s primary gun swivel', classId => {
     expect(w.projectiles.count).toBe(gun.count);
     // Rotation still advances gradually; gun swivel must not overwrite body heading.
     expect(Math.abs(a.angle)).toBeLessThan(.05);
-    const expectedOffset = Math.max(-PRIMARY_AIM_HALF_ARC, Math.min(PRIMARY_AIM_HALF_ARC, angleDelta(a.angle, a.input.aim)));
-    const gunAngle = a.angle + expectedOffset;
     const sockets = geometryOf(w, a).primary;
+    let requested = a.input.aim;
+    if (gun.count === 1) {
+      const distance = Math.hypot(a.input.cursorX - originalX, a.input.cursorY - originalY);
+      const [mx, my] = sockets[0];
+      const muzzleX = Math.cos(a.angle) * mx - Math.sin(a.angle) * my;
+      const muzzleY = Math.sin(a.angle) * mx + Math.cos(a.angle) * my;
+      if (distance > 0) requested = Math.atan2(Math.sin(a.input.aim) * distance - muzzleY, Math.cos(a.input.aim) * distance - muzzleX);
+    }
+    const expectedOffset = Math.max(-PRIMARY_AIM_HALF_ARC, Math.min(PRIMARY_AIM_HALF_ARC, angleDelta(a.angle, requested)));
+    const gunAngle = a.angle + expectedOffset;
     for (let k = 0; k < gun.count; k++) {
       const p = w.projectiles.at(k);
       const spread = gun.count > 1 ? (k - (gun.count - 1) / 2) / (gun.count - 1) * gun.spread : 0;

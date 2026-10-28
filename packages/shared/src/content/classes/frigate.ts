@@ -3,14 +3,15 @@ import type { AbilityDef, PrimitiveDef, ShipClass } from '../types';
 const DEG = Math.PI / 180;
 
 /** Repair & Shield Pulse: allies (and you) get hull and shield back; a friendly node in range is patched. */
-const repairPulse = (id: string, name: string, extra: PrimitiveDef[] = []): AbilityDef => ({
+const repairPulse = (id: string, name: string, extra: PrimitiveDef[] = [], nodeTurrets = 0): AbilityDef => ({
   id,
   name,
   description: '350 u burst: +30% hull and +40% shield to you and nearby allies; repairs 8% of a friendly node (never FOBs or Titans).',
   cooldown: 10,
   steps: [
     { kind: 'pulse', radius: 350, heal: 0.3, selfHeal: 0.3, shieldHeal: 0.4, affects: ['allies', 'self', 'structures'] },
-    { kind: 'fortifyNode', at: 'self', radius: 350, repair: 0.08 },
+    // One fortification step applies node repair/armor modifiers once, including Fortress.
+    { kind: 'fortifyNode', at: 'self', radius: 350, repair: 0.08, turrets: nodeTurrets || undefined, turretTime: nodeTurrets ? 20 : undefined },
     ...extra,
   ],
   botTags: ['heal'],
@@ -124,8 +125,7 @@ export const FRIGATE: ShipClass = {
           modifiers: [{ stat: 'armor', op: 'add', value: 18 }],
           replacesSignature: repairPulse('frigate.fortressPulse', 'Fortress Pulse', [
             { kind: 'deploy', structure: 'emitter', count: 1, cap: 1, life: 8 },
-            { kind: 'fortifyNode', at: 'self', radius: 350, turrets: 1, turretTime: 20 },
-          ]),
+          ], 1),
           botTags: ['heal', 'guard'],
         },
         {
@@ -139,7 +139,11 @@ export const FRIGATE: ShipClass = {
             name: 'Warden Tether',
             description: 'Tether an ally or friendly node for 6 s: 14% hull and shield per second, +25 armor.',
             cooldown: 10,
-            steps: [{ kind: 'tether', duration: 6, range: 650, healPerSecond: 0.14, shieldPerSecond: 0.14, status: { status: 'armorUp', duration: 0.5, magnitude: 25 }, nodes: true }],
+            steps: [
+              { kind: 'tether', duration: 6, range: 650, healPerSecond: 0.14, shieldPerSecond: 0.14, status: { status: 'armorUp', duration: 0.5, magnitude: 25 }, nodes: true },
+              // Node Bastion also works with the tether specialization. No base instant heal.
+              { kind: 'fortifyNode', at: 'self', radius: 350 },
+            ],
             botTags: ['heal'],
           },
           botTags: ['heal'],
@@ -153,7 +157,7 @@ export const FRIGATE: ShipClass = {
           id: 'frigate.t4.nodeHardening',
           name: 'Node Bastion Protocol',
           tag: 'NODE',
-          description: 'Your Repair Pulse heals friendly nodes for an extra 15% max hull (900) and gives them +40 armor for 8 s.',
+          description: 'Your signature repairs nearby friendly nodes for an extra 15% max hull (900) and grants +40 armor for 8 s; works with both Fortress Pulse and Warden Tether.',
           modifiers: [
             { stat: 'nodeRepair', op: 'add', value: 0.15 },
             { stat: 'nodeArmor', op: 'add', value: 40 },

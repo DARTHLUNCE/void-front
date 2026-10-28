@@ -2,16 +2,22 @@ import type { AbilityTag, ClassId } from './types';
 
 export const DIRECTOR = {
   interval: 2,
+  /** New assaults require a local available force, not a scheduled fleet-wide timer. */
+  assaultCohortRadius: 3600,
+  /** A nearby force or secure forward foothold establishes access without a fixed node ladder. */
+  assaultAccessDistance: 4500,
+  /** Coarse visible opposition along the approach; adjacent bands avoid boundary splitting. */
+  assaultCorridorBand: 1800,
+  /** New assaults prefer the fleet's reachable lane; damaged bases can still outweigh travel. */
+  assaultTravelWeight: 0.006,
+  /** A resource opportunity nudges spare node crews without overriding defense or station caps. */
+  hotzoneWeight: 1.2,
+  /** Beyond the transit deadline, require fresh observed damage below the old hull low-water mark. */
+  siegeProgressFraction: 0.005,
+  siegeProgressGrace: 20,
   defendMinFrac: 0.15,
   objectiveCapFrac: 0.4,
-  /** The opening minutes are for taking nodes; the first push waits until then. */
-  firstPushMin: 300,
-  firstPushMax: 360,
-  /** v2: tankier hulls make each push hit harder, so waves come further apart. */
-  pushIntervalMin: 160,
-  pushIntervalMax: 210,
-  pushDuration: 30,
-  /** Longest a push waits at its staging point; it goes early once `stageReadyFrac` of the wave is there. */
+  /** Minimum assembly allowance; live travel estimates can extend this bounded lease. */
   pushGather: 60,
   stageReadyFrac: 0.7,
   stageArriveRadius: 1_800,
@@ -19,6 +25,8 @@ export const DIRECTOR = {
   pushStageDistance: 4_500,
   /** Bots that own fewer tiers than this may be sent to farm shards. */
   farmBelowRank: 1,
+  /** Newly specialized light hulls can restore a few calibration levels through local salvage. */
+  retrofitFarmBelowCalibration: 3,
   farmChance: 0.65,
   farmCapFrac: 0.25,
   /** Enemies this close to our mothership count as a threat. */
@@ -31,8 +39,6 @@ export const DIRECTOR = {
   ownerWeight: { ours: 0.7, contestedOurs: 1.8, neutral: 1.3, theirs: 1.2 },
   /** Share of skirmishers that answer a commander's Rally Order. */
   rallyFrac: 0.5,
-  /** Once the enemy mothership is exposed: bigger, more frequent pushes. */
-  allIn: { assaultFrac: 0.65, intervalMul: 0.6 },
   /** Point weight multiplier for a node the commander pinged. */
   pingWeight: 3,
 } as const;

@@ -4,12 +4,12 @@ import { KESSLER_REACH } from '../content/maps/kesslerReach';
 import type { ClassId } from '../content/types';
 import { flyBot } from './botFlight';
 import { getSiegeDestination } from './botSiege';
-import { geometryOf } from './hullCollision';
+import { geometryOf, hitBodySegment } from './hullCollision';
 import { createWorld } from './step';
 import { aimAndFire, gunRange, stepProjectiles } from './systems/combat';
 import { moveShips, rebuildShipHash, resolveCollisions } from './systems/movement';
 import { DT, Job } from './world';
-import { worldGeometry } from './worldCollision';
+import { worldGeometry, structureBody } from './worldCollision';
 
 function siege(count = 40, classId: ClassId = 'dreadnought') {
   const w = createWorld({ seed: 41, fleetSize: count, classId, mirrorStreams: true, map: structuredClone(KESSLER_REACH) });
@@ -58,6 +58,11 @@ describe('siege firing reservations', () => {
       if (!g.admitted) continue;
       admitted++;
       expect(Math.hypot(g.x - target.x, g.y - target.y)).toBeLessThan(target.radius + gunRange(s, w) + 150);
+      const dx = target.x - g.x, dy = target.y - g.y;
+      const hit = hitBodySegment(structureBody(w, target), g.x, g.y, dx, dy, 0);
+      expect(hit).toBeGreaterThanOrEqual(0);
+      // A pilot brakes within 75 units: arriving on the outer edge must still allow fire.
+      expect(Math.hypot(dx, dy) * hit + 75).toBeLessThanOrEqual(gunRange(s, w));
     }
     expect(admitted).toBeGreaterThan(0);
   });

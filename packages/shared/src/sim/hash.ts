@@ -29,6 +29,11 @@ export function hashWorld(w: World): string {
     mix(s.engineLateral);
     mix(s.engineTorque);
     mix(s.hull);
+    mix(s.powerMode);
+    mix(s.powerSwitchProcAt);
+    mix(s.signature.nextCastAt);
+    mix(s.ultimate?.nextCastAt ?? 0);
+    mix(s.extra?.nextCastAt ?? 0);
     mix(s.xp);
     mix(s.shards);
     mix(s.tiersOwned);

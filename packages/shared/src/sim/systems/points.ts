@@ -21,12 +21,9 @@ import { hasStatus } from './status';
  * capture it from neutral.
  */
 export function updatePoints(w: World): void {
-  for (const hz of POINTS.hotZoneAt) {
-    if (w.time >= hz && w.time - DT < hz) {
-      const p = w.points[w.rng.int(w.points.length)];
-      p.hotUntil = w.time + POINTS.hotZoneDuration;
-    }
-  }
+  const hotCycle = Math.floor((w.time - POINTS.hotZoneStart) / POINTS.hotZoneInterval);
+  const priorHotCycle = Math.floor((w.time - DT - POINTS.hotZoneStart) / POINTS.hotZoneInterval);
+  if (hotCycle >= 0 && hotCycle > priorHotCycle) startHotZone(w);
   for (const p of w.points) capture(w, p);
 
   const pulse = Math.floor(w.time / POINTS.incomeInterval) > Math.floor((w.time - DT) / POINTS.incomeInterval);
@@ -47,6 +44,25 @@ export function updatePoints(w: World): void {
   }
 }
 
+/** Rotate productive objectives; the Research Lab has no income to double. */
+function startHotZone(w: World): void {
+  let last = -1;
+  let latest = -Infinity;
+  let eligible = 0;
+  for (const p of w.points) {
+    if (!p.def.resource || p.def.income <= 0) continue;
+    eligible++;
+    if (p.hotUntil > latest) { latest = p.hotUntil; last = p.index; }
+  }
+  if (!eligible) return;
+  const excludeLast = latest > 0 && eligible > 1;
+  let pick = w.rng.int(eligible - (excludeLast ? 1 : 0));
+  for (const p of w.points) {
+    if (!p.def.resource || p.def.income <= 0 || (excludeLast && p.index === last)) continue;
+    if (pick-- === 0) { p.hotUntil = w.time + POINTS.hotZoneDuration; return; }
+  }
+}
+
 /** Seconds until the next income pulse. */
 export function nextIncomeIn(w: World): number {
   return POINTS.incomeInterval - (w.time % POINTS.incomeInterval);
@@ -63,9 +79,11 @@ function capture(w: World, p: PointState): void {
   const n = w.shipHash.query(p.x, p.y, r + 40, w.scratch);
   const weight = [0, 0];
   const visible = [0, 0];
+  let defenders = 0;
   for (let k = 0; k < n; k++) {
     const s = w.ships[w.scratch[k]];
     if (!s.alive || (s.x - p.x) ** 2 + (s.y - p.y) ** 2 > r * r) continue;
+    if (s.team === p.owner && !s.commander) defenders++;
     const cloaked = hasStatus(s, 'cloak');
     let wgt = s.cls.quirk === 'fieldEngineer' ? QUIRK_PARAMS.fieldEngineer.captureMul : 1;
     if (cloaked) wgt *= POINTS.cloakedRate;
@@ -80,10 +98,12 @@ function capture(w: World, p: PointState): void {
     // Held: the owner defends; enemies present makes it contested (defend XP). Hull self-repairs.
     p.meter = p.owner === 0 ? 100 : -100;
     if (p.hull < p.maxHull && w.time - p.lastDamageTime >= NODE.regenDelay) p.hull = Math.min(p.maxHull, p.hull + p.maxHull * NODE.regen * DT);
-    if (visible[1 - p.owner] > 0) {
+    if (defenders > 0 && (visible[1 - p.owner] > 0 || w.time - p.lastDamageTime < ECONOMY.xp.defendDamageWindow)) {
+      // Full small-squad credit; larger crowds share a bounded node pool before normal XP bonuses.
+      const defenseXp = ECONOMY.xp.defendPerSecond * DT * Math.min(1, POINTS.maxShips / defenders);
       for (let k = 0; k < n; k++) {
         const s = w.ships[w.scratch[k]];
-        if (s.alive && s.team === p.owner && (s.x - p.x) ** 2 + (s.y - p.y) ** 2 <= r * r) grantXp(w, s, ECONOMY.xp.defendPerSecond * DT);
+        if (s.alive && !s.commander && s.team === p.owner && (s.x - p.x) ** 2 + (s.y - p.y) ** 2 <= r * r) grantXp(w, s, defenseXp);
       }
     }
     return;

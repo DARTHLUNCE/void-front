@@ -3,6 +3,8 @@
  * screens lay out (menu/screens.ts).
  */
 
+import { ECONOMY, MATCH, POWER } from '@void-front/shared';
+
 const key = (...k: string[]) => k.map((x) => `<kbd>${x}</kbd>`).join(' ');
 
 export interface Chapter {
@@ -36,7 +38,7 @@ export const MANUAL: Chapter[] = [
     id: 'nodes',
     title: 'Take the asteroid nodes',
     kicker: 'Objective 1 · hold the middle',
-    body: `<p>Seven asteroid nodes sit in no-man's-land. Fly inside a node's 450 u ring to capture it; the rock itself is solid, and it blocks every shot, so use it as cover. Factories pay Munitions, refineries Fuel, training camps Manpower each minute; the central Research Lab speeds your team's XP. A held node has to be shot down, then sits locked for 20 s before anyone can retake it.</p>`,
+    body: `<p>Seven asteroid nodes sit in no-man's-land. Fly inside a node's 450 u ring to capture it; the rock itself is solid, and it blocks every shot, so use it as cover. Factories pay Munitions, refineries Fuel, training camps Manpower each minute; the central Research Lab speeds your team's XP. A held node has to be shot down, then sits locked for 20 s before anyone can retake it.</p><p>Resource hot zones rotate every six minutes after minute eight. Their three-minute double payout makes a different part of the map worth fighting for.</p>`,
     facts: ['7 nodes', '450 u capture ring', 'Rock blocks shots', '20 s lock after it falls'],
   },
   {
@@ -50,21 +52,21 @@ export const MANUAL: Chapter[] = [
     id: 'titan',
     title: 'Kill the exposed Titan',
     kicker: 'Objective 3 · win the match',
-    body: `<p>With both FOBs down the enemy Titan is exposed: its heal aura weakens and the enemy respawns slower. Push in, destroy it, win. If 35 minutes pass, victory points decide.</p>`,
-    facts: ['Both FOBs down = exposed', '35 min time limit', 'Victory points decide a draw'],
+    body: `<p>With both FOBs down the enemy Titan is exposed: its heal aura weakens and the enemy respawns slower. Push in, destroy it, win. At the ${MATCH.timeLimit / 60}-minute limit, victory points decide.</p>`,
+    facts: ['Both FOBs down = exposed', `${MATCH.timeLimit / 60} min time limit`, 'Victory points decide a draw'],
   },
   {
     id: 'power',
     title: 'Reactor Power',
-    kicker: 'Arrow keys · shunt power',
-    body: `<p>Arrow keys shunt power between three channels.</p>
+    kicker: 'Optional advanced control · equalized is the default',
+    body: `<p>Equalized power is a complete, competitive setup. For a situational edge, shift power toward one system at a modest cost to the other two.</p>
       <ul class="mn-list">
-        <li><b>← Speed</b> +25% speed, +35% acceleration, faster Sub-Light.</li>
-        <li><b>↑ Weapons</b> +25% damage, +15% caliber, faster turrets.</li>
-        <li><b>→ Shields</b> ×1.4 shield, double regen and a trickle even in combat.</li>
-        <li><b>↓ Equalize</b> balances them.</li>
+        <li><b>← Speed</b> +${Math.round((POWER.speed.high - 1) * 100)}% speed and +${Math.round((POWER.speed.accelHigh - 1) * 100)}% acceleration, with a shorter Sub-Light charge.</li>
+        <li><b>↑ Weapons</b> +${Math.round((POWER.weapons.high - 1) * 100)}% damage, +${Math.round(POWER.weapons.apHigh * 100)}% caliber and modestly faster turrets.</li>
+        <li><b>→ Shields</b> +${Math.round((POWER.shields.high - 1) * 100)}% shield capacity, +${Math.round((POWER.shields.regenHigh - 1) * 100)}% shield regeneration and some protection under fire.</li>
+        <li><b>↓ Equalize</b> restores normal performance in all three systems.</li>
       </ul>
-      <p>The channels you starve drop to 33%.</p>`,
+      <p>Unfavored systems lose roughly 8–12% performance. You can leave power equalized throughout a match; switching is a tactical choice, not a required rotation.</p>`,
     facts: ['← Speed', '↑ Weapons', '→ Shields', '↓ Equalize'],
   },
   {
@@ -79,23 +81,23 @@ export const MANUAL: Chapter[] = [
     id: 'turrets',
     title: 'Turrets and Sub-Light',
     kicker: 'Auto-aim and the long drive',
-    body: `<p>Frigates and bigger ships carry loose auto-aim secondary turrets that fire on their own; cloaked ships are ignored by them. Hold Shift to charge the Sub-Light drive (2.5× speed); it can't spool in reverse and any hit drops you out.</p>`,
+    body: `<p>Frigates and bigger ships carry loose auto-aim secondary turrets that fire on their own; cloaked ships are ignored by them. Firing or charging the primary gun eases your speed down to ${Math.round(MATCH.movement.firingSpeedMul * 100)}% of available normal speed; release it to accelerate again. Defensive turrets do not slow you down. Hold Shift to charge the Sub-Light drive (2.5× speed); it can't spool in reverse and any hit drops you out.</p>`,
     facts: ['Turrets: Frigate and up', 'Sub-Light 2.5× speed', 'Any hit drops you out'],
   },
   {
     id: 'command',
     title: 'High Command seats',
     kicker: 'Lead instead of fly',
-    body: `<p>Instead of flying, take a command seat. The <b>Admiral</b> spends Munitions and Manpower on bombs, strikes and reinforcements and upgrades the Titan. Two <b>FOB Commanders</b> launch Fuel wings from their FOB and upgrade it. 10% of the loot from every kill becomes Credits for base upgrades.</p>`,
+    body: `<p>Instead of flying, take a command seat. The <b>Admiral</b> spends Munitions and Manpower on bombs, strikes and reinforcements and upgrades the Titan. Two <b>FOB Commanders</b> launch Fuel wings from their FOB and upgrade it. 10% of the loot from every kill becomes Credits for base upgrades.</p><p>When command seats are vacant, fleet staff can spend the same resource bank on limited support for visible fights. Taking the Admiral seat puts all unoccupied seats under your control; taking an FOB seat stops staff orders from that seat. Staff never buys your base upgrades.</p>`,
     facts: ['1 Admiral', '2 FOB Commanders', '10% of kill loot → Credits'],
   },
   {
     id: 'growth',
     title: 'Growing your ship',
     kicker: 'XP tiers and Shard Calibration',
-    body: `<p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor); a new hull (tier 3, or a class change) refunds it to re-spend. Dying spills 40% of unspent shards. Want a different ship? <b>Change hull</b> on the respawn screen sends you back to the hangar, but your tiers and XP start over (Shard Calibration is refunded).</p>
-      <p class="mn-see">Plan a build on the <a href="#" data-jump="tree">Tech Tree</a> screen.</p>`,
-    facts: ['5 tiers, A or B', 'Tier 3 swaps hull', 'Tier 5 adds an ultimate', '40% shards spill on death'],
+    body: `<p>XP buys five tiers, A or B each: tier 3 swaps your hull, tier 5 adds an ultimate on T. Shards buy Shard Calibration (Weapons, Hull &amp; Plating, Engines, Reactor). Evolving to a new hull resets those four calibration tracks to zero; unspent shards, XP and tier choices stay. Death does not reset calibration. Dying loses ${Math.round((1 - ECONOMY.deathShardKeep) * 100)}% of unspent shards, capped at ${ECONOMY.deathShardLossMax}. Most of the loss drops at your wreck; High Command takes its normal share. Want a different ship? <b>Change hull</b> on the respawn screen sends you back to the hangar, but your tiers and XP start over; calibration is refunded for the new class and your remaining shard bank stays.</p>
+      <p>Calibration costs ${ECONOMY.statCosts.join(" / ")} shards per level. Early levels are inexpensive; specializing in one track is much cheaper than maxing all four.</p><p>Explore for scattered shards and loose natural pockets; their distribution changes each match. Both teams start with mirrored shard positions and values. Replenishment uses the same fair distribution and fixed total supply.</p><p class="mn-see">Plan a build on the <a href="#" data-jump="tree">Tech Tree</a> screen.</p>`,
+    facts: ['5 tiers, A or B', 'Tier 3 swaps hull', 'Tier 5 adds an ultimate', `Death loss: ${Math.round((1 - ECONOMY.deathShardKeep) * 100)}%, up to ${ECONOMY.deathShardLossMax}`],
   },
   {
     id: 'score',

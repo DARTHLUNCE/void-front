@@ -1,8 +1,10 @@
+import { weaponSoundIndex } from '../../content/sounds';
 import { stepDecoyFlight } from '../decoyFlight';
 import { reportHit } from '../combatFeedback';
 import { BOT_SKILL } from '../../content/bots';
 import { POWER_INDEX } from '../../content/power';
 import { QUIRK_PARAMS } from '../../content/quirks';
+import { ECONOMY } from '../../content/progression';
 import { DECK_LAUNCH, DRONES } from '../../content/structures';
 import type { DroneBehavior, DroneStats, TeamId } from '../../content/types';
 import { hasFlag, statValue } from '../stats';
@@ -12,6 +14,7 @@ import { damageNodesInRadius } from './points';
 import { DRONE_READY } from './quirks';
 import { creditShip, scoreStructureDamage } from './score';
 import { hasStatus } from './status';
+import { grantXp } from './progression';
 
 const DRONE_GUN = { damage: 0, fireInterval: 1, projectileSpeed: 900, count: 1, spread: 0, size: 3, life: 0.6 };
 
@@ -112,7 +115,10 @@ export function damageDrone(w: World, d: Drone, amount: number, attackerSlot: nu
   reportHit(w, -1, attackerSlot, d.x, d.y, dealt);
   d.lastHitBy = attackerSlot;
   const credited = creditShip(w, attackerSlot);
-  if (credited && credited.team !== d.team) scoreStructureDamage(credited, dealt);
+  if (credited && credited.team !== d.team) {
+    scoreStructureDamage(credited, dealt);
+    if (d.behavior !== 'decoy') grantXp(w, credited, dealt * ECONOMY.xp.damageToDrones);
+  }
   if (d.hull <= 0) killDrone(w, d);
   return dealt;
 }
@@ -255,7 +261,7 @@ export function stepDrones(w: World): void {
       const speed = def.gun?.projectileSpeed ?? DRONE_GUN.projectileSpeed;
       const a = leadAngle(d.x, d.y, tx, ty, tvx, tvy, speed) + jitter * 2 * d.aimError;
       const gun = { ...DRONE_GUN, ...def.gun, damage: d.damage, life: (d.range / speed) * 1.15 };
-      spawnPattern(w, d.owner, d.team, d.x, d.y, a, gun, 1, 1, 0);
+      spawnPattern(w, d.owner, d.team, d.x, d.y, a, gun, 1, 1, 0, undefined, a, weaponSoundIndex('drone.'+d.behavior));
       const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
       if (p) {
         p.fromDrone = true;

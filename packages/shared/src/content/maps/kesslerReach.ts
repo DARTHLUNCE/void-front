@@ -32,6 +32,6 @@ export const KESSLER_REACH: MapDef = {
     { id: 'arrayWest', name: 'West Arsenal', pos: { x: 8_000, y: 7_500 }, resource: 'munitions', income: 10, buff: { stat: 'cooldown', op: 'mul', value: -0.05 }, botValue: 1 },
     { id: 'arrayEast', name: 'East Arsenal', pos: { x: 14_000, y: 3_500 }, resource: 'munitions', income: 10, buff: { stat: 'cooldown', op: 'mul', value: -0.05 }, botValue: 1 },
   ],
-  // Phase 1+: belts, nebulae, wells and debris fields. Phase 0 is open space.
+  // Shards form seeded, low-contrast natural pockets; no fixed farming regions.
   terrain: [],
 };

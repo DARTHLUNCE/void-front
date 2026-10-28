@@ -1,4 +1,5 @@
-import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, DIRECTOR, type BotDifficulty, type BotSkill } from '../content/bots';
+import { AUDIO_EVENT_CAPACITY, AUDIO_EVENT_STRIDE } from '../content/sounds';
+import { BOT_CLASS_WEIGHTS, BOT_NAMES, BOT_SKILL, type BotDifficulty, type BotSkill } from '../content/bots';
 import { CLASS_ORDER, getClass, teamCap } from '../content/classes/index';
 import type { CommandId, SeatId } from '../content/command';
 import { KESSLER_REACH } from '../content/maps/kesslerReach';
@@ -124,6 +125,7 @@ export interface BotBrain {
 
 export class AbilityState {
   cooldown = 0;
+  nextCastAt = 0;
   charges: number;
   maxCharges: number;
 
@@ -136,6 +138,7 @@ export class AbilityState {
 
   reset(): void {
     this.cooldown = 0;
+    this.nextCastAt = 0;
     this.charges = this.maxCharges;
   }
 }
@@ -177,6 +180,8 @@ export class Ship {
   /** v2: Reactor Power mode (POWER_INDEX) and when it last changed. */
   powerMode = 0;
   powerSwitchAt = -99;
+  /** ext: last passive power-switch proc; changing power itself is always immediate. */
+  powerSwitchProcAt = -Infinity;
   /** v2: secondary turret cooldowns, one per mount. */
   readonly secondaryCd = new Float64Array(16);
   /** v2: a rippling projectile salvo still to fire (Sequential Tube Salvo). */
@@ -235,6 +240,8 @@ export class Ship {
   lastDashEnd = -99;
   cruiseSpool = 0;
   cruising = false;
+  /** Damage consumes a held drive request; release it before trying again. */
+  cruiseNeedsRelease = false;
   /** Scratch state owned by the class quirk (see systems/quirks.ts). */
   readonly quirk = new Float64Array(16);
   readonly statusTime = new Float64Array(STATUS_IDS.length);
@@ -603,10 +610,9 @@ export interface SimEvent {
 export class TeamState {
   kills = 0;
   nextDirector = 0;
-  /** A push gathers at a staging point until this time, then attacks until pushUntil. */
+  /** Finite assembly and attack leases for an assault chosen from current conditions. */
   pushGatherUntil = -1;
   pushUntil = -1;
-  nextPush: number;
   readonly firstSlot: number;
   readonly lastSlot: number;
   /** Banked munitions, fuel, manpower. */
@@ -650,7 +656,6 @@ export class TeamState {
     this.resources.fill(POINTS.startingBank);
     this.firstSlot = id * fleetSize;
     this.lastSlot = this.firstSlot + fleetSize - 1;
-    this.nextPush = rng.range(DIRECTOR.firstPushMin, DIRECTOR.firstPushMax);
     this.defendTarget = mothership.index;
   }
 
@@ -743,6 +748,9 @@ export class World {
   readonly pushY: Float64Array;
   readonly events: SimEvent[];
   eventCount = 0;
+  /** Independent cosmetic queue: audio cannot displace combat events. */
+  readonly audioEvents = new Float32Array(AUDIO_EVENT_CAPACITY * AUDIO_EVENT_STRIDE);
+  audioEventCount = 0;
   /**
    * Fleet Command orders and pings from hosts, carried out in step 1 of the next tick (so their
    * events land in that tick's snapshot). See systems/command.ts.
@@ -839,6 +847,12 @@ export class World {
 
   enemyOf(team: TeamId): TeamState {
     return this.teams[team === 0 ? 1 : 0];
+  }
+
+  emitSound(kind:number, identity:number, owner:number, x:number, y:number, strength=1, rate=1):void {
+    if (identity < 0 || this.audioEventCount >= AUDIO_EVENT_CAPACITY) return;
+    const k=this.audioEventCount++ * AUDIO_EVENT_STRIDE, b=this.audioEvents;
+    b[k]=kind;b[k+1]=identity;b[k+2]=owner;b[k+3]=x;b[k+4]=y;b[k+5]=strength;b[k+6]=rate;
   }
 
   emit(type: EventType, a: number, b: number, x = 0, y = 0, c = 0, d = 0, abilityVisual = 0): void {

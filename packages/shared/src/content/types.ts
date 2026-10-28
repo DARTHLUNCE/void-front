@@ -86,6 +86,8 @@ export type StatId =
   | 'turnRate'
   /** Raises the off-channel power level above 33%. */
   | 'powerFloor'
+  /** Raises only an off-channel Speed level above 33%, capped at Equalized. */
+  | 'powerSpeedFloor'
   /** Raises every channel's level in EQUALIZED mode above 50%. */
   | 'powerBalanced'
   // ext (v2): node engineering and starships
@@ -123,7 +125,7 @@ export type ConditionId =
   | 'fullChargeVsArmored'
   | 'targetStern'
   | 'targetPainted'
-  // ext (v2.1): flying at 55%+ of class top speed (light-hull evasion)
+  // Light-hull evasion: active forward flight at 55%+ of the available drive limit, including firing load.
   | 'jinking';
 
 /** ext (v2): Reactor Power Shunting (content/power.ts). */
@@ -362,6 +364,8 @@ export type PrimitiveDef =
 export type PrimitiveKind = PrimitiveDef['kind'];
 
 export interface AbilityDef {
+  /** ext: minimum time between casts, independent of charges or free-cast effects. */
+  recastInterval?: number;
   id: string;
   name: string;
   /** ext: rules text for the HUD and tech tree. */
@@ -408,7 +412,7 @@ export interface NodeDef {
   /** Allies near you (optionally only those behind you) get these statuses, refreshed every tick. */
   aura?: { radius: number; behind?: boolean; status: StatusApply | readonly StatusApply[]; when?: ConditionId | readonly ConditionId[] };
   /** ext (v2): fires when the pilot switches Reactor Power (optionally only into one mode). */
-  onPowerSwitch?: { to?: PowerMode; status?: StatusApply[]; shield?: number; clear?: StatusId[] };
+  onPowerSwitch?: { to?: PowerMode; status?: StatusApply[]; shield?: number; clear?: StatusId[]; cooldown?: number };
   /** ext (v2): statuses gained the moment your energy shield breaks. */
   onShieldBreak?: StatusApply[];
   /** ext (v2): shield restored whenever a hit glances off your armor. */
@@ -486,7 +490,7 @@ export type TerrainDef =
   | { kind: 'belt'; polygon: Vec2[] }
   | { kind: 'nebula'; pos: Vec2; radius: number }
   | { kind: 'well'; pos: Vec2; radius: number; pull: number }
-  | { kind: 'debris'; pos: Vec2; radius: number; spawnMul: number };
+  | { kind: 'debris'; pos: Vec2; radius: number; spawnMul: number; name?: string };
 
 export interface CapturePointDef {
   id: string;

@@ -2,6 +2,8 @@
 
 Oct 20, 2026 · Landon Sellers
 
+> **Historical build brief, superseded in part.** This document describes the original six-class prototype plan, not the current nine-class balance. Current controls and progression are described in [README.md](../README.md) and the in-game manual; current bot behavior is in [bot-ai.md](bot-ai.md). The 2026-10-28 local refinement targets 30–45-minute matches with a 45-minute limit, removes scheduled fleet pushes, and uses the player's movement rules for bots. The old numbers and roadmap below are retained as design history, not implementation requirements.
+
 ## Overview
 
 Void Front is a browser-based team space shooter: two fleets of up to 100 ships each fight across a large map for capture points, forward bases and finally the enemy mothership. It is inspired by warin.space; "Void Front" is a working title. This spec is the build brief for Claude Code. It states what to build, how to structure it, and how to know each phase is done.

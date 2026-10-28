@@ -1,3 +1,5 @@
+import { GameAudio } from './audio/gameAudio';
+import { audioEngine } from './audio/audioEngine';
 import { snapshotMatchesSchema } from '@void-front/shared';
 import { backToMenu } from './leave';
 import { COMMAND_BY_ID, COMMANDS, H, KESSLER_REACH, POINTS, SELF, SHIP, SHIP_FLAG, type BotDifficulty, type CommandId, type MatchInfo } from '@void-front/shared';
@@ -31,6 +33,7 @@ const EDGE = 8;
 
 /** Offline game: the sim runs in a Web Worker; this side renders, runs the HUD and sends input. */
 export class Game {
+  private readonly sound = new GameAudio();
   private readonly worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   private readonly renderer: Renderer;
   private hud!: Hud;
@@ -82,8 +85,8 @@ export class Game {
       stat: (i) => this.mode() === 'pilot' && this.send({ type: 'stat', index: i }),
       digit: (n) => this.onDigit(n),
       scoreboard: (show) => this.hud.showScoreboard(show, this.curr),
-      bigMap: () => this.hud.toggleMap(),
-      autofire: (on) => this.hud.setAutofire(on),
+      bigMap: () => { this.hud.toggleMap();audioEngine.play('ui.open',{cooldown:.15}); },
+      autofire: (on) => { this.hud.setAutofire(on);audioEngine.play('ui.toggle'); },
       press: (x, y, button) => this.onPress(x, y, button),
       // v2: the wheel is the signed throttle while flying; Ctrl + wheel (or - / =) zooms.
       wheel: (dy, x, y, zoom) => {
@@ -127,6 +130,7 @@ export class Game {
   }
 
   private restart(): void {
+    this.sound.reset();
     this.prev = this.curr = null;
     this.hud.pendingOrder = null;
     // Client-side seed choice is fine: the sim itself only ever sees the number.
@@ -236,14 +240,19 @@ export class Game {
         this.verifiedWorkerSchema = true;
         try { sessionStorage.removeItem('vf.snapshotReload'); } catch { /* Storage is optional. */ }
       }
+      const rawAudioSnap=new Snap(msg.buf,performance.now());
+      const self=msg.buf[H.selfSlot],team=msg.buf[rawAudioSnap.ship(self)+SHIP.team];
+      this.sound.consume(rawAudioSnap,self,team,this.renderer.camera,msg.buf[rawAudioSnap.o.self+SELF.commander]===1);
       const unseen = this.curr && !this.drawn ? this.curr : null;
       this.prev = this.curr;
       this.curr = new Snap(unseen ? carryEvents(unseen, msg.buf) : msg.buf, performance.now());
       this.drawn = false;
       this.simMs = this.simMs * 0.9 + msg.simMs * 0.1;
     } else if (msg.type === 'upgradeResult') {
+      audioEngine.play(msg.ok?'status.upgrade':'ui.deny');
       this.hud.toast(msg.ok ? 'Upgrade installed' : `Upgrade: ${msg.reason}`, performance.now(), !msg.ok);
     } else {
+      audioEngine.play(msg.ok?'ui.select':'ui.deny');
       const name = COMMANDS.find((c) => c.id === msg.id)?.name ?? '';
       this.hud.toast(msg.ok ? `${name} ${COMMAND_BY_ID[msg.id].role === 'fob' ? 'launched' : 'deployed'}` : `${name}: ${msg.reason}`, performance.now(), !msg.ok);
     }
@@ -264,6 +273,7 @@ export class Game {
     this.renderer.cameraFocus = mode === 'pilot' && this.input.pointerActive ? this.input.viewPointer : null;
     if (mode === 'commander') this.panCamera(deltaMs / 1000);
     this.renderer.render(this.prev, curr, now, myTeam);
+    this.sound.update(curr,info.selfSlot,myTeam,this.renderer.camera,mode!=='pilot',this.input.braking,this.input.reverseToggled,now);
     if (this.frameLighting) {
       const viewport = this.renderer.viewport, camera = this.renderer.camera;
       this.frameLighting.update(this.renderer.frameEmitters, {

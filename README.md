@@ -125,15 +125,15 @@ To take one:
 2. If the enemy holds it, shoot it down first.
 3. A destroyed node is locked for 20 s before anyone can capture it again.
 
-At **8, 16 and 24 minutes** a node becomes a **hot zone** and pays double for 3 minutes.
+Starting at **8 minutes**, a node becomes a **hot zone** every **6 minutes** and pays double for 3 minutes, continuing into the late game.
 
-**Time limit: 35 minutes.** If neither Titan falls by then, victory points decide the winner:
+**Time limit: 45 minutes.** If neither Titan falls by then, victory points decide the winner:
 
 - 1 VP for every 1% of the enemy Titan's hull you have removed
 - 15 VP per enemy FOB destroyed
 - 3 VP per node held
 
-A tie goes to the side with more kills. Bot matches usually run 20–30 minutes.
+A tie goes to the side with more kills. The intended match window is 30–45 minutes; final review bot campaigns still timed out, so sustained endgame siege remains an open issue.
 
 **Scoreboard.** Tab opens the full board, and the top-right panel shows the leaders and your own rank.
 Score is bragging rights and doesn't buy anything.
@@ -205,7 +205,7 @@ damage gets an assist.
 ### Steering
 
 Ships turn toward the aim point and carry real inertia: they drift, bank, and decelerate when you brake.
-Bigger hulls turn and accelerate slowly. Firing your main gun bleeds off some speed.
+Bigger hulls turn and accelerate slowly. Firing or charging your main gun gradually caps flight at **10%** of available normal speed; releasing it restores acceleration. This is shared by players and bots. Secondary turrets do not impose the penalty.
 
 ### Throttle
 
@@ -227,11 +227,11 @@ Shift reactor output between three subsystems with the arrow keys:
 | Key | Setting | Speed | Weapons | Shields |
 |---|---|---|---|---|
 | ↓ | Equalized | 50% | 50% | 50% |
-| ← | **SPEED** | 100%: ×1.25 speed, faster acceleration and Sub-Light spool | 33% | 33% |
-| ↑ | **WEAPONS** | 33% | 100%: ×1.25 damage, +15% AP, faster secondaries, less heat | 33% |
-| → | **SHIELDS** | 33% | 33% | 100%: ×1.4 shield, double regen, 15% damage reduction |
+| ← | **SPEED** | 100%: ×1.12 speed, faster acceleration and Sub-Light spool | 33% | 33% |
+| ↑ | **WEAPONS** | 33% | 100%: ×1.12 damage, +8% AP, faster secondaries, less heat | 33% |
+| → | **SHIELDS** | 33% | 33% | 100%: ×1.18 shield, ×1.35 regen, 8% damage reduction |
 
-Many upgrades key off your power setting. For example, the Carrier's escorts inherit it, the Patrol's
+Equalized retains baseline performance; power emphasis is an optional situational tradeoff with gentler low-channel penalties. Many upgrades key off your power setting. For example, the Carrier's escorts inherit it, the Patrol's
 Slipstream builds twice as fast on SPEED, and the Frigate heals harder on SHIELDS.
 
 ---
@@ -244,7 +244,7 @@ Two currencies drop during a match, and both reset when it ends.
 
 | Tier | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
-| XP cost | 150 | 350 | 650 | 1,050 | 1,600 |
+| XP cost | 150 | 350 | 1,700 | 2,000 | 2,800 |
 
 Each tier offers two options; press **1** or **2** when the pop-up shows.
 
@@ -254,7 +254,7 @@ Each tier offers two options; press **1** or **2** when the pop-up shows.
 XP comes from:
 
 - Kills: 40 + 15 per rank of the victim, with a ×1.6 bounty on ships two or more ranks above you.
-- Damage, healing, capturing and defending nodes.
+- Damage, actual healing, qualifying kill assists, capturing and actively defending nodes, and damage to hostile combat craft. Contribution pools are bounded; overhealing and overkill do not earn extra credit.
 - Destroying nodes.
 
 A team that trails earns up to +60% XP to help it come back.
@@ -272,15 +272,16 @@ Shards come from crystals and wreck loot. Each track has 7 levels.
 
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
 |---|---|---|---|---|---|---|---|
-| Shard cost | 12 | 18 | 26 | 36 | 50 | 68 | 90 |
+| Shard cost | 32 | 64 | 140 | 320 | 700 | 1,300 | 2,000 |
 
-**Calibration respecs whenever your hull changes:** a Tier-3 hull swap, a class change or a redeploy.
-Every shard you spent comes back so you can rebuild for the new frame.
+**Tier-3 hull evolution resets QWER to zero without refunding spent shards.** Remaining XP, tier choices and the unspent bank carry over. Ordinary tiers and death retain calibration. An explicit class change or redeploy keeps upstream's calibration refund for the new class.
+
+Maxing one track costs **4,556** shards; all four cost **18,224**. Resources form seeded, multilayered natural pockets instead of fixed salvage farms. Starting and replenished positions, kinds and values are mirrored between teams; wreck transfers cannot gain catch-up bonuses.
 
 ### Dying
 
-- You keep 60% of your unspent shards. The other 40% drops as loot for whoever is nearby.
-- XP and tiers are kept.
+- Lose 40% of unspent shards, capped at **160**. Of that loss, 90% drops as loot and 10% funds enemy High Command; fractional values are conserved.
+- XP, tiers and purchased calibration are kept.
 - Respawning takes 5 s + 1.2 s per rank (capped at 11 s), scaled by hull size: Patrol ×0.55 up to
   Dreadnought ×1.6.
 
@@ -323,8 +324,8 @@ shred light craft and exposed sterns.
 | 1 | **Focused X-Ray Lenses**: 22 → 38 AP, +12% range | **Rotary Scatter Array**: +1 barrel, +20% fire rate, −12% per shot |
 | 2 | **Shunt Afterburners**: Phase Dash holds 2 charges; softer SPEED drain | **Electronic Chaff Hull**: doubles enemy turret jitter vs you, +35% shield |
 | 3 | **Striker** hull: Blink Strike, a 420 u micro-warp and 65-damage EMP arc that drains 50% of enemy shields | **Comet** hull: +15 armor; Kinetic Ram for 110 high-AP damage and knockback, reset on kill |
-| 4 | **Stern Exhaust Seeker**: stern hits ignore 50% armor and slow turning | **Tri-Flux Power Coupler**: switching power gives a 2.5 s surge to all systems and 30 shield |
-| 5 | **Vector Storm**: 6 s of cooldown-free dashes with all power at 100% | **Armor-Stripper Micro-Pods**: 8 micro-missiles that strip −30 armor |
+| 4 | **Stern Exhaust Seeker**: stern hits ignore 50% armor and slow turning | **Tri-Flux Power Coupler**: passive +8% shield capacity; switching gives an 8% surge and 30 shield, with an 8 s trigger cooldown |
+| 5 | **Vector Storm**: 6 s of free signature casts, at least 0.3 s apart, with all power at 100% | **Armor-Stripper Micro-Pods**: 8 micro-missiles that strip −30 armor |
 </details>
 
 <details>
@@ -379,7 +380,7 @@ Armor-piercing torpedoes for capital ships, and twin flak turrets that swat star
 | 1 | **Proximity Frag Shells**: splash, no overpen, +25% vs Patrol and Corvette | **Capped AP-Sabot**: 52 → 70 AP, −20% torpedo cooldown |
 | 2 | **Auxiliary Fire-Control**: −45% flak jitter, +1 flak turret | **Vectored Retro-Burners**: Evasive Burn (G), reverse to −50% |
 | 3 | **Hunter-Killer** hull: a 3-torpedo fan that sunders armor −20 | **Escort Leader** hull: +15 armor, +2 flak; Flak Curtain |
-| 4 | **Laser Target Painter**: painted targets draw +35% turret and torpedo accuracy | **Reinforced Bow Bulkheads**: +45% bow armor; SHIELDS restores 15% hull |
+| 4 | **Laser Target Painter**: painted targets draw +35% turret and torpedo accuracy | **Reinforced Bow Bulkheads**: +45% bow armor; switching to SHIELDS restores 15% hull over 4 s, with an 8 s trigger cooldown |
 | 5 | **Sequential Tube Salvo**: 5 heavy torpedoes in 1.2 s | **Magnetic EMP Warhead**: strips all shields, silences abilities, drains the reactor |
 </details>
 
@@ -475,7 +476,7 @@ so you can always count them.
 | 1 | **High-Velocity Interceptor Wing**: +35% starship speed, 45 AP cannons | **Armor-Piercing Bomber Wing**: 95 AP micro-torpedoes, ×2 vs structures |
 | 2 | **Double-Deck Hangar Bays**: 4 permanent escorts | **Phalanx CIWS & Armored Deck**: +2 CIWS, +15 armor; escorts shoot missiles |
 | 3 | **Hive** hull: a 7-starship swarm; hits siphon shield | **Overlord** hull: +20 armor; Fleet EMP Pulse |
-| 4 | **Integrated Fire-Control Uplink**: the designator paints targets for the wing | **Escort Shield Harmonic**: hull regen per starship; ally damage reduction |
+| 4 | **Integrated Fire-Control Uplink**: the designator paints targets for the wing | **Escort Shield Harmonic**: 1% hull regen per starship, capped at 6%/s; ally damage reduction |
 | 5 | **Bastion Flight Deck**: anchor, 10 heavy starships, 4 turrets | **Valkyrie Torpedo Run**: every starship fires a homing torpedo |
 </details>
 
@@ -720,7 +721,7 @@ The repo is a pnpm workspace:
 The harness scores each run against balance targets:
 
 - Side win rate 45–55%
-- Median match 20–30 minutes
+- Median match 30–45 minutes
 - Fewer than 15% of matches reaching the time limit
 - Every class between 0.6× and 1.8× average kills
 - Tier options picked 35–65%
@@ -751,3 +752,18 @@ The harness scores each run against balance targets:
 | **DARTHLUNCE** | Game design, simulation, classes and tiers, economy, command seats, HUD, art integration |
 | **Flockhopper-bit** | Pilot controls, per-class tactical AI, ability and combat VFX, shields and trails |
 | **Matthew Olson** | Hangar and terminal remaster, ship effects, hull-shaped shields and wrecks |
+
+
+### Gameplay refinement review
+
+See [the gameplay review](docs/gameplay-refinement.md) for exact changes, validation and known limitations.
+`/gameplay-lab.html` compares bundled sampled match timelines, contributions and class progression;
+the manifest distinguishes recorded candidates and timeouts from actual Titan destruction.
+
+Fleet pushes have no periodic match timer. Local forces, access and visible opposition determine
+assault opportunities. Progress-aware assignments, nearby replacement selection, usable capture
+seats and staging continuity reduce wasted travel. Patrols can screen nearby armed craft while
+retaining imperfect aim, reactions and target commitment; other classes keep their specialties.
+
+When command seats are vacant, fleet staff may spend the same limited bank on support for visible
+fights. Human control stops staff orders in those seats. Staff never buys base upgrades.

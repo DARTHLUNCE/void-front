@@ -1,3 +1,5 @@
+import { installAudioUi } from './audio/audioUi';
+import { audioEngine } from './audio/audioEngine';
 import './style.css';
 import './hud/sidebar.css';
 import './hud/cockpit.css';
@@ -41,6 +43,8 @@ const save = (key: string, value: string): void => {
 };
 
 menu.innerHTML = terminalMarkup(saved);
+const disposeAudio=installAudioUi();
+if(import.meta.hot)import.meta.hot.dispose(disposeAudio);
 
 const sel = (id: string) => document.getElementById(id) as HTMLSelectElement;
 const fleetSel = sel('fleet');
@@ -157,6 +161,7 @@ const nextPaint = () =>
   });
 
 document.getElementById('play')!.addEventListener('click', async () => {
+  const audioReady=audioEngine.unlock();
   // Never leave the title skirmish simulating under the match (launching from the terminal skips its close).
   if (disposeIntro) {
     disposeIntro();
@@ -182,6 +187,7 @@ document.getElementById('play')!.addEventListener('click', async () => {
   });
   if (import.meta.env.DEV) (window as unknown as { game: Game }).game = game;
   try {
+    await audioReady;
     await game.start(stage, hud);
     await hudReady();
     loaded();

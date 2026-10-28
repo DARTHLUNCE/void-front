@@ -1,8 +1,8 @@
 import { BOT_TAG_RULES, type BotConditionId, PILOT } from '../../content/bots';
 import { PRIMARY_AIM_HALF_ARC } from '../../content/combat';
-import { POINTS } from '../../content/match';
+import { MATCH, POINTS } from '../../content/match';
 import { POWER_INDEX } from '../../content/power';
-import { NODE } from '../../content/structures';
+import { DRONES, NODE } from '../../content/structures';
 import type { AbilityTag } from '../../content/types';
 import { angleDelta } from '../angles';
 import { flyBot, type BotFlightGoal } from '../botFlight';
@@ -14,7 +14,9 @@ import { missionStation } from '../botStations';
 import { perceivedPresence as combatPower } from '../botPerception';
 import { geometryOf, hitBodySegment } from '../hullCollision';
 import { pointBody, structureBody, worldGeometry } from '../worldCollision';
-import { Job, type AbilityState, type BotBrain, type Ship, type World } from '../world';
+import { Job, type AbilityState, type BotBrain, type Drone, type Ship, type World } from '../world';
+import { statValue } from '../stats';
+import { pointBuff } from './points';
 import { canCast } from './abilities';
 import { armorMul, gunRange, leadAngle } from './combat';
 import { defendedStructure, pushTarget, stagingPoint } from './director';
@@ -85,6 +87,58 @@ function validTarget(w: World, s: Ship): boolean {
     return p.owner >= 0 && p.owner !== s.team;
   }
   return false;
+}
+
+/** The same solid-object rule used by the post-move trigger check. */
+function clearShot(w: World, s: Ship, x: number, y: number, node = -1, structure = -1): boolean {
+  const dx = x - s.x, dy = y - s.y;
+  for (const p of w.points) {
+    if (p.index === node) continue;
+    const t = hitBodySegment(pointBody(w, p), s.x, s.y, dx, dy, 0);
+    if (t >= 0 && t < 1) return false;
+  }
+  for (const st of w.structures) {
+    if (!st.alive || st.team === s.team || st.index === structure) continue;
+    const t = hitBodySegment(structureBody(w, st), s.x, s.y, dx, dy, 0);
+    if (t >= 0 && t < 1) return false;
+  }
+  return true;
+}
+
+/** Interceptors may clear nearby combat craft without abandoning a useful ship engagement. */
+function screenCraft(w: World, s: Ship, ship: Ship | null, shipUtility: number): Drone | null {
+  const b = s.bot!, doctrine = doctrineFor(s);
+  if (!doctrine.screenCraft) return null;
+  const range = gunRange(s, w), preferred = range * doctrine.rangeFraction;
+  if (ship) {
+    const distance = Math.hypot(ship.x - s.x, ship.y - s.y) - geometryOf(w, ship).radius;
+    if (distance <= preferred || b.targetShip === ship.slot && w.time - b.targetSince < doctrine.commitSeconds) return null;
+    // Own recent hit evidence is observable. Enemy private targets and inputs are not.
+    const attacker = w.ships[s.lastHitBy];
+    if (attacker?.alive && !attacker.commander && attacker.team !== s.team &&
+      !!(attacker.visibleMask & (1 << s.team)) && w.time - s.lastDamageTime < 2.5 && w.time - s.lastHitTime < 2.5 &&
+      Math.hypot(attacker.x - s.x, attacker.y - s.y) <= range + geometryOf(w, attacker).radius) return null;
+  }
+  const vision = statValue(s, 'vision', MATCH.shipVision) * (1 + pointBuff(w, s.team, 'vision'));
+  const reach = Math.min(range, 750, vision);
+  const count = w.droneHash.query(s.x, s.y, reach, w.scratch2);
+  let best: Drone | null = null, bestUtility = 0, current: Drone | null = null, currentUtility = 0;
+  for (let k = 0; k < count; k++) {
+    const d = w.drones.items[w.scratch2[k]], distance = Math.hypot(d.x - s.x, d.y - s.y);
+    const usefulReach = Math.min(d.index === b.targetDrone ? range : preferred, reach);
+    if (!d.active || d.team === s.team || DRONES[d.behavior].damage <= 0 || distance > usefulReach || !clearShot(w, s, d.x, d.y)) continue;
+    const utility = doctrine.targetLight * (d.index === b.targetDrone ? 1.3 : 1) / (250 + distance);
+    if (d.index === b.targetDrone) { current = d; currentUtility = utility; }
+    if (utility > bestUtility || utility === bestUtility && best !== null && d.index < best.index) { best = d; bestUtility = utility; }
+  }
+  if (!best) return null;
+  if (current && best !== current && (w.time - b.targetSince < doctrine.commitSeconds || bestUtility < currentUtility * 1.35)) {
+    best = current; bestUtility = currentUtility;
+  }
+  if (!ship) return best;
+  // Keep a chosen screen through its commitment, then require a clear advantage to change kinds.
+  if (best === current) return w.time - b.targetSince < doctrine.commitSeconds || shipUtility <= bestUtility * 1.35 ? best : null;
+  return bestUtility > shipUtility * 1.35 ? best : null;
 }
 
 /** Staggered utility decision: target suitability, ally commitment, survival and objective focus. */
@@ -175,10 +229,12 @@ export function think(w: World, s: Ship): void {
     (hp < .44 && sustainedPressure && m.enemyPower > m.friendlyPower * 2.4 * resolve)) b.retreating = true;
   m.regroup = !b.retreating && nearest < 1000 && underFire &&
     m.enemyPower > m.friendlyPower * (m.regroup ? 1.6 : 2.65) * resolve && (m.regroup || sustainedPressure);
+  const craft = !b.retreating && !m.regroup ? screenCraft(w, s, best, best?.slot === b.targetShip ? previousUtility : bestUtility) : null;
   clearTarget(b);
-  if (best) b.targetShip = best.slot;
-  // Drone defense is secondary to meaningful ship combat, not a reflex to every nearby drone.
-  if (!best) {
+  if (craft) b.targetDrone = craft.index;
+  else if (best) b.targetShip = best.slot;
+  // Other primaries retain ship focus and the existing no-ship craft fallback.
+  if (!best && !craft) {
     let dBest = Math.min(range, 750);
     const count = w.droneHash.query(s.x, s.y, dBest, w.scratch2);
     for (let k = 0; k < count; k++) {
@@ -193,9 +249,15 @@ export function think(w: World, s: Ship): void {
       const st = pushTarget(w, s.team);
       // Nearby defenders do not make the base cease to be a valid objective. Break off for
       // an immediate damaging threat, not merely because any ship is inside a fixed 450-unit circle.
-      const immediateThreat = best && underFire && hp < .6 &&
-        Math.hypot(best.x - s.x, best.y - s.y) < geometryOf(w, s).radius + geometryOf(w, best).radius + 120;
-      if (st && !st.shielded && !immediateThreat && getSiegeDestination(w, s, st).admitted &&
+      const attacker = w.ships[s.lastHitBy];
+      // Turret pressure must not make an unrelated nearby defender the alleged attacker.
+      // The pilot knows its own recent hit source, but can only act on a still-visible ship.
+      const immediateThreat = attacker?.alive && !attacker.commander && attacker.team !== s.team &&
+        !!(attacker.visibleMask & (1 << s.team)) && underFire && hp < .6 && w.time - s.lastHitTime < 2.5 &&
+        Math.hypot(attacker.x - s.x, attacker.y - s.y) < geometryOf(w, s).radius + geometryOf(w, attacker).radius + 120;
+      if (immediateThreat) {
+        clearTarget(b); b.targetShip = attacker.slot;
+      } else if (st && !st.shielded && getSiegeDestination(w, s, st).admitted &&
         structureDistance(w, s, st.index) <= range) {
         clearTarget(b); b.targetStructure = st.index;
       }
@@ -534,16 +596,5 @@ export function botAim(w: World, s: Ship): void {
   }
   if (!offensiveAbilityReady(w, s, b, m)) clearTargetedAbilities(s);
   if (!s.input.fire) return;
-  // Don't fire through a solid asteroid/base while maneuvering around it.
-  const dx = m.x - s.x, dy = m.y - s.y;
-  for (const p of w.points) {
-    if (p.index === b.targetNode) continue;
-    const t = hitBodySegment(pointBody(w, p), s.x, s.y, dx, dy, 0);
-    if (t >= 0 && t < 1) { s.input.fire = false; return; }
-  }
-  for (const st of w.structures) {
-    if (!st.alive || st.team === s.team || st.index === b.targetStructure) continue;
-    const t = hitBodySegment(structureBody(w, st), s.x, s.y, dx, dy, 0);
-    if (t >= 0 && t < 1) { s.input.fire = false; return; }
-  }
+  if (!clearShot(w, s, m.x, m.y, b.targetNode, b.targetStructure)) s.input.fire = false;
 }

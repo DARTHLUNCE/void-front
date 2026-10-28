@@ -1,4 +1,5 @@
 import { tickAbility, tickBurst, tryCast } from './systems/abilities';
+import { runAutomaticCommands } from './systems/automaticCommand';
 import { aimAndFire, damageShip, fireSecondaries, stepProjectiles } from './systems/combat';
 import { buyUpgrade, issueCommand, issuePing } from './systems/command';
 import { collectCrystals, rebuildCrystalHash, seedCrystals, spawnCrystals } from './systems/crystals';
@@ -22,6 +23,7 @@ export function createWorld(opts: WorldOptions): World {
   const w = new World(opts);
   for (const s of w.ships) respawnShip(w, s);
   w.eventCount = 0;
+  w.audioEventCount = 0;
   seedCrystals(w);
   rebuildShipHash(w);
   rebuildCrystalHash(w);
@@ -35,6 +37,7 @@ export function step(w: World): void {
   w.tick++;
   w.time = w.tick * DT;
   w.eventCount = 0;
+  w.audioEventCount = 0;
 
   // 1. Inputs and decisions. Bots write the same ShipInput humans do; queued Fleet Command
   //    orders and pings run here.
@@ -56,6 +59,7 @@ export function step(w: World): void {
   for (const order of w.pendingOrders.splice(0)) issueCommand(w, order);
   for (const ping of w.pendingPings.splice(0)) issuePing(w, ping.team, ping.x, ping.y);
   for (const u of w.pendingUpgrades.splice(0)) buyUpgrade(w, u.team, u.seat, u.base, u.track, u.option);
+  runAutomaticCommands(w);
   runDirectors(w);
   for (const s of w.ships) {
     if (!s.alive || !s.bot) continue;
@@ -77,7 +81,7 @@ export function step(w: World): void {
     fireSecondaries(w, s);
     tickBurst(w, s);
     const inp = s.input;
-    if (inp.cruise) continue;
+    if (inp.cruise && !s.cruiseNeedsRelease) continue;
     const target = s.bot ? s.bot.targetShip : -1;
     if (inp.ability && !inp.brake) tryCast(w, s, s.signature, target);
     if (inp.ultimate && s.ultimate) tryCast(w, s, s.ultimate, target);

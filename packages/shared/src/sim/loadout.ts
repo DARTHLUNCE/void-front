@@ -41,6 +41,7 @@ const STAT_WORDS: Partial<Record<StatId, string>> = {
   damage: 'damage',
   fireRate: 'fire rate',
   speed: 'speed',
+  powerSpeedFloor: 'to minimum Speed power',
   maxHull: 'max hull',
   cooldown: 'ability cooldowns',
   damageTaken: 'damage taken',
@@ -100,7 +101,8 @@ const CONDITION_WORDS: Record<ConditionId, string> = {
 
 export function describeModifier(m: ModifierDef): string {
   const what = STAT_WORDS[m.stat] ?? m.stat;
-  const amount = m.op === 'mul' ? `${m.value > 0 ? '+' : ''}${Math.round(m.value * 100)}%` : `${m.value > 0 ? '+' : ''}${m.value}`;
+  const amount = m.stat === 'powerSpeedFloor' ? `${m.value > 0 ? '+' : ''}${Math.round(m.value * 100)} percentage points`
+    : m.op === 'mul' ? `${m.value > 0 ? '+' : ''}${Math.round(m.value * 100)}%` : `${m.value > 0 ? '+' : ''}${m.value}`;
   const when = m.when === undefined ? [] : typeof m.when === 'string' ? [m.when] : m.when;
   return `${amount} ${what}${when.map((c) => ` ${CONDITION_WORDS[c]}`).join(',')}`;
 }

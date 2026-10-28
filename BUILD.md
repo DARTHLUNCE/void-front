@@ -50,16 +50,21 @@ pnpm build
 ```
 
 This writes a static site to `packages/client/dist/`. It is about 60 MB, almost all of it the sprite
-atlases in `ship-test/`. The build includes three pages:
+atlases in `ship-test/`. The build includes these entry pages:
 
 | Page | What it is |
 |---|---|
 | `index.html` | The game |
 | `ship-test.html` | The sprite gallery |
 | `zoom-check.html` | The camera zoom check |
+| `audio-check.html`, `audio-direction.html` | Sound library and directional audio checks |
 
 The other dev pages are only served by `pnpm dev`. To add one to the build, add its HTML file to
 `build.rollupOptions.input` in `packages/client/vite.config.ts`.
+
+Files under `public/` are also copied verbatim. This includes `gameplay-lab.html` and its bundled,
+versioned audit recordings. See [the gameplay review](docs/gameplay-refinement.md) for their provenance
+and limitations; these recordings are not a replay of the current merged simulation.
 
 To serve the build locally, run:
 

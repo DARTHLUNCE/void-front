@@ -1,7 +1,7 @@
-import { geometryOf } from './hullCollision';
+import { geometryOf, hitBodySegment } from './hullCollision';
 import { gunRange } from './systems/combat';
 import { baseSpeed } from './systems/movement';
-import { worldGeometry } from './worldCollision';
+import { structureBody, worldGeometry } from './worldCollision';
 import { Job, type Ship, type Structure, type World } from './world';
 
 export interface SiegeDestination { x: number; y: number; admitted: boolean }
@@ -16,7 +16,7 @@ interface SiegePlan {
   sequence: number; members: Map<number, Member>; vacated: Vacated[];
 }
 const plans = new WeakMap<World, Map<number, SiegePlan>>();
-const CLEARANCE = 85, IDLE_STATION_TIME = 18, ARC = 1.85, ANGLE_STEPS = 72;
+const CLEARANCE = 85, ARRIVAL_MARGIN = 85, IDLE_STATION_TIME = 18, ARC = 1.85, ANGLE_STEPS = 72;
 
 /** Active assaults reserve collision-sized firing stations. Surplus hulls wait in distinct
  * approach lanes and replace stalled or idle gunners; productive batteries keep their stations.
@@ -95,7 +95,7 @@ function update(w: World, team: number, target: Structure, plan: SiegePlan): voi
     if (!m.destination.admitted) continue;
     const d = m.destination;
     const reach = Math.hypot(d.x - target.x, d.y - target.y);
-    if ((changedHull && !free(w, target, plan, m, d.x, d.y)) || reach > body + m.range * .95 || reach < body + m.radius + 50) {
+    if ((changedHull && !free(w, target, plan, m, d.x, d.y)) || !withinGunReach(w, target, d.x, d.y, m.range) || reach < body + m.radius + 50) {
       vacate(plan, m); queue(w, team, target, plan, m); waiting = true; seatsChanged = true; continue;
     }
     const remaining = Math.hypot(m.ship.x - d.x, m.ship.y - d.y);
@@ -190,11 +190,18 @@ function findStation(w: World, team: number, target: Structure, plan: SiegePlan,
     const angle = -ARC + 2 * ARC * k / ANGLE_STEPS;
     const x = target.x - sign * Math.cos(angle) * radius, y = target.y + sign * Math.sin(angle) * radius;
     if (x < m.radius + 50 || y < m.radius + 50 || x > w.map.width - m.radius - 50 || y > w.map.height - m.radius - 50) continue;
-    if (!free(w, target, plan, m, x, y)) continue;
+    if (!free(w, target, plan, m, x, y) || !withinGunReach(w, target, x, y, range)) continue;
     const score = Math.hypot(m.ship.x - x, m.ship.y - y) + Math.abs(radius - preferred) * .15;
     if (score < bestScore) { bestScore = score; best = { x, y }; }
   }
   return best;
+}
+
+/** Match the pilot's silhouette ray, leaving room for its legal arrival/braking radius. */
+function withinGunReach(w: World, target: Structure, x: number, y: number, range: number): boolean {
+  const dx = target.x - x, dy = target.y - y;
+  const hit = hitBodySegment(structureBody(w, target), x, y, dx, dy, 0);
+  return hit >= 0 && Math.hypot(dx, dy) * hit + ARRIVAL_MARGIN <= range;
 }
 
 function free(w: World, target: Structure, plan: SiegePlan, m: Member, x: number, y: number): boolean {

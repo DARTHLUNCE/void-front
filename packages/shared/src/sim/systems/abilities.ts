@@ -1,3 +1,4 @@
+import { abilitySoundIndex, SOUND_KIND, WEAPON_SOUND } from '../../content/sounds';
 import { beginDecoyFlight } from '../decoyFlight';
 import { abilityVisualIndex } from '../../content/abilityVisuals';
 import { structureBody, pointBody, deployableBody, droneBody, MAX_DRONE_RADIUS } from '../worldCollision';
@@ -8,7 +9,7 @@ import { DEPLOYABLES, DRONES, NODE, WING_LAUNCH } from '../../content/structures
 import type { GunDef, PrimitiveDef, PrimitiveKind, StatusApply, TeamId } from '../../content/types';
 import { hasFlag, liveStat, statValue } from '../stats';
 import { type AbilityState, DT, EventType, type Ship, type World } from '../world';
-import { apHit, damageDeployable, damageShip, damageStructure, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
+import { apHit, damageDeployable, damageShip, damageStructure, drainShipShield, fireSecondaries, type HitInfo, MAX_SHIP_RADIUS, outgoingDamageMul, shootDownMissile, spawnPattern } from './combat';
 import { damageDrone, launchFromBow, spawnDrone } from './drones';
 import { damageNode, pointBuff, repairNode } from './points';
 import { creditHealing, heal } from './progression';
@@ -154,7 +155,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       if (o === c.ship || !o.alive || (o.x - cx) ** 2 + (o.y - cy) ** 2 > (r + o.radius) ** 2) continue;
       const friendly = o.team === c.team;
       if (friendly ? !allies : !enemies) continue;
-      if (!friendly && step.shieldDrain) o.shield *= 1 - step.shieldDrain;
+      if (!friendly && step.shieldDrain) drainShipShield(w, o, step.shieldDrain, c.slot);
       if (!friendly && step.damage) damageShip(w, o, step.damage * mul, c.slot, hit);
       if (friendly && step.heal) creditHealing(w, c.ship, o, heal(o, o.maxHull * step.heal));
       if (friendly && step.shieldHeal) o.shield = Math.min(o.maxShield, o.shield + o.maxShield * step.shieldHeal);
@@ -343,7 +344,7 @@ export const PRIMITIVES: { [K in PrimitiveKind]: Handler<K> } = {
       if (step.order === 'volley') {
         // Valkyrie Run: each starship looses a homing micro-torpedo and stays in the fight.
         const a = Math.atan2(c.cursorY - d.y, c.cursorX - d.x);
-        spawnPattern(w, c.slot, c.team, d.x, d.y, a, VOLLEY_GUN, step.damage / VOLLEY_GUN.damage, 1, d.radius);
+        spawnPattern(w, c.slot, c.team, d.x, d.y, a, VOLLEY_GUN, step.damage / VOLLEY_GUN.damage, 1, d.radius, undefined, a, WEAPON_SOUND.drone);
         const p = w.projectiles.count > 0 ? w.projectiles.at(w.projectiles.count - 1) : null;
         if (p) {
           p.missile = true;
@@ -534,30 +535,34 @@ export function abilityCooldown(w: World, s: Ship, st: AbilityState): number {
 }
 
 /** Charges a cast spends (Storm Run makes dashes free). */
-export function castCost(w: World, s: Ship): number {
-  return liveStat(w, s, 'castCost', 1);
+export function castCost(w: World, s: Ship, st: AbilityState = s.signature): number {
+  return st === s.signature ? liveStat(w, s, 'castCost', 1) : 1;
 }
 
 export function canCast(w: World, s: Ship, st: AbilityState): boolean {
-  if (!canAct(s) || s.cruising) return false;
+  if (!canAct(s) || s.cruising || w.time < st.nextCastAt) return false;
   if (st.def.requires && !hasStatus(s, st.def.requires)) return false;
-  return st.charges >= Math.min(1, castCost(w, s));
+  return st.charges >= Math.min(1, castCost(w, s, st));
 }
 
 /** Run an ability's steps in order. Returns false if it couldn't be cast. */
 export function tryCast(w: World, s: Ship, st: AbilityState, targetSlot: number): boolean {
   if (!canCast(w, s, st)) return false;
+  // Snapshot before effects: an ability cannot grant itself a free activation.
+  const cost = castCost(w, s, st);
   const c = shipCaster(s, targetSlot);
   c.abilityVisual = abilityVisualIndex(st.def.id);
   const originX = s.x, originY = s.y;
   runSteps(w, c, st.def.steps);
+  w.emitSound(SOUND_KIND.ability,abilitySoundIndex(st.def.id),s.slot,originX,originY);
   if (c.abilityVisual) {
     s.abilityVisual = c.abilityVisual;
     s.visualStartedAt = w.time;
     // Leave event capacity for combat confirmations. No RNG or mechanical state is touched.
     if (w.eventCount < 384) w.emit(EventType.AbilityCast, s.team, s.slot, originX, originY, s.angle, 0, c.abilityVisual);
   }
-  st.charges -= castCost(w, s);
+  st.charges -= cost;
+  st.nextCastAt = w.time + (st.def.recastInterval ?? 0);
   if (st.cooldown <= 0) st.cooldown = abilityCooldown(w, s, st);
   return true;
 }
@@ -570,7 +575,7 @@ export function runSteps(w: World, c: Caster, steps: readonly PrimitiveDef[]): v
 function firePattern(w: World, s: Ship, step: Extract<PrimitiveDef, { kind: 'projectiles' }>, abilityVisual = 0): void {
   const first = w.projectiles.count;
   const gun = mergedGun(s.cls.gun, step.gun);
-  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle);
+  spawnPattern(w, s.slot, s.team, s.x, s.y, s.angle, gun, outgoingDamageMul(w, s), liveStat(w, s, 'range', 1), 0, geometryOf(w, s).launchers, s.angle, WEAPON_SOUND.ordnance);
   const structureMul = (step.structureMul ?? 1) * liveStat(w, s, 'structureDamage', 1);
   // v2.1: ordnance takes the ship's live caliber (Weapons calibration, node +AP, WEAPONS power) like
   // its gun does, and warheads (missiles, anything with splash) never overpenetrate.

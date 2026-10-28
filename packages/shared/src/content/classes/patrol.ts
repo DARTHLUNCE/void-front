@@ -21,7 +21,7 @@ export const PATROL_CRAFT: ShipClass = {
   respawnMul: 0.55,
   // v2.1: the smallest, fastest-jinking hull: enemy auto-turrets scatter 2.5× as wide against it.
   baseStats: { jitterOnMe: 1.5 },
-  // Evasion: jinking at speed (55%+ of top speed) shrugs off 45% of every hit and cycles the guns
+  // Evasion: forward thrust at 55%+ of the available drive limit shrugs off 45% of hits and cycles the guns
   // 40% faster; its pulse lasers find the gaps in an Armored hull's belt (+20 AP vs Cruisers and up).
   modifiers: [
     { stat: 'damageTaken', op: 'add', value: -0.45, when: 'jinking' },
@@ -37,6 +37,7 @@ export const PATROL_CRAFT: ShipClass = {
     name: 'Phase Dash',
     description: 'High-G vector burst: 3.2× speed for 0.3 s, invulnerable to projectiles.',
     cooldown: 5,
+    recastInterval: 0.3,
     steps: [{ kind: 'dash', speedMul: 3.2, duration: 0.3, invulnerable: true }],
     botTags: ['move'],
   },
@@ -61,7 +62,7 @@ export const PATROL_CRAFT: ShipClass = {
           id: 'patrol.t1.scatterCapacitors',
           name: 'Rotary Scatter Array',
           tag: 'WEAPON',
-          description: '+1 axial barrel and +20% fire rate (−12% per-shot damage): shreds starships, missiles and unarmored scouts.',
+          description: '+1 axial barrel and +20% fire rate (−12% per-shot damage): shreds starships and unarmored scouts.',
           modifiers: [
             { stat: 'gunCount', op: 'add', value: 1 },
             { stat: 'fireRate', op: 'mul', value: 0.2 },
@@ -112,6 +113,7 @@ export const PATROL_CRAFT: ShipClass = {
             name: 'Blink Strike',
             description: 'Warp 420 u to the cursor; 65 damage in 130 u, draining 50% of enemy shields.',
             cooldown: 5,
+            recastInterval: 0.3,
             steps: [
               { kind: 'teleport', maxDistance: 420, target: 'cursor' },
               { kind: 'pulse', radius: 130, damage: 65, shieldDrain: 0.5, affects: ['enemies', 'drones'] },
@@ -132,6 +134,7 @@ export const PATROL_CRAFT: ShipClass = {
             name: 'Kinetic Ram',
             description: 'Ram for 110 damage (60 AP) and knockback; resets on a kill.',
             cooldown: 6,
+            recastInterval: 0.3,
             steps: [{ kind: 'dash', speedMul: 3.4, duration: 0.35, invulnerable: true, ramDamage: 110, ramAp: 60, knockback: 420 }],
             botTags: ['move', 'closeRange'],
           },
@@ -156,8 +159,9 @@ export const PATROL_CRAFT: ShipClass = {
           id: 'patrol.t4.fluxCoupler',
           name: 'Tri-Flux Power Coupler',
           tag: 'POWER',
-          description: 'Switching Reactor Power (← ↑ → ↓) grants a 2.5 s surge of +20% to all three subsystems and instantly restores 30 shield.',
-          onPowerSwitch: { status: [{ status: 'powerSurge', duration: 2.5, magnitude: 0.2 }], shield: 30 },
+          description: '+8% shield capacity. Switching Reactor Power grants +8% to all three subsystems for 2.5 s and restores 30 shield, at most once every 8 s.',
+          modifiers: [{ stat: 'maxShield', op: 'mul', value: 0.08 }],
+          onPowerSwitch: { status: [{ status: 'powerSurge', duration: 2.5, magnitude: 0.08 }], shield: 30, cooldown: 8 },
           botTags: ['guard'],
         },
       ],
@@ -169,7 +173,7 @@ export const PATROL_CRAFT: ShipClass = {
           id: 'patrol.t5.stormRun',
           name: 'Vector Storm Protocol',
           tag: 'ULTIMATE',
-          description: 'For 6 s, Phase Dash / Blink Strike has no cooldown and all three Reactor Power bars lock at 100%.',
+          description: 'For 6 s, your signature costs no charges and can repeat every 0.3 s; all three Reactor Power bars lock at 100%.',
           modifiers: [{ stat: 'castCost', op: 'mul', value: -1, when: 'stormRun' }],
           ultimate: {
             id: 'patrol.stormRun',

@@ -1,3 +1,4 @@
+import { AUDIO_WEAPONS, AUDIO_ABILITIES, AUDIO_EVENT_STRIDE, SOUND_KIND } from '../content/sounds';
 import { MATCH } from '../content/match';
 import { CLASS_ORDER, HULL_INDEX } from '../content/classes/index';
 import { COMMAND_RULES, COMMANDS, type SeatId } from '../content/command';
@@ -34,6 +35,7 @@ export const SNAP = {
   zone: 8,
   strike: 5,
   tether: 4,
+  audioEvent: AUDIO_EVENT_STRIDE,
   event: 9,
 } as const;
 
@@ -95,6 +97,7 @@ export const H = {
   credits: 48,
   breakthrough: 49,
   schema: 50,
+  audioEventCount: 51,
 } as const;
 
 /**
@@ -219,6 +222,7 @@ export interface SnapshotOffsets {
   zones: number;
   strikes: number;
   tethers: number;
+  audio: number;
   events: number;
   length: number;
 }
@@ -234,6 +238,7 @@ export interface SnapshotCounts {
   zones: number;
   strikes: number;
   tethers: number;
+  audioEvents?: number;
   events: number;
 }
 
@@ -250,8 +255,9 @@ export function snapshotOffsets(n: SnapshotCounts): SnapshotOffsets {
   const zones = deployables + n.deployables * SNAP.deployable;
   const strikes = zones + n.zones * SNAP.zone;
   const tethers = strikes + n.strikes * SNAP.strike;
-  const events = tethers + n.tethers * SNAP.tether;
-  return { self, command, structures, ships, projectiles, crystals, points, drones, deployables, zones, strikes, tethers, events, length: events + n.events * SNAP.event };
+  const audio = tethers + n.tethers * SNAP.tether;
+  const events = audio + (n.audioEvents ?? 0) * SNAP.audioEvent;
+  return { self, command, structures, ships, projectiles, crystals, points, drones, deployables, zones, strikes, tethers, audio, events, length: events + n.events * SNAP.event };
 }
 
 export function readOffsets(buf: Float32Array): SnapshotOffsets {
@@ -267,15 +273,16 @@ export function readOffsets(buf: Float32Array): SnapshotOffsets {
     strikes: buf[H.strikeCount],
     tethers: buf[H.tetherCount],
     events: buf[H.eventCount],
+    audioEvents: buf[H.audioEventCount],
   });
 }
 
 /** 24-bit fingerprint is exactly representable in the Float32 wire header.
  * Bump the seed when meanings change without changing section strides. */
-export const SNAPSHOT_SCHEMA = Object.values(SNAP).reduce((hash,stride)=>(Math.imul(hash,31)+stride)&0xffffff,5);
+export const SNAPSHOT_SCHEMA = [...Object.values(SNAP), ...Object.values(SOUND_KIND), ...[...AUDIO_ABILITIES.map(a=>a.id),...AUDIO_WEAPONS].flatMap(id=>Array.from(id,c=>c.charCodeAt(0)))].reduce((hash,stride)=>(Math.imul(hash,31)+stride)&0xffffff,6);
 export function snapshotMatchesSchema(buf:Float32Array):boolean {
   if(buf.length<SNAP.header || buf[H.schema]!==SNAPSHOT_SCHEMA) return false;
-  for(const field of [H.structureCount,H.shipCount,H.projectileCount,H.crystalCount,H.pointCount,H.droneCount,H.deployableCount,H.zoneCount,H.strikeCount,H.tetherCount,H.eventCount]) {
+  for(const field of [H.structureCount,H.shipCount,H.projectileCount,H.crystalCount,H.pointCount,H.droneCount,H.deployableCount,H.zoneCount,H.strikeCount,H.tetherCount,H.eventCount,H.audioEventCount]) {
     const n=buf[field];
     if(!Number.isInteger(n) || n<0) return false;
   }
@@ -310,9 +317,12 @@ export function encodeSnapshot(w: World, selfSlot: number): Float32Array {
     strikes: w.strikes.count,
     tethers: w.tethers.count,
     events: w.eventCount,
+    audioEvents: w.audioEventCount,
   });
   const b = new Float32Array(o.length);
   b[H.schema] = SNAPSHOT_SCHEMA;
+  b[H.audioEventCount] = w.audioEventCount;
+  b.set(w.audioEvents.subarray(0,w.audioEventCount*SNAP.audioEvent),o.audio);
   const [t0, t1] = w.teams;
   const me = selfSlot >= 0 ? w.ships[selfSlot] : null;
   const myTeam = w.teams[me ? me.team : 0];

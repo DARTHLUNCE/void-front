@@ -1,0 +1,291 @@
+{
+  "default": "candidate12-normal-60-seed0",
+  "candidate": "candidate12",
+  "frozenSha256": "247355bf0443bfe7bc2b2e5628850630b1c5cf73dda484760261762c522c25d8",
+  "runs": [
+    {
+      "name": "candidate12-normal-60-seed0",
+      "label": "Candidate 12 \u00b7 Normal/Normal \u00b7 60v60 \u00b7 45m \u00b7 seed 3902691048",
+      "sha256": "247355bf0443bfe7bc2b2e5628850630b1c5cf73dda484760261762c522c25d8",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate12-normal-40-seed1",
+      "label": "Candidate 12 \u00b7 Normal/Normal \u00b7 40v40 \u00b7 45m \u00b7 seed 2537566983",
+      "sha256": "247355bf0443bfe7bc2b2e5628850630b1c5cf73dda484760261762c522c25d8",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate12-hard-60-seed0",
+      "label": "Candidate 12 \u00b7 Hard/Hard \u00b7 60v60 \u00b7 45m \u00b7 seed 3902691048",
+      "sha256": "247355bf0443bfe7bc2b2e5628850630b1c5cf73dda484760261762c522c25d8",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "hard",
+          "hard"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate12-hard-40-seed1",
+      "label": "Candidate 12 \u00b7 Hard/Hard \u00b7 40v40 \u00b7 45m \u00b7 seed 2537566983",
+      "sha256": "247355bf0443bfe7bc2b2e5628850630b1c5cf73dda484760261762c522c25d8",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "hard",
+          "hard"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate10-normal-60-seed0",
+      "label": "Candidate 10 \u00b7 Normal/Normal \u00b7 60v60 \u00b7 45m \u00b7 seed 3902691048",
+      "sha256": "e662ed0d963a8bf6e2829da017499cddaaa23ead736de58b2ed33b3814053091",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate10-normal-40-seed1",
+      "label": "Candidate 10 \u00b7 Normal/Normal \u00b7 40v40 \u00b7 45m \u00b7 seed 2537566983",
+      "sha256": "e662ed0d963a8bf6e2829da017499cddaaa23ead736de58b2ed33b3814053091",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "tierCosts": [
+          150,
+          350,
+          1700,
+          2000,
+          2800
+        ],
+        "deathShardLossMax": 160,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "baseline-normal-60-seed0",
+      "label": "baseline \u00b7 Normal/Normal \u00b7 60v60 \u00b7 35m \u00b7 seed 3902691048",
+      "sha256": "38c9f6e8fb91cc1d0a136acc5f07d4bba9d768b186b52ee051787bbce1a4ed90",
+      "configuration": {
+        "firingSpeedMul": 0.3,
+        "statCosts": [
+          12,
+          18,
+          26,
+          36,
+          50,
+          68,
+          90
+        ],
+        "tierCosts": [
+          150,
+          350,
+          650,
+          1050,
+          1600
+        ],
+        "deathShardLossMax": null,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2100,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "baseline-normal-40-seed1",
+      "label": "baseline \u00b7 Normal/Normal \u00b7 40v40 \u00b7 35m \u00b7 seed 2537566983",
+      "sha256": "38c9f6e8fb91cc1d0a136acc5f07d4bba9d768b186b52ee051787bbce1a4ed90",
+      "configuration": {
+        "firingSpeedMul": 0.3,
+        "statCosts": [
+          12,
+          18,
+          26,
+          36,
+          50,
+          68,
+          90
+        ],
+        "tierCosts": [
+          150,
+          350,
+          650,
+          1050,
+          1600
+        ],
+        "deathShardLossMax": null,
+        "botSkill": [
+          "normal",
+          "normal"
+        ],
+        "hullGeometry": "reference"
+      },
+      "duration": 2100,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate5-45horizon-60",
+      "label": "Candidate 5 \u00b7 Hard/Hard (historical default) \u00b7 60v60 \u00b7 45m \u00b7 seed 3902691048 \u00b7 clock experiment",
+      "sha256": "62cfbb3e2edfad3685fe9863b8f126a058f4e3d150663c5e335032c588e5667f",
+      "configuration": {
+        "firingSpeedMul": 0.1,
+        "statCosts": [
+          32,
+          64,
+          140,
+          320,
+          700,
+          1300,
+          2000
+        ],
+        "deathShardLossMax": 160
+      },
+      "duration": 2700,
+      "endReason": "timeLimit"
+    },
+    {
+      "name": "candidate2-45horizon-40",
+      "label": "Candidate 2 \u00b7 Hard/Hard (historical default) \u00b7 40v40 \u00b7 45m \u00b7 seed 2537566983 \u00b7 clock experiment",
+      "sha256": null,
+      "configuration": {},
+      "duration": 2188.1,
+      "endReason": "destroyed"
+    }
+  ]
+}

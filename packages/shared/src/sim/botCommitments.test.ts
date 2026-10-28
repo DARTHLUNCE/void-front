@@ -129,3 +129,22 @@ describe('independent pilot commitment and class execution', () => {
     expect(outcomes.get('cruiser')!.lateral).toBeLessThan(5);
   });
 });
+
+describe('Patrol opening through player inputs', () => {
+  it('waits for its normal reaction before emitting an aligned opening volley and obeys retreat', () => {
+    const { w, s, targets: [enemy, extra] } = encounter('patrol');
+    extra.alive = false; enemy.x = s.x + 600;
+    rebuildShipHash(w); think(w, s); steer(w, s);
+    expect(s.input.fire).toBe(false);
+    w.time += .3; steer(w, s);
+    expect(s.input.fire).toBe(true);
+    expect(s.input.steerWithAim).toBe(true);
+    expect(s.input.moveX * Math.sin(s.input.aim) - s.input.moveY * Math.cos(s.input.aim)).toBeCloseTo(0, 6);
+    moveShips(w); botAim(w, s); aimAndFire(w, s);
+    expect(w.projectiles.count).toBeGreaterThan(0);
+    s.hull = s.maxHull * .1; w.time += .4;
+    rebuildShipHash(w); think(w, s); steer(w, s);
+    expect(s.bot!.retreating).toBe(true);
+    expect(s.input.fire).toBe(false);
+  });
+});

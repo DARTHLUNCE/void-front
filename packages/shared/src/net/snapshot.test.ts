@@ -58,7 +58,7 @@ it('reports the simulation firing limit to the HUD without shifting snapshot sec
   const {w,a}=duelWorld();
   a.input.fire=true;
   const firing=encodeSnapshot(w,a.slot);
-  expect(firing[readOffsets(firing).self+SELF.firingSpeedMul]).toBeCloseTo(.3);
+  expect(firing[readOffsets(firing).self+SELF.firingSpeedMul]).toBeCloseTo(MATCH.movement.firingSpeedMul);
   a.input.fire=false;
   const cruising=encodeSnapshot(w,a.slot);
   expect(cruising[readOffsets(cruising).self+SELF.firingSpeedMul]).toBe(1);

@@ -25,11 +25,12 @@ export function powerLevels(w: World, s: Ship): Float64Array {
   const mode = POWER_MODES[s.powerMode] ?? 'balanced';
   const base = POWER_LEVELS[mode];
   const floor = POWER_LOW + liveStat(w, s, 'powerFloor', 0);
+  const speedFloor = Math.max(floor, POWER_LOW + liveStat(w, s, 'powerSpeedFloor', 0));
   const balanced = POWER_MID + liveStat(w, s, 'powerBalanced', 0);
   for (let c = 0; c < 3; c++) {
     let lv = base[c];
     if (mode === 'balanced') lv = balanced;
-    else if (lv <= POWER_LOW) lv = Math.min(POWER_MID, floor);
+    else if (lv <= POWER_LOW) lv = Math.min(POWER_MID, c === SPEED ? speedFloor : floor);
     if (hasStatus(s, 'powerDrain')) lv = Math.min(lv, POWER.drainLevel);
     levels[c] = lv;
   }
@@ -109,6 +110,8 @@ export function switchPower(w: World, s: Ship, mode: number): boolean {
   for (const node of s.nodes) {
     const hook = node.onPowerSwitch;
     if (!hook || (hook.to && hook.to !== to)) continue;
+    if (hook.cooldown && w.time - s.powerSwitchProcAt < hook.cooldown) continue;
+    if (hook.cooldown) s.powerSwitchProcAt = w.time;
     if (hook.status) for (const st of hook.status) applyStatus(w, s, st);
     if (hook.shield) s.shield = Math.min(s.maxShield, s.shield + hook.shield);
     if (hook.clear) for (const id of hook.clear) removeStatus(s, id);

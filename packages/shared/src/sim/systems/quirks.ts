@@ -3,6 +3,7 @@ import type { QuirkId } from '../../content/types';
 import { POWER_INDEX } from '../../content/power';
 import { liveStat, QUIRK_LEFT_CLOAK, statValue } from '../stats';
 import { DT, type Ship, type World } from '../world';
+import { forwardFlightAtSpeed } from '../flightEnvelope';
 import { damageDrone, launchFromBow, spawnDrone } from './drones';
 import { heatPowerMul } from './power';
 import { applyStatus, hasStatus, removeStatus } from './status';
@@ -47,11 +48,11 @@ function tuned<K extends keyof typeof QUIRK_PARAMS>(s: Ship, id: K): (typeof QUI
 }
 
 const momentum: QuirkHooks = {
-  afterMove(_w, s) {
+  afterMove(w, s) {
     const p = tuned(s, 'momentum');
     const q = s.quirk;
     const speed = Math.hypot(s.vx, s.vy);
-    if (speed < p.minSpeedFrac * s.cls.speed) {
+    if (!forwardFlightAtSpeed(w, s, p.minSpeedFrac)) {
       q[REF_X] = q[REF_Y] = q[STRAIGHT] = q[LEVEL] = 0;
       return;
     }
